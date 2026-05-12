@@ -1,0 +1,97 @@
+@import "tailwindcss";
+
+@theme {
+  /* Fonts */
+  --font-sans: var(--font-sans), "Plus Jakarta Sans", -apple-system, system-ui, sans-serif;
+  --font-mono: var(--font-mono), "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Surface */
+  --color-spark-bg: oklch(0.985 0.004 290);
+  --color-spark-bg-warm: oklch(0.978 0.008 50);
+  --color-spark-surface: #ffffff;
+  --color-spark-surface-elev: oklch(0.99 0.003 290);
+  --color-spark-surface-sunken: oklch(0.965 0.005 290);
+
+  /* Ink (text) */
+  --color-spark-ink: oklch(0.18 0.02 285);
+  --color-spark-ink-70: oklch(0.32 0.018 285);
+  --color-spark-ink-50: oklch(0.5 0.014 285);
+  --color-spark-ink-35: oklch(0.66 0.012 285);
+  --color-spark-ink-20: oklch(0.86 0.008 285);
+  --color-spark-ink-10: oklch(0.93 0.006 285);
+
+  /* Borders */
+  --color-spark-hairline: oklch(0.92 0.006 285);
+  --color-spark-border: oklch(0.88 0.008 285);
+
+  /* Brand */
+  --color-spark-brand: oklch(0.55 0.22 305);
+  --color-spark-brand-deep: oklch(0.42 0.2 295);
+  --color-spark-brand-soft: oklch(0.94 0.04 305);
+
+  /* Semantic */
+  --color-good: oklch(0.62 0.16 150);
+  --color-warn: oklch(0.74 0.16 75);
+  --color-bad: oklch(0.6 0.22 25);
+
+  /* Agents */
+  --color-agent-info-fg: oklch(0.45 0.16 245);
+  --color-agent-info-bg: oklch(0.95 0.04 245);
+  --color-agent-viral-fg: oklch(0.55 0.21 30);
+  --color-agent-viral-bg: oklch(0.96 0.04 35);
+  --color-agent-script-fg: oklch(0.5 0.22 305);
+  --color-agent-script-bg: oklch(0.95 0.05 305);
+  --color-agent-help-fg: oklch(0.5 0.14 155);
+  --color-agent-help-bg: oklch(0.95 0.04 155);
+
+  /* Brand gradient */
+  --bg-brand-grad: linear-gradient(135deg, oklch(0.5 0.22 290), oklch(0.62 0.22 340));
+  --bg-brand-grad-soft: linear-gradient(135deg, oklch(0.96 0.03 290), oklch(0.96 0.04 340));
+
+  /* Radii */
+  --radius-spark-xs: 6px;
+  --radius-spark-sm: 10px;
+  --radius-spark-md: 14px;
+  --radius-spark-lg: 18px;
+  --radius-spark-xl: 22px;
+}
+
+/* Custom gradient utilities (Tailwind v4 doesn't expose linear-gradient via @theme) */
+@utility bg-brand-grad {
+  background: linear-gradient(135deg, oklch(0.5 0.22 290), oklch(0.62 0.22 340));
+}
+@utility bg-brand-grad-soft {
+  background: linear-gradient(135deg, oklch(0.96 0.03 290), oklch(0.96 0.04 340));
+}
+@utility bg-brand-grad-hero {
+  background: linear-gradient(160deg, oklch(0.55 0.22 305) 0%, oklch(0.45 0.22 285) 100%);
+}
+
+/* Photo placeholder — striped pattern from design */
+@utility photo-stripes {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    oklch(0.92 0.006 285),
+    oklch(0.92 0.006 285) 10px,
+    oklch(0.95 0.005 290) 10px,
+    oklch(0.95 0.005 290) 20px
+  );
+}
+
+/* Body defaults */
+html, body {
+  font-feature-settings: "ss01", "cv11";
+  letter-spacing: -0.005em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Hide scrollbars for horizontal carousels */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Safe-area helpers for PWA on iOS */
+@supports (padding: env(safe-area-inset-top)) {
+  .safe-top { padding-top: env(safe-area-inset-top); }
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+}

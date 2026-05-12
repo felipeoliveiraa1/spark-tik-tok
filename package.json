@@ -1,0 +1,18 @@
+{
+  "name": "spark-tik-tok",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Spark — IA pra criadoras de TikTok Shop (workspace root)",
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=10"
+  },
+  "scripts": {
+    "dev:web": "pnpm --filter @spark/web run dev",
+    "dev:scraper": "pnpm --filter @spark/scraper run dev",
+    "build:web": "pnpm --filter @spark/web run build",
+    "build:scraper": "pnpm --filter @spark/scraper run build",
+    "build": "pnpm -r run build",
+    "lint": "pnpm -r run lint"
+  }
+}
