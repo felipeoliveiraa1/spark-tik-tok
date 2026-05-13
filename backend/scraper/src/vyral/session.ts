@@ -45,25 +45,18 @@ async function ensureLoggedIn(page: Page): Promise<void> {
   }
 
   // 1. Bate na home pra ver se a sessão restaurada do storage state ainda é válida.
+  //    waitUntil: networkidle pra deixar o JS client-side fazer redirect se
+  //    a sessão estiver expirada.
   try {
-    await page.goto(env.VYRAL_BASE_URL, { waitUntil: "domcontentloaded", timeout: 30_000 });
-    // Se ainda estamos numa rota de login OU se vemos botão de "Entrar/Login",
-    // sessão expirou.
+    await page.goto(env.VYRAL_BASE_URL, { waitUntil: "networkidle", timeout: 30_000 });
+    await page.waitForTimeout(1500); // margem pra qualquer redirect pendente
     const currentUrl = page.url();
     const onLoginPage = /login|signin|entrar|auth/i.test(currentUrl);
     if (!onLoginPage) {
-      const loginCta = await page
-        .locator(
-          'a[href*="login"], button:has-text("Entrar"), a:has-text("Entrar"), button:has-text("Login")',
-        )
-        .first()
-        .count()
-        .catch(() => 0);
-      if (loginCta === 0) {
-        log.info("vyral.session: cookies válidos, já logada");
-        return;
-      }
+      log.info({ url: currentUrl }, "vyral.session: cookies válidos, já logada");
+      return;
     }
+    log.info({ url: currentUrl }, "vyral.session: redirecionou pra login — sessão expirou");
   } catch (err) {
     log.warn({ err: err instanceof Error ? err.message : err }, "vyral.session: probe falhou");
   }

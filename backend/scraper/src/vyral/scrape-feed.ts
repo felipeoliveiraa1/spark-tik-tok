@@ -391,13 +391,58 @@ export async function scrapeFeed(
   params: VyralSearchInput,
 ): Promise<VyralSearchResult> {
   log.info({ params, feedUrl: FEED_URL }, "scrape-feed: navegando pro painel");
-  await page.goto(FEED_URL, { waitUntil: "domcontentloaded", timeout: 30_000 });
+  await page.goto(FEED_URL, { waitUntil: "networkidle", timeout: 35_000 });
   log.info({ landedAt: page.url() }, "scrape-feed: navegação completa");
 
+  // A SPA do Vyral redireciona client-side. Aguarda 2s extra pra qualquer
+  // navegação pendente terminar.
+  await page.waitForTimeout(2_000);
+
+  // Se foi redirecionado pra login, tenta novo login automático aqui mesmo.
   if (/login|signin|entrar|auth/i.test(page.url())) {
-    log.warn({ url: page.url() }, "scrape-feed: caí na página de login — sessão expirou");
-    await dumpDebugSnapshot(page, "redirected-to-login");
-    throw new Error("vyral.scrape: sessão expirou — re-login necessário");
+    log.warn({ url: page.url() }, "scrape-feed: redirecionou pra login — fazendo login inline");
+    try {
+      // Preenche o form de login
+      const emailInput = page
+        .locator(
+          'input[type="email"], input[name="email"], input[id="email"], input[placeholder*="mail" i]',
+        )
+        .first();
+      await emailInput.waitFor({ timeout: 10_000 });
+      const email = process.env.VYRAL_EMAIL;
+      const password = process.env.VYRAL_PASSWORD;
+      if (!email || !password) {
+        throw new Error("VYRAL_EMAIL/VYRAL_PASSWORD não configurados");
+      }
+      await emailInput.fill(email);
+      const passwordInput = page
+        .locator('input[type="password"], input[name="password"], input[id="password"]')
+        .first();
+      await passwordInput.fill(password);
+      const submit = page
+        .locator(
+          'button[type="submit"], button:has-text("Entrar"), button:has-text("Login"), button:has-text("Acessar")',
+        )
+        .first();
+      if ((await submit.count()) > 0) {
+        await submit.click();
+      } else {
+        await passwordInput.press("Enter");
+      }
+      await page.waitForURL((u) => !/login|signin|entrar/i.test(u.toString()), {
+        timeout: 30_000,
+      });
+      log.info({ landedAt: page.url() }, "scrape-feed: re-login OK");
+      // Vai pra rota do feed mesmo
+      if (!page.url().startsWith(FEED_URL)) {
+        await page.goto(FEED_URL, { waitUntil: "networkidle", timeout: 30_000 });
+      }
+    } catch (err) {
+      await dumpDebugSnapshot(page, "inline-relogin-failed");
+      throw new Error(
+        `vyral.scrape: re-login inline falhou — ${err instanceof Error ? err.message : "unknown"}`,
+      );
+    }
   }
 
   try {
