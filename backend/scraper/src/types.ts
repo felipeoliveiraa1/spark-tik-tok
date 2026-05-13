@@ -48,6 +48,14 @@ export type VyralVideoSummary = {
   };
   /** Short hook quote shown in card view */
   hookPreview?: string;
+  /** Full caption / description of the post (with hashtags). */
+  caption?: string;
+  /** Rank/position when this video is from a top-N list. */
+  rank?: number;
+  /** Creator display name (different from @handle when available). */
+  creatorName?: string;
+  /** Creator avatar URL. */
+  creatorAvatarUrl?: string;
 };
 
 export type VyralTranscription = {

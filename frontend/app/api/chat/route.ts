@@ -182,14 +182,18 @@ function buildViralTools(supabase: SupabaseClient, userId: string): ToolSet {
           return {
             ok: true,
             count: data.videos.length,
-            videos: data.videos.map((v) => ({
+            videos: data.videos.map((v, idx) => ({
               id: v.id,
+              rank: v.rank ?? idx + 1,
               creator: v.creator,
+              creator_name: v.creatorName ?? null,
+              creator_avatar: v.creatorAvatarUrl ?? null,
               url: v.url,
               thumbnail: v.thumbnailUrl ?? null,
               country: v.country,
               niche: v.niche ?? null,
               hook: v.hookPreview ?? null,
+              caption: v.caption ?? null,
               posted_at: v.postedAt ?? null,
               views: v.metrics.views,
               likes: v.metrics.likes,
@@ -240,6 +244,84 @@ function buildViralTools(supabase: SupabaseClient, userId: string): ToolSet {
           const msg = err instanceof ScraperClientError ? err.message : "falha desconhecida";
           return { ok: false, error: msg };
         }
+      },
+    }),
+
+    save_viral: tool({
+      description:
+        "Guarda um vídeo viral na biblioteca da aluna (em /virais). Use SEMPRE que a aluna disser 'salva esse', 'quero trabalhar com esse vídeo', 'guarda na minha biblioteca', 'adiciona o #N'. Passe TODOS os campos do vídeo que vieram em search_virals/get_viral_details — não invente nada. Devolva [Ver na biblioteca](/virais/<id>) em markdown depois.",
+      inputSchema: z.object({
+        source_video_id: z.string().describe("ID original retornado por search_virals."),
+        url: z.string().describe("URL pública do TikTok."),
+        thumbnail_url: z.string().optional(),
+        rank: z.number().optional().describe("Posição no top, se vier."),
+        creator: z.string().optional().describe("@handle do criador."),
+        creator_name: z.string().optional(),
+        creator_avatar_url: z.string().optional(),
+        country: z.string().optional(),
+        niche: z.string().optional(),
+        caption: z.string().optional().describe("Legenda completa do post."),
+        hook: z.string().optional(),
+        views: z.number().optional(),
+        likes: z.number().optional(),
+        comments: z.number().optional(),
+        shares: z.number().optional(),
+        gmv_brl: z.number().optional().describe("Receita estimada em BRL."),
+        product_name: z.string().optional(),
+        product_shop_url: z.string().optional(),
+        product_price_brl: z.number().optional(),
+        product_id: z
+          .string()
+          .optional()
+          .describe("UUID do produto da aluna que esse viral inspira (opcional)."),
+      }),
+      execute: async (input) => {
+        const payload = {
+          user_id: userId,
+          source_video_id: input.source_video_id,
+          product_id: input.product_id ?? null,
+          url: input.url,
+          thumbnail_url: input.thumbnail_url ?? null,
+          rank: input.rank ?? null,
+          creator: input.creator ?? null,
+          creator_avatar_url: input.creator_avatar_url ?? null,
+          country: input.country ?? null,
+          niche: input.niche ?? null,
+          caption: input.caption ?? null,
+          hook: input.hook ?? null,
+          views: input.views ?? null,
+          likes: input.likes ?? null,
+          comments: input.comments ?? null,
+          shares: input.shares ?? null,
+          estimated_revenue_brl: input.gmv_brl ?? null,
+          product_name: input.product_name ?? null,
+          product_shop_url: input.product_shop_url ?? null,
+          product_price_brl: input.product_price_brl ?? null,
+          raw: input,
+        };
+        const { data, error } = await supabase
+          .from("saved_virals")
+          .upsert(payload, { onConflict: "user_id,source_video_id" })
+          .select("id")
+          .single();
+        if (error) return { ok: false, error: error.message };
+        return { ok: true, id: data.id, url_path: `/virais/${data.id}` };
+      },
+    }),
+
+    list_saved_virals: tool({
+      description:
+        "Lista os virais que a aluna já salvou na biblioteca (id, criador, hook, GMV, thumbnail). Use quando ela perguntar 'quais virais eu salvei?' ou 'mostra meus virais'.",
+      inputSchema: z.object({}),
+      execute: async () => {
+        const { data, error } = await supabase
+          .from("saved_virals")
+          .select(
+            "id, source_video_id, url, thumbnail_url, creator, niche, hook, views, estimated_revenue_brl, product_name, saved_at",
+          )
+          .order("saved_at", { ascending: false });
+        if (error) return { ok: false, error: error.message };
+        return { ok: true, count: data?.length ?? 0, virais: data ?? [] };
       },
     }),
 

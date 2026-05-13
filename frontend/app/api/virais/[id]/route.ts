@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { getSupabaseAdmin } from "@/lib/supabase";
 import { getSupabaseServer } from "@/lib/supabase-server";
 
 export const runtime = "nodejs";
@@ -15,14 +14,34 @@ export async function GET(_request: Request, { params }: Params) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const admin = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("saved_virals")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
 
-  const [{ data: video, error: videoErr }, { data: transcription }] = await Promise.all([
-    admin.from("viral_videos").select("*").eq("id", id).maybeSingle(),
-    admin.from("viral_transcriptions").select("*").eq("video_id", id).maybeSingle(),
-  ]);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!data) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  return NextResponse.json({ video: data });
+}
 
-  if (videoErr) return NextResponse.json({ error: videoErr.message }, { status: 500 });
-  if (!video) return NextResponse.json({ error: "not_found" }, { status: 404 });
-  return NextResponse.json({ video, transcription });
+export async function DELETE(_request: Request, { params }: Params) {
+  const { id } = await params;
+  const supabase = await getSupabaseServer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+
+  const { data, error } = await supabase
+    .from("saved_virals")
+    .delete()
+    .eq("id", id)
+    .select("id");
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!data || data.length === 0) {
+    return NextResponse.json({ error: "not_found_or_forbidden" }, { status: 404 });
+  }
+  return NextResponse.json({ ok: true });
 }

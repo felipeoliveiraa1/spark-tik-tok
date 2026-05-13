@@ -3,32 +3,65 @@
 import * as React from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { ExternalLink, Play } from "lucide-react";
+import { isTikTokUrl } from "@/lib/tiktok";
+import { useVideoModal } from "@/components/molecules/video-modal";
 
 /**
  * Renderiza o conteúdo (markdown) que o agente devolve com:
- * - links clicáveis abrindo em nova aba
- * - negrito, itálico
- * - listas (- ou 1.)
- * - tabelas (| col |) via remark-gfm — usado pelo agente Scripts
- * - code inline
+ * - links clicáveis (TikTok abre em modal interno, resto abre nova aba)
+ * - imagens (thumbnails de virais ou previews)
+ * - negrito, itálico, listas, tabelas (Scripts), code inline
  */
 export function MessageContent({ children }: { children: string }) {
+  const videoModal = useVideoModal();
+
   if (!children) return null;
+
   return (
     <div className="message-md text-[14.5px] leading-[1.55] tracking-[-0.005em]">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
-          a: ({ href, children }) => (
-            <a
-              href={href}
-              target="_blank"
-              rel="noreferrer"
-              className="text-spark-brand font-semibold underline decoration-spark-brand/40 underline-offset-2 hover:decoration-spark-brand"
-            >
-              {children}
-            </a>
-          ),
+          a: ({ href, children }) => {
+            const url = href ?? "";
+            const tiktok = isTikTokUrl(url);
+            if (tiktok) {
+              return (
+                <button
+                  type="button"
+                  onClick={() => videoModal.open(url)}
+                  className="inline-flex items-center gap-1 text-spark-brand font-semibold underline decoration-spark-brand/40 underline-offset-2 hover:decoration-spark-brand cursor-pointer"
+                >
+                  <Play size={12} strokeWidth={2} className="-mt-0.5" />
+                  {children}
+                </button>
+              );
+            }
+            return (
+              <a
+                href={url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-0.5 text-spark-brand font-semibold underline decoration-spark-brand/40 underline-offset-2 hover:decoration-spark-brand"
+              >
+                {children}
+                <ExternalLink size={11} strokeWidth={1.7} className="opacity-70" />
+              </a>
+            );
+          },
+          img: ({ src, alt }) => {
+            if (!src) return null;
+            return (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={src}
+                alt={alt ?? ""}
+                className="my-2 max-w-[180px] rounded-2xl border border-spark-hairline object-cover"
+                loading="lazy"
+              />
+            );
+          },
           p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
           ul: ({ children }) => <ul className="mb-2 last:mb-0 ml-4 list-disc space-y-1">{children}</ul>,
           ol: ({ children }) => <ol className="mb-2 last:mb-0 ml-4 list-decimal space-y-1">{children}</ol>,

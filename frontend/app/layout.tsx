@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import { VideoModalProvider } from "@/components/molecules/video-modal";
 
 const jakarta = Plus_Jakarta_Sans({
   variable: "--font-sans",
@@ -70,7 +71,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" className={`${jakarta.variable} ${jetbrains.variable} h-full antialiased`}>
-      <body className="min-h-full bg-spark-bg text-spark-ink font-sans">{children}</body>
+      <body className="min-h-full bg-spark-bg text-spark-ink font-sans">
+        <VideoModalProvider>{children}</VideoModalProvider>
+      </body>
     </html>
   );
 }
