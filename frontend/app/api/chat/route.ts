@@ -585,6 +585,9 @@ export async function POST(request: Request) {
   // Captura o erro real do streamText (vem via callback).
   let capturedError: string | null = null;
   const toolEvents: { name: string; ok?: boolean; error?: string }[] = [];
+  // Quando search_virals retorna formatted_response, substituímos o texto
+  // do modelo por essa resposta determinística — zero alucinação possível.
+  let deterministicResponse: string | null = null;
 
   // Abort signal — corta o stream com folga antes do maxDuration (60s)
   // pra conseguir devolver texto pro cliente em vez de cair em timeout.
@@ -631,6 +634,9 @@ export async function POST(request: Request) {
         // Iteramos sobre tudo pra ter visibilidade total.
         for await (const part of result.fullStream) {
           if (part.type === "text-delta") {
+            // Se já temos resposta determinística (tool com formatted_response),
+            // ignoramos o que o modelo gera — vamos sobrescrever no fim.
+            if (deterministicResponse) continue;
             const text = part.text;
             if (text) {
               accumulated += text;
@@ -640,14 +646,39 @@ export async function POST(request: Request) {
             toolEvents.push({ name: part.toolName });
             console.log("[tool-call]", { agent, name: part.toolName, input: part.input });
           } else if (part.type === "tool-result") {
-            const out = part.output as { ok?: boolean; error?: string } | undefined;
+            const out = part.output as
+              | {
+                  ok?: boolean;
+                  error?: string;
+                  formatted_response?: string;
+                  count?: number;
+                  fell_back_to_general?: boolean;
+                }
+              | undefined;
             toolEvents.push({ name: part.toolName, ok: out?.ok, error: out?.error });
             console.log("[tool-result]", {
               agent,
               name: part.toolName,
               ok: out?.ok,
               error: out?.error,
+              count: out?.count,
+              hasFormatted: !!out?.formatted_response,
             });
+
+            // Resposta determinística: se a tool de virais retornou
+            // formatted_response, monta a resposta no servidor sem deixar
+            // o Gemini gerar texto. Garante 100% que cards são reais.
+            if (
+              part.toolName === "search_virals" &&
+              out?.formatted_response &&
+              out.formatted_response.trim().length > 0
+            ) {
+              const intro = out.fell_back_to_general
+                ? "Não tinha viral específico pra esse nicho no período, mas isso aqui está bombando no geral:"
+                : "Aqui está o que tá bombando no TikTok Shop:";
+              const outro = "Quer que eu salve algum desses na sua biblioteca ou veja detalhes? É só falar o número.";
+              deterministicResponse = `${intro}\n\n${out.formatted_response}\n\n${outro}`;
+            }
           } else if (part.type === "error") {
             const err = part.error;
             const m = err instanceof Error ? err.message : String(err);
@@ -664,7 +695,15 @@ export async function POST(request: Request) {
           })),
         ]);
 
-        if (!accumulated.trim()) {
+        // Sobrescreve com a resposta determinística da tool (zero alucinação).
+        if (deterministicResponse) {
+          accumulated = deterministicResponse;
+          controller.enqueue(encoder.encode(deterministicResponse));
+          console.log("[api/chat] resposta determinística aplicada", {
+            agent,
+            len: deterministicResponse.length,
+          });
+        } else if (!accumulated.trim()) {
           const summary = capturedError
             ? `⚠️ ${capturedError}`
             : `Não consegui formar uma resposta (motivo=${finishReason}, tokens_out=${usage?.outputTokens ?? "?"}, tools=${toolEvents.length})`;
