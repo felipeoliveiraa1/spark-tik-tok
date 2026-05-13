@@ -172,16 +172,80 @@ function buildViralTools(supabase: SupabaseClient, userId: string): ToolSet {
             ? (days as 7 | 14 | 30 | 90)
             : 7;
           const safeLimit = Math.min(Math.max(limit ?? 10, 1), 20);
-          const data = await searchVyralVideos({
+          // Fallback: se filtro de nicho zera, tenta sem niche (mostra geral)
+          let data = await searchVyralVideos({
             niche: safeNiche,
             country: safeCountry,
             lastDays: safeDays,
             limit: safeLimit,
             sortBy: "views",
           });
+          let fellBackToGeneral = false;
+          if (data.videos.length === 0 && safeNiche) {
+            data = await searchVyralVideos({
+              country: safeCountry,
+              lastDays: safeDays,
+              limit: safeLimit,
+              sortBy: "views",
+            });
+            fellBackToGeneral = true;
+          }
+          // Se ainda 0, retorna explicitamente vazio com instrução literal
+          if (data.videos.length === 0) {
+            return {
+              ok: true,
+              count: 0,
+              videos: [],
+              formatted_response: "",
+              INSTRUCTION:
+                "ZERO vídeos retornados pra esse filtro. SUA RESPOSTA DEVE SER LITERALMENTE: 'Tô sem dado real pra esse filtro agora. Quer testar 14 ou 30 dias, ou outro nicho?'. PROIBIDO inventar exemplos, criadores, métricas. Resposta curta, genérica, sem nomes.",
+            };
+          }
+
+          // Formata os cards EM MARKDOWN no servidor (não deixa o Gemini fazer).
+          // Garante que os campos são reais, vindos do scraper.
+          const formatViews = (n: number): string => {
+            if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+            if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`;
+            return String(n);
+          };
+          const formatBrl = (n: number | null | undefined): string | null => {
+            if (n == null) return null;
+            return new Intl.NumberFormat("pt-BR", {
+              style: "currency",
+              currency: "BRL",
+              maximumFractionDigits: 0,
+            }).format(n);
+          };
+
+          const cards = data.videos.map((v, idx) => {
+            const rank = v.rank ?? idx + 1;
+            const productName = v.product?.name ?? "Sem produto identificado";
+            const niche = v.niche ?? "";
+            const lines: string[] = [];
+            lines.push(`**#${rank} · ${productName}**${niche ? ` — ${niche}` : ""}`);
+            if (v.thumbnailUrl) lines.push(`![produto](${v.thumbnailUrl})`);
+            const metrics: string[] = [`@${v.creator}`];
+            metrics.push(`👁 ${formatViews(v.metrics.views)}`);
+            if (v.metrics.likes > 0) metrics.push(`❤ ${formatViews(v.metrics.likes)}`);
+            const gmv = formatBrl(v.metrics.estimatedRevenueBrl);
+            if (gmv) metrics.push(`💰 ${gmv}`);
+            lines.push(metrics.join(" · "));
+            const quote = v.hookPreview || v.caption?.slice(0, 120);
+            if (quote) lines.push(`> "${quote.replace(/\s+/g, " ").trim()}"`);
+            lines.push(`[Abrir no TikTok](${v.url})`);
+            return lines.join("\n\n");
+          });
+          const formatted_response = cards.join("\n\n");
+
           return {
             ok: true,
             count: data.videos.length,
+            fell_back_to_general: fellBackToGeneral,
+            formatted_response,
+            INSTRUCTION: fellBackToGeneral
+              ? `Nicho '${safeNiche}' não tinha vídeos no período. Mostre o conteúdo de formatted_response (top virais geral) com intro: 'Não tem viral específico de ${safeNiche} agora, mas isso aqui está bombando no geral:' e termine com 'Quer focar em outro nicho?'`
+              : "Use EXATAMENTE o conteúdo de formatted_response como corpo da resposta. Adicione apenas uma intro curta (1 linha) antes e um outro curto (1 linha) depois — convidando a aluna a salvar ou ver detalhes. PROIBIDO modificar números, criadores, URLs dos cards.",
             videos: data.videos.map((v, idx) => ({
               id: v.id,
               rank: v.rank ?? idx + 1,
@@ -218,32 +282,18 @@ function buildViralTools(supabase: SupabaseClient, userId: string): ToolSet {
 
     get_viral_details: tool({
       description:
-        "Detalhes completos de um vídeo viral: transcrição estruturada (hook/problema/solução/CTA), métricas e link do produto. Use quando a aluna pedir 'mais info sobre o vídeo X'.",
+        "Transcrição do vídeo viral. AINDA EM DESENVOLVIMENTO — não tente usar essa tool antes da feature estar pronta. Sempre retorna { available: false }. Quando a aluna pedir transcrição, fale que ainda não tem acesso direto e ofereça delegar pra Scripts gerar hooks inspirados.",
       inputSchema: z.object({
-        video_id: z.string().describe("ID do vídeo retornado por search_virals."),
+        video_id: z.string().describe("ID do vídeo (não usado nesta versão)."),
       }),
-      execute: async ({ video_id }) => {
-        try {
-          const data = await getVyralTranscription(video_id);
-          return {
-            ok: true,
-            video_id: data.videoId,
-            language: data.language,
-            full_text: data.full,
-            structure: {
-              hook: data.structure.hook,
-              problem: data.structure.problem ?? null,
-              solution: data.structure.solution ?? null,
-              cta: data.structure.cta ?? null,
-            },
-            context: data.contexto ?? null,
-            template: data.template ?? null,
-            insights: data.insights ?? [],
-          };
-        } catch (err) {
-          const msg = err instanceof ScraperClientError ? err.message : "falha desconhecida";
-          return { ok: false, error: msg };
-        }
+      execute: async () => {
+        return {
+          ok: false,
+          available: false,
+          error: "transcription_not_available_yet",
+          INSTRUCTION:
+            "A tool de transcrição ainda está em desenvolvimento. Sua resposta DEVE SER: 'Ainda não tenho acesso direto à transcrição completa desse vídeo — essa feature tá saindo do forno. Mas posso te passar pra Scripts gerar hooks inspirados nesse viral. Quer?'. PROIBIDO inventar uma transcrição, hooks ou estrutura. Nem como exemplo. Nada.",
+        };
       },
     }),
 
@@ -548,6 +598,9 @@ export async function POST(request: Request) {
     tools,
     stopWhen: stepCountIs(3),
     maxOutputTokens: 8192,
+    // Temperature 0 pro Virais — modelo SÓ copia formatted_response da tool.
+    // Scripts pode ficar criativo. Info/Help meio termo.
+    temperature: agent === "viral" ? 0 : agent === "script" ? 0.7 : 0.2,
     abortSignal: abortController.signal,
     providerOptions: {
       google: {
