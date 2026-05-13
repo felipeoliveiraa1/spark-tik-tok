@@ -1,11 +1,74 @@
+"use client";
+
+import * as React from "react";
 import Link from "next/link";
-import { Mail, ArrowRight, Search, Flame, Pen, MessageCircle } from "lucide-react";
+import { Mail, ArrowRight, Lock, Search, Flame, Pen, MessageCircle, AlertCircle } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { SparkMark } from "@/components/atoms/spark-mark";
 import { SparkWordmark } from "@/components/atoms/spark-wordmark";
 import { SInput } from "@/components/atoms/s-input";
 import { SButton } from "@/components/atoms/s-button";
 import { loginAction } from "@/lib/auth";
+
+function LoginForm({ desktop = false }: { desktop?: boolean }) {
+  const [error, setError] = React.useState<string | null>(null);
+  const [pending, setPending] = React.useState(false);
+
+  async function onSubmit(formData: FormData) {
+    setError(null);
+    setPending(true);
+    const result = await loginAction(formData);
+    setPending(false);
+    if (result && "error" in result) {
+      setError(result.error);
+    }
+  }
+
+  return (
+    <form action={onSubmit}>
+      <div className="text-[12px] text-spark-ink-50 font-semibold mb-1.5 tracking-[0.04em] uppercase">
+        Email
+      </div>
+      <SInput
+        name="email"
+        placeholder="seu@email.com"
+        Icon={Mail}
+        type="email"
+        autoComplete="email"
+        required
+      />
+      <div className="h-2.5" />
+      <div className="text-[12px] text-spark-ink-50 font-semibold mb-1.5 tracking-[0.04em] uppercase">
+        Senha
+      </div>
+      <SInput
+        name="password"
+        placeholder="••••••••"
+        Icon={Lock}
+        type="password"
+        autoComplete="current-password"
+        required
+      />
+      {error && (
+        <div className="mt-3 px-3.5 py-2.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-[13px] inline-flex items-center gap-2 w-full">
+          <AlertCircle size={14} strokeWidth={2} />
+          {error}
+        </div>
+      )}
+      <div className="h-3" />
+      <SButton
+        type="submit"
+        variant="primary"
+        size={desktop ? "lg" : "lg"}
+        full
+        IconRight={ArrowRight}
+        disabled={pending}
+      >
+        {pending ? "Entrando…" : "Entrar"}
+      </SButton>
+    </form>
+  );
+}
 
 function LoginMobile() {
   return (
@@ -27,23 +90,7 @@ function LoginMobile() {
         </p>
 
         <div className="mt-8">
-          <div className="text-[12px] text-spark-ink-50 font-semibold mb-2 tracking-[0.04em] uppercase">
-            Seu email
-          </div>
-          <form action={loginAction}>
-            <SInput
-              name="email"
-              defaultValue="maria@criadoras.com"
-              placeholder="seu@email.com"
-              Icon={Mail}
-              type="email"
-              autoComplete="email"
-            />
-            <div className="h-3" />
-            <SButton type="submit" variant="primary" size="lg" full IconRight={ArrowRight}>
-              Receber link de acesso
-            </SButton>
-          </form>
+          <LoginForm />
         </div>
 
         <Link
@@ -52,7 +99,7 @@ function LoginMobile() {
         >
           <div>
             <div className="text-[13px] font-bold text-spark-ink">Ainda não tem acesso?</div>
-            <div className="text-[12px] text-spark-ink-50 mt-0.5">Compra agora e recebe o link no email</div>
+            <div className="text-[12px] text-spark-ink-50 mt-0.5">Compra agora e recebe email com senha</div>
           </div>
           <ArrowRight size={18} strokeWidth={1.7} className="text-spark-brand" />
         </Link>
@@ -78,7 +125,6 @@ const desktopFeatures = [
 function LoginDesktop() {
   return (
     <div className="flex-1 min-h-dvh flex w-full">
-      {/* Brand panel */}
       <div className="flex-1 p-14 relative overflow-hidden text-white bg-brand-grad-hero flex flex-col justify-between">
         <SparkWordmark size={22} white />
         <div>
@@ -111,40 +157,20 @@ function LoginDesktop() {
             ))}
           </div>
         </div>
-        <div className="text-[11px] opacity-55 font-mono">v1.4.0 · pwa · onboarded para Kiwify</div>
+        <div className="text-[11px] opacity-55 font-mono">v1.4.0 · pwa</div>
       </div>
 
-      {/* Form panel */}
       <div className="w-[480px] p-14 bg-spark-bg flex flex-col justify-center">
         <div className="text-[13px] font-bold text-spark-ink-50 uppercase tracking-[0.06em]">Entrar</div>
         <h2 className="text-[32px] font-extrabold tracking-[-0.02em] mt-2 leading-[1.15]">
           Bem-vinda de volta.
         </h2>
-        <p className="text-[14px] text-spark-ink-50 mt-2">Mandamos um link mágico no seu email.</p>
+        <p className="text-[14px] text-spark-ink-50 mt-2">
+          Use o email e senha que você recebeu na compra.
+        </p>
 
-        <form action={loginAction} className="mt-7">
-          <div className="text-[12px] font-bold text-spark-ink-50 mb-1.5 tracking-[0.04em] uppercase">
-            Email
-          </div>
-          <SInput
-            name="email"
-            defaultValue="maria@criadoras.com"
-            Icon={Mail}
-            type="email"
-            autoComplete="email"
-          />
-          <div className="h-3" />
-          <SButton type="submit" variant="primary" size="lg" full IconRight={ArrowRight}>
-            Receber link de acesso
-          </SButton>
-        </form>
-
-        <div className="mt-3.5 px-3.5 py-3 rounded-xl bg-spark-surface border border-spark-hairline flex items-center gap-2.5">
-          <Mail size={18} strokeWidth={1.7} className="text-spark-brand" />
-          <div className="flex-1">
-            <div className="text-[13px] font-bold">Confere sua caixa de entrada</div>
-            <div className="text-[11px] text-spark-ink-50">O link expira em 15 minutos.</div>
-          </div>
+        <div className="mt-7">
+          <LoginForm desktop />
         </div>
 
         <div className="flex-1" />
@@ -155,7 +181,7 @@ function LoginDesktop() {
         >
           <div>
             <div className="text-[13px] font-bold">Ainda não tem acesso?</div>
-            <div className="text-[11px] opacity-80 mt-0.5">Compra agora e recebe o link no email.</div>
+            <div className="text-[11px] opacity-80 mt-0.5">Compra agora e recebe senha no email.</div>
           </div>
           <SButton size="sm" variant="dark" IconRight={ArrowRight}>
             Comprar

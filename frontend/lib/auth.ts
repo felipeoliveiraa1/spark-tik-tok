@@ -1,41 +1,98 @@
 "use server";
 
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { getSupabaseServer, getCurrentProfile } from "@/lib/supabase-server";
 
-const SESSION_COOKIE = "spark-session";
-const ONBOARDED_COOKIE = "spark-onboarded";
-const COOKIE_OPTS = {
-  httpOnly: false,
-  sameSite: "lax" as const,
-  path: "/",
-  maxAge: 60 * 60 * 24 * 30,
-};
+export type AuthError = { error: string };
 
-export async function loginAction(formData: FormData) {
-  const email = (formData.get("email") as string | null) ?? "demo@spark.com";
-  const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE, encodeURIComponent(email), COOKIE_OPTS);
+export async function loginAction(formData: FormData): Promise<AuthError | void> {
+  const email = (formData.get("email") as string | null)?.trim().toLowerCase();
+  const password = formData.get("password") as string | null;
 
-  const onboarded = cookieStore.get(ONBOARDED_COOKIE)?.value === "true";
-  redirect(onboarded ? "/chat" : "/welcome");
+  if (!email || !password) {
+    return { error: "Informe email e senha." };
+  }
+
+  const supabase = await getSupabaseServer();
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) {
+    return { error: friendlyError(error.message) };
+  }
+
+  const profile = await getCurrentProfile();
+  if (profile?.must_reset_password) {
+    redirect("/conta?reset=1");
+  }
+  if (!profile?.name || !profile?.niche) {
+    redirect("/welcome");
+  }
+  redirect("/chat");
 }
 
-export async function completeOnboardingAction() {
-  const cookieStore = await cookies();
-  cookieStore.set(ONBOARDED_COOKIE, "true", COOKIE_OPTS);
+export async function completeOnboardingAction(formData: FormData): Promise<AuthError | void> {
+  const name = (formData.get("name") as string | null)?.trim();
+  const niche = (formData.get("niche") as string | null)?.trim();
+
+  if (!name) {
+    return { error: "Coloca seu nome." };
+  }
+
+  const supabase = await getSupabaseServer();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) {
+    redirect("/login");
+  }
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      name,
+      niche: niche || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", userData.user!.id);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  redirect("/chat");
+}
+
+export async function resetPasswordAction(formData: FormData): Promise<AuthError | void> {
+  const password = formData.get("password") as string | null;
+  if (!password || password.length < 8) {
+    return { error: "Senha precisa ter no mínimo 8 caracteres." };
+  }
+
+  const supabase = await getSupabaseServer();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) {
+    redirect("/login");
+  }
+
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) {
+    return { error: error.message };
+  }
+
+  await supabase
+    .from("profiles")
+    .update({ must_reset_password: false })
+    .eq("id", userData.user!.id);
+
   redirect("/chat");
 }
 
 export async function logoutAction() {
-  const cookieStore = await cookies();
-  cookieStore.delete(SESSION_COOKIE);
-  cookieStore.delete(ONBOARDED_COOKIE);
+  const supabase = await getSupabaseServer();
+  await supabase.auth.signOut();
   redirect("/login");
 }
 
-export async function getSessionEmail(): Promise<string | null> {
-  const cookieStore = await cookies();
-  const raw = cookieStore.get(SESSION_COOKIE)?.value;
-  return raw ? decodeURIComponent(raw) : null;
+function friendlyError(msg: string): string {
+  const lower = msg.toLowerCase();
+  if (lower.includes("invalid login credentials")) return "Email ou senha incorretos.";
+  if (lower.includes("email not confirmed")) return "Email ainda não confirmado.";
+  return msg;
 }

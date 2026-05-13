@@ -1,35 +1,69 @@
-import { MoreHorizontal, LogOut } from "lucide-react";
+import { redirect } from "next/navigation";
+import { MoreHorizontal, LogOut, KeyRound } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { AppHeader } from "@/components/layout/app-header";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { SBadge } from "@/components/atoms/s-badge";
-import { getSessionEmail, logoutAction } from "@/lib/auth";
+import { getCurrentProfile } from "@/lib/supabase-server";
+import { logoutAction } from "@/lib/auth";
+import { ResetPasswordForm } from "./reset-password-form";
 
-function deriveName(email: string | null): { full: string; initial: string } {
-  if (!email) return { full: "Criadora", initial: "C" };
-  const local = email.split("@")[0] ?? "criadora";
-  const parts = local.split(/[._-]/).filter(Boolean);
-  const full = parts.map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(" ") || "Criadora";
-  return { full, initial: full.charAt(0).toUpperCase() };
+type ContaPageProps = {
+  searchParams?: Promise<{ reset?: string }>;
+};
+
+function getInitial(name: string | null | undefined, email: string): string {
+  const source = name?.trim() || email;
+  return source.charAt(0).toUpperCase();
 }
 
-function AccountBody({ desktop = false, email, name }: { desktop?: boolean; email: string; name: { full: string; initial: string } }) {
+function ContaBody({
+  desktop = false,
+  email,
+  name,
+  niche,
+  planActive,
+  showReset,
+}: {
+  desktop?: boolean;
+  email: string;
+  name: string;
+  niche: string | null;
+  planActive: boolean;
+  showReset: boolean;
+}) {
   return (
     <div className={desktop ? "max-w-[560px]" : ""}>
       <div className="flex items-center gap-3.5">
         <div className={`${desktop ? "w-20 h-20 text-3xl" : "w-16 h-16 text-2xl"} rounded-full text-white flex items-center justify-center font-extrabold bg-brand-grad`}>
-          {name.initial}
+          {getInitial(name, email)}
         </div>
         <div>
-          <div className={`font-extrabold ${desktop ? "text-[24px]" : "text-[20px]"}`}>{name.full}</div>
+          <div className={`font-extrabold ${desktop ? "text-[24px]" : "text-[20px]"}`}>{name || "Criadora"}</div>
           <div className="text-[13px] text-spark-ink-50 font-mono">{email}</div>
-          <div className="mt-1.5">
-            <SBadge tone="brand">Spark</SBadge>
+          <div className="mt-1.5 flex gap-1.5">
+            <SBadge tone={planActive ? "good" : "warn"}>{planActive ? "Plano ativo" : "Plano inativo"}</SBadge>
+            {niche && <SBadge>{niche}</SBadge>}
           </div>
         </div>
       </div>
 
-      <div className="mt-7 bg-spark-surface rounded-[18px] border border-spark-hairline overflow-hidden">
+      {showReset && (
+        <div className="mt-6 p-4 rounded-[18px] bg-spark-brand-soft border border-spark-brand/20">
+          <div className="flex items-center gap-2 text-[13px] font-bold text-spark-brand-deep">
+            <KeyRound size={16} strokeWidth={1.7} />
+            Defina uma senha sua
+          </div>
+          <p className="text-[12.5px] text-spark-ink-70 mt-1.5">
+            Você entrou com a senha temporária. Cria uma nova agora pra ninguém usar a antiga.
+          </p>
+          <div className="mt-3">
+            <ResetPasswordForm />
+          </div>
+        </div>
+      )}
+
+      <div className="mt-6 bg-spark-surface rounded-[18px] border border-spark-hairline overflow-hidden">
         <form action={logoutAction}>
           <button
             type="submit"
@@ -51,32 +85,47 @@ function AccountBody({ desktop = false, email, name }: { desktop?: boolean; emai
   );
 }
 
-async function AccountMobile() {
-  const email = (await getSessionEmail()) ?? "demo@spark.com";
-  const name = deriveName(email);
-  return (
-    <>
-      <AppHeader TrailingIcon={MoreHorizontal} showAvatar={false} />
-      <div className="flex-1 overflow-auto px-4">
-        <AccountBody email={email} name={name} />
-      </div>
-      <BottomNav active="conta" />
-    </>
-  );
-}
+export default async function ContaPage({ searchParams }: ContaPageProps) {
+  const profile = await getCurrentProfile();
+  if (!profile) {
+    redirect("/login");
+  }
 
-async function AccountDesktop() {
-  const email = (await getSessionEmail()) ?? "demo@spark.com";
-  const name = deriveName(email);
-  return (
-    <div className="flex-1 overflow-auto py-8 px-12">
-      <div className="text-[13px] font-bold text-spark-ink-50 tracking-[0.06em] uppercase">Conta</div>
-      <h1 className="text-[36px] font-extrabold tracking-[-0.02em] mt-1 mb-7">Minha conta</h1>
-      <AccountBody desktop email={email} name={name} />
-    </div>
-  );
-}
+  const params = (await searchParams) ?? {};
+  const showReset = params.reset === "1" || profile.must_reset_password === true;
 
-export default async function ContaPage() {
-  return <ResponsiveShell mobile={await AccountMobile()} desktop={await AccountDesktop()} active="conta" />;
+  return (
+    <ResponsiveShell
+      mobile={
+        <>
+          <AppHeader TrailingIcon={MoreHorizontal} showAvatar={false} />
+          <div className="flex-1 overflow-auto px-4">
+            <ContaBody
+              email={profile.email}
+              name={profile.name ?? ""}
+              niche={profile.niche}
+              planActive={profile.plan_active}
+              showReset={showReset}
+            />
+          </div>
+          <BottomNav active="conta" />
+        </>
+      }
+      desktop={
+        <div className="flex-1 overflow-auto py-8 px-12">
+          <div className="text-[13px] font-bold text-spark-ink-50 tracking-[0.06em] uppercase">Conta</div>
+          <h1 className="text-[36px] font-extrabold tracking-[-0.02em] mt-1 mb-7">Minha conta</h1>
+          <ContaBody
+            desktop
+            email={profile.email}
+            name={profile.name ?? ""}
+            niche={profile.niche}
+            planActive={profile.plan_active}
+            showReset={showReset}
+          />
+        </div>
+      }
+      active="conta"
+    />
+  );
 }

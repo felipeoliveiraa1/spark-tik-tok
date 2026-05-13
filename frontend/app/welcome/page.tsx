@@ -1,72 +1,112 @@
-import { ArrowRight } from "lucide-react";
+"use client";
+
+import * as React from "react";
+import { ArrowRight, AlertCircle } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { SparkMark } from "@/components/atoms/spark-mark";
-import { AgentTile } from "@/components/atoms/agent-tile";
+import { SInput } from "@/components/atoms/s-input";
 import { SButton } from "@/components/atoms/s-button";
-import { type AgentId } from "@/lib/agents";
-import { completeOnboardingAction, getSessionEmail } from "@/lib/auth";
+import { completeOnboardingAction } from "@/lib/auth";
 
-const items: { agent: AgentId; t: string; d: string }[] = [
-  { agent: "info", t: "Análise de produto", d: "Sobe a foto, ele extrai público, dor, preço e concorrentes." },
-  { agent: "viral", t: "Virais da semana", d: "Acha o que tá bombando no TikTok Shop com receita estimada." },
-  { agent: "script", t: "Scripts com hook", d: "Gera hooks usando neuromarketing e gatilhos cerebrais." },
-  { agent: "help", t: "Tira-dúvidas", d: "Suporte sobre TikTok Shop, regras, conta de criador, frete." },
+const NICHES = [
+  "Beleza e skincare",
+  "Suplementos e saúde",
+  "Moda feminina",
+  "Casa e decoração",
+  "Acessórios",
+  "Outro",
 ];
 
-function firstName(email: string | null): string {
-  if (!email) return "criadora";
-  const local = email.split("@")[0] ?? "criadora";
-  return local.split(/[._-]/)[0] ?? "criadora";
-}
+function WelcomeForm({ desktop = false }: { desktop?: boolean }) {
+  const [error, setError] = React.useState<string | null>(null);
+  const [pending, setPending] = React.useState(false);
+  const [niche, setNiche] = React.useState(NICHES[0]);
 
-function WelcomeContent({ desktop = false, name }: { desktop?: boolean; name: string }) {
+  async function onSubmit(formData: FormData) {
+    setError(null);
+    setPending(true);
+    const result = await completeOnboardingAction(formData);
+    setPending(false);
+    if (result && "error" in result) {
+      setError(result.error);
+    }
+  }
+
   return (
-    <div className={`flex flex-col flex-1 ${desktop ? "max-w-[640px] mx-auto py-16 px-8" : "px-5"}`}>
+    <form action={onSubmit} className={`flex flex-col flex-1 ${desktop ? "max-w-[480px] mx-auto py-14 px-8" : "px-5"}`}>
       <div className={desktop ? "" : "pt-[70px]"}>
         <SparkMark size={desktop ? 44 : 36} />
         <div className="mt-7 text-[13px] font-bold text-spark-brand uppercase tracking-[0.06em]">
-          Boa, {name} 👋
+          Bem-vinda
         </div>
-        <h1 className={`font-extrabold tracking-[-0.025em] mt-2 leading-[1.1] ${desktop ? "text-[44px]" : "text-[30px]"}`}>
-          Bora vender
+        <h1 className={`font-extrabold tracking-[-0.025em] mt-2 leading-[1.1] ${desktop ? "text-[40px]" : "text-[28px]"}`}>
+          Vamos te conhecer
           <br />
-          no TikTok Shop?
+          rapidinho.
         </h1>
-        <p className="text-[14px] text-spark-ink-50 mt-2.5">Você tem 4 agentes de IA prontos:</p>
+        <p className="text-[14px] text-spark-ink-50 mt-2.5 max-w-[400px]">
+          A IA usa essas informações pra calibrar o tom dos scripts e as recomendações de virais.
+        </p>
       </div>
 
-      <div className={`mt-[18px] grid gap-2.5 ${desktop ? "grid-cols-2" : "grid-cols-1"}`}>
-        {items.map((it) => (
-          <div key={it.agent} className="flex gap-3 p-3.5 rounded-2xl bg-spark-surface border border-spark-hairline">
-            <AgentTile agent={it.agent} size={42} />
-            <div className="flex-1 min-w-0">
-              <div className="text-[14px] font-bold">{it.t}</div>
-              <div className="text-[12.5px] text-spark-ink-50 leading-[1.4] mt-0.5">{it.d}</div>
-            </div>
-          </div>
-        ))}
+      <div className="mt-7">
+        <div className="text-[12px] font-bold text-spark-ink-50 mb-1.5 uppercase tracking-[0.04em]">
+          Como podemos te chamar?
+        </div>
+        <SInput
+          name="name"
+          placeholder="Seu primeiro nome"
+          autoComplete="given-name"
+          required
+        />
       </div>
+
+      <div className="mt-4">
+        <div className="text-[12px] font-bold text-spark-ink-50 mb-1.5 uppercase tracking-[0.04em]">
+          Qual o nicho que você foca?
+        </div>
+        <input type="hidden" name="niche" value={niche} />
+        <div className="flex flex-wrap gap-1.5">
+          {NICHES.map((n) => (
+            <button
+              key={n}
+              type="button"
+              onClick={() => setNiche(n)}
+              className={`px-3 py-2 rounded-full border text-[13px] font-semibold transition-colors ${
+                niche === n
+                  ? "bg-spark-ink text-white border-spark-ink"
+                  : "bg-spark-surface border-spark-hairline text-spark-ink-70 hover:border-spark-ink/30"
+              }`}
+            >
+              {n}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {error && (
+        <div className="mt-4 px-3.5 py-2.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-[13px] inline-flex items-center gap-2">
+          <AlertCircle size={14} strokeWidth={2} />
+          {error}
+        </div>
+      )}
 
       <div className="flex-1" />
 
-      <div className={`pb-[30px] ${desktop ? "pt-8" : "pt-[18px]"}`}>
-        <form action={completeOnboardingAction}>
-          <SButton type="submit" variant="primary" size="lg" full IconRight={ArrowRight}>
-            Começar
-          </SButton>
-        </form>
+      <div className={`pb-[30px] ${desktop ? "pt-8" : "pt-6"}`}>
+        <SButton type="submit" variant="primary" size="lg" full IconRight={ArrowRight} disabled={pending}>
+          {pending ? "Salvando…" : "Começar a usar"}
+        </SButton>
       </div>
-    </div>
+    </form>
   );
 }
 
-export default async function WelcomePage() {
-  const email = await getSessionEmail();
-  const name = firstName(email);
+export default function WelcomePage() {
   return (
     <ResponsiveShell
-      mobile={<WelcomeContent name={name} />}
-      desktop={<WelcomeContent desktop name={name} />}
+      mobile={<WelcomeForm />}
+      desktop={<WelcomeForm desktop />}
       fullBleed
     />
   );

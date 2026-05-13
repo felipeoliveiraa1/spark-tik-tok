@@ -11,6 +11,10 @@ type Props = {
   className?: string;
   name?: string;
   autoComplete?: string;
+  required?: boolean;
+  minLength?: number;
+  maxLength?: number;
+  disabled?: boolean;
 };
 
 export function SInput({
@@ -21,6 +25,10 @@ export function SInput({
   className,
   name,
   autoComplete,
+  required,
+  minLength,
+  maxLength,
+  disabled,
 }: Props) {
   return (
     <label
@@ -36,7 +44,11 @@ export function SInput({
         autoComplete={autoComplete}
         defaultValue={defaultValue}
         placeholder={placeholder}
-        className="flex-1 border-none outline-none bg-transparent text-[15px] text-spark-ink tracking-[-0.01em] placeholder:text-spark-ink-35"
+        required={required}
+        minLength={minLength}
+        maxLength={maxLength}
+        disabled={disabled}
+        className="flex-1 border-none outline-none bg-transparent text-[15px] text-spark-ink tracking-[-0.01em] placeholder:text-spark-ink-35 disabled:opacity-60"
       />
     </label>
   );
