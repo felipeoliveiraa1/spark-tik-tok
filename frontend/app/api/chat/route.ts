@@ -143,11 +143,17 @@ function buildViralTools(supabase: SupabaseClient, userId: string): ToolSet {
       description:
         "Busca vídeos que estão viralizando no TikTok Shop. Use sempre que a aluna pedir 'o que tá bombando', 'virais da semana', 'top vídeos'. Retorna criador, métricas (views, GMV em BRL), hook e URL clicável do TikTok.",
       inputSchema: z.object({
+        query: z
+          .string()
+          .optional()
+          .describe(
+            "Palavra-chave de busca livre (ex: 'academia', 'creatina', 'skincare'). Use quando a aluna mencionar um termo que NÃO bate exatamente com o enum de niche. Preferir query a niche pra termos específicos. Ex: 'virais de academia' → query: 'academia'.",
+          ),
         niche: z
           .string()
           .optional()
           .describe(
-            "Nicho do produto. Valores aceitos: beleza, saude, moda, casa, eletronicos, pet, fitness, acessorios, infantil, outros.",
+            "Nicho amplo (só se a aluna falar exatamente um destes): beleza, saude, moda, casa, eletronicos, pet, fitness, acessorios, infantil, outros. Pra qualquer outra palavra, usa query.",
           ),
         country: z
           .string()
@@ -303,18 +309,40 @@ function buildViralTools(supabase: SupabaseClient, userId: string): ToolSet {
 
     get_viral_details: tool({
       description:
-        "Transcrição do vídeo viral. AINDA EM DESENVOLVIMENTO — não tente usar essa tool antes da feature estar pronta. Sempre retorna { available: false }. Quando a aluna pedir transcrição, fale que ainda não tem acesso direto e ofereça delegar pra Scripts gerar hooks inspirados.",
+        "Pega a TRANSCRIÇÃO REAL do vídeo viral (o que a criadora fala). Use quando a aluna pedir 'o que ela disse no vídeo', 'me mostra a transcrição', 'qual o gancho dela'. A resposta vem direto do painel — não invente nada baseado no título/hashtags.",
       inputSchema: z.object({
-        video_id: z.string().describe("ID do vídeo (não usado nesta versão)."),
+        video_id: z
+          .string()
+          .describe("ID do vídeo retornado por search_virals (campo 'id')."),
       }),
-      execute: async () => {
-        return {
-          ok: false,
-          available: false,
-          error: "transcription_not_available_yet",
-          INSTRUCTION:
-            "A tool de transcrição ainda está em desenvolvimento. Sua resposta DEVE SER: 'Ainda não tenho acesso direto à transcrição completa desse vídeo — essa feature tá saindo do forno. Mas posso te passar pra Scripts gerar hooks inspirados nesse viral. Quer?'. PROIBIDO inventar uma transcrição, hooks ou estrutura. Nem como exemplo. Nada.",
-        };
+      execute: async ({ video_id }) => {
+        try {
+          const data = await getVyralTranscription(video_id);
+          if (!data.full || data.full.trim().length < 10) {
+            return {
+              ok: false,
+              error: "empty_transcription",
+              INSTRUCTION:
+                "Transcrição vazia ou indisponível pra esse vídeo. Resposta: 'A transcrição desse vídeo ainda não foi processada na base. Quer que eu te passe pra Scripts gerar hooks inspirados nele baseado no que sei (criador, métricas, caption)?'. PROIBIDO inventar uma transcrição.",
+            };
+          }
+          return {
+            ok: true,
+            video_id: data.videoId,
+            language: data.language,
+            transcription: data.full,
+            caption: data.contexto ?? null,
+            hook_first_sentence: data.structure.hook?.text ?? null,
+          };
+        } catch (err) {
+          const msg = err instanceof ScraperClientError ? err.message : "falha desconhecida";
+          return {
+            ok: false,
+            error: msg,
+            INSTRUCTION:
+              "Tool retornou erro. Resposta: 'Tive uma instabilidade pra puxar a transcrição agora — tenta de novo em 1 min ou peço pra Scripts gerar hooks com base no que já temos.'. PROIBIDO inventar transcrição.",
+          };
+        }
       },
     }),
 

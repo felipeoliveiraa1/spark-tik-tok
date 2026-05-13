@@ -31,6 +31,8 @@ import { log } from "../logger.js";
 
 const FEED_URL = "https://app.vyral.com.br/";
 const CARD_SELECTOR = 'div[id^="card-"]';
+const SEARCH_INPUT_SELECTOR = 'input[placeholder*="Buscar vídeo"]';
+const SEARCH_SUBMIT_SELECTOR = 'form.css-1asj9th button[type="submit"]';
 
 const NICHE_LABEL: Record<VyralNiche, string[]> = {
   beleza: ["Beleza & Cuidados Pessoais", "Beleza"],
@@ -280,6 +282,110 @@ async function dumpDebugSnapshot(page: Page, reason: string): Promise<void> {
   }
 }
 
+/**
+ * Captura a transcrição de um vídeo específico clicando no botão "Transcrição"
+ * do card. Vyral abre um modal com o texto traduzido completo + caption como
+ * título. Aplica busca pelo videoId pra achar o card certo.
+ */
+export async function scrapeTranscription(
+  page: Page,
+  videoId: string,
+): Promise<{ videoId: string; caption: string | null; transcription: string } | null> {
+  // Navega se ainda não está no feed
+  if (!page.url().startsWith(FEED_URL)) {
+    await page.goto(FEED_URL, { waitUntil: "domcontentloaded", timeout: 30_000 });
+  }
+
+  // Aguarda os cards renderizarem
+  try {
+    await page.locator(CARD_SELECTOR).first().waitFor({ timeout: 20_000 });
+  } catch {
+    log.warn("scrape-transcription: nenhum card visível");
+    return null;
+  }
+
+  // Acha o índice (1-based) do card que tem o thumbnail com esse videoId.
+  // Usa page.$$eval pra fazer no DOM em uma chamada.
+  const cardIndex = await page.$$eval(
+    CARD_SELECTOR,
+    (cards, vid) => {
+      const slice = cards as HTMLElement[];
+      for (let i = 0; i < slice.length; i++) {
+        const img = slice[i].querySelector("img.chakra-image.css-1phd9a0") as HTMLImageElement | null;
+        const src = img?.getAttribute("src") ?? "";
+        const decoded = decodeURIComponent(src);
+        if (decoded.includes(`tiktok-video/${vid}`)) {
+          // O id do card no DOM é "card-N" — extrair N
+          const idMatch = slice[i].id.match(/card-(\d+)/);
+          if (idMatch) return parseInt(idMatch[1], 10);
+        }
+      }
+      return -1;
+    },
+    videoId,
+  );
+
+  if (cardIndex < 0) {
+    log.warn({ videoId }, "scrape-transcription: card não encontrado no feed atual");
+    return null;
+  }
+
+  log.info({ videoId, cardIndex }, "scrape-transcription: card encontrado, abrindo modal");
+
+  // Clica no botão transcricao-card-N
+  await page.locator(`#transcricao-card-${cardIndex}`).click({ timeout: 8_000 });
+
+  // Aguarda o dialog abrir
+  const dialog = page.locator('[role="dialog"][data-state="open"]');
+  try {
+    await dialog.waitFor({ timeout: 15_000 });
+  } catch {
+    log.warn("scrape-transcription: modal não abriu");
+    return null;
+  }
+
+  // Vyral analisa a transcrição on-demand — às vezes o body começa vazio e
+  // a chakra-code aparece depois. Damos um tempo extra pra processar.
+  let transcription = "";
+  for (let attempt = 0; attempt < 6; attempt++) {
+    transcription = (
+      await dialog
+        .locator(".chakra-code")
+        .first()
+        .innerText()
+        .catch(() => "")
+    ).trim();
+    if (transcription.length > 30) break;
+    await page.waitForTimeout(2_000);
+  }
+
+  const caption = (
+    await dialog
+      .locator(".chakra-dialog__title")
+      .first()
+      .innerText()
+      .catch(() => "")
+  ).trim();
+
+  // Fecha o modal pra deixar a página pronta pra próxima ação
+  await dialog
+    .locator('[aria-label="Close"]')
+    .first()
+    .click({ timeout: 5_000 })
+    .catch(() => {});
+
+  if (!transcription) {
+    log.warn({ videoId }, "scrape-transcription: modal abriu mas não tinha código");
+    return { videoId, caption: caption || null, transcription: "" };
+  }
+
+  log.info(
+    { videoId, len: transcription.length },
+    "scrape-transcription: transcrição extraída",
+  );
+  return { videoId, caption: caption || null, transcription };
+}
+
 export async function scrapeFeed(
   page: Page,
   params: VyralSearchInput,
@@ -304,9 +410,32 @@ export async function scrapeFeed(
     await dumpDebugSnapshot(page, "no-filters-no-cards");
   }
 
+  // Se o caller passou query (palavra-chave), aplica no campo de busca
+  // do painel. Vyral re-renderiza a lista com os resultados filtrados.
+  const country = params.country ?? "BR";
+  if (params.query && params.query.trim()) {
+    try {
+      const input = page.locator(SEARCH_INPUT_SELECTOR).first();
+      await input.waitFor({ timeout: 8_000 });
+      await input.fill(params.query.trim());
+      const submit = page.locator(SEARCH_SUBMIT_SELECTOR).first();
+      if ((await submit.count()) > 0) {
+        await submit.click();
+      } else {
+        await input.press("Enter");
+      }
+      await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
+      log.info({ query: params.query }, "scrape-feed: busca por palavra-chave aplicada");
+    } catch (err) {
+      log.warn(
+        { err: err instanceof Error ? err.message : err, query: params.query },
+        "scrape-feed: falhou aplicar busca por palavra-chave",
+      );
+    }
+  }
+
   // Aplica filtros (best-effort). O Vyral só expõe País/Período/Ordenar —
   // nicho é filtrado pós-extração porque o painel não tem essa opção.
-  const country = params.country ?? "BR";
   await pickMenuOption(page, "País:", countryLabel(country));
   await pickMenuOption(page, "Período:", periodLabelFromDays(params.lastDays));
   await pickMenuOption(page, "Ordenar por:", sortLabel(params.sortBy));
