@@ -423,9 +423,6 @@ export async function POST(request: Request) {
 
   const finalMessages = attachImages(messages, attachments);
 
-  const fallback =
-    "Tive uma instabilidade pra puxar os dados agora — tenta de novo em 1 minutinho ou reformula a pergunta.";
-
   const result = streamText({
     model: models[agent],
     system: SYSTEM_PROMPTS[agent],
@@ -433,8 +430,6 @@ export async function POST(request: Request) {
     tools,
     stopWhen: stepCountIs(6),
     maxOutputTokens: 8192,
-    // Desliga o "thinking" do Gemini 2.5 Flash. Sem isso, o modelo consome todo
-    // o budget de output em raciocínio interno e termina sem emitir texto.
     providerOptions: {
       google: {
         thinkingConfig: {
@@ -447,27 +442,73 @@ export async function POST(request: Request) {
       console.error("[api/chat streamText error]", {
         agent,
         message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
       });
     },
-    onFinish: async ({ text, usage, finishReason }) => {
-      const finalText = text?.trim() ? text : fallback;
-      await supabase.from("conversation_messages").insert({
-        conversation_id: conversationId,
-        role: "assistant",
-        content: finalText,
-        tokens_in: usage?.inputTokens ?? null,
-        tokens_out: usage?.outputTokens ?? null,
-      });
-      if (!text?.trim()) {
-        console.warn("[api/chat] empty text from model", {
-          agent,
-          conversationId,
-          finishReason,
-          usage,
+  });
+
+  // Stream manual: dá pra capturar erros do streamText em runtime, mostrar
+  // diagnóstico inline quando o modelo retorna vazio, e persistir tudo.
+  const encoder = new TextEncoder();
+  let accumulated = "";
+
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      try {
+        for await (const chunk of result.textStream) {
+          accumulated += chunk;
+          controller.enqueue(encoder.encode(chunk));
+        }
+
+        const [finishReason, usage] = await Promise.all([result.finishReason, result.usage]);
+
+        if (!accumulated.trim()) {
+          const diagnostic = `Não consegui formar uma resposta (motivo=${finishReason}, tokens_out=${usage?.outputTokens ?? "?"}). Tenta reformular ou manda de novo.`;
+          accumulated = diagnostic;
+          controller.enqueue(encoder.encode(diagnostic));
+          console.warn("[api/chat] empty model response", {
+            agent,
+            conversationId,
+            finishReason,
+            usage,
+            hasTools: !!tools,
+          });
+        } else {
+          console.log("[api/chat] ok", {
+            agent,
+            finishReason,
+            outputTokens: usage?.outputTokens,
+          });
+        }
+
+        await supabase.from("conversation_messages").insert({
+          conversation_id: conversationId,
+          role: "assistant",
+          content: accumulated,
+          tokens_in: usage?.inputTokens ?? null,
+          tokens_out: usage?.outputTokens ?? null,
         });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error("[api/chat] runtime error", { agent, conversationId, message });
+        const errText = `⚠️ Erro técnico: ${message.slice(0, 220)}`;
+        controller.enqueue(encoder.encode(errText));
+        await supabase.from("conversation_messages").insert({
+          conversation_id: conversationId,
+          role: "assistant",
+          content: errText,
+        });
+      } finally {
+        controller.close();
       }
     },
   });
 
-  return result.toTextStreamResponse();
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/plain; charset=utf-8",
+      "Cache-Control": "no-store, no-transform",
+      "X-Accel-Buffering": "no",
+    },
+  });
 }
