@@ -3,6 +3,12 @@
 import * as React from "react";
 import { type AgentId } from "@/lib/agents";
 
+/**
+ * Conversation + folder store backed by Supabase (via /api/conversations,
+ * /api/folders). All reads go through a single SWR-like fetch on mount; writes
+ * use optimistic mutations so the UI stays snappy.
+ */
+
 export type Folder = {
   id: string;
   name: string;
@@ -14,7 +20,7 @@ export type Conversation = {
   id: string;
   title: string;
   agent: AgentId;
-  folderId: string;
+  folderId: string | null;
   preview: string;
   updatedAt: string;
   messageCount: number;
@@ -27,205 +33,171 @@ export type ChatMessage = {
   createdAt: string;
 };
 
-export type StoreSnapshot = {
-  folders: Folder[];
-  conversations: Conversation[];
+type ApiFolder = {
+  id: string;
+  name: string;
+  is_default: boolean;
+  sort_order: number;
+  created_at: string;
 };
 
-const STORAGE_KEY = "spark.conversations.v1";
-const MESSAGES_KEY = "spark.messages.v1";
-
-const DEFAULT_FOLDER_ID = "geral";
-
-const SEED: StoreSnapshot = {
-  folders: [{ id: DEFAULT_FOLDER_ID, name: "Geral", order: 0, isDefault: true }],
-  conversations: [],
+type ApiConversation = {
+  id: string;
+  agent: AgentId;
+  folder_id: string | null;
+  title: string;
+  preview: string;
+  message_count: number;
+  updated_at: string;
+  created_at: string;
 };
 
-function loadFromStorage(): StoreSnapshot {
-  if (typeof window === "undefined") return SEED;
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return SEED;
-    const parsed = JSON.parse(raw) as StoreSnapshot;
-    if (!Array.isArray(parsed.folders) || !Array.isArray(parsed.conversations)) return SEED;
-    if (!parsed.folders.some((f) => f.isDefault)) {
-      parsed.folders.unshift(SEED.folders[0]);
-    }
-    return parsed;
-  } catch {
-    return SEED;
-  }
+type ApiMessage = {
+  id: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  created_at: string;
+};
+
+function adaptFolder(f: ApiFolder): Folder {
+  return { id: f.id, name: f.name, order: f.sort_order, isDefault: f.is_default };
 }
 
-function saveToStorage(snapshot: StoreSnapshot) {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
-  } catch {
-    /* quota / private mode — ignore */
-  }
+function adaptConversation(c: ApiConversation): Conversation {
+  return {
+    id: c.id,
+    title: c.title,
+    agent: c.agent,
+    folderId: c.folder_id,
+    preview: c.preview,
+    updatedAt: c.updated_at,
+    messageCount: c.message_count,
+  };
 }
 
-function loadMessages(): Record<string, ChatMessage[]> {
-  if (typeof window === "undefined") return {};
-  try {
-    const raw = window.localStorage.getItem(MESSAGES_KEY);
-    return raw ? (JSON.parse(raw) as Record<string, ChatMessage[]>) : {};
-  } catch {
-    return {};
+async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(url, {
+    ...init,
+    headers: { "content-type": "application/json", ...(init?.headers ?? {}) },
+  });
+  if (!res.ok) {
+    const errText = await res.text().catch(() => res.statusText);
+    throw new Error(errText || `HTTP ${res.status}`);
   }
+  return (await res.json()) as T;
 }
 
-function saveMessages(all: Record<string, ChatMessage[]>) {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(MESSAGES_KEY, JSON.stringify(all));
-  } catch {
-    /* ignore */
-  }
-}
-
-function randomId(prefix: string) {
-  return `${prefix}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
-}
+// =================================================================
+// Store hook — list / mutate folders + conversations
+// =================================================================
 
 export function useConversationStore() {
-  const [snapshot, setSnapshot] = React.useState<StoreSnapshot>(SEED);
+  const [folders, setFolders] = React.useState<Folder[]>([]);
+  const [conversations, setConversations] = React.useState<Conversation[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
+  const refresh = React.useCallback(async () => {
+    try {
+      const data = await fetchJson<{ folders: ApiFolder[]; conversations: ApiConversation[] }>(
+        "/api/conversations",
+      );
+      setFolders(data.folders.map(adaptFolder));
+      setConversations(data.conversations.map(adaptConversation));
+    } catch {
+      /* user not auth'd or transient failure — sidebar just stays empty */
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   React.useEffect(() => {
-    setSnapshot(loadFromStorage());
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEY) setSnapshot(loadFromStorage());
-    };
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
-  }, []);
+    refresh();
+  }, [refresh]);
 
-  const mutate = React.useCallback((updater: (s: StoreSnapshot) => StoreSnapshot) => {
-    setSnapshot((prev) => {
-      const next = updater(prev);
-      saveToStorage(next);
-      return next;
+  const defaultFolderId = folders.find((f) => f.isDefault)?.id ?? null;
+
+  const createFolder = React.useCallback(async (name: string) => {
+    const created = await fetchJson<ApiFolder>("/api/folders", {
+      method: "POST",
+      body: JSON.stringify({ name }),
     });
+    const folder = adaptFolder(created);
+    setFolders((prev) => [...prev, folder]);
+    return folder.id;
   }, []);
 
-  const createFolder = React.useCallback(
-    (name: string) => {
-      const id = randomId("folder");
-      mutate((s) => ({
-        ...s,
-        folders: [...s.folders, { id, name: name.trim() || "Sem nome", order: s.folders.length }],
-      }));
-      return id;
-    },
-    [mutate],
-  );
-
-  const renameFolder = React.useCallback(
-    (id: string, name: string) => {
-      mutate((s) => ({
-        ...s,
-        folders: s.folders.map((f) => (f.id === id ? { ...f, name } : f)),
-      }));
-    },
-    [mutate],
-  );
+  const renameFolder = React.useCallback(async (id: string, name: string) => {
+    setFolders((prev) => prev.map((f) => (f.id === id ? { ...f, name } : f)));
+    await fetchJson(`/api/folders/${id}`, { method: "PATCH", body: JSON.stringify({ name }) });
+  }, []);
 
   const deleteFolder = React.useCallback(
-    (id: string) => {
-      mutate((s) => {
-        const folder = s.folders.find((f) => f.id === id);
-        if (!folder || folder.isDefault) return s;
-        return {
-          folders: s.folders.filter((f) => f.id !== id),
-          conversations: s.conversations.map((c) =>
-            c.folderId === id ? { ...c, folderId: DEFAULT_FOLDER_ID } : c,
-          ),
-        };
-      });
+    async (id: string) => {
+      const fallbackId = defaultFolderId;
+      setFolders((prev) => prev.filter((f) => f.id !== id));
+      setConversations((prev) =>
+        prev.map((c) => (c.folderId === id ? { ...c, folderId: fallbackId } : c)),
+      );
+      await fetchJson(`/api/folders/${id}`, { method: "DELETE" });
     },
-    [mutate],
+    [defaultFolderId],
   );
 
   const createConversation = React.useCallback(
-    (input: { agent: AgentId; title?: string; folderId?: string }) => {
-      const id = randomId("conv");
-      mutate((s) => ({
-        ...s,
-        conversations: [
-          {
-            id,
-            title: input.title?.trim() || "Nova conversa",
-            agent: input.agent,
-            folderId: input.folderId ?? DEFAULT_FOLDER_ID,
-            preview: "",
-            updatedAt: new Date().toISOString(),
-            messageCount: 0,
-          },
-          ...s.conversations,
-        ],
-      }));
-      return id;
+    async (input: { agent: AgentId; title?: string; folderId?: string | null }) => {
+      const created = await fetchJson<ApiConversation>("/api/conversations", {
+        method: "POST",
+        body: JSON.stringify({
+          agent: input.agent,
+          title: input.title,
+          folder_id: input.folderId ?? null,
+        }),
+      });
+      const conv = adaptConversation(created);
+      setConversations((prev) => [conv, ...prev]);
+      return conv.id;
     },
-    [mutate],
+    [],
   );
 
-  const renameConversation = React.useCallback(
-    (id: string, title: string) => {
-      mutate((s) => ({
-        ...s,
-        conversations: s.conversations.map((c) => (c.id === id ? { ...c, title } : c)),
-      }));
-    },
-    [mutate],
-  );
+  const renameConversation = React.useCallback(async (id: string, title: string) => {
+    setConversations((prev) => prev.map((c) => (c.id === id ? { ...c, title } : c)));
+    await fetchJson(`/api/conversations/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ title }),
+    });
+  }, []);
 
-  const moveConversation = React.useCallback(
-    (id: string, folderId: string) => {
-      mutate((s) => ({
-        ...s,
-        conversations: s.conversations.map((c) => (c.id === id ? { ...c, folderId } : c)),
-      }));
-    },
-    [mutate],
-  );
+  const moveConversation = React.useCallback(async (id: string, folderId: string | null) => {
+    setConversations((prev) => prev.map((c) => (c.id === id ? { ...c, folderId } : c)));
+    await fetchJson(`/api/conversations/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ folder_id: folderId }),
+    });
+  }, []);
 
-  const deleteConversation = React.useCallback(
-    (id: string) => {
-      mutate((s) => ({
-        ...s,
-        conversations: s.conversations.filter((c) => c.id !== id),
-      }));
-      const all = loadMessages();
-      delete all[id];
-      saveMessages(all);
-    },
-    [mutate],
-  );
+  const deleteConversation = React.useCallback(async (id: string) => {
+    setConversations((prev) => prev.filter((c) => c.id !== id));
+    await fetchJson(`/api/conversations/${id}`, { method: "DELETE" });
+  }, []);
 
   const touchConversation = React.useCallback(
-    (id: string, patch: { preview?: string; messageCount?: number; title?: string }) => {
-      mutate((s) => ({
-        ...s,
-        conversations: s.conversations.map((c) =>
-          c.id === id
-            ? {
-                ...c,
-                ...patch,
-                updatedAt: new Date().toISOString(),
-              }
-            : c,
+    (id: string, patch: Partial<Conversation>) => {
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === id ? { ...c, ...patch, updatedAt: new Date().toISOString() } : c,
         ),
-      }));
+      );
     },
-    [mutate],
+    [],
   );
 
   return {
-    folders: snapshot.folders,
-    conversations: snapshot.conversations,
-    defaultFolderId: DEFAULT_FOLDER_ID,
+    folders,
+    conversations,
+    loading,
+    defaultFolderId,
+    refresh,
     createFolder,
     renameFolder,
     deleteFolder,
@@ -237,57 +209,62 @@ export function useConversationStore() {
   };
 }
 
+// =================================================================
+// Per-conversation message hook
+// =================================================================
+
 export function useConversationMessages(conversationId: string) {
   const [messages, setMessages] = React.useState<ChatMessage[]>([]);
+  const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    const all = loadMessages();
-    setMessages(all[conversationId] ?? []);
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      try {
+        const data = await fetchJson<{ messages: ApiMessage[] }>(
+          `/api/conversations/${conversationId}/messages`,
+        );
+        if (cancelled) return;
+        setMessages(
+          data.messages
+            .filter((m): m is ApiMessage & { role: "user" | "assistant" } => m.role !== "system")
+            .map((m) => ({
+              id: m.id,
+              role: m.role,
+              content: m.content,
+              createdAt: m.created_at,
+            })),
+        );
+      } catch {
+        if (!cancelled) setMessages([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [conversationId]);
 
-  const writeAll = React.useCallback(
-    (next: ChatMessage[]) => {
-      setMessages(next);
-      const all = loadMessages();
-      all[conversationId] = next;
-      saveMessages(all);
-    },
-    [conversationId],
-  );
+  const appendLocal = React.useCallback((msg: Omit<ChatMessage, "id" | "createdAt">) => {
+    const full: ChatMessage = {
+      ...msg,
+      id: `tmp_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+      createdAt: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, full]);
+    return full.id;
+  }, []);
 
-  const append = React.useCallback(
-    (msg: Omit<ChatMessage, "id" | "createdAt">) => {
-      const full: ChatMessage = {
-        ...msg,
-        id: randomId("msg"),
-        createdAt: new Date().toISOString(),
-      };
-      setMessages((prev) => {
-        const next = [...prev, full];
-        const all = loadMessages();
-        all[conversationId] = next;
-        saveMessages(all);
-        return next;
-      });
-      return full.id;
-    },
-    [conversationId],
-  );
+  const updateLastLocal = React.useCallback((patch: Partial<ChatMessage>) => {
+    setMessages((prev) => {
+      if (prev.length === 0) return prev;
+      const next = [...prev];
+      next[next.length - 1] = { ...next[next.length - 1], ...patch };
+      return next;
+    });
+  }, []);
 
-  const updateLast = React.useCallback(
-    (patch: Partial<ChatMessage>) => {
-      setMessages((prev) => {
-        if (prev.length === 0) return prev;
-        const next = [...prev];
-        next[next.length - 1] = { ...next[next.length - 1], ...patch };
-        const all = loadMessages();
-        all[conversationId] = next;
-        saveMessages(all);
-        return next;
-      });
-    },
-    [conversationId],
-  );
-
-  return { messages, append, updateLast, writeAll };
+  return { messages, loading, appendLocal, updateLastLocal };
 }

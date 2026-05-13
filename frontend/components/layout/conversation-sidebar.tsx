@@ -25,6 +25,29 @@ import {
 } from "@/lib/conversation-store";
 import { cn } from "@/lib/cn";
 
+type Profile = { name: string | null; email: string; plan_active: boolean };
+
+function useProfile() {
+  const [profile, setProfile] = React.useState<Profile | null>(null);
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/me", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = (await res.json()) as { profile: Profile | null };
+        if (!cancelled) setProfile(data.profile);
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  return profile;
+}
+
 /**
  * Sidebar estilo ChatGPT — lista de pastas (acordeão) com conversas dentro.
  * Suporta criar pasta, renomear, deletar, e mover conversa entre pastas via
@@ -54,6 +77,7 @@ export function ConversationSidebar({ onSelectConversation }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const store = useConversationStore();
+  const profile = useProfile();
 
   const activeId = React.useMemo(() => {
     const match = pathname?.match(/^\/chat\/([^/]+)/);
@@ -63,10 +87,12 @@ export function ConversationSidebar({ onSelectConversation }: Props) {
   const conversationsByFolder = React.useMemo(() => {
     const map = new Map<string, Conversation[]>();
     for (const f of store.folders) map.set(f.id, []);
+    const fallbackFolderId = store.defaultFolderId ?? store.folders[0]?.id ?? null;
     for (const c of [...store.conversations].sort(
       (a, b) => +new Date(b.updatedAt) - +new Date(a.updatedAt),
     )) {
-      const bucket = map.get(c.folderId) ?? map.get(store.defaultFolderId);
+      const targetId = c.folderId ?? fallbackFolderId;
+      const bucket = targetId ? map.get(targetId) : undefined;
       bucket?.push(c);
     }
     return map;
@@ -78,8 +104,12 @@ export function ConversationSidebar({ onSelectConversation }: Props) {
 
   const handleNewFolder = () => {
     const name = window.prompt("Nome da pasta:");
-    if (name?.trim()) store.createFolder(name);
+    if (name?.trim()) void store.createFolder(name);
   };
+
+  const displayName = profile?.name?.trim() || profile?.email?.split("@")[0] || "Você";
+  const initial = displayName.charAt(0).toUpperCase();
+  const planLabel = profile?.plan_active ? "Plano ativo" : "Plano inativo";
 
   return (
     <div className="flex flex-col h-full bg-spark-surface-elev">
@@ -111,7 +141,7 @@ export function ConversationSidebar({ onSelectConversation }: Props) {
               collapsed={isCollapsed}
               activeConversationId={activeId}
               onToggle={() => toggleCollapse(folder.id)}
-              onRenameFolder={(name) => store.renameFolder(folder.id, name)}
+              onRenameFolder={(name) => void store.renameFolder(folder.id, name)}
               onDeleteFolder={
                 folder.isDefault
                   ? undefined
@@ -121,7 +151,7 @@ export function ConversationSidebar({ onSelectConversation }: Props) {
                           `Apagar a pasta "${folder.name}"? As conversas vão pra "Geral".`,
                         )
                       ) {
-                        store.deleteFolder(folder.id);
+                        void store.deleteFolder(folder.id);
                       }
                     }
               }
@@ -129,14 +159,14 @@ export function ConversationSidebar({ onSelectConversation }: Props) {
                 router.push(`/chat/${id}`);
                 onSelectConversation?.();
               }}
-              onRenameConversation={(id, title) => store.renameConversation(id, title)}
+              onRenameConversation={(id, title) => void store.renameConversation(id, title)}
               onDeleteConversation={(id) => {
                 if (window.confirm("Apagar esta conversa?")) {
-                  store.deleteConversation(id);
+                  void store.deleteConversation(id);
                   if (id === activeId) router.push("/chat");
                 }
               }}
-              onMoveConversation={(id, folderId) => store.moveConversation(id, folderId)}
+              onMoveConversation={(id, folderId) => void store.moveConversation(id, folderId)}
               allFolders={store.folders}
             />
           );
@@ -158,11 +188,11 @@ export function ConversationSidebar({ onSelectConversation }: Props) {
         className="border-t border-spark-hairline px-3.5 py-3 flex items-center gap-2.5 hover:bg-spark-surface-sunken transition-colors"
       >
         <div className="w-9 h-9 rounded-full bg-brand-grad text-white flex items-center justify-center font-extrabold text-[13px]">
-          M
+          {initial}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[12.5px] font-bold truncate">Maria Silva</div>
-          <div className="text-[10.5px] text-spark-ink-50 font-mono">Pro · 18/30 buscas</div>
+          <div className="text-[12.5px] font-bold truncate">{displayName}</div>
+          <div className="text-[10.5px] text-spark-ink-50 font-mono truncate">{planLabel}</div>
         </div>
         <MoreHorizontal size={14} strokeWidth={1.7} className="text-spark-ink-50" />
       </Link>
@@ -531,7 +561,7 @@ function ConversationMenu({
   moveOpen: boolean;
   onToggleMove: () => void;
   folders: FolderType[];
-  currentFolderId: string;
+  currentFolderId: string | null;
   onMove: (folderId: string) => void;
 }) {
   return (

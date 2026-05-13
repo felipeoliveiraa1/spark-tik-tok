@@ -100,30 +100,25 @@ function ChatComposer({
   );
 }
 
-function useChat(conversationId: string, agent: AgentId) {
-  const { messages, append, updateLast } = useConversationMessages(conversationId);
+function useChatSender(conversationId: string) {
+  const { messages, appendLocal, updateLastLocal } = useConversationMessages(conversationId);
   const store = useConversationStore();
   const [streaming, setStreaming] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
 
   const send = React.useCallback(
     async (text: string) => {
       if (streaming) return;
-      setError(null);
-      append({ role: "user", content: text });
-      append({ role: "assistant", content: "" });
+      appendLocal({ role: "user", content: text });
+      appendLocal({ role: "assistant", content: "" });
 
-      // Update conversation metadata
       const conv = store.conversations.find((c) => c.id === conversationId);
-      const previousCount = conv?.messageCount ?? 0;
       store.touchConversation(conversationId, {
-        preview: text,
-        messageCount: previousCount + 1,
-        title: conv && conv.title === "Nova conversa" ? text.slice(0, 60) : undefined,
+        preview: text.slice(0, 200),
+        messageCount: (conv?.messageCount ?? 0) + 1,
+        title: conv && conv.title === "Nova conversa" ? text.slice(0, 60) : conv?.title,
       });
 
       setStreaming(true);
-
       try {
         const apiMessages = [...messages, { role: "user" as const, content: text }].map((m) => ({
           role: m.role,
@@ -133,11 +128,12 @@ function useChat(conversationId: string, agent: AgentId) {
         const res = await fetch("/api/chat", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ agent, messages: apiMessages }),
+          body: JSON.stringify({ conversation_id: conversationId, messages: apiMessages }),
         });
 
         if (!res.ok || !res.body) {
-          throw new Error(`Falhou (${res.status})`);
+          const errMsg = await res.text().catch(() => `HTTP ${res.status}`);
+          throw new Error(errMsg.slice(0, 200));
         }
 
         const reader = res.body.getReader();
@@ -147,25 +143,24 @@ function useChat(conversationId: string, agent: AgentId) {
           const { done, value } = await reader.read();
           if (done) break;
           acc += decoder.decode(value, { stream: true });
-          updateLast({ content: acc });
+          updateLastLocal({ content: acc });
         }
-        updateLast({ content: acc });
+        updateLastLocal({ content: acc });
         store.touchConversation(conversationId, {
-          preview: acc.slice(0, 120),
-          messageCount: previousCount + 2,
+          preview: acc.slice(0, 200),
+          messageCount: (conv?.messageCount ?? 0) + 2,
         });
       } catch (err) {
         const msg = err instanceof Error ? err.message : "erro desconhecido";
-        setError(msg);
-        updateLast({ content: `⚠️ ${msg}` });
+        updateLastLocal({ content: `⚠️ ${msg}` });
       } finally {
         setStreaming(false);
       }
     },
-    [agent, append, conversationId, messages, store, streaming, updateLast],
+    [appendLocal, conversationId, messages, store, streaming, updateLastLocal],
   );
 
-  return { messages, send, streaming, error };
+  return { messages, send, streaming };
 }
 
 function ChatMobile({
@@ -179,7 +174,7 @@ function ChatMobile({
 }) {
   const router = useRouter();
   const [drawerOpen, setDrawerOpen] = React.useState(false);
-  const { messages, send, streaming } = useChat(conversationId, agent);
+  const { messages, send, streaming } = useChatSender(conversationId);
   const bottomRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
@@ -261,7 +256,7 @@ function ChatDesktop({
   agent: AgentId;
   title: string;
 }) {
-  const { messages, send, streaming } = useChat(conversationId, agent);
+  const { messages, send, streaming } = useChatSender(conversationId);
   const bottomRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
@@ -309,20 +304,15 @@ export default function ChatPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const id = params?.id ?? "";
-  const { conversations } = useConversationStore();
-  const [hydrated, setHydrated] = React.useState(false);
-
-  React.useEffect(() => {
-    setHydrated(true);
-  }, []);
+  const { conversations, loading } = useConversationStore();
 
   const conv = conversations.find((c) => c.id === id);
 
   React.useEffect(() => {
-    if (hydrated && !conv) {
+    if (!loading && !conv) {
       router.replace("/chat");
     }
-  }, [hydrated, conv, router]);
+  }, [loading, conv, router]);
 
   if (!conv) {
     return (

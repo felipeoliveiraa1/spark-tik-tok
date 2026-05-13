@@ -63,13 +63,23 @@ function timeAgo(iso: string): string {
 function GalleryBody() {
   const router = useRouter();
   const store = useConversationStore();
+  const [creating, setCreating] = React.useState<AgentId | null>(null);
   const recent = [...store.conversations]
     .sort((a, b) => +new Date(b.updatedAt) - +new Date(a.updatedAt))
     .slice(0, 4);
 
-  const start = (agent: AgentId) => {
-    const id = store.createConversation({ agent, title: `Conversa com ${AGENTS[agent].label}` });
-    router.push(`/chat/${id}`);
+  const start = async (agent: AgentId) => {
+    if (creating) return;
+    setCreating(agent);
+    try {
+      const id = await store.createConversation({
+        agent,
+        title: `Conversa com ${AGENTS[agent].label}`,
+      });
+      router.push(`/chat/${id}`);
+    } finally {
+      setCreating(null);
+    }
   };
 
   return (
