@@ -50,12 +50,19 @@ export async function searchVideos(
     log.info({ input }, "vyral.search: cache miss — going live");
     const result = await scrapeFeed(ctx.page, input);
 
-    void putCachedSearch(input, result).catch((err) =>
-      log.warn(
-        { err: err instanceof Error ? err.message : err },
-        "vyral.search: cache write failed",
-      ),
-    );
+    // Não cacheia resultados vazios — provavelmente foi falha de sessão
+    // ou filtro errado. Se cachear, o próximo pedido bate HIT no zero
+    // sem nunca tentar de novo (foi exatamente o bug que vimos).
+    if (result.videos.length > 0) {
+      void putCachedSearch(input, result).catch((err) =>
+        log.warn(
+          { err: err instanceof Error ? err.message : err },
+          "vyral.search: cache write failed",
+        ),
+      );
+    } else {
+      log.info({ input }, "vyral.search: resultado vazio — NÃO cacheando");
+    }
 
     return result;
   } catch (err) {
