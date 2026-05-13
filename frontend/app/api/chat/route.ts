@@ -15,7 +15,9 @@ import {
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+// Vercel Hobby: 10s. Pra Pro/Enterprise: usar 60s. Mantendo 30s pra dar margem
+// se o Felipe estiver no Pro.
+export const maxDuration = 30;
 
 type Attachment = { url: string; mime?: string };
 
@@ -452,13 +454,19 @@ export async function POST(request: Request) {
   let capturedError: string | null = null;
   const toolEvents: { name: string; ok?: boolean; error?: string }[] = [];
 
+  // Abort signal — corta o stream se passar do limite (deixa 2s de margem
+  // antes do timeout da função pra conseguir responder algo pro cliente).
+  const abortController = new AbortController();
+  const abortTimer = setTimeout(() => abortController.abort(), 25_000);
+
   const result = streamText({
     model: models[agent],
     system: SYSTEM_PROMPTS[agent],
     messages: finalMessages,
     tools,
-    stopWhen: stepCountIs(6),
+    stopWhen: stepCountIs(3),
     maxOutputTokens: 8192,
+    abortSignal: abortController.signal,
     providerOptions: {
       google: {
         thinkingConfig: {
@@ -570,6 +578,7 @@ export async function POST(request: Request) {
           content: accumulated || errText,
         });
       } finally {
+        clearTimeout(abortTimer);
         controller.close();
       }
     },
