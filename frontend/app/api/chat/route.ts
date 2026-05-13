@@ -41,12 +41,90 @@ const NICHE_ENUM = [
   "infantil",
   "outros",
 ] as const;
-const COUNTRY_ENUM = ["BR", "US"] as const;
+/**
+ * Quando o Gemini esquece de passar `query` na tool search_virals (acontece
+ * mesmo com prompt forte), o servidor olha a última mensagem do usuário e
+ * extrai uma palavra-chave provável. Garante que "virais de academia"
+ * sempre vire query="academia" mesmo se o modelo passar inputs vazios.
+ *
+ * Heurística: pega substantivos depois de palavras-gatilho ("de", "sobre",
+ * "do nicho", "produtos de") OU palavras isoladas conhecidas como termos
+ * de busca no Vyral.
+ */
+const KEYWORD_HINTS = [
+  "academia",
+  "musculacao",
+  "musculação",
+  "treino",
+  "creatina",
+  "whey",
+  "suplemento",
+  "skincare",
+  "cabelo",
+  "maquiagem",
+  "perfume",
+  "babyliss",
+  "secador",
+  "esmalte",
+  "chinelo",
+  "tenis",
+  "tênis",
+  "legging",
+  "biquini",
+  "biquíni",
+  "vestido",
+  "blusa",
+  "calca",
+  "calça",
+  "bolsa",
+  "mochila",
+  "panela",
+  "organizador",
+  "luminaria",
+  "luminária",
+  "tapete",
+  "celular",
+  "fone",
+  "carregador",
+  "smartwatch",
+  "pelucia",
+  "pelúcia",
+  "presente",
+  "natal",
+  "pascoa",
+  "páscoa",
+];
+
+function deriveQueryFromMessage(text: string): string | undefined {
+  if (!text) return undefined;
+  const stripAccents = (s: string): string =>
+    s.toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "");
+  const lower = stripAccents(text);
+  // Procura palavras-chave conhecidas no texto
+  for (const hint of KEYWORD_HINTS) {
+    if (lower.includes(stripAccents(hint))) return hint;
+  }
+  // Padrão "de <palavra>" ou "sobre <palavra>"
+  const match = lower.match(/(?:de|sobre|do nicho|produtos de|virais de|virais do) ([a-z]{4,20})/i);
+  if (match) {
+    const word = match[1];
+    // Ignora palavras genéricas
+    if (["virais", "top", "hoje", "agora", "semana", "brasil", "tiktok"].includes(word)) {
+      return undefined;
+    }
+    return word;
+  }
+  return undefined;
+}
+
+// COUNTRY_ENUM antes era usado em z.enum, mas agora aceitamos string e
+// validamos com `=== "US"`. Mantemos a list só pra referência humana.
+// const COUNTRY_ENUM = ["BR", "US"] as const;
 
 // =================================================================
 // Tools de produtos — disponíveis pra todos os agentes
 // =================================================================
-function buildProductTools(supabase: SupabaseClient, userId: string): ToolSet {
+function buildProductTools(supabase: SupabaseClient, _userId: string): ToolSet {
   return {
     list_my_products: tool({
       description:
@@ -136,7 +214,12 @@ function buildInfoTools(supabase: SupabaseClient, userId: string): ToolSet {
 // =================================================================
 // Tools do agente Virais
 // =================================================================
-function buildViralTools(supabase: SupabaseClient, userId: string): ToolSet {
+function buildViralTools(
+  supabase: SupabaseClient,
+  userId: string,
+  lastUserText: string,
+): ToolSet {
+  const fallbackQuery = deriveQueryFromMessage(lastUserText);
   return {
     ...buildProductTools(supabase, userId),
     search_virals: tool({
@@ -168,8 +251,19 @@ function buildViralTools(supabase: SupabaseClient, userId: string): ToolSet {
           .optional()
           .describe("Máximo de vídeos retornados (1-20). Default 10."),
       }),
-      execute: async ({ niche, country, days, limit }) => {
+      execute: async ({ query, niche, country, days, limit }) => {
         try {
+          // Se o Gemini não passou query, derivamos da última mensagem do user.
+          // Garante que "virais de academia" → query="academia" mesmo quando
+          // o modelo "esquece" do prompt.
+          const safeQuery =
+            (query?.trim() || undefined) ?? fallbackQuery;
+          if (!query?.trim() && fallbackQuery) {
+            console.log("[search_virals] query derivada do user message", {
+              fallbackQuery,
+              lastUserText: lastUserText.slice(0, 120),
+            });
+          }
           const safeNiche = niche && NICHE_ENUM.includes(niche as (typeof NICHE_ENUM)[number])
             ? (niche as (typeof NICHE_ENUM)[number])
             : undefined;
@@ -178,29 +272,39 @@ function buildViralTools(supabase: SupabaseClient, userId: string): ToolSet {
             ? (days as 7 | 14 | 30 | 90)
             : 7;
           const safeLimit = Math.min(Math.max(limit ?? 10, 1), 20);
-          // Auto-expand: se um nicho específico tem poucos cards (<5),
-          // expandimos o período pra trazer mais variedade. Cada tentativa
-          // é cacheada separadamente.
-          const MIN_NICHE_CARDS = 5;
-          const periods: (7 | 14 | 30 | 90)[] = safeNiche
-            ? [safeDays, ...([14, 30, 90] as const).filter((d) => d > safeDays)]
-            : [safeDays];
-          let data: Awaited<ReturnType<typeof searchVyralVideos>> | null = null;
+          // Tenta uma busca direta. Auto-expand SÓ se count === 0 (não
+          // tem cards no período pedido) — porque mesmo se vier 2 cards
+          // só de fitness, eles são o que existe; expandir o período NÃO
+          // muda o conjunto base do Vyral (mesmos 24 cards visíveis no
+          // feed). Múltiplas tentativas estouravam o timeout do Vercel.
+          let data = await searchVyralVideos({
+            query: safeQuery,
+            niche: safeNiche,
+            country: safeCountry,
+            lastDays: safeDays,
+            limit: safeLimit,
+            sortBy: "views",
+          });
           let usedDays: 7 | 14 | 30 | 90 = safeDays;
           let fellBackToGeneral = false;
-          for (const d of periods) {
+
+          // Se zerou E tem filtro estrito (niche ou query), tenta UMA
+          // expansão maior antes do fallback geral.
+          if (data.videos.length === 0 && (safeNiche || safeQuery)) {
+            const expandTo: 7 | 14 | 30 | 90 = safeDays < 30 ? 30 : 90;
             data = await searchVyralVideos({
+              query: safeQuery,
               niche: safeNiche,
               country: safeCountry,
-              lastDays: d,
+              lastDays: expandTo,
               limit: safeLimit,
               sortBy: "views",
             });
-            usedDays = d;
-            if (data.videos.length >= MIN_NICHE_CARDS) break;
+            usedDays = expandTo;
           }
-          // Se mesmo com 90 dias o nicho não atingir o mínimo, cai pra geral.
-          if (data && data.videos.length === 0 && safeNiche) {
+
+          // Se ainda zerou, cai pro feed geral sem filtros restritivos.
+          if (data.videos.length === 0 && (safeNiche || safeQuery)) {
             data = await searchVyralVideos({
               country: safeCountry,
               lastDays: safeDays,
@@ -208,9 +312,6 @@ function buildViralTools(supabase: SupabaseClient, userId: string): ToolSet {
               sortBy: "views",
             });
             fellBackToGeneral = true;
-          }
-          if (!data) {
-            return { ok: false, error: "no_data_returned" };
           }
           // Se ainda 0, retorna explicitamente vazio com instrução literal
           if (data.videos.length === 0) {
@@ -599,13 +700,16 @@ export async function POST(request: Request) {
     ? conversation.agent
     : "help") as AgentId;
 
-  // Persiste a mensagem do usuário (com attachments JSON)
+  // Persiste a mensagem do usuário (com attachments JSON) e extrai o texto
+  // pra usar como contexto na derivação de query da tool de virais.
   const lastMessage = messages[messages.length - 1];
+  let lastUserText = "";
   if (lastMessage?.role === "user") {
     const userContent =
       typeof lastMessage.content === "string"
         ? lastMessage.content
         : JSON.stringify(lastMessage.content);
+    lastUserText = userContent;
     await supabase.from("conversation_messages").insert({
       conversation_id: conversationId,
       role: "user",
@@ -622,7 +726,7 @@ export async function POST(request: Request) {
       ...buildInfoTools(supabase, user.id),
     };
   } else if (agent === "viral") {
-    tools = buildViralTools(supabase, user.id);
+    tools = buildViralTools(supabase, user.id, lastUserText);
   } else if (agent === "script") {
     tools = buildScriptTools(supabase, user.id);
   } else if (agent === "help") {
