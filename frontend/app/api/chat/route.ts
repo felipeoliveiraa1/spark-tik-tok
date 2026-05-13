@@ -64,8 +64,8 @@ function buildProductTools(supabase: SupabaseClient, userId: string): ToolSet {
       description:
         "Pega a ficha completa de um produto salvo pela aluna. Passe id (UUID) OU name (busca aproximada por nome). Retorna dor, público-alvo, pontos fortes, faixa de preço, concorrentes, image_url.",
       inputSchema: z.object({
-        id: z.string().uuid().optional(),
-        name: z.string().optional(),
+        id: z.string().optional().describe("UUID do produto."),
+        name: z.string().optional().describe("Nome aproximado pra busca."),
       }),
       execute: async ({ id, name }) => {
         if (!id && !name) return { ok: false, error: "informe id ou name" };
@@ -98,15 +98,14 @@ function buildInfoTools(supabase: SupabaseClient, userId: string): ToolSet {
         name: z.string().describe("Nome do produto."),
         image_url: z
           .string()
-          .url()
           .optional()
-          .describe("URL pública da foto (se a aluna anexou no chat, use essa URL)."),
+          .describe("URL pública da foto (se a aluna anexou no chat, passe essa URL aqui)."),
         category: z.string().optional(),
-        target_audience: z.string().optional(),
-        pain_points: z.array(z.string()).optional(),
-        strengths: z.array(z.string()).optional(),
-        price_range: z.string().optional(),
-        competitors: z.array(z.string()).optional(),
+        target_audience: z.string().optional().describe("Público-alvo descrito em 1-2 frases."),
+        pain_points: z.array(z.string()).optional().describe("Lista de dores que o produto resolve."),
+        strengths: z.array(z.string()).optional().describe("Lista de pontos fortes."),
+        price_range: z.string().optional().describe("Faixa de preço esperada no BR, ex: 'R$ 89-149'."),
+        competitors: z.array(z.string()).optional().describe("Lista de marcas/produtos concorrentes."),
       }),
       execute: async (input) => {
         const { data, error } = await supabase
@@ -143,22 +142,39 @@ function buildViralTools(supabase: SupabaseClient, userId: string): ToolSet {
         "Busca vídeos que estão viralizando no TikTok Shop. Use sempre que a aluna pedir 'o que tá bombando', 'virais da semana', 'top vídeos'. Retorna criador, métricas (views, GMV em BRL), hook e URL clicável do TikTok.",
       inputSchema: z.object({
         niche: z
-          .enum(NICHE_ENUM)
+          .string()
           .optional()
-          .describe("Nicho do produto. Omita pra overview geral."),
-        country: z.enum(COUNTRY_ENUM).default("BR"),
+          .describe(
+            "Nicho do produto. Valores aceitos: beleza, saude, moda, casa, eletronicos, pet, fitness, acessorios, infantil, outros.",
+          ),
+        country: z
+          .string()
+          .optional()
+          .describe("País: BR ou US. Default BR."),
         days: z
-          .union([z.literal(7), z.literal(14), z.literal(30), z.literal(90)])
-          .default(7),
-        limit: z.number().min(1).max(20).default(10),
+          .number()
+          .optional()
+          .describe("Últimos N dias. Aceita 7, 14, 30 ou 90. Default 7."),
+        limit: z
+          .number()
+          .optional()
+          .describe("Máximo de vídeos retornados (1-20). Default 10."),
       }),
       execute: async ({ niche, country, days, limit }) => {
         try {
+          const safeNiche = niche && NICHE_ENUM.includes(niche as (typeof NICHE_ENUM)[number])
+            ? (niche as (typeof NICHE_ENUM)[number])
+            : undefined;
+          const safeCountry = country === "US" ? "US" : "BR";
+          const safeDays = ([7, 14, 30, 90] as const).includes(days as 7 | 14 | 30 | 90)
+            ? (days as 7 | 14 | 30 | 90)
+            : 7;
+          const safeLimit = Math.min(Math.max(limit ?? 10, 1), 20);
           const data = await searchVyralVideos({
-            niche,
-            country,
-            lastDays: days,
-            limit,
+            niche: safeNiche,
+            country: safeCountry,
+            lastDays: safeDays,
+            limit: safeLimit,
             sortBy: "views",
           });
           return {
@@ -228,12 +244,21 @@ function buildViralTools(supabase: SupabaseClient, userId: string): ToolSet {
     get_top_products: tool({
       description: "Top produtos vendendo no TikTok Shop por país e categoria.",
       inputSchema: z.object({
-        country: z.enum(COUNTRY_ENUM).default("BR"),
-        niche: z.enum(NICHE_ENUM).optional(),
+        country: z.string().optional().describe("BR ou US. Default BR."),
+        niche: z
+          .string()
+          .optional()
+          .describe(
+            "Nicho: beleza, saude, moda, casa, eletronicos, pet, fitness, acessorios, infantil, outros.",
+          ),
       }),
       execute: async ({ country, niche }) => {
         try {
-          const data = await getVyralTopProducts({ country, niche });
+          const safeCountry = country === "US" ? "US" : "BR";
+          const safeNiche = niche && NICHE_ENUM.includes(niche as (typeof NICHE_ENUM)[number])
+            ? (niche as (typeof NICHE_ENUM)[number])
+            : undefined;
+          const data = await getVyralTopProducts({ country: safeCountry, niche: safeNiche });
           return {
             ok: true,
             count: data.products.length,
@@ -266,7 +291,7 @@ function buildScriptTools(supabase: SupabaseClient, userId: string): ToolSet {
         "Salva a tabela de hooks gerada pra aluna conseguir consultar depois em /scripts. Chame SEMPRE que terminar uma tabela de hooks completa. Devolva o link [Ver scripts](/scripts/<id>) na sua resposta.",
       inputSchema: z.object({
         title: z.string().optional().describe("Título descritivo, ex: '10 hooks · Hidratante NAC'."),
-        product_id: z.string().uuid().optional(),
+        product_id: z.string().optional().describe("UUID do produto relacionado, se houver."),
         hooks: z
           .array(
             z.object({
@@ -277,7 +302,7 @@ function buildScriptTools(supabase: SupabaseClient, userId: string): ToolSet {
               fire: z.string().optional(),
             }),
           )
-          .min(1),
+          .describe("Array com a tabela de hooks gerada."),
       }),
       execute: async ({ title, product_id, hooks }) => {
         const { data, error } = await supabase
@@ -423,6 +448,10 @@ export async function POST(request: Request) {
 
   const finalMessages = attachImages(messages, attachments);
 
+  // Captura o erro real do streamText (vem via callback).
+  let capturedError: string | null = null;
+  const toolEvents: { name: string; ok?: boolean; error?: string }[] = [];
+
   const result = streamText({
     model: models[agent],
     system: SYSTEM_PROMPTS[agent],
@@ -439,45 +468,80 @@ export async function POST(request: Request) {
       },
     },
     onError: ({ error }) => {
-      console.error("[api/chat streamText error]", {
+      const m = error instanceof Error ? error.message : String(error);
+      capturedError = m;
+      console.error("[api/chat streamText onError]", {
         agent,
-        message: error instanceof Error ? error.message : String(error),
+        message: m,
         stack: error instanceof Error ? error.stack : undefined,
       });
     },
   });
 
-  // Stream manual: dá pra capturar erros do streamText em runtime, mostrar
-  // diagnóstico inline quando o modelo retorna vazio, e persistir tudo.
   const encoder = new TextEncoder();
   let accumulated = "";
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       try {
-        for await (const chunk of result.textStream) {
-          accumulated += chunk;
-          controller.enqueue(encoder.encode(chunk));
+        // fullStream emite text-delta, tool-call, tool-result, error, finish.
+        // Iteramos sobre tudo pra ter visibilidade total.
+        for await (const part of result.fullStream) {
+          if (part.type === "text-delta") {
+            const text = part.text;
+            if (text) {
+              accumulated += text;
+              controller.enqueue(encoder.encode(text));
+            }
+          } else if (part.type === "tool-call") {
+            toolEvents.push({ name: part.toolName });
+            console.log("[tool-call]", { agent, name: part.toolName, input: part.input });
+          } else if (part.type === "tool-result") {
+            const out = part.output as { ok?: boolean; error?: string } | undefined;
+            toolEvents.push({ name: part.toolName, ok: out?.ok, error: out?.error });
+            console.log("[tool-result]", {
+              agent,
+              name: part.toolName,
+              ok: out?.ok,
+              error: out?.error,
+            });
+          } else if (part.type === "error") {
+            const err = part.error;
+            const m = err instanceof Error ? err.message : String(err);
+            capturedError = m;
+            console.error("[stream error part]", { agent, message: m });
+          }
         }
 
-        const [finishReason, usage] = await Promise.all([result.finishReason, result.usage]);
+        const [finishReason, usage] = await Promise.all([
+          Promise.resolve(result.finishReason).catch(() => "unknown" as const),
+          Promise.resolve(result.usage).catch(() => ({
+            inputTokens: 0,
+            outputTokens: 0,
+          })),
+        ]);
 
         if (!accumulated.trim()) {
-          const diagnostic = `Não consegui formar uma resposta (motivo=${finishReason}, tokens_out=${usage?.outputTokens ?? "?"}). Tenta reformular ou manda de novo.`;
-          accumulated = diagnostic;
-          controller.enqueue(encoder.encode(diagnostic));
+          const summary = capturedError
+            ? `⚠️ ${capturedError}`
+            : `Não consegui formar uma resposta (motivo=${finishReason}, tokens_out=${usage?.outputTokens ?? "?"}, tools=${toolEvents.length})`;
+          accumulated = summary;
+          controller.enqueue(encoder.encode(summary));
           console.warn("[api/chat] empty model response", {
             agent,
             conversationId,
             finishReason,
             usage,
             hasTools: !!tools,
+            capturedError,
+            toolEvents,
           });
         } else {
           console.log("[api/chat] ok", {
             agent,
             finishReason,
             outputTokens: usage?.outputTokens,
+            toolEvents: toolEvents.length,
           });
         }
 
@@ -490,13 +554,20 @@ export async function POST(request: Request) {
         });
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        console.error("[api/chat] runtime error", { agent, conversationId, message });
-        const errText = `⚠️ Erro técnico: ${message.slice(0, 220)}`;
-        controller.enqueue(encoder.encode(errText));
+        console.error("[api/chat] runtime error", {
+          agent,
+          conversationId,
+          message,
+          stack: err instanceof Error ? err.stack : undefined,
+        });
+        const errText = `⚠️ Erro técnico: ${message.slice(0, 240)}`;
+        if (!accumulated) {
+          controller.enqueue(encoder.encode(errText));
+        }
         await supabase.from("conversation_messages").insert({
           conversation_id: conversationId,
           role: "assistant",
-          content: errText,
+          content: accumulated || errText,
         });
       } finally {
         controller.close();
