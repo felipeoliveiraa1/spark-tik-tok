@@ -319,6 +319,7 @@ export default function ChatPage() {
       <ResponsiveShell
         mobile={<div className="flex-1 flex items-center justify-center text-spark-ink-50 text-[14px]">Carregando…</div>}
         desktop={<div className="flex-1 flex items-center justify-center text-spark-ink-50 text-[14px]">Carregando…</div>}
+        customSidebar
       />
     );
   }
@@ -327,6 +328,7 @@ export default function ChatPage() {
     <ResponsiveShell
       mobile={<ChatMobile conversationId={conv.id} agent={conv.agent} title={conv.title} />}
       desktop={<ChatDesktop conversationId={conv.id} agent={conv.agent} title={conv.title} />}
+      customSidebar
     />
   );
 }

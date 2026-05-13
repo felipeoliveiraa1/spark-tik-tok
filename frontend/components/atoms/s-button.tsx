@@ -15,6 +15,7 @@ type Props = {
   className?: string;
   type?: "button" | "submit" | "reset";
   disabled?: boolean;
+  onClick?: () => void;
 };
 
 const sizeClasses: Record<Size, string> = {
@@ -44,6 +45,7 @@ export function SButton({
   className,
   type = "button",
   disabled,
+  onClick,
 }: Props) {
   const classes = cn(
     "inline-flex items-center justify-center rounded-full font-semibold tracking-[-0.01em] cursor-pointer transition-opacity",
@@ -55,7 +57,7 @@ export function SButton({
   );
 
   return (
-    <button type={type} className={classes} disabled={disabled}>
+    <button type={type} className={classes} disabled={disabled} onClick={onClick}>
       {Icon && <Icon size={iconSizes[size]} strokeWidth={1.7} />}
       {children}
       {IconRight && <IconRight size={iconSizes[size]} strokeWidth={1.7} />}

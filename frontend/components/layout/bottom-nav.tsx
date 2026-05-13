@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { MessageCircle, User, type LucideIcon } from "lucide-react";
+import { Home, MessageCircle, Package, Flame, User, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
 
-export type NavId = "chat" | "conta";
+export type NavId = "home" | "chat" | "produtos" | "virais" | "conta";
 
 type Item = {
   id: NavId;
@@ -12,7 +12,10 @@ type Item = {
 };
 
 const items: Item[] = [
+  { id: "home", label: "Início", href: "/", Icon: Home },
   { id: "chat", label: "Chat", href: "/chat", Icon: MessageCircle },
+  { id: "produtos", label: "Produtos", href: "/produtos", Icon: Package },
+  { id: "virais", label: "Virais", href: "/virais", Icon: Flame },
   { id: "conta", label: "Conta", href: "/conta", Icon: User },
 ];
 
@@ -21,7 +24,7 @@ type Props = {
   className?: string;
 };
 
-export function BottomNav({ active = "chat", className }: Props) {
+export function BottomNav({ active = "home", className }: Props) {
   return (
     <nav
       className={cn(

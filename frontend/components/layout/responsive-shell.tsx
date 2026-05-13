@@ -1,24 +1,32 @@
 import * as React from "react";
 import { MobileFrame } from "./mobile-frame";
 import { PreviewBanner } from "./preview-banner";
+import { DesktopSidebar, type SidebarActive } from "./desktop-sidebar";
 
 type Props = {
-  /** Content used in mobile/tablet (<1024px). Falls back to `children` if omitted. */
   mobile?: React.ReactNode;
-  /** Content used in desktop (≥1024px). Falls back to `children`. */
   desktop?: React.ReactNode;
   children?: React.ReactNode;
-  /** Highlighted nav item — kept for future use, currently unused. */
-  active?: string;
-  /** If true, hides the "preview/mock data" banner. */
+  active?: SidebarActive;
   hideBanner?: boolean;
-  /** Kept for backward compat — no longer changes layout. */
+  /** If true, desktop renders without the global sidebar (login, onboarding). */
   fullBleed?: boolean;
+  /** If true, this page renders its own sidebar (chat). Hides the global one. */
+  customSidebar?: boolean;
 };
 
-export function ResponsiveShell({ mobile, desktop, children, hideBanner }: Props) {
+export function ResponsiveShell({
+  mobile,
+  desktop,
+  children,
+  active,
+  hideBanner,
+  fullBleed,
+  customSidebar,
+}: Props) {
   const mobileNode = mobile ?? children;
   const desktopNode = desktop ?? children;
+  const showSidebar = !fullBleed && !customSidebar;
 
   return (
     <>
@@ -29,6 +37,7 @@ export function ResponsiveShell({ mobile, desktop, children, hideBanner }: Props
       <div className="hidden lg:flex flex-col min-h-dvh w-full bg-spark-bg">
         {!hideBanner && <PreviewBanner />}
         <div className="flex flex-1 min-h-0">
+          {showSidebar && <DesktopSidebar active={active} />}
           <main className="flex-1 min-w-0 flex flex-col">{desktopNode}</main>
         </div>
       </div>
