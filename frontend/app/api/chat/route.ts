@@ -116,12 +116,19 @@ function wantsViralList(text: string): boolean {
     return false;
   }
 
-  // Ações sobre cards já mostrados → deixa modelo escolher tool
+  // Ações sobre cards JÁ MOSTRADOS → deixa modelo escolher a tool certa
+  // (save_viral, get_viral_details). Sem \b no fim pra capturar "adicionar",
+  // "salvar", "salva", "guardar", etc.
   if (
-    /\b(salv|guarda|adiciona|biblioteca|detalh|transcri[çc][ãa]o|o\s+que\s+(ela|ele|a\s+criadora)\s+(diss|fal)|abre\s+(o|esse)\s+v[íi]deo|gera\s+(scripts|hooks))\b/i.test(
+    /(salv|guarda|adicion|memoriz|biblioteca|detalh|transcri[çc][ãa]o|o\s+que\s+(ela|ele|a\s+criadora)\s+(diss|fal)|abre\s+(o|esse)\s+v[íi]deo|gera\s+(scripts|hooks))/i.test(
       lower,
     )
   ) {
+    return false;
+  }
+  // Referência a card específico ("#3", "numero 5", "o segundo") → também
+  // é ação sobre lista existente, não pedido de nova busca.
+  if (/#\s*\d+|n[uú]mero\s+\d+|o\s+(primeiro|segundo|terceiro|quarto|quinto|sexto|setimo|s[eé]timo|oitavo|nono|decimo|d[eé]cimo)/i.test(lower)) {
     return false;
   }
 
@@ -933,6 +940,10 @@ export async function POST(request: Request) {
                   formatted_response?: string;
                   count?: number;
                   fell_back_to_general?: boolean;
+                  id?: string;
+                  url_path?: string;
+                  name?: string;
+                  title?: string;
                 }
               | undefined;
             toolEvents.push({ name: part.toolName, ok: out?.ok, error: out?.error });
@@ -948,6 +959,35 @@ export async function POST(request: Request) {
             // Resposta determinística: se a tool de virais retornou
             // formatted_response, monta a resposta no servidor sem deixar
             // o Gemini gerar texto. Garante 100% que cards são reais.
+            // Resposta determinística pra save_viral: garante que o link
+            // /virais/<uuid> está correto (Gemini estava colocando o
+            // source_video_id em vez do uuid retornado pela tool).
+            if (
+              part.toolName === "save_viral" &&
+              out?.ok &&
+              out.url_path
+            ) {
+              deterministicResponse = `Salvei na sua biblioteca! [Ver agora](${out.url_path})\n\nQuer que eu te mostre detalhes desse vídeo ou bora pra outro?`;
+            }
+            // Resposta determinística pra save_product
+            if (
+              part.toolName === "save_product" &&
+              out?.ok &&
+              out.url_path
+            ) {
+              const name = out.name ?? "produto";
+              deterministicResponse = `Salvei! [Ver ${name}](${out.url_path})\n\nQuer gerar scripts pra ele agora ou ver os virais que combinam?`;
+            }
+            // Resposta determinística pra save_script
+            if (
+              part.toolName === "save_script" &&
+              out?.ok &&
+              out.url_path
+            ) {
+              const title = out.title ?? "scripts";
+              deterministicResponse = `Salvei! [Ver ${title}](${out.url_path})\n\nQuer que eu gere uma variação ou foca em outro produto?`;
+            }
+
             if (
               part.toolName === "search_virals" &&
               out?.formatted_response &&
