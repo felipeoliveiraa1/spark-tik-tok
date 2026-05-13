@@ -432,11 +432,24 @@ export async function POST(request: Request) {
     messages: finalMessages,
     tools,
     stopWhen: stepCountIs(6),
-    maxOutputTokens: 4096,
-    onError: ({ error }) => {
-      console.error("[api/chat streamText error]", { agent, error });
+    maxOutputTokens: 8192,
+    // Desliga o "thinking" do Gemini 2.5 Flash. Sem isso, o modelo consome todo
+    // o budget de output em raciocínio interno e termina sem emitir texto.
+    providerOptions: {
+      google: {
+        thinkingConfig: {
+          thinkingBudget: 0,
+          includeThoughts: false,
+        },
+      },
     },
-    onFinish: async ({ text, usage }) => {
+    onError: ({ error }) => {
+      console.error("[api/chat streamText error]", {
+        agent,
+        message: error instanceof Error ? error.message : String(error),
+      });
+    },
+    onFinish: async ({ text, usage, finishReason }) => {
       const finalText = text?.trim() ? text : fallback;
       await supabase.from("conversation_messages").insert({
         conversation_id: conversationId,
@@ -446,7 +459,12 @@ export async function POST(request: Request) {
         tokens_out: usage?.outputTokens ?? null,
       });
       if (!text?.trim()) {
-        console.warn("[api/chat] empty text from model", { agent, conversationId });
+        console.warn("[api/chat] empty text from model", {
+          agent,
+          conversationId,
+          finishReason,
+          usage,
+        });
       }
     },
   });
