@@ -172,16 +172,29 @@ function buildViralTools(supabase: SupabaseClient, userId: string): ToolSet {
             ? (days as 7 | 14 | 30 | 90)
             : 7;
           const safeLimit = Math.min(Math.max(limit ?? 10, 1), 20);
-          // Fallback: se filtro de nicho zera, tenta sem niche (mostra geral)
-          let data = await searchVyralVideos({
-            niche: safeNiche,
-            country: safeCountry,
-            lastDays: safeDays,
-            limit: safeLimit,
-            sortBy: "views",
-          });
+          // Auto-expand: se um nicho específico tem poucos cards (<5),
+          // expandimos o período pra trazer mais variedade. Cada tentativa
+          // é cacheada separadamente.
+          const MIN_NICHE_CARDS = 5;
+          const periods: (7 | 14 | 30 | 90)[] = safeNiche
+            ? [safeDays, ...([14, 30, 90] as const).filter((d) => d > safeDays)]
+            : [safeDays];
+          let data: Awaited<ReturnType<typeof searchVyralVideos>> | null = null;
+          let usedDays: 7 | 14 | 30 | 90 = safeDays;
           let fellBackToGeneral = false;
-          if (data.videos.length === 0 && safeNiche) {
+          for (const d of periods) {
+            data = await searchVyralVideos({
+              niche: safeNiche,
+              country: safeCountry,
+              lastDays: d,
+              limit: safeLimit,
+              sortBy: "views",
+            });
+            usedDays = d;
+            if (data.videos.length >= MIN_NICHE_CARDS) break;
+          }
+          // Se mesmo com 90 dias o nicho não atingir o mínimo, cai pra geral.
+          if (data && data.videos.length === 0 && safeNiche) {
             data = await searchVyralVideos({
               country: safeCountry,
               lastDays: safeDays,
@@ -189,6 +202,9 @@ function buildViralTools(supabase: SupabaseClient, userId: string): ToolSet {
               sortBy: "views",
             });
             fellBackToGeneral = true;
+          }
+          if (!data) {
+            return { ok: false, error: "no_data_returned" };
           }
           // Se ainda 0, retorna explicitamente vazio com instrução literal
           if (data.videos.length === 0) {
@@ -238,14 +254,19 @@ function buildViralTools(supabase: SupabaseClient, userId: string): ToolSet {
           });
           const formatted_response = cards.join("\n\n");
 
+          const expandedPeriod = usedDays !== safeDays;
           return {
             ok: true,
             count: data.videos.length,
             fell_back_to_general: fellBackToGeneral,
+            used_days: usedDays,
+            expanded_period: expandedPeriod,
             formatted_response,
             INSTRUCTION: fellBackToGeneral
-              ? `Nicho '${safeNiche}' não tinha vídeos no período. Mostre o conteúdo de formatted_response (top virais geral) com intro: 'Não tem viral específico de ${safeNiche} agora, mas isso aqui está bombando no geral:' e termine com 'Quer focar em outro nicho?'`
-              : "Use EXATAMENTE o conteúdo de formatted_response como corpo da resposta. Adicione apenas uma intro curta (1 linha) antes e um outro curto (1 linha) depois — convidando a aluna a salvar ou ver detalhes. PROIBIDO modificar números, criadores, URLs dos cards.",
+              ? `Nicho '${safeNiche}' não tinha vídeos suficientes. Mostre o conteúdo de formatted_response (top virais geral) com intro: 'Não tem viral específico de ${safeNiche} agora, mas isso aqui está bombando no geral:' e termine com 'Quer focar em outro nicho?'`
+              : expandedPeriod
+                ? `Período expandido pra ${usedDays} dias porque ${safeDays} dias tinha poucos cards do nicho. Mostre formatted_response com intro: 'Achei poucos virais de ${safeNiche} nos últimos ${safeDays} dias — então puxei dos últimos ${usedDays} dias pra ter mais variedade:' e outro 'Quer salvar algum ou ver detalhes?'.`
+                : "Use EXATAMENTE o conteúdo de formatted_response como corpo da resposta. Adicione apenas uma intro curta (1 linha) antes e um outro curto (1 linha) depois — convidando a aluna a salvar ou ver detalhes. PROIBIDO modificar números, criadores, URLs dos cards.",
             videos: data.videos.map((v, idx) => ({
               id: v.id,
               rank: v.rank ?? idx + 1,
@@ -673,10 +694,19 @@ export async function POST(request: Request) {
               out?.formatted_response &&
               out.formatted_response.trim().length > 0
             ) {
-              const intro = out.fell_back_to_general
-                ? "Não tinha viral específico pra esse nicho no período, mas isso aqui está bombando no geral:"
-                : "Aqui está o que tá bombando no TikTok Shop:";
-              const outro = "Quer que eu salve algum desses na sua biblioteca ou veja detalhes? É só falar o número.";
+              const richOut = out as typeof out & {
+                expanded_period?: boolean;
+                used_days?: number;
+              };
+              let intro = "Aqui está o que tá bombando no TikTok Shop:";
+              if (richOut.fell_back_to_general) {
+                intro =
+                  "Não tinha viral específico pra esse nicho no período, mas isso aqui está bombando no geral:";
+              } else if (richOut.expanded_period && richOut.used_days) {
+                intro = `Achei poucos virais nesse nicho nos últimos dias, então puxei dos últimos ${richOut.used_days} dias pra ter mais variedade:`;
+              }
+              const outro =
+                "Quer que eu salve algum desses na sua biblioteca ou veja detalhes? É só falar o número.";
               deterministicResponse = `${intro}\n\n${out.formatted_response}\n\n${outro}`;
             }
           } else if (part.type === "error") {
