@@ -15,9 +15,9 @@ import {
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-// Vercel Hobby: 10s. Pra Pro/Enterprise: usar 60s. Mantendo 30s pra dar margem
-// se o Felipe estiver no Pro.
-export const maxDuration = 30;
+// Scraper Playwright leva 15-25s pra retornar a lista de virais. 60s dá
+// margem pra tool rodar + modelo gerar texto final.
+export const maxDuration = 60;
 
 type Attachment = { url: string; mime?: string };
 
@@ -536,10 +536,10 @@ export async function POST(request: Request) {
   let capturedError: string | null = null;
   const toolEvents: { name: string; ok?: boolean; error?: string }[] = [];
 
-  // Abort signal — corta o stream se passar do limite (deixa 2s de margem
-  // antes do timeout da função pra conseguir responder algo pro cliente).
+  // Abort signal — corta o stream com folga antes do maxDuration (60s)
+  // pra conseguir devolver texto pro cliente em vez de cair em timeout.
   const abortController = new AbortController();
-  const abortTimer = setTimeout(() => abortController.abort(), 25_000);
+  const abortTimer = setTimeout(() => abortController.abort(), 55_000);
 
   const result = streamText({
     model: models[agent],

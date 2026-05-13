@@ -20,10 +20,12 @@ import type {
  *   SCRAPER_HMAC_SECRET=<same as worker>
  */
 
-const POLL_INTERVAL_MS = 500;
-// Vercel Hobby tem 10s de timeout (Pro tem 60s). Mantemos baixo o suficiente
-// pra a tool falhar rápido e o modelo poder responder algo pra aluna.
-const DEFAULT_POLL_TIMEOUT_MS = 8_000;
+const POLL_INTERVAL_MS = 700;
+// O scrape via Playwright (login + nav + extração de 10 cards) leva 15-25s.
+// Vercel Pro tem 60s de timeout, Hobby tem 10s. Pra Hobby vai estourar de
+// qualquer jeito — assumindo Pro/Enterprise. Margem de 5s pro modelo
+// responder em texto depois.
+const DEFAULT_POLL_TIMEOUT_MS = 25_000;
 
 class ScraperClientError extends Error {
   status?: number;
