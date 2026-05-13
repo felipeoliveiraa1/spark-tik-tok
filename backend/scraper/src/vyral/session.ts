@@ -38,17 +38,100 @@ async function persistStorageState(context: BrowserContext) {
 }
 
 async function ensureLoggedIn(page: Page): Promise<void> {
-  // TODO(vyral-real): map the actual login form selectors once we have access.
-  // Steps will be roughly:
-  //   1. page.goto(`${VYRAL_BASE_URL}/login`)
-  //   2. await page.fill('input[type="email"]', VYRAL_EMAIL)
-  //   3. await page.fill('input[type="password"]', VYRAL_PASSWORD)
-  //   4. await page.click('button[type="submit"]')
-  //   5. await page.waitForURL(/dashboard|app|home/)
-  //   6. persistStorageState(context)
-  log.warn(
-    "vyral.session.login: stub — fill in selectors after first manual login pass on the real platform",
-  );
+  if (!env.VYRAL_EMAIL || !env.VYRAL_PASSWORD) {
+    throw new Error(
+      "vyral.session: VYRAL_EMAIL / VYRAL_PASSWORD não configurados — set no .env.production",
+    );
+  }
+
+  // 1. Bate na home pra ver se a sessão restaurada do storage state ainda é válida.
+  try {
+    await page.goto(env.VYRAL_BASE_URL, { waitUntil: "domcontentloaded", timeout: 30_000 });
+    // Se ainda estamos numa rota de login OU se vemos botão de "Entrar/Login",
+    // sessão expirou.
+    const currentUrl = page.url();
+    const onLoginPage = /login|signin|entrar|auth/i.test(currentUrl);
+    if (!onLoginPage) {
+      const loginCta = await page
+        .locator(
+          'a[href*="login"], button:has-text("Entrar"), a:has-text("Entrar"), button:has-text("Login")',
+        )
+        .first()
+        .count()
+        .catch(() => 0);
+      if (loginCta === 0) {
+        log.info("vyral.session: cookies válidos, já logada");
+        return;
+      }
+    }
+  } catch (err) {
+    log.warn({ err: err instanceof Error ? err.message : err }, "vyral.session: probe falhou");
+  }
+
+  log.info("vyral.session: fazendo login fresco");
+
+  // 2. Navega pra rota de login (tenta os caminhos comuns).
+  const loginCandidates = ["/login", "/entrar", "/signin", "/auth/login"];
+  let landed = false;
+  for (const path of loginCandidates) {
+    try {
+      const res = await page.goto(`${env.VYRAL_BASE_URL}${path}`, {
+        waitUntil: "domcontentloaded",
+        timeout: 20_000,
+      });
+      if (res && res.ok()) {
+        landed = true;
+        break;
+      }
+    } catch {
+      /* tenta próximo */
+    }
+  }
+  if (!landed) {
+    throw new Error("vyral.session: não achei a página de login (tentei /login, /entrar, /signin, /auth/login)");
+  }
+
+  // 3. Preenche email + senha (tenta múltiplos selectors comuns).
+  const emailInput = page.locator(
+    'input[type="email"], input[name="email"], input[id="email"], input[placeholder*="mail" i]',
+  ).first();
+  await emailInput.waitFor({ timeout: 15_000 });
+  await emailInput.fill(env.VYRAL_EMAIL);
+
+  const passwordInput = page.locator(
+    'input[type="password"], input[name="password"], input[id="password"]',
+  ).first();
+  await passwordInput.fill(env.VYRAL_PASSWORD);
+
+  // 4. Submete (Enter no campo ou botão).
+  const submitButton = page.locator(
+    'button[type="submit"], button:has-text("Entrar"), button:has-text("Login"), button:has-text("Acessar")',
+  ).first();
+  const hasSubmit = await submitButton.count();
+  if (hasSubmit > 0) {
+    await submitButton.click();
+  } else {
+    await passwordInput.press("Enter");
+  }
+
+  // 5. Espera sair da rota de login.
+  try {
+    await page.waitForURL((url) => !/login|signin|entrar/i.test(url.toString()), {
+      timeout: 30_000,
+    });
+  } catch {
+    // Se ainda está em /login, captura erro visível
+    const errMsg = await page
+      .locator('[class*="error"], [role="alert"], .text-red-500, .text-danger')
+      .first()
+      .innerText()
+      .catch(() => "");
+    throw new Error(
+      `vyral.session: login não saiu da rota de auth${errMsg ? ` (mensagem: ${errMsg.slice(0, 200)})` : ""}`,
+    );
+  }
+
+  log.info({ landedAt: page.url() }, "vyral.session: login OK");
 }
 
 async function buildSession(): Promise<VyralSessionCtx> {

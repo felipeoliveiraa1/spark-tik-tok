@@ -11,7 +11,10 @@ const schema = z.object({
   VYRAL_PASSWORD: z.preprocess(emptyToUndefined, z.string().optional()),
   VYRAL_BASE_URL: z.string().url().default("https://www.vyral.com.br"),
   REDIS_URL: z.string().default("redis://127.0.0.1:6379"),
-  SESSION_FILE: z.string().default("./vyral-session.json"),
+  // Default em /home/spark/ porque o user `spark` (UID 10001) sempre pode
+  // escrever no próprio home. Se um bind mount apontar pra outro lugar
+  // sobrescreve aqui mas precisa ter ownership chown -R 10001:10001.
+  SESSION_FILE: z.string().default("/home/spark/vyral-session.json"),
   VYRAL_COOKIE_FILE: z.string().default("./vyral-cookies.json"),
   DATABASE_URL: z.string().default("postgresql://localhost:5432/spark_dev"),
   PLAYWRIGHT_HEADLESS: z
