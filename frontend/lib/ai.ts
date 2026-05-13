@@ -1,31 +1,36 @@
 import { google } from "@ai-sdk/google";
 
 /**
- * Shared Gemini model handles for the four Spark agents.
+ * Modelos Gemini por agente. Trade-off custo × qualidade:
  *
- * We default everything to the latest Flash (cheap, fast, multimodal, PT-BR
- * fluent). When the Scripts agent's output ever feels too generic, swap its
- * binding here to `gemini-2.5-pro` — that's the only knob.
+ * - **gemini-flash-latest** (≈ 2.5 Flash): rápido, barato, suficiente
+ *   pra tool routing simples + cospe markdown. Usado quando o servidor
+ *   já injeta determinismo (formatted_response do Virais, ou Q&A direto).
  *
- * Using `gemini-flash-latest` (a moving alias) instead of a pinned 2.0/2.5
- * lets us inherit Google's incremental improvements without a code change,
- * and matches the model name that ships with the free tier on most projects.
+ * - **gemini-2.5-pro**: reasoning + tool calling muito melhor que Flash.
+ *   ~5-10× mais caro. Usado onde criatividade ou raciocínio importam:
+ *   - Info: precisa decidir quando chamar google_search e cruzar info
+ *   - Script: precisa gerar hooks brasileiros com gatilho cerebral —
+ *     output é o produto, não pode ser genérico
+ *
+ * Se algum agente quiser baixar custo, troca pra "gemini-flash-latest"
+ * aqui — só esse arquivo muda.
  */
 
-const FLASH_MODEL_ID = "gemini-flash-latest";
+const FLASH = "gemini-flash-latest";
+const PRO = "gemini-2.5-pro";
 
 export const models = {
-  /** Catch-all default — used by every agent that didn't override. */
-  default: google(FLASH_MODEL_ID),
+  default: google(FLASH),
 
-  /** Agente Informação (vision-enabled product analysis). */
-  info: google(FLASH_MODEL_ID),
-  /** Agente Virais (parsing of transcriptions + filters). */
-  viral: google(FLASH_MODEL_ID),
-  /** Agente Scripts (neuromarketing hooks — keep flagged for upgrade). */
-  script: google(FLASH_MODEL_ID),
-  /** Agente Tira-dúvidas (TikTok Shop Q&A). */
-  help: google(FLASH_MODEL_ID),
+  /** Agente Informação: vision + web search → reasoning beneficia */
+  info: google(PRO),
+  /** Agente Virais: tool forçado + markdown determinístico → Flash basta */
+  viral: google(FLASH),
+  /** Agente Scripts: gera hooks de neuromarketing → criatividade importa */
+  script: google(PRO),
+  /** Agente Tira-dúvidas: Q&A simples → Flash suficiente */
+  help: google(FLASH),
 };
 
 export type SparkModel = keyof typeof models;

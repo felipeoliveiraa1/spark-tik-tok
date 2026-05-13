@@ -95,6 +95,108 @@ const KEYWORD_HINTS = [
   "páscoa",
 ];
 
+/**
+ * Detecta se a última mensagem da aluna é um pedido de listar virais.
+ * Quando true, forçamos toolChoice pra search_virals no streamText —
+ * Gemini não tem escolha de inventar uma resposta direta.
+ *
+ * Retorna false pra saudações ("oi"), confirmações ("ok"), ações sobre
+ * card já listado ("salva o #1", "detalhes do #3").
+ */
+function wantsViralList(text: string): boolean {
+  if (!text || text.trim().length < 3) return false;
+  const lower = text.toLowerCase().trim();
+
+  // Saudações / conversa trivial → não força
+  if (
+    /^(oi+|ol[áa]+|hello|hi+|hey|bom\s+dia|boa\s+(tarde|noite)|tudo\s+bem|td\s+bem|valeu|obrigad[ao]|tchau|ate\s+logo|brigad[ao]|sim|n[aã]o|ok|certo|legal|show|massa|beleza\s+brigada)[\s.,!?]*$/i.test(
+      lower,
+    )
+  ) {
+    return false;
+  }
+
+  // Ações sobre cards já mostrados → deixa modelo escolher tool
+  if (
+    /\b(salv|guarda|adiciona|biblioteca|detalh|transcri[çc][ãa]o|o\s+que\s+(ela|ele|a\s+criadora)\s+(diss|fal)|abre\s+(o|esse)\s+v[íi]deo|gera\s+(scripts|hooks))\b/i.test(
+      lower,
+    )
+  ) {
+    return false;
+  }
+
+  // Palavras-chave que indicam pedido de listagem de virais
+  const triggers = [
+    "viral",
+    "bombando",
+    "top",
+    "tendência",
+    "tendencia",
+    "trend",
+    "melhor",
+    "mais vendendo",
+    "mais vendido",
+    "vendendo",
+    "popular",
+    "hit",
+    "queria ver",
+    "queria saber",
+    "queria",
+    "quero ver",
+    "quero saber",
+    "quero",
+    "me mostr",
+    "mostr",
+    "pesquis",
+    "busca",
+    "procur",
+    "no nicho",
+    "do nicho",
+    "no da",
+    "no de",
+    "do da",
+    "do de",
+    "tem (de|do)",
+    "que tem",
+    "outros",
+    "mais",
+  ];
+  for (const t of triggers) {
+    const re = new RegExp(`\\b${t}\\b`, "i");
+    if (re.test(lower)) return true;
+  }
+
+  // Se não detectou ação específica, e a mensagem é curta com substantivo
+  // típico de busca (beleza, fitness, suplemento, etc.), considera pedido
+  const nicheTokens = [
+    "beleza",
+    "moda",
+    "casa",
+    "fitness",
+    "academia",
+    "saude",
+    "saúde",
+    "pet",
+    "eletronicos",
+    "eletrônicos",
+    "acessorios",
+    "acessórios",
+    "infantil",
+    "suplemento",
+    "skincare",
+    "cabelo",
+    "maquiagem",
+    "perfume",
+    "tenis",
+    "tênis",
+  ];
+  for (const t of nicheTokens) {
+    if (lower.includes(t)) return true;
+  }
+
+  return false;
+}
+
 function deriveQueryFromMessage(text: string): string | undefined {
   if (!text) return undefined;
   const stripAccents = (s: string): string =>
@@ -747,11 +849,25 @@ export async function POST(request: Request) {
   const abortController = new AbortController();
   const abortTimer = setTimeout(() => abortController.abort(), 55_000);
 
+  // Pra agente Virais: se a mensagem da aluna pede listagem de virais
+  // (não saudação, não ação sobre card já mostrado), FORÇA o modelo a
+  // chamar search_virals em vez de inventar resposta livre. Gemini Flash
+  // tem mania de "responder direto" mesmo com prompt forte.
+  const forceSearchVirals = agent === "viral" && wantsViralList(lastUserText);
+  if (forceSearchVirals) {
+    console.log("[api/chat] forçando toolChoice=search_virals", {
+      lastUserText: lastUserText.slice(0, 100),
+    });
+  }
+
   const result = streamText({
     model: models[agent],
     system: SYSTEM_PROMPTS[agent],
     messages: finalMessages,
     tools,
+    toolChoice: forceSearchVirals
+      ? { type: "tool", toolName: "search_virals" }
+      : undefined,
     stopWhen: stepCountIs(3),
     maxOutputTokens: 8192,
     // Temperature 0 pro Virais — modelo SÓ copia formatted_response da tool.
