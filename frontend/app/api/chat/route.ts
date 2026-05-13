@@ -535,10 +535,16 @@ function buildViralTools(
         video_id: z
           .string()
           .describe("ID do vídeo retornado por search_virals (campo 'id')."),
+        search_query: z
+          .string()
+          .optional()
+          .describe(
+            "Palavra-chave do produto pra ajudar o scraper a localizar o vídeo no feed (ex: 'corretivo Luisance', 'creatina'). Use o nome do produto retornado em search_virals.",
+          ),
       }),
-      execute: async ({ video_id }) => {
+      execute: async ({ video_id, search_query }) => {
         try {
-          const data = await getVyralTranscription(video_id);
+          const data = await getVyralTranscription(video_id, search_query);
           if (!data.full || data.full.trim().length < 10) {
             return {
               ok: false,
@@ -959,6 +965,43 @@ export async function POST(request: Request) {
             // Resposta determinística: se a tool de virais retornou
             // formatted_response, monta a resposta no servidor sem deixar
             // o Gemini gerar texto. Garante 100% que cards são reais.
+            // Resposta determinística pra get_viral_details: transcrição
+            // vem direto do scrape (não deixa Gemini inventar quando a tool
+            // falha ou retorna pouco texto).
+            const detailsOut = out as
+              | (typeof out & {
+                  transcription?: string;
+                  hook_first_sentence?: string;
+                  caption?: string;
+                })
+              | undefined;
+            if (
+              part.toolName === "get_viral_details" &&
+              detailsOut?.ok &&
+              detailsOut.transcription
+            ) {
+              const t = detailsOut.transcription;
+              const hook = detailsOut.hook_first_sentence;
+              const cap = detailsOut.caption;
+              let block = `**O que a criadora fala no vídeo (transcrição real):**\n\n> ${t.replace(/\s+/g, " ").trim()}\n`;
+              if (hook && hook.trim().length > 0 && !t.includes(hook)) {
+                block += `\n**Hook (primeira frase):** "${hook.trim()}"\n`;
+              }
+              if (cap && cap.trim().length > 0) {
+                block += `\n**Caption do post:** ${cap.trim()}\n`;
+              }
+              block +=
+                "\nQuer que eu te passe pra Scripts gerar hooks inspirados nesse vídeo ou prefere ver outro?";
+              deterministicResponse = block;
+            }
+            if (
+              part.toolName === "get_viral_details" &&
+              !detailsOut?.ok
+            ) {
+              deterministicResponse =
+                "Não consegui puxar a transcrição desse vídeo agora — ele não está visível no feed atual ou a análise ainda não foi processada no nosso painel. Quer tentar outro vídeo, ou prefere que eu te passe pra Scripts gerar hooks inspirados nesse produto?";
+            }
+
             // Resposta determinística pra save_viral: garante que o link
             // /virais/<uuid> está correto (Gemini estava colocando o
             // source_video_id em vez do uuid retornado pela tool).

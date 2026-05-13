@@ -14,7 +14,7 @@ import { scrapeTranscription } from "./scrape-feed.js";
  */
 export async function getTranscription(
   _ctx: unknown,
-  params: { videoId: string },
+  params: { videoId: string; searchQuery?: string },
 ): Promise<VyralTranscription> {
   if (isMockMode) {
     log.debug({ params }, "vyral.transcribe: mock mode");
@@ -24,7 +24,7 @@ export async function getTranscription(
   try {
     const scraped = await withSession(async (ctx) => {
       if (!ctx.page) throw new Error("vyral.transcribe: no page in session");
-      return scrapeTranscription(ctx.page, params.videoId);
+      return scrapeTranscription(ctx.page, params.videoId, params.searchQuery);
     });
 
     if (!scraped || !scraped.transcription) {

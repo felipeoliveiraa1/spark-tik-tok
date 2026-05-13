@@ -118,7 +118,7 @@ export type ScraperJobKind =
 
 export type ScraperJobInput =
   | { kind: "vyral.search-videos"; params: VyralSearchInput }
-  | { kind: "vyral.get-transcription"; params: { videoId: string } }
+  | { kind: "vyral.get-transcription"; params: { videoId: string; searchQuery?: string } }
   | { kind: "vyral.top-products"; params: { country: CountryCode; niche?: VyralNiche } };
 
 export type ScraperJobResult<T = unknown> = {

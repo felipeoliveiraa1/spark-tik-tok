@@ -102,8 +102,15 @@ export async function searchVyralVideos(params: VyralSearchInput, opts?: { timeo
   return runJob<VyralSearchResult>({ kind: "vyral.search-videos", params }, opts);
 }
 
-export async function getVyralTranscription(videoId: string, opts?: { timeoutMs?: number }) {
-  return runJob<VyralTranscription>({ kind: "vyral.get-transcription", params: { videoId } }, opts);
+export async function getVyralTranscription(
+  videoId: string,
+  searchQuery?: string,
+  opts?: { timeoutMs?: number },
+) {
+  return runJob<VyralTranscription>(
+    { kind: "vyral.get-transcription", params: { videoId, searchQuery } },
+    opts,
+  );
 }
 
 export async function getVyralTopProducts(

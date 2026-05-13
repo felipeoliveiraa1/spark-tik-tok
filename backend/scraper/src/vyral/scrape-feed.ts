@@ -290,10 +290,35 @@ async function dumpDebugSnapshot(page: Page, reason: string): Promise<void> {
 export async function scrapeTranscription(
   page: Page,
   videoId: string,
+  searchQuery?: string,
 ): Promise<{ videoId: string; caption: string | null; transcription: string } | null> {
-  // Navega se ainda não está no feed
-  if (!page.url().startsWith(FEED_URL)) {
-    await page.goto(FEED_URL, { waitUntil: "domcontentloaded", timeout: 30_000 });
+  // Navega pro feed
+  await page.goto(FEED_URL, { waitUntil: "networkidle", timeout: 35_000 });
+
+  // Se sabemos a palavra-chave (nome do produto), aplica busca pra carregar
+  // o feed certo (vídeo pode não estar no top default).
+  if (searchQuery && searchQuery.trim()) {
+    try {
+      const input = page.locator(SEARCH_INPUT_SELECTOR).first();
+      await input.waitFor({ timeout: 8_000 });
+      await input.fill(searchQuery.trim());
+      const submit = page.locator(SEARCH_SUBMIT_SELECTOR).first();
+      if ((await submit.count()) > 0) {
+        await submit.click();
+      } else {
+        await input.press("Enter");
+      }
+      await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
+      log.info(
+        { videoId, searchQuery },
+        "scrape-transcription: busca aplicada pra localizar o vídeo",
+      );
+    } catch (err) {
+      log.warn(
+        { err: err instanceof Error ? err.message : err, searchQuery },
+        "scrape-transcription: falhou aplicar busca prévia",
+      );
+    }
   }
 
   // Aguarda os cards renderizarem
@@ -305,28 +330,45 @@ export async function scrapeTranscription(
   }
 
   // Acha o índice (1-based) do card que tem o thumbnail com esse videoId.
-  // Usa page.$$eval pra fazer no DOM em uma chamada.
-  const cardIndex = await page.$$eval(
-    CARD_SELECTOR,
-    (cards, vid) => {
-      const slice = cards as HTMLElement[];
-      for (let i = 0; i < slice.length; i++) {
-        const img = slice[i].querySelector("img.chakra-image.css-1phd9a0") as HTMLImageElement | null;
-        const src = img?.getAttribute("src") ?? "";
-        const decoded = decodeURIComponent(src);
-        if (decoded.includes(`tiktok-video/${vid}`)) {
-          // O id do card no DOM é "card-N" — extrair N
-          const idMatch = slice[i].id.match(/card-(\d+)/);
-          if (idMatch) return parseInt(idMatch[1], 10);
+  const findCardIndex = () =>
+    page.$$eval(
+      CARD_SELECTOR,
+      (cards, vid) => {
+        const slice = cards as HTMLElement[];
+        for (let i = 0; i < slice.length; i++) {
+          const img = slice[i].querySelector("img.chakra-image.css-1phd9a0") as HTMLImageElement | null;
+          const src = img?.getAttribute("src") ?? "";
+          const decoded = decodeURIComponent(src);
+          if (decoded.includes(`tiktok-video/${vid}`)) {
+            const idMatch = slice[i].id.match(/card-(\d+)/);
+            if (idMatch) return parseInt(idMatch[1], 10);
+          }
         }
-      }
-      return -1;
-    },
-    videoId,
-  );
+        return -1;
+      },
+      videoId,
+    );
+
+  let cardIndex = await findCardIndex();
+
+  // Se não achou e tem keyword, tenta busca com fragmento do videoId (TikTok
+  // ID inteiro funciona no campo de busca em alguns casos).
+  if (cardIndex < 0 && !searchQuery) {
+    try {
+      const input = page.locator(SEARCH_INPUT_SELECTOR).first();
+      await input.fill(videoId);
+      const submit = page.locator(SEARCH_SUBMIT_SELECTOR).first();
+      if ((await submit.count()) > 0) await submit.click();
+      else await input.press("Enter");
+      await page.waitForLoadState("networkidle", { timeout: 10_000 }).catch(() => {});
+      cardIndex = await findCardIndex();
+    } catch {
+      /* ignore */
+    }
+  }
 
   if (cardIndex < 0) {
-    log.warn({ videoId }, "scrape-transcription: card não encontrado no feed atual");
+    log.warn({ videoId, searchQuery }, "scrape-transcription: card não encontrado");
     return null;
   }
 
