@@ -16,18 +16,66 @@ import {
   type ChatMessage,
 } from "@/lib/conversation-store";
 
-function TypingDots({ agent }: { agent: AgentId }) {
+const STATUS_MESSAGES: Record<AgentId, string[]> = {
+  info: [
+    "Olhando o produto…",
+    "Buscando preço atual no BR…",
+    "Identificando concorrentes…",
+    "Cruzando reviews e regulamentação…",
+    "Montando a ficha…",
+  ],
+  viral: [
+    "Acessando nossa base de virais…",
+    "Garimpando os top da semana…",
+    "Coletando métricas (views, GMV)…",
+    "Filtrando os melhores pra você…",
+    "Quase lá, organizando os cards…",
+  ],
+  script: [
+    "Pensando nos ganchos…",
+    "Aplicando neurociência…",
+    "Calibrando humor brasileiro…",
+    "Testando gatilhos cerebrais…",
+    "Polindo a tabela final…",
+  ],
+  help: [
+    "Consultando o painel…",
+    "Confirmando a regra atual…",
+    "Buscando boas práticas…",
+    "Organizando a resposta…",
+  ],
+};
+
+function TypingStatus({ agent }: { agent: AgentId }) {
+  const messages = STATUS_MESSAGES[agent];
+  const [idx, setIdx] = React.useState(0);
   const color = AGENTS[agent].fg;
+
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setIdx((i) => (i + 1) % messages.length);
+    }, 2400);
+    return () => clearInterval(interval);
+  }, [messages.length]);
+
   return (
-    <span className="inline-flex items-center gap-1.5 py-1.5" aria-label="Pensando">
-      {[0, 1, 2].map((i) => (
-        <span
-          key={i}
-          className="w-2 h-2 rounded-full animate-typing-dot"
-          style={{ background: color, animationDelay: `${i * 150}ms` }}
-        />
-      ))}
-    </span>
+    <div className="inline-flex items-center gap-2.5 py-1.5" aria-live="polite">
+      <span className="inline-flex items-center gap-1.5" aria-label="Pensando">
+        {[0, 1, 2].map((i) => (
+          <span
+            key={i}
+            className="w-2 h-2 rounded-full animate-typing-dot"
+            style={{ background: color, animationDelay: `${i * 150}ms` }}
+          />
+        ))}
+      </span>
+      <span
+        key={idx}
+        className="text-[13.5px] text-spark-ink-50 italic animate-in fade-in slide-in-from-bottom-1"
+      >
+        {messages[idx]}
+      </span>
+    </div>
   );
 }
 
@@ -58,7 +106,7 @@ function ChatStream({
           </UserBubble>
         ) : (
           <AgentBubble key={m.id} agent={agent}>
-            {m.content || (streaming ? <TypingDots agent={agent} /> : "")}
+            {m.content || (streaming ? <TypingStatus agent={agent} /> : "")}
           </AgentBubble>
         ),
       )}
