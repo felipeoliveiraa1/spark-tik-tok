@@ -276,17 +276,53 @@ async function extractCard(
   };
 }
 
+async function dumpDebugSnapshot(page: Page, reason: string): Promise<void> {
+  try {
+    const url = page.url();
+    const title = await page.title().catch(() => "");
+    const htmlSnippet = await page.content().then((c) => c.slice(0, 1500)).catch(() => "");
+    log.warn(
+      { reason, url, title, htmlSnippet: htmlSnippet.replace(/\s+/g, " ").slice(0, 600) },
+      "scrape-feed: snapshot",
+    );
+    // Salva screenshot em /home/spark pra depuração (user spark sempre escreve aí)
+    const filename = `/home/spark/scrape-fail-${Date.now()}.png`;
+    await page.screenshot({ path: filename, fullPage: false }).catch(() => {});
+    log.warn({ filename }, "scrape-feed: screenshot salvo");
+  } catch {
+    /* best-effort */
+  }
+}
+
 export async function scrapeFeed(
   page: Page,
   params: VyralSearchInput,
 ): Promise<VyralSearchResult> {
-  log.info({ params }, "scrape-feed: navegando pro painel");
+  log.info({ params, feedUrl: FEED_URL }, "scrape-feed: navegando pro painel");
   await page.goto(FEED_URL, { waitUntil: "domcontentloaded", timeout: 30_000 });
+  log.info({ landedAt: page.url() }, "scrape-feed: navegação completa");
 
-  // Aguarda os filtros aparecerem
-  await page.locator("#filtros").waitFor({ timeout: 15_000 }).catch(() => {});
+  // Se a navegação foi redirecionada pra login, tenta novo login
+  if (/login|signin|entrar|auth/i.test(page.url())) {
+    log.warn({ url: page.url() }, "scrape-feed: caí na página de login — sessão expirou");
+    await dumpDebugSnapshot(page, "redirected-to-login");
+    throw new Error("vyral.scrape: sessão expirou — re-login necessário");
+  }
 
-  // Aplica filtros (best-effort — se falhar, continua com os defaults do site)
+  // Aguarda os filtros OU os cards aparecerem (o que vier primeiro). SPAs
+  // Next.js às vezes renderizam progressivo, então tentamos esperar pelo
+  // primeiro card direto.
+  try {
+    await Promise.race([
+      page.locator("#filtros").waitFor({ timeout: 20_000 }),
+      page.locator(CARD_SELECTOR).first().waitFor({ timeout: 20_000 }),
+    ]);
+  } catch {
+    log.warn("scrape-feed: nem #filtros nem cards apareceram após 20s");
+    await dumpDebugSnapshot(page, "no-filters-no-cards");
+  }
+
+  // Aplica filtros (best-effort)
   const country = params.country ?? "BR";
   await pickMenuOption(page, "País:", countryLabel(country));
   await pickMenuOption(page, "Período:", periodLabelFromDays(params.lastDays));
@@ -294,9 +330,10 @@ export async function scrapeFeed(
 
   // Aguarda os cards renderizarem
   try {
-    await page.locator(CARD_SELECTOR).first().waitFor({ timeout: 20_000 });
+    await page.locator(CARD_SELECTOR).first().waitFor({ timeout: 25_000 });
   } catch {
-    log.warn("scrape-feed: nenhum card apareceu após filtros");
+    log.warn("scrape-feed: nenhum card apareceu");
+    await dumpDebugSnapshot(page, "no-cards-after-filters");
     return {
       query: params,
       fetchedAt: new Date().toISOString(),

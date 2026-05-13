@@ -42,7 +42,7 @@ services:
       DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL (Supabase connection string)}
       REDIS_URL: redis://redis:6379
       SCRAPER_HMAC_SECRET: ${SCRAPER_HMAC_SECRET:?set SCRAPER_HMAC_SECRET}
-      VYRAL_BASE_URL: https://www.vyral.com.br
+      VYRAL_BASE_URL: https://app.vyral.com.br
       VYRAL_EMAIL: ${VYRAL_EMAIL:-}
       VYRAL_PASSWORD: ${VYRAL_PASSWORD:-}
       VYRAL_COOKIE_FILE: /app/data/vyral-cookies.json
