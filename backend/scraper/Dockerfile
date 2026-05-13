@@ -39,7 +39,8 @@ WORKDIR /app
 
 ENV NODE_ENV=production \
     PORT=4001 \
-    SCRAPER_SYNC=false
+    SCRAPER_SYNC=false \
+    PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends tini ca-certificates \
@@ -49,6 +50,16 @@ RUN apt-get update \
 COPY --from=builder /spark-deploy/package.json   ./package.json
 COPY --from=builder /spark-deploy/node_modules   ./node_modules
 COPY --from=builder /spark-deploy/dist           ./dist
+
+# Instala Chromium do Playwright DENTRO da imagem (em /ms-playwright pra ficar
+# acessível pra todos os users) + as deps do sistema que o Chrome precisa
+# (libs gráficas, fonts). Sem isso o container recriado perde o browser e os
+# jobs vyral.search-videos / vyral.transcribe falham com "Executable doesn't
+# exist". --with-deps roda apt-get sob a hood, exige root (a gente ainda tá
+# root aqui).
+RUN npx playwright install --with-deps chromium \
+ && chmod -R a+rX /ms-playwright \
+ && rm -rf /var/lib/apt/lists/*
 
 # Run as non-root for safety. UID 10001 must match the bind-mounted ./data
 # directory ownership on the VPS so the scraper can rotate vyral-cookies.json.
