@@ -1,6 +1,24 @@
+"use client";
+
+import * as React from "react";
 import Link from "next/link";
-import { ArrowLeft, MoreHorizontal, Pen, Copy, Upload, ChevronRight, Sparkle, Send, Paperclip, Package, Flame } from "lucide-react";
+import {
+  ArrowLeft,
+  MoreHorizontal,
+  Pen,
+  Copy,
+  Upload,
+  ChevronRight,
+  Sparkle,
+  Send,
+  Paperclip,
+  Package,
+  Flame,
+  Menu,
+  X,
+} from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
+import { ConversationSidebar } from "@/components/layout/conversation-sidebar";
 import { ChatInputBar } from "@/components/layout/chat-input-bar";
 import { UserBubble } from "@/components/molecules/user-bubble";
 import { AgentBubble } from "@/components/molecules/agent-bubble";
@@ -78,7 +96,10 @@ function ChatStream() {
                 <div className="absolute top-2 left-2 px-1.5 py-[3px] rounded-md bg-black/60 text-white text-[10px] font-bold font-mono">
                   {c.v}
                 </div>
-                <div className="absolute bottom-2 left-2 px-1.5 py-[3px] rounded-md text-white text-[10px] font-bold" style={{ background: "oklch(0.62 0.16 150)" }}>
+                <div
+                  className="absolute bottom-2 left-2 px-1.5 py-[3px] rounded-md text-white text-[10px] font-bold"
+                  style={{ background: "oklch(0.62 0.16 150)" }}
+                >
                   {c.r}
                 </div>
               </div>
@@ -147,13 +168,33 @@ function ChatStream() {
   );
 }
 
+// =================================================================
+// Mobile — chat + drawer da sidebar
+// =================================================================
+
 function ChatMobile() {
+  const [drawerOpen, setDrawerOpen] = React.useState(false);
+
+  // Bloqueia scroll do body quando o drawer estiver aberto
+  React.useEffect(() => {
+    if (drawerOpen) {
+      const original = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = original;
+      };
+    }
+  }, [drawerOpen]);
+
   return (
     <>
-      <div className="pt-14 pl-3 pr-3 pb-2.5 flex items-center gap-1.5 border-b border-spark-hairline">
-        <Link href="/chat" className="w-9 h-9 rounded-full flex items-center justify-center text-spark-ink">
-          <ArrowLeft size={18} strokeWidth={1.7} />
-        </Link>
+      <div className="pt-14 pl-2 pr-3 pb-2.5 flex items-center gap-1.5 border-b border-spark-hairline">
+        <button
+          onClick={() => setDrawerOpen(true)}
+          className="w-9 h-9 rounded-full flex items-center justify-center text-spark-ink"
+        >
+          <Menu size={20} strokeWidth={1.7} />
+        </button>
         <div className="flex-1 min-w-0">
           <div className="text-[14px] font-bold truncate">NAC Always Fit</div>
           <div className="text-[11px] text-spark-ink-50 font-mono">Auto · 4 agentes ativos</div>
@@ -168,9 +209,39 @@ function ChatMobile() {
       </div>
 
       <ChatInputBar />
+
+      {/* Drawer */}
+      {drawerOpen && (
+        <>
+          <div
+            onClick={() => setDrawerOpen(false)}
+            className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm animate-in fade-in"
+          />
+          <div className="fixed top-0 left-0 bottom-0 w-[300px] z-50 bg-spark-surface-elev border-r border-spark-hairline shadow-[0_0_40px_-10px_rgba(20,20,40,0.3)] flex flex-col animate-in slide-in-from-left">
+            <div className="px-3 pt-4 pb-1 flex items-center justify-between">
+              <div className="text-[13px] font-bold text-spark-ink-50 tracking-[0.06em] uppercase">
+                Suas conversas
+              </div>
+              <button
+                onClick={() => setDrawerOpen(false)}
+                className="w-8 h-8 rounded-full text-spark-ink-50 flex items-center justify-center hover:text-spark-ink"
+              >
+                <X size={16} strokeWidth={1.7} />
+              </button>
+            </div>
+            <div className="flex-1 min-h-0">
+              <ConversationSidebar onSelectConversation={() => setDrawerOpen(false)} />
+            </div>
+          </div>
+        </>
+      )}
     </>
   );
 }
+
+// =================================================================
+// Desktop — sidebar fixa esquerda + chat centro + artefatos direita
+// =================================================================
 
 const desktopArtifacts: { Icon: typeof Package; title: string; sub: string; agent: AgentId }[] = [
   { Icon: Package, title: "NAC Always Fit", sub: "Ficha de produto", agent: "info" },
@@ -182,79 +253,90 @@ const nextSteps = ["Gerar variação humor", "Criar versão 30s", "Buscar virais
 
 function ChatDesktop() {
   return (
-    <div className="flex-1 flex flex-col min-h-0">
-      <div className="px-6 py-3.5 border-b border-spark-hairline flex items-center gap-2.5">
-        <div>
-          <div className="text-[14px] font-bold">NAC Always Fit · scripts</div>
-          <div className="text-[11px] text-spark-ink-50 font-mono">
-            Auto · 4 agentes ativos · iniciada há 38min
+    <div className="flex-1 flex min-h-0">
+      {/* Sidebar fixa */}
+      <aside className="w-[280px] shrink-0 border-r border-spark-hairline">
+        <ConversationSidebar />
+      </aside>
+
+      {/* Chat principal */}
+      <div className="flex-1 flex flex-col min-h-0">
+        <div className="px-6 py-3.5 border-b border-spark-hairline flex items-center gap-2.5">
+          <div>
+            <div className="text-[14px] font-bold">NAC Always Fit · scripts</div>
+            <div className="text-[11px] text-spark-ink-50 font-mono">
+              Auto · 4 agentes ativos · iniciada há 38min
+            </div>
           </div>
+          <div className="flex-1" />
+          <SButton size="sm" variant="ghost" Icon={Upload}>
+            Exportar
+          </SButton>
+          <SButton size="sm" variant="ghost" Icon={MoreHorizontal} />
         </div>
-        <div className="flex-1" />
-        <SButton size="sm" variant="ghost" Icon={Upload}>
-          Exportar
-        </SButton>
-        <SButton size="sm" variant="ghost" Icon={MoreHorizontal} />
-      </div>
 
-      <div className="flex-1 flex min-h-0">
-        <div className="flex-1 overflow-auto py-5">
-          <div className="max-w-[760px] mx-auto px-4">
-            <ChatStream />
+        <div className="flex-1 flex min-h-0">
+          <div className="flex-1 overflow-auto py-5">
+            <div className="max-w-[760px] mx-auto px-4">
+              <ChatStream />
 
-            <div className="mt-5 p-3.5 rounded-2xl bg-spark-surface border border-spark-hairline">
-              <div className="flex gap-2.5 items-start">
-                <Paperclip size={18} strokeWidth={1.7} className="text-spark-ink-50 mt-1" />
-                <div className="flex-1 text-[14px] text-spark-ink-50 py-1">cria 10 variações com humor</div>
-                <div className="w-[38px] h-[38px] rounded-[10px] text-white flex items-center justify-center bg-brand-grad shrink-0">
-                  <Send size={16} strokeWidth={1.7} />
+              <div className="mt-5 p-3.5 rounded-2xl bg-spark-surface border border-spark-hairline">
+                <div className="flex gap-2.5 items-start">
+                  <Paperclip size={18} strokeWidth={1.7} className="text-spark-ink-50 mt-1" />
+                  <div className="flex-1 text-[14px] text-spark-ink-50 py-1">
+                    cria 10 variações com humor
+                  </div>
+                  <div className="w-[38px] h-[38px] rounded-[10px] text-white flex items-center justify-center bg-brand-grad shrink-0">
+                    <Send size={16} strokeWidth={1.7} />
+                  </div>
                 </div>
-              </div>
-              <div className="mt-2.5 flex items-center gap-2.5 text-[11px] text-spark-ink-50">
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-spark-surface-sunken">
-                  <Sparkle size={11} strokeWidth={1.7} /> Auto
-                </span>
-                <span className="font-mono">@ pra escolher agente · ⏎ enviar</span>
+                <div className="mt-2.5 flex items-center gap-2.5 text-[11px] text-spark-ink-50">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-spark-surface-sunken">
+                    <Sparkle size={11} strokeWidth={1.7} /> Auto
+                  </span>
+                  <span className="font-mono">@ pra escolher agente · ⏎ enviar</span>
+                </div>
               </div>
             </div>
           </div>
+
+          {/* Painel de artefatos */}
+          <aside className="hidden xl:flex w-[320px] shrink-0 border-l border-spark-hairline p-4 bg-spark-surface-elev overflow-auto flex-col">
+            <div className="text-[11px] font-bold text-spark-ink-50 tracking-[0.08em] uppercase">
+              Artefatos da conversa
+            </div>
+            <div className="mt-2.5 flex flex-col gap-2.5">
+              {desktopArtifacts.map((a) => (
+                <button
+                  key={a.title}
+                  className="p-3 rounded-xl bg-spark-surface border border-spark-hairline flex items-center gap-2.5 text-left hover:border-spark-ink/30 transition-colors"
+                >
+                  <AgentTile agent={a.agent} size={32} />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[13px] font-bold">{a.title}</div>
+                    <div className="text-[11px] text-spark-ink-50">{a.sub}</div>
+                  </div>
+                  <ChevronRight size={14} strokeWidth={1.7} className="text-spark-ink-35" />
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-6 text-[11px] font-bold text-spark-ink-50 tracking-[0.08em] uppercase">
+              Próximos passos
+            </div>
+            <div className="mt-2.5 flex flex-col gap-1.5">
+              {nextSteps.map((t) => (
+                <button
+                  key={t}
+                  className="px-3 py-2.5 rounded-[10px] bg-spark-surface border border-spark-hairline text-[13px] font-semibold flex items-center justify-between hover:border-spark-ink/30 transition-colors"
+                >
+                  {t}
+                  <ChevronRight size={13} strokeWidth={1.7} className="text-spark-ink-35" />
+                </button>
+              ))}
+            </div>
+          </aside>
         </div>
-
-        <aside className="w-[360px] border-l border-spark-hairline p-4.5 bg-spark-surface-elev overflow-auto">
-          <div className="text-[11px] font-bold text-spark-ink-50 tracking-[0.08em] uppercase">
-            Artefatos da conversa
-          </div>
-          <div className="mt-2.5 flex flex-col gap-2.5">
-            {desktopArtifacts.map((a) => (
-              <button
-                key={a.title}
-                className="p-3 rounded-xl bg-spark-surface border border-spark-hairline flex items-center gap-2.5 text-left hover:border-spark-ink/30 transition-colors"
-              >
-                <AgentTile agent={a.agent} size={32} />
-                <div className="flex-1 min-w-0">
-                  <div className="text-[13px] font-bold">{a.title}</div>
-                  <div className="text-[11px] text-spark-ink-50">{a.sub}</div>
-                </div>
-                <ChevronRight size={14} strokeWidth={1.7} className="text-spark-ink-35" />
-              </button>
-            ))}
-          </div>
-
-          <div className="mt-6 text-[11px] font-bold text-spark-ink-50 tracking-[0.08em] uppercase">
-            Próximos passos
-          </div>
-          <div className="mt-2.5 flex flex-col gap-1.5">
-            {nextSteps.map((t) => (
-              <button
-                key={t}
-                className="px-3 py-2.5 rounded-[10px] bg-spark-surface border border-spark-hairline text-[13px] font-semibold flex items-center justify-between hover:border-spark-ink/30 transition-colors"
-              >
-                {t}
-                <ChevronRight size={13} strokeWidth={1.7} className="text-spark-ink-35" />
-              </button>
-            ))}
-          </div>
-        </aside>
       </div>
     </div>
   );
