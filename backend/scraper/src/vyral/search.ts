@@ -3,35 +3,36 @@ import { log } from "../logger.js";
 import { mockSearchVideos } from "./mocks.js";
 import { isMockMode, isDev } from "../config.js";
 import { getCachedSearch, putCachedSearch } from "../persistence/viral.js";
-import { withSession } from "./session.js";
+import type { VyralSessionCtx } from "./session.js";
 import { scrapeFeed } from "./scrape-feed.js";
 
 /**
- * Search for trending videos.
+ * Search for trending videos. Caller is `runJob` (in jobs.ts) which already
+ * wraps us in withSession — we receive `ctx.page` ready to navigate.
  *
  * Pipeline:
  *   1. MOCK mode (dev sem creds): retorna mocks.
  *   2. Cache local (`viral_cache` no Postgres) — 24h TTL por query.
- *   3. Live: navega o painel logado com Playwright e extrai do DOM
- *      (via scrapeFeed). Bem mais resiliente que reverse-engineer
- *      da API privada do Vyral.
- *   4. Persiste o resultado no cache pra próxima.
- *   5. Em dev, se algo falhar, cai no mock. Em produção, propaga
- *      o erro pra o agente avisar a aluna em vez de mentir.
+ *   3. Live: navega o painel via Playwright e extrai do DOM (scrapeFeed).
+ *   4. Persiste o resultado no cache.
+ *   5. Em dev, se algo falhar, cai no mock. Em produção, propaga.
  */
 export async function searchVideos(
-  _ctx: unknown,
+  ctx: VyralSessionCtx,
   input: VyralSearchInput,
 ): Promise<VyralSearchResult> {
   if (isMockMode) {
-    log.debug({ input }, "vyral.search: mock mode (no credentials)");
+    log.info({ input }, "vyral.search: mock mode (no credentials)");
     return mockSearchVideos(input);
   }
 
   try {
     const cached = await getCachedSearch(input);
     if (cached) {
-      log.debug({ input }, "vyral.search: cache HIT");
+      log.info(
+        { input, videos: cached.videos.length },
+        "vyral.search: cache HIT",
+      );
       return cached;
     }
   } catch (err) {
@@ -41,11 +42,13 @@ export async function searchVideos(
     );
   }
 
+  if (!ctx.page) {
+    throw new Error("vyral.search: no page in session (mock or build failed)");
+  }
+
   try {
-    const result = await withSession(async (ctx) => {
-      if (!ctx.page) throw new Error("vyral.search: no page in session (mock?)");
-      return scrapeFeed(ctx.page, input);
-    });
+    log.info({ input }, "vyral.search: cache miss — going live");
+    const result = await scrapeFeed(ctx.page, input);
 
     void putCachedSearch(input, result).catch((err) =>
       log.warn(
