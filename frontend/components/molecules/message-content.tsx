@@ -51,14 +51,22 @@ export function MessageContent({ children }: { children: string }) {
             );
           },
           img: ({ src, alt }) => {
-            if (!src) return null;
+            if (!src || typeof src !== "string") return null;
+            // URLs externas vão pelo proxy /api/img-proxy pra contornar
+            // CORS/referrer/expiração de URLs assinadas do GCS/TikTok CDN.
+            const isExternal = /^https?:\/\//i.test(src);
+            const finalSrc =
+              isExternal && !src.includes("/api/img-proxy")
+                ? `/api/img-proxy?url=${encodeURIComponent(src)}`
+                : src;
             return (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={src}
-                alt={alt ?? ""}
-                className="my-2 max-w-[180px] rounded-2xl border border-spark-hairline object-cover"
+                src={finalSrc}
+                alt={typeof alt === "string" ? alt : ""}
+                className="my-2 w-full max-w-[260px] aspect-[9/14] rounded-2xl border border-spark-hairline object-cover bg-spark-surface-sunken"
                 loading="lazy"
+                referrerPolicy="no-referrer"
               />
             );
           },
