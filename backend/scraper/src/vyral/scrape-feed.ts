@@ -1,4 +1,4 @@
-import { type Page, type Locator } from "playwright";
+import { type Page } from "playwright";
 import type {
   CountryCode,
   VyralNiche,
@@ -156,93 +156,79 @@ function sortLabel(sortBy: VyralSearchInput["sortBy"]): string {
   }
 }
 
-async function extractCard(
-  card: Locator,
-  index: number,
-  defaultCountry: CountryCode,
-): Promise<VyralVideoSummary | null> {
-  const thumbSrc = await card
-    .locator("img.chakra-image.css-1phd9a0")
-    .first()
-    .getAttribute("src")
-    .catch(() => null);
-  const videoId = thumbSrc ? extractTikTokVideoId(thumbSrc) : null;
+/**
+ * Estrutura crua extraída do DOM pelo page.$$eval. Mantém só strings
+ * porque o code roda no contexto do navegador (sem TypeScript) e precisa
+ * ser serializável.
+ */
+type RawCard = {
+  thumbSrc: string | null;
+  rankText: string;
+  nicheLabel: string;
+  productName: string;
+  productImage: string | null;
+  caption: string;
+  creator: string;
+  creatorAvatarUrl: string | null;
+  metrics: string[];
+};
+
+/**
+ * Extrai TODOS os cards de uma vez via JS injetado no navegador (page.$$eval).
+ * Isso é ~500× mais rápido que iterar com locator.innerText() em loop
+ * porque evita uma round-trip CDP por field.
+ */
+async function extractAllCards(page: Page, limit: number): Promise<RawCard[]> {
+  return page.$$eval(
+    'div[id^="card-"]',
+    (cards, max) => {
+      const slice = (cards as HTMLElement[]).slice(0, max);
+      return slice.map((card) => {
+        const q = (sel: string) => card.querySelector(sel) as HTMLElement | null;
+        const text = (sel: string) => q(sel)?.innerText?.trim() ?? "";
+        const attr = (sel: string, name: string) =>
+          (q(sel) as HTMLImageElement | null)?.getAttribute(name) ?? null;
+
+        const metricBlocks = Array.from(card.querySelectorAll(".css-u4muf9"));
+        const metrics = metricBlocks.map((b) => {
+          const ps = (b as HTMLElement).querySelectorAll("p");
+          return (ps[ps.length - 1] as HTMLElement | undefined)?.innerText.trim() ?? "";
+        });
+
+        return {
+          thumbSrc: attr("img.chakra-image.css-1phd9a0", "src"),
+          rankText: text(".css-1ay1ium"),
+          nicheLabel: text(".css-qexgjp"),
+          productName: text("p.css-1dra5za"),
+          productImage: attr("img.chakra-image.css-r6xwej", "src"),
+          caption: text("p.css-dkaess"),
+          creator: text("p.css-1vrbd8y"),
+          creatorAvatarUrl: attr("img.chakra-avatar__image", "src"),
+          metrics,
+        };
+      });
+    },
+    limit,
+  );
+}
+
+function rawCardToSummary(raw: RawCard, index: number, country: CountryCode): VyralVideoSummary | null {
+  const videoId = raw.thumbSrc ? extractTikTokVideoId(raw.thumbSrc) : null;
   if (!videoId) return null;
 
-  const rankText = await card
-    .locator(".css-1ay1ium")
-    .first()
-    .innerText()
-    .catch(() => "");
-  const rankMatch = rankText.match(/#(\d+)/);
+  const rankMatch = raw.rankText.match(/#(\d+)/);
   const rank = rankMatch ? parseInt(rankMatch[1], 10) : index;
 
-  const nicheLabel = (
-    await card
-      .locator(".css-qexgjp")
-      .first()
-      .innerText()
-      .catch(() => "")
-  ).trim();
-  const niche = NICHE_FROM_LABEL[nicheLabel.toLowerCase()];
+  const niche = NICHE_FROM_LABEL[raw.nicheLabel.toLowerCase()];
 
-  const productName = (
-    await card
-      .locator("p.css-1dra5za")
-      .first()
-      .innerText()
-      .catch(() => "")
-  ).trim();
-
-  const productImage = await card
-    .locator("img.chakra-image.css-r6xwej")
-    .first()
-    .getAttribute("src")
-    .catch(() => null);
-
-  const caption = (
-    await card
-      .locator("p.css-dkaess")
-      .first()
-      .innerText()
-      .catch(() => "")
-  ).trim();
-
-  const creator = (
-    await card
-      .locator("p.css-1vrbd8y")
-      .first()
-      .innerText()
-      .catch(() => "")
-  ).trim();
-
-  const creatorAvatarUrl = await card
-    .locator("img.chakra-avatar__image")
-    .first()
-    .getAttribute("src")
-    .catch(() => null);
-
-  // 4 blocos de métricas: views, likes, shares, GMV (R$)
-  const metricBlocks = await card.locator(".css-u4muf9").all();
-  const metricValues = await Promise.all(
-    metricBlocks.map((m) =>
-      m
-        .locator("p")
-        .last()
-        .innerText()
-        .catch(() => ""),
-    ),
-  );
-  const [viewsRaw = "", likesRaw = "", sharesRaw = "", gmvRaw = ""] = metricValues;
-
+  const [viewsRaw = "", likesRaw = "", sharesRaw = "", gmvRaw = ""] = raw.metrics;
   const views = parseMetric(viewsRaw) ?? 0;
   const likes = parseMetric(likesRaw) ?? 0;
   const shares = parseMetric(sharesRaw);
   const gmv = parseMetric(gmvRaw);
 
-  // Hook = primeira frase ou primeiros 80 chars da caption
   const hookPreview =
-    caption
+    raw.caption
       .split(/[.!?\n]/)
       .find((s) => s.trim().length > 4)
       ?.trim()
@@ -251,11 +237,11 @@ async function extractCard(
   return {
     id: videoId,
     rank,
-    url: `https://www.tiktok.com/@${creator}/video/${videoId}`,
-    creator,
-    creatorAvatarUrl: creatorAvatarUrl ?? undefined,
-    thumbnailUrl: thumbSrc ?? undefined,
-    country: defaultCountry,
+    url: `https://www.tiktok.com/@${raw.creator}/video/${videoId}`,
+    creator: raw.creator,
+    creatorAvatarUrl: raw.creatorAvatarUrl ?? undefined,
+    thumbnailUrl: raw.thumbSrc ?? undefined,
+    country,
     niche,
     metrics: {
       views,
@@ -264,15 +250,15 @@ async function extractCard(
       shares: shares ?? undefined,
       estimatedRevenueBrl: gmv ?? undefined,
     },
-    product: productName
+    product: raw.productName
       ? {
-          name: productName,
+          name: raw.productName,
           shopUrl: undefined,
           priceBrl: undefined,
         }
       : undefined,
     hookPreview,
-    caption: caption || undefined,
+    caption: raw.caption || undefined,
   };
 }
 
@@ -302,35 +288,31 @@ export async function scrapeFeed(
   await page.goto(FEED_URL, { waitUntil: "domcontentloaded", timeout: 30_000 });
   log.info({ landedAt: page.url() }, "scrape-feed: navegação completa");
 
-  // Se a navegação foi redirecionada pra login, tenta novo login
   if (/login|signin|entrar|auth/i.test(page.url())) {
     log.warn({ url: page.url() }, "scrape-feed: caí na página de login — sessão expirou");
     await dumpDebugSnapshot(page, "redirected-to-login");
     throw new Error("vyral.scrape: sessão expirou — re-login necessário");
   }
 
-  // Aguarda os filtros OU os cards aparecerem (o que vier primeiro). SPAs
-  // Next.js às vezes renderizam progressivo, então tentamos esperar pelo
-  // primeiro card direto.
   try {
     await Promise.race([
-      page.locator("#filtros").waitFor({ timeout: 20_000 }),
-      page.locator(CARD_SELECTOR).first().waitFor({ timeout: 20_000 }),
+      page.locator("#filtros").waitFor({ timeout: 15_000 }),
+      page.locator(CARD_SELECTOR).first().waitFor({ timeout: 15_000 }),
     ]);
   } catch {
-    log.warn("scrape-feed: nem #filtros nem cards apareceram após 20s");
+    log.warn("scrape-feed: nem #filtros nem cards apareceram após 15s");
     await dumpDebugSnapshot(page, "no-filters-no-cards");
   }
 
-  // Aplica filtros (best-effort)
+  // Aplica filtros (best-effort). O Vyral só expõe País/Período/Ordenar —
+  // nicho é filtrado pós-extração porque o painel não tem essa opção.
   const country = params.country ?? "BR";
   await pickMenuOption(page, "País:", countryLabel(country));
   await pickMenuOption(page, "Período:", periodLabelFromDays(params.lastDays));
   await pickMenuOption(page, "Ordenar por:", sortLabel(params.sortBy));
 
-  // Aguarda os cards renderizarem
   try {
-    await page.locator(CARD_SELECTOR).first().waitFor({ timeout: 25_000 });
+    await page.locator(CARD_SELECTOR).first().waitFor({ timeout: 20_000 });
   } catch {
     log.warn("scrape-feed: nenhum card apareceu");
     await dumpDebugSnapshot(page, "no-cards-after-filters");
@@ -343,21 +325,35 @@ export async function scrapeFeed(
     };
   }
 
-  const cards = await page.locator(CARD_SELECTOR).all();
-  const limit = Math.min(params.limit ?? 10, cards.length);
-  log.info({ cardsFound: cards.length, willExtract: limit }, "scrape-feed: cards visíveis");
+  // Pega o pool de cards visíveis. Se houver filtro de nicho, extraímos
+  // mais cards pra ter chance de achar o suficiente da categoria pedida.
+  const limit = params.limit ?? 10;
+  const poolSize = params.niche ? Math.min(50, limit * 5) : limit;
 
-  const videos: VyralVideoSummary[] = [];
-  for (let i = 0; i < limit; i++) {
-    try {
-      const v = await extractCard(cards[i], i + 1, country);
-      if (v) videos.push(v);
-    } catch (err) {
-      log.warn(
-        { err: err instanceof Error ? err.message : err, index: i },
-        "scrape-feed: card falhou",
-      );
-    }
+  log.info({ poolSize, limit, niche: params.niche }, "scrape-feed: extraindo via $$eval");
+  const startExtract = Date.now();
+  const rawCards = await extractAllCards(page, poolSize);
+  log.info(
+    { extractedRaw: rawCards.length, ms: Date.now() - startExtract },
+    "scrape-feed: extração rápida concluída",
+  );
+
+  let videos: VyralVideoSummary[] = rawCards
+    .map((raw, i) => rawCardToSummary(raw, i + 1, country))
+    .filter((v): v is VyralVideoSummary => v !== null);
+
+  // Filtra por nicho pós-extração se o usuário pediu um específico.
+  if (params.niche) {
+    const beforeFilter = videos.length;
+    videos = videos.filter((v) => v.niche === params.niche);
+    log.info(
+      { niche: params.niche, before: beforeFilter, after: videos.length },
+      "scrape-feed: filtrado por nicho",
+    );
+    // Re-numera ranks pra refletir a posição dentro do nicho.
+    videos = videos.slice(0, limit).map((v, i) => ({ ...v, rank: i + 1 }));
+  } else {
+    videos = videos.slice(0, limit);
   }
 
   return {
