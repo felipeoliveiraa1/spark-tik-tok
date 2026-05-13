@@ -8,8 +8,8 @@ type Props = {
 export function UserBubble({ children, attachment }: Props) {
   return (
     <div className="flex justify-end px-4 mb-3.5">
-      <div className="max-w-[78%]">
-        <div className="bg-spark-surface-sunken text-spark-ink px-3.5 py-2.5 rounded-[18px] rounded-br-md text-[14.5px] leading-[1.45] tracking-[-0.005em]">
+      <div className="max-w-[82%]">
+        <div className="bg-brand-grad text-white px-4 py-2.5 rounded-[20px] rounded-br-md text-[14.5px] leading-[1.45] tracking-[-0.005em] shadow-[0_8px_22px_-12px_oklch(0.5_0.22_305/0.55)] font-medium">
           {children}
         </div>
         {attachment && (
