@@ -112,3 +112,10 @@ html, body {
 .animate-splash-bounce { animation: splash-bounce 1.2s ease-in-out infinite; }
 .animate-splash-shadow { animation: splash-shadow 1.2s ease-in-out infinite; }
 .animate-splash-sparkle { animation: splash-sparkle 1.4s ease-in-out infinite; }
+
+/* Typing indicator — bolinhas pulsando enquanto o agente "pensa" */
+@keyframes typing-dot {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.35; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+.animate-typing-dot { animation: typing-dot 1.1s ease-in-out infinite; }

@@ -16,6 +16,21 @@ import {
   type ChatMessage,
 } from "@/lib/conversation-store";
 
+function TypingDots({ agent }: { agent: AgentId }) {
+  const color = AGENTS[agent].fg;
+  return (
+    <span className="inline-flex items-center gap-1.5 py-1.5" aria-label="Pensando">
+      {[0, 1, 2].map((i) => (
+        <span
+          key={i}
+          className="w-2 h-2 rounded-full animate-typing-dot"
+          style={{ background: color, animationDelay: `${i * 150}ms` }}
+        />
+      ))}
+    </span>
+  );
+}
+
 function ChatStream({
   agent,
   messages,
@@ -41,7 +56,7 @@ function ChatStream({
           <UserBubble key={m.id}>{m.content}</UserBubble>
         ) : (
           <AgentBubble key={m.id} agent={agent}>
-            {m.content || (streaming ? <span className="text-spark-ink-50">…</span> : "")}
+            {m.content || (streaming ? <TypingDots agent={agent} /> : "")}
           </AgentBubble>
         ),
       )}
