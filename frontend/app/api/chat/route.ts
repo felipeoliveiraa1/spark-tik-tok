@@ -366,9 +366,20 @@ function buildViralTools(
               lastUserText: lastUserText.slice(0, 120),
             });
           }
-          const safeNiche = niche && NICHE_ENUM.includes(niche as (typeof NICHE_ENUM)[number])
-            ? (niche as (typeof NICHE_ENUM)[number])
-            : undefined;
+          // Quando temos query, IGNORA niche. A busca textual do Vyral já
+          // é mais específica e categorias do Vyral nem sempre batem com
+          // nosso enum. Gemini costuma passar ambos ("query+niche=beleza")
+          // e isso fazia o filtro pós-extração zerar tudo.
+          const safeNiche =
+            !safeQuery && niche && NICHE_ENUM.includes(niche as (typeof NICHE_ENUM)[number])
+              ? (niche as (typeof NICHE_ENUM)[number])
+              : undefined;
+          if (niche && safeQuery && niche !== safeQuery) {
+            console.log("[search_virals] ignorando niche pq query está presente", {
+              query: safeQuery,
+              niche_ignorado: niche,
+            });
+          }
           const safeCountry = country === "US" ? "US" : "BR";
           const safeDays = ([7, 14, 30, 90] as const).includes(days as 7 | 14 | 30 | 90)
             ? (days as 7 | 14 | 30 | 90)
