@@ -3,7 +3,7 @@ import { log } from "../logger.js";
 import { fetchFeed } from "./feed.js";
 import { buildFeedFiltersFrom, mapFeedToSearchResult } from "./mapper.js";
 import { mockSearchVideos } from "./mocks.js";
-import { isMockMode } from "../config.js";
+import { isMockMode, isDev } from "../config.js";
 import { getCachedSearch, putCachedSearch, upsertVideos } from "../persistence/viral.js";
 
 /**
@@ -60,8 +60,16 @@ export async function searchVideos(
   } catch (err) {
     log.error(
       { err: err instanceof Error ? err.message : err, input },
-      "vyral.search: live fetch failed — falling back to mock",
+      "vyral.search: live fetch failed",
     );
-    return mockSearchVideos(input);
+    // Em dev caímos no mock. Em production propagamos o erro pra o agente
+    // saber que está sem dado real e responder honesto pra aluna.
+    if (isDev) {
+      log.warn("vyral.search: falling back to mock in dev");
+      return mockSearchVideos(input);
+    }
+    throw err instanceof Error
+      ? err
+      : new Error("vyral live fetch failed (no message)");
   }
 }

@@ -34,5 +34,17 @@ export const env = schema.parse(process.env);
 
 export const isDev = env.NODE_ENV === "development";
 
-/** True when running with no Vyral credentials — falls back to mock data. */
-export const isMockMode = !env.VYRAL_EMAIL || !env.VYRAL_PASSWORD;
+const hasCredentials = !!env.VYRAL_EMAIL && !!env.VYRAL_PASSWORD;
+
+/**
+ * MOCK mode só liga em dev quando faltam credenciais. Em production sem
+ * credenciais o worker FALHA em vez de servir mock — assim o agente sabe
+ * que não tem dado real e a aluna não vê números inventados.
+ */
+export const isMockMode = isDev && !hasCredentials;
+
+if (!isDev && !hasCredentials) {
+  console.warn(
+    "[config] PRODUCTION sem VYRAL_EMAIL/VYRAL_PASSWORD — scraper vai retornar erro em vez de mock",
+  );
+}

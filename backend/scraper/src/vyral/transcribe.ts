@@ -4,7 +4,7 @@ import { fetchFeed, type VyralFeedItem } from "./feed.js";
 import { analyzeInsight } from "./insights.js";
 import { mapToTranscription } from "./mapper.js";
 import { mockGetTranscription } from "./mocks.js";
-import { isMockMode } from "../config.js";
+import { isMockMode, isDev } from "../config.js";
 import { findFeedItemById, upsertTranscription } from "../persistence/viral.js";
 
 /**
@@ -74,8 +74,14 @@ export async function getTranscription(
   } catch (err) {
     log.error(
       { err: err instanceof Error ? err.message : err, params },
-      "vyral.transcribe: live fetch failed — falling back to mock",
+      "vyral.transcribe: live fetch failed",
     );
-    return mockGetTranscription(params.videoId);
+    if (isDev) {
+      log.warn("vyral.transcribe: falling back to mock in dev");
+      return mockGetTranscription(params.videoId);
+    }
+    throw err instanceof Error
+      ? err
+      : new Error("vyral transcribe live fetch failed (no message)");
   }
 }

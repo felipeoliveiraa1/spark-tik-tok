@@ -3,7 +3,7 @@ import { log } from "../logger.js";
 import { fetchFeed } from "./feed.js";
 import { aggregateTopProducts, buildFeedFiltersFrom } from "./mapper.js";
 import { mockTopProducts } from "./mocks.js";
-import { isMockMode } from "../config.js";
+import { isMockMode, isDev } from "../config.js";
 
 /**
  * Vyral doesn't ship a "top products" view directly — we approximate it by
@@ -37,8 +37,14 @@ export async function listTopProducts(
   } catch (err) {
     log.error(
       { err: err instanceof Error ? err.message : err, params },
-      "vyral.top-products: live fetch failed — falling back to mock",
+      "vyral.top-products: live fetch failed",
     );
-    return mockTopProducts(params.country, params.niche);
+    if (isDev) {
+      log.warn("vyral.top-products: falling back to mock in dev");
+      return mockTopProducts(params.country, params.niche);
+    }
+    throw err instanceof Error
+      ? err
+      : new Error("vyral top-products live fetch failed (no message)");
   }
 }
