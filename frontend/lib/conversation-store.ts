@@ -26,10 +26,16 @@ export type Conversation = {
   messageCount: number;
 };
 
+export type MessageAttachment = {
+  url: string;
+  mime?: string;
+};
+
 export type ChatMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
+  attachments: MessageAttachment[] | null;
   createdAt: string;
 };
 
@@ -56,6 +62,7 @@ type ApiMessage = {
   id: string;
   role: "user" | "assistant" | "system";
   content: string;
+  attachments: MessageAttachment[] | null;
   created_at: string;
 };
 
@@ -176,10 +183,20 @@ export function useConversationStore() {
     });
   }, []);
 
-  const deleteConversation = React.useCallback(async (id: string) => {
-    setConversations((prev) => prev.filter((c) => c.id !== id));
-    await fetchJson(`/api/conversations/${id}`, { method: "DELETE" });
-  }, []);
+  const deleteConversation = React.useCallback(
+    async (id: string) => {
+      setConversations((prev) => prev.filter((c) => c.id !== id));
+      try {
+        await fetchJson(`/api/conversations/${id}`, { method: "DELETE" });
+      } catch (err) {
+        console.error("delete conversation failed", err);
+        // Reverte a remoção otimista se o servidor falhou.
+        await refresh();
+        throw err;
+      }
+    },
+    [refresh],
+  );
 
   const touchConversation = React.useCallback(
     (id: string, patch: Partial<Conversation>) => {
@@ -233,6 +250,7 @@ export function useConversationMessages(conversationId: string) {
               id: m.id,
               role: m.role,
               content: m.content,
+              attachments: m.attachments ?? null,
               createdAt: m.created_at,
             })),
         );
@@ -247,15 +265,20 @@ export function useConversationMessages(conversationId: string) {
     };
   }, [conversationId]);
 
-  const appendLocal = React.useCallback((msg: Omit<ChatMessage, "id" | "createdAt">) => {
-    const full: ChatMessage = {
-      ...msg,
-      id: `tmp_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
-      createdAt: new Date().toISOString(),
-    };
-    setMessages((prev) => [...prev, full]);
-    return full.id;
-  }, []);
+  const appendLocal = React.useCallback(
+    (msg: Omit<ChatMessage, "id" | "createdAt" | "attachments"> & { attachments?: MessageAttachment[] | null }) => {
+      const full: ChatMessage = {
+        attachments: msg.attachments ?? null,
+        role: msg.role,
+        content: msg.content,
+        id: `tmp_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+        createdAt: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, full]);
+      return full.id;
+    },
+    [],
+  );
 
   const updateLastLocal = React.useCallback((patch: Partial<ChatMessage>) => {
     setMessages((prev) => {

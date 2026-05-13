@@ -68,7 +68,19 @@ export async function DELETE(_request: Request, { params }: Params) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const { error } = await supabase.from("conversations").delete().eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ ok: true });
+  const { data, error } = await supabase
+    .from("conversations")
+    .delete()
+    .eq("id", id)
+    .select("id");
+
+  if (error) {
+    console.error("[api/conversations DELETE]", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+  if (!data || data.length === 0) {
+    console.warn("[api/conversations DELETE] no rows deleted", { id, user_id: user.id });
+    return NextResponse.json({ error: "not_found_or_forbidden" }, { status: 404 });
+  }
+  return NextResponse.json({ ok: true, deleted: data.length });
 }

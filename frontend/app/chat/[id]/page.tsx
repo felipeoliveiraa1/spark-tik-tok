@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, MoreHorizontal, Menu, X, Paperclip, Send, Sparkle } from "lucide-react";
+import { ArrowLeft, MoreHorizontal, Menu, X, Paperclip, Send, Sparkle, ImagePlus, AlertCircle } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { ConversationSidebar } from "@/components/layout/conversation-sidebar";
 import { LoadingSplash } from "@/components/atoms/loading-splash";
@@ -53,7 +53,9 @@ function ChatStream({
       )}
       {messages.map((m) =>
         m.role === "user" ? (
-          <UserBubble key={m.id}>{m.content}</UserBubble>
+          <UserBubble key={m.id} attachments={m.attachments}>
+            {m.content}
+          </UserBubble>
         ) : (
           <AgentBubble key={m.id} agent={agent}>
             {m.content || (streaming ? <TypingDots agent={agent} /> : "")}
@@ -64,25 +66,103 @@ function ChatStream({
   );
 }
 
+type PendingAttachment = { url: string; mime: string };
+
 function ChatComposer({
   onSend,
   disabled,
 }: {
-  onSend: (text: string) => void;
+  onSend: (text: string, attachments: PendingAttachment[]) => void;
   disabled: boolean;
 }) {
   const [text, setText] = React.useState("");
+  const [attachments, setAttachments] = React.useState<PendingAttachment[]>([]);
+  const [uploading, setUploading] = React.useState(false);
+  const [uploadError, setUploadError] = React.useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const canSend = !disabled && !uploading && (text.trim().length > 0 || attachments.length > 0);
+
   const send = () => {
-    const t = text.trim();
-    if (!t || disabled) return;
-    onSend(t);
+    if (!canSend) return;
+    onSend(text.trim(), attachments);
     setText("");
+    setAttachments([]);
   };
+
+  const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setUploadError(null);
+    setUploading(true);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: form });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(data?.error ?? `HTTP ${res.status}`);
+      }
+      const data = (await res.json()) as { url: string; mime: string };
+      setAttachments((prev) => [...prev, { url: data.url, mime: data.mime }]);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "erro no upload";
+      setUploadError(humanizeUploadError(msg));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeAttachment = (idx: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== idx));
+  };
+
   return (
     <div className="px-3 pt-2 pb-[14px] border-t border-spark-hairline bg-white/95 backdrop-blur-md safe-bottom">
+      {attachments.length > 0 && (
+        <div className="flex gap-2 mb-2 px-1">
+          {attachments.map((a, i) => (
+            <div key={i} className="relative">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={a.url}
+                alt="anexo"
+                className="w-14 h-14 rounded-xl object-cover border border-spark-hairline"
+              />
+              <button
+                type="button"
+                aria-label="Remover anexo"
+                onClick={() => removeAttachment(i)}
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-spark-ink text-white flex items-center justify-center shadow-sm hover:scale-110 transition-transform"
+              >
+                <X size={11} strokeWidth={2.5} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="flex items-center gap-2 pl-3.5 pr-2 py-2 rounded-full bg-spark-surface-sunken border border-spark-hairline">
-        <button type="button" aria-label="Anexar" className="text-spark-ink-50 shrink-0" disabled>
-          <Paperclip size={20} strokeWidth={1.7} />
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+          onChange={onFileChange}
+          className="hidden"
+        />
+        <button
+          type="button"
+          aria-label="Anexar foto"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading || disabled}
+          className="text-spark-ink-50 hover:text-spark-ink shrink-0 disabled:opacity-50"
+        >
+          {uploading ? (
+            <Sparkle size={20} strokeWidth={1.7} className="animate-pulse text-spark-brand" />
+          ) : (
+            <ImagePlus size={20} strokeWidth={1.7} />
+          )}
         </button>
         <input
           value={text}
@@ -93,7 +173,15 @@ function ChatComposer({
               send();
             }
           }}
-          placeholder={disabled ? "Aguarda a resposta…" : "Pergunta qualquer coisa…"}
+          placeholder={
+            uploading
+              ? "Subindo foto…"
+              : disabled
+                ? "Aguarda a resposta…"
+                : attachments.length > 0
+                  ? "Algo a dizer? (opcional)"
+                  : "Pergunta qualquer coisa…"
+          }
           disabled={disabled}
           className="flex-1 bg-transparent text-[14px] text-spark-ink placeholder:text-spark-ink-50 outline-none disabled:opacity-60"
         />
@@ -101,19 +189,35 @@ function ChatComposer({
           type="button"
           aria-label="Enviar"
           onClick={send}
-          disabled={disabled || !text.trim()}
+          disabled={!canSend}
           className="w-9 h-9 rounded-full text-white flex items-center justify-center bg-brand-grad shrink-0 active:scale-95 transition-transform disabled:opacity-50"
         >
           <Send size={16} strokeWidth={1.7} />
         </button>
       </div>
-      <div className="mt-2 flex items-center justify-center px-1 text-[11px] text-spark-ink-35">
-        <span className="inline-flex items-center gap-1">
-          <Sparkle size={11} strokeWidth={1.7} /> Gemini · respostas podem ter erro
-        </span>
-      </div>
+
+      {uploadError ? (
+        <div className="mt-2 flex items-center justify-center gap-1 text-[11px] text-bad">
+          <AlertCircle size={11} strokeWidth={2} />
+          {uploadError}
+        </div>
+      ) : (
+        <div className="mt-2 flex items-center justify-center px-1 text-[11px] text-spark-ink-35">
+          <span className="inline-flex items-center gap-1">
+            <Sparkle size={11} strokeWidth={1.7} /> Gemini · respostas podem ter erro
+          </span>
+        </div>
+      )}
     </div>
   );
+}
+
+function humanizeUploadError(raw: string): string {
+  if (raw === "too_large") return "Imagem grande demais (máx 8MB)";
+  if (raw === "invalid_type") return "Formato não suportado — use JPG, PNG ou WebP";
+  if (raw === "no_file") return "Selecione uma imagem";
+  if (raw === "unauthorized") return "Você precisa estar logada";
+  return raw;
 }
 
 function useChatSender(conversationId: string) {
@@ -122,34 +226,50 @@ function useChatSender(conversationId: string) {
   const [streaming, setStreaming] = React.useState(false);
 
   const send = React.useCallback(
-    async (text: string) => {
+    async (text: string, attachments: PendingAttachment[] = []) => {
       if (streaming) return;
-      appendLocal({ role: "user", content: text });
+      const trimmed = text.trim();
+      if (!trimmed && attachments.length === 0) return;
+
+      appendLocal({
+        role: "user",
+        content: trimmed,
+        attachments: attachments.length > 0 ? attachments : null,
+      });
       appendLocal({ role: "assistant", content: "" });
 
       const conv = store.conversations.find((c) => c.id === conversationId);
+      const previewSrc =
+        trimmed || (attachments.length > 0 ? "📷 Foto enviada" : "");
       store.touchConversation(conversationId, {
-        preview: text.slice(0, 200),
+        preview: previewSrc.slice(0, 200),
         messageCount: (conv?.messageCount ?? 0) + 1,
-        title: conv && conv.title === "Nova conversa" ? text.slice(0, 60) : conv?.title,
+        title:
+          conv && conv.title === "Nova conversa"
+            ? (trimmed || "Análise de foto").slice(0, 60)
+            : conv?.title,
       });
 
       setStreaming(true);
       try {
-        const apiMessages = [...messages, { role: "user" as const, content: text }].map((m) => ({
-          role: m.role,
-          content: m.content,
-        }));
+        const apiMessages = [
+          ...messages.map((m) => ({ role: m.role, content: m.content })),
+          { role: "user" as const, content: trimmed || "(foto anexada — analisa)" },
+        ];
 
         const res = await fetch("/api/chat", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ conversation_id: conversationId, messages: apiMessages }),
+          body: JSON.stringify({
+            conversation_id: conversationId,
+            messages: apiMessages,
+            attachments,
+          }),
         });
 
         if (!res.ok || !res.body) {
           const errMsg = await res.text().catch(() => `HTTP ${res.status}`);
-          throw new Error(errMsg.slice(0, 200));
+          throw new Error(errMsg.slice(0, 300));
         }
 
         const reader = res.body.getReader();
@@ -161,14 +281,21 @@ function useChatSender(conversationId: string) {
           acc += decoder.decode(value, { stream: true });
           updateLastLocal({ content: acc });
         }
-        updateLastLocal({ content: acc });
+
+        // Fallback se o stream terminou vazio (modelo rodou tools sem retornar texto)
+        if (!acc.trim()) {
+          acc =
+            "_Hmm, fiquei sem resposta dessa vez. Tenta reformular a pergunta ou manda de novo — eu te respondo._";
+          updateLastLocal({ content: acc });
+        }
+
         store.touchConversation(conversationId, {
           preview: acc.slice(0, 200),
           messageCount: (conv?.messageCount ?? 0) + 2,
         });
       } catch (err) {
         const msg = err instanceof Error ? err.message : "erro desconhecido";
-        updateLastLocal({ content: `⚠️ ${msg}` });
+        updateLastLocal({ content: `⚠️ Erro: ${msg}` });
       } finally {
         setStreaming(false);
       }
