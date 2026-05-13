@@ -8,6 +8,7 @@ import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { SButton } from "@/components/atoms/s-button";
 import { SBadge } from "@/components/atoms/s-badge";
+import { LoadingSplash } from "@/components/atoms/loading-splash";
 
 type Hook = { n?: number; hook?: string; trigger?: string; why?: string; fire?: string };
 
@@ -78,7 +79,7 @@ function ScriptBody({ id, desktop = false }: { id: string; desktop?: boolean }) 
     if (res.ok) router.push("/scripts");
   };
 
-  if (loading) return <div className="p-6 text-center text-[13px] text-spark-ink-50">Carregando…</div>;
+  if (loading) return <LoadingSplash message="Abrindo o script" />;
   if (error || !script) {
     return (
       <div className="p-6 text-center text-[13px] text-spark-ink-50">

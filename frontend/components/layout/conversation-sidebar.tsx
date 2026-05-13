@@ -23,6 +23,7 @@ import {
   type Conversation,
   type Folder as FolderType,
 } from "@/lib/conversation-store";
+import { LoadingSplash } from "@/components/atoms/loading-splash";
 import { cn } from "@/lib/cn";
 
 type Profile = { name: string | null; email: string; plan_active: boolean };
@@ -130,6 +131,9 @@ export function ConversationSidebar({ onSelectConversation }: Props) {
 
       {/* Folders + conversations */}
       <nav className="flex-1 overflow-auto px-2 pb-4">
+        {store.loading && store.folders.length === 0 && (
+          <LoadingSplash size="sm" message="Carregando" />
+        )}
         {store.folders.map((folder) => {
           const items = conversationsByFolder.get(folder.id) ?? [];
           const isCollapsed = collapsed[folder.id] === true;

@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, MoreHorizontal, Menu, X, Paperclip, Send, Sparkle } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { ConversationSidebar } from "@/components/layout/conversation-sidebar";
+import { LoadingSplash } from "@/components/atoms/loading-splash";
 import { UserBubble } from "@/components/molecules/user-bubble";
 import { AgentBubble } from "@/components/molecules/agent-bubble";
 import { AgentCharacter } from "@/components/molecules/agent-character";
@@ -317,8 +318,8 @@ export default function ChatPage() {
   if (!conv) {
     return (
       <ResponsiveShell
-        mobile={<div className="flex-1 flex items-center justify-center text-spark-ink-50 text-[14px]">Carregando…</div>}
-        desktop={<div className="flex-1 flex items-center justify-center text-spark-ink-50 text-[14px]">Carregando…</div>}
+        mobile={<LoadingSplash message="Abrindo conversa" />}
+        desktop={<LoadingSplash message="Abrindo conversa" size="lg" />}
         customSidebar
       />
     );

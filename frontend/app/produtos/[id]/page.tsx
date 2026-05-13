@@ -8,6 +8,7 @@ import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { SButton } from "@/components/atoms/s-button";
 import { SBadge } from "@/components/atoms/s-badge";
+import { LoadingSplash } from "@/components/atoms/loading-splash";
 
 type ProductDetail = {
   id: string;
@@ -75,7 +76,7 @@ function ProductBody({ id, desktop = false }: { id: string; desktop?: boolean })
   };
 
   if (loading) {
-    return <div className="p-6 text-center text-[13px] text-spark-ink-50">Carregando…</div>;
+    return <LoadingSplash message="Abrindo a ficha" />;
   }
   if (error || !product) {
     return (

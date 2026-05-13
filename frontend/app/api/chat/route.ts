@@ -1,4 +1,5 @@
 import { streamText, type ModelMessage } from "ai";
+import { google } from "@ai-sdk/google";
 import { models } from "@/lib/ai";
 import { SYSTEM_PROMPTS } from "@/lib/agent-prompts";
 import { type AgentId } from "@/lib/agents";
@@ -52,7 +53,6 @@ export async function POST(request: Request) {
     });
   }
 
-  // Load conversation to get the agent + verify ownership.
   const { data: conversation, error: convErr } = await supabase
     .from("conversations")
     .select("id, agent")
@@ -70,7 +70,6 @@ export async function POST(request: Request) {
     ? conversation.agent
     : "help") as AgentId;
 
-  // Persist the latest user message (the last one in the array).
   const lastMessage = messages[messages.length - 1];
   if (lastMessage?.role === "user") {
     const userContent =
@@ -84,10 +83,15 @@ export async function POST(request: Request) {
     });
   }
 
+  // Agente Informação tem busca na web (Google Search nativo do Gemini).
+  // Outros agentes não — economiza quota.
+  const tools = agent === "info" ? { google_search: google.tools.googleSearch({}) } : undefined;
+
   const result = streamText({
     model: models[agent],
     system: SYSTEM_PROMPTS[agent],
     messages,
+    tools,
     maxOutputTokens: 2048,
     onFinish: async ({ text, usage }) => {
       await supabase.from("conversation_messages").insert({

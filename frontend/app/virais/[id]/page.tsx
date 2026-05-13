@@ -7,6 +7,7 @@ import { ArrowLeft, Flame, ExternalLink, Eye, ThumbsUp, MessageSquare, Share2 } 
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { SBadge } from "@/components/atoms/s-badge";
+import { LoadingSplash } from "@/components/atoms/loading-splash";
 
 type ViralDetail = {
   id: string;
@@ -84,7 +85,7 @@ function useViral(id: string) {
 function ViralBody({ id, desktop = false }: { id: string; desktop?: boolean }) {
   const { data, loading, error } = useViral(id);
 
-  if (loading) return <div className="p-6 text-center text-[13px] text-spark-ink-50">Carregando…</div>;
+  if (loading) return <LoadingSplash message="Abrindo viral" />;
   if (error || !data) {
     return (
       <div className="p-6 text-center text-[13px] text-spark-ink-50">

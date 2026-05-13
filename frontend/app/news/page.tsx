@@ -7,6 +7,7 @@ import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { AppHeader } from "@/components/layout/app-header";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { SBadge } from "@/components/atoms/s-badge";
+import { LoadingSplash } from "@/components/atoms/loading-splash";
 
 type NewsRow = {
   id: string;
@@ -65,7 +66,7 @@ function NewsBody({ desktop = false }: { desktop?: boolean }) {
 
       <div className={`mt-6 ${desktop ? "" : "px-4"}`}>
         {loading ? (
-          <div className="p-6 text-center text-[13px] text-spark-ink-50">Carregando…</div>
+          <LoadingSplash message="Carregando o jornal" />
         ) : news.length === 0 ? (
           <EmptyNews />
         ) : (

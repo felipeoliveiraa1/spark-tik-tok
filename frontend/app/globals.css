@@ -95,3 +95,20 @@ html, body {
   .safe-top { padding-top: env(safe-area-inset-top); }
   .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
 }
+
+/* Loading splash — produtinho que balança */
+@keyframes splash-bounce {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-8px) rotate(3deg); }
+}
+@keyframes splash-shadow {
+  0%, 100% { transform: scaleX(0.6); opacity: 0.12; }
+  50% { transform: scaleX(1); opacity: 0.22; }
+}
+@keyframes splash-sparkle {
+  0%, 100% { transform: scale(0.4); opacity: 0; }
+  50% { transform: scale(1); opacity: 1; }
+}
+.animate-splash-bounce { animation: splash-bounce 1.2s ease-in-out infinite; }
+.animate-splash-shadow { animation: splash-shadow 1.2s ease-in-out infinite; }
+.animate-splash-sparkle { animation: splash-sparkle 1.4s ease-in-out infinite; }

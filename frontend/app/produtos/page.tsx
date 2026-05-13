@@ -7,6 +7,7 @@ import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { AppHeader } from "@/components/layout/app-header";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { SButton } from "@/components/atoms/s-button";
+import { LoadingSplash } from "@/components/atoms/loading-splash";
 
 type ProductRow = {
   id: string;
@@ -66,7 +67,7 @@ function ProductsBody({ desktop = false }: { desktop?: boolean }) {
 
       <div className={`mt-6 ${desktop ? "" : "px-4"}`}>
         {loading ? (
-          <div className="p-6 text-center text-[13px] text-spark-ink-50">Carregando…</div>
+          <LoadingSplash message="Carregando produtos" />
         ) : products.length === 0 ? (
           <EmptyProducts />
         ) : (

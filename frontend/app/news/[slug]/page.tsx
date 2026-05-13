@@ -7,6 +7,7 @@ import { ArrowLeft, Newspaper } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { SBadge } from "@/components/atoms/s-badge";
+import { LoadingSplash } from "@/components/atoms/loading-splash";
 
 type NewsDetail = {
   id: string;
@@ -59,7 +60,7 @@ function useNewsItem(slug: string) {
 
 function NewsBody({ slug, desktop = false }: { slug: string; desktop?: boolean }) {
   const { item, loading, error } = useNewsItem(slug);
-  if (loading) return <div className="p-6 text-center text-[13px] text-spark-ink-50">Carregando…</div>;
+  if (loading) return <LoadingSplash message="Abrindo a nota" />;
   if (error || !item) {
     return (
       <div className="p-6 text-center text-[13px] text-spark-ink-50">

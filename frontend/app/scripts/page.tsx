@@ -8,6 +8,7 @@ import { AppHeader } from "@/components/layout/app-header";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { SButton } from "@/components/atoms/s-button";
 import { SBadge } from "@/components/atoms/s-badge";
+import { LoadingSplash } from "@/components/atoms/loading-splash";
 
 type Hook = { n?: number; hook?: string; trigger?: string; why?: string };
 
@@ -66,7 +67,7 @@ function ScriptsBody({ desktop = false }: { desktop?: boolean }) {
 
       <div className={`mt-6 ${desktop ? "" : "px-4"}`}>
         {loading ? (
-          <div className="p-6 text-center text-[13px] text-spark-ink-50">Carregando…</div>
+          <LoadingSplash message="Buscando seus scripts" />
         ) : scripts.length === 0 ? (
           <EmptyScripts />
         ) : (
