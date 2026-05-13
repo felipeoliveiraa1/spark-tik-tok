@@ -17,7 +17,6 @@ import { SparkWordmark } from "@/components/atoms/spark-wordmark";
 import { SButton } from "@/components/atoms/s-button";
 import { SBadge } from "@/components/atoms/s-badge";
 import { AgentTile } from "@/components/atoms/agent-tile";
-import { PhotoPlaceholder } from "@/components/atoms/photo-placeholder";
 import { type AgentId } from "@/lib/agents";
 
 const KIWIFY_CHECKOUT_URL = "https://kiwify.com.br";

@@ -3,24 +3,10 @@
 import * as React from "react";
 import { type AgentId } from "@/lib/agents";
 
-/**
- * Lightweight conversation + folder store, persisted in localStorage.
- *
- * This is the MVP: client-only, works offline, migrates 1-to-1 to Supabase
- * tables (`conversations`, `conversation_folders`) when auth lands. We expose
- * a `useConversationStore()` hook that subscribes to changes across tabs via
- * the `storage` event.
- *
- * Schema kept intentionally flat and small — agents will reference
- * conversation.id when persisting their artefacts in the backend.
- */
-
 export type Folder = {
   id: string;
   name: string;
-  /** Ordering inside the sidebar */
   order: number;
-  /** Default folder cannot be deleted */
   isDefault?: boolean;
 };
 
@@ -29,12 +15,16 @@ export type Conversation = {
   title: string;
   agent: AgentId;
   folderId: string;
-  /** Last message preview */
   preview: string;
-  /** ISO timestamp of the last activity */
   updatedAt: string;
-  /** Total message count (for the sidebar badge / sort) */
   messageCount: number;
+};
+
+export type ChatMessage = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  createdAt: string;
 };
 
 export type StoreSnapshot = {
@@ -43,40 +33,13 @@ export type StoreSnapshot = {
 };
 
 const STORAGE_KEY = "spark.conversations.v1";
+const MESSAGES_KEY = "spark.messages.v1";
 
 const DEFAULT_FOLDER_ID = "geral";
 
 const SEED: StoreSnapshot = {
   folders: [{ id: DEFAULT_FOLDER_ID, name: "Geral", order: 0, isDefault: true }],
-  conversations: [
-    {
-      id: "c1",
-      title: "NAC Always Fit",
-      agent: "script",
-      folderId: DEFAULT_FOLDER_ID,
-      preview: "10 hooks com humor brasileiro pro suplemento…",
-      updatedAt: new Date(Date.now() - 2 * 3600_000).toISOString(),
-      messageCount: 14,
-    },
-    {
-      id: "c2",
-      title: "Skincare virais essa semana",
-      agent: "viral",
-      folderId: DEFAULT_FOLDER_ID,
-      preview: "Trouxe 5 vídeos top de beleza no BR…",
-      updatedAt: new Date(Date.now() - 26 * 3600_000).toISOString(),
-      messageCount: 6,
-    },
-    {
-      id: "c3",
-      title: "Como ativo afiliados na loja?",
-      agent: "help",
-      folderId: DEFAULT_FOLDER_ID,
-      preview: "No painel seller-br, vai em Marketing → Afiliados…",
-      updatedAt: new Date(Date.now() - 2 * 86400_000).toISOString(),
-      messageCount: 4,
-    },
-  ],
+  conversations: [],
 };
 
 function loadFromStorage(): StoreSnapshot {
@@ -86,7 +49,6 @@ function loadFromStorage(): StoreSnapshot {
     if (!raw) return SEED;
     const parsed = JSON.parse(raw) as StoreSnapshot;
     if (!Array.isArray(parsed.folders) || !Array.isArray(parsed.conversations)) return SEED;
-    // Always ensure the default folder exists.
     if (!parsed.folders.some((f) => f.isDefault)) {
       parsed.folders.unshift(SEED.folders[0]);
     }
@@ -101,7 +63,26 @@ function saveToStorage(snapshot: StoreSnapshot) {
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
   } catch {
-    // quota / private mode — silently ignore
+    /* quota / private mode — ignore */
+  }
+}
+
+function loadMessages(): Record<string, ChatMessage[]> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(MESSAGES_KEY);
+    return raw ? (JSON.parse(raw) as Record<string, ChatMessage[]>) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveMessages(all: Record<string, ChatMessage[]>) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(MESSAGES_KEY, JSON.stringify(all));
+  } catch {
+    /* ignore */
   }
 }
 
@@ -109,14 +90,9 @@ function randomId(prefix: string) {
   return `${prefix}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 }
 
-// =================================================================
-// React hook
-// =================================================================
-
 export function useConversationStore() {
   const [snapshot, setSnapshot] = React.useState<StoreSnapshot>(SEED);
 
-  // Hydrate from localStorage on mount; mirror cross-tab edits.
   React.useEffect(() => {
     setSnapshot(loadFromStorage());
     const onStorage = (e: StorageEvent) => {
@@ -133,8 +109,6 @@ export function useConversationStore() {
       return next;
     });
   }, []);
-
-  // ----- folders -----
 
   const createFolder = React.useCallback(
     (name: string) => {
@@ -165,7 +139,6 @@ export function useConversationStore() {
         if (!folder || folder.isDefault) return s;
         return {
           folders: s.folders.filter((f) => f.id !== id),
-          // Move orphaned conversations to the default folder.
           conversations: s.conversations.map((c) =>
             c.folderId === id ? { ...c, folderId: DEFAULT_FOLDER_ID } : c,
           ),
@@ -174,8 +147,6 @@ export function useConversationStore() {
     },
     [mutate],
   );
-
-  // ----- conversations -----
 
   const createConversation = React.useCallback(
     (input: { agent: AgentId; title?: string; folderId?: string }) => {
@@ -226,6 +197,27 @@ export function useConversationStore() {
         ...s,
         conversations: s.conversations.filter((c) => c.id !== id),
       }));
+      const all = loadMessages();
+      delete all[id];
+      saveMessages(all);
+    },
+    [mutate],
+  );
+
+  const touchConversation = React.useCallback(
+    (id: string, patch: { preview?: string; messageCount?: number; title?: string }) => {
+      mutate((s) => ({
+        ...s,
+        conversations: s.conversations.map((c) =>
+          c.id === id
+            ? {
+                ...c,
+                ...patch,
+                updatedAt: new Date().toISOString(),
+              }
+            : c,
+        ),
+      }));
     },
     [mutate],
   );
@@ -241,5 +233,61 @@ export function useConversationStore() {
     renameConversation,
     moveConversation,
     deleteConversation,
+    touchConversation,
   };
+}
+
+export function useConversationMessages(conversationId: string) {
+  const [messages, setMessages] = React.useState<ChatMessage[]>([]);
+
+  React.useEffect(() => {
+    const all = loadMessages();
+    setMessages(all[conversationId] ?? []);
+  }, [conversationId]);
+
+  const writeAll = React.useCallback(
+    (next: ChatMessage[]) => {
+      setMessages(next);
+      const all = loadMessages();
+      all[conversationId] = next;
+      saveMessages(all);
+    },
+    [conversationId],
+  );
+
+  const append = React.useCallback(
+    (msg: Omit<ChatMessage, "id" | "createdAt">) => {
+      const full: ChatMessage = {
+        ...msg,
+        id: randomId("msg"),
+        createdAt: new Date().toISOString(),
+      };
+      setMessages((prev) => {
+        const next = [...prev, full];
+        const all = loadMessages();
+        all[conversationId] = next;
+        saveMessages(all);
+        return next;
+      });
+      return full.id;
+    },
+    [conversationId],
+  );
+
+  const updateLast = React.useCallback(
+    (patch: Partial<ChatMessage>) => {
+      setMessages((prev) => {
+        if (prev.length === 0) return prev;
+        const next = [...prev];
+        next[next.length - 1] = { ...next[next.length - 1], ...patch };
+        const all = loadMessages();
+        all[conversationId] = next;
+        saveMessages(all);
+        return next;
+      });
+    },
+    [conversationId],
+  );
+
+  return { messages, append, updateLast, writeAll };
 }

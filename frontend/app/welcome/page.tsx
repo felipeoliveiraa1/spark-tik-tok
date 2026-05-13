@@ -1,11 +1,10 @@
-import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { SparkMark } from "@/components/atoms/spark-mark";
 import { AgentTile } from "@/components/atoms/agent-tile";
 import { SButton } from "@/components/atoms/s-button";
 import { type AgentId } from "@/lib/agents";
-import { USER } from "@/lib/mock";
+import { completeOnboardingAction, getSessionEmail } from "@/lib/auth";
 
 const items: { agent: AgentId; t: string; d: string }[] = [
   { agent: "info", t: "Análise de produto", d: "Sobe a foto, ele extrai público, dor, preço e concorrentes." },
@@ -14,13 +13,19 @@ const items: { agent: AgentId; t: string; d: string }[] = [
   { agent: "help", t: "Tira-dúvidas", d: "Suporte sobre TikTok Shop, regras, conta de criador, frete." },
 ];
 
-function WelcomeContent({ desktop = false }: { desktop?: boolean }) {
+function firstName(email: string | null): string {
+  if (!email) return "criadora";
+  const local = email.split("@")[0] ?? "criadora";
+  return local.split(/[._-]/)[0] ?? "criadora";
+}
+
+function WelcomeContent({ desktop = false, name }: { desktop?: boolean; name: string }) {
   return (
     <div className={`flex flex-col flex-1 ${desktop ? "max-w-[640px] mx-auto py-16 px-8" : "px-5"}`}>
       <div className={desktop ? "" : "pt-[70px]"}>
         <SparkMark size={desktop ? 44 : 36} />
         <div className="mt-7 text-[13px] font-bold text-spark-brand uppercase tracking-[0.06em]">
-          Boa, {USER.name} 👋
+          Boa, {name} 👋
         </div>
         <h1 className={`font-extrabold tracking-[-0.025em] mt-2 leading-[1.1] ${desktop ? "text-[44px]" : "text-[30px]"}`}>
           Bora vender
@@ -45,27 +50,23 @@ function WelcomeContent({ desktop = false }: { desktop?: boolean }) {
       <div className="flex-1" />
 
       <div className={`pb-[30px] ${desktop ? "pt-8" : "pt-[18px]"}`}>
-        <Link href="/onboarding/perfil" className="block">
-          <SButton variant="primary" size="lg" full IconRight={ArrowRight}>
-            Continuar
+        <form action={completeOnboardingAction}>
+          <SButton type="submit" variant="primary" size="lg" full IconRight={ArrowRight}>
+            Começar
           </SButton>
-        </Link>
-        <div className="h-2" />
-        <div className="flex justify-center gap-1.5">
-          <div className="h-1.5 w-[18px] rounded-full bg-spark-ink" />
-          <div className="h-1.5 w-1.5 rounded-full bg-spark-ink-20" />
-          <div className="h-1.5 w-1.5 rounded-full bg-spark-ink-20" />
-        </div>
+        </form>
       </div>
     </div>
   );
 }
 
-export default function WelcomePage() {
+export default async function WelcomePage() {
+  const email = await getSessionEmail();
+  const name = firstName(email);
   return (
     <ResponsiveShell
-      mobile={<WelcomeContent />}
-      desktop={<WelcomeContent desktop />}
+      mobile={<WelcomeContent name={name} />}
+      desktop={<WelcomeContent desktop name={name} />}
       fullBleed
     />
   );
