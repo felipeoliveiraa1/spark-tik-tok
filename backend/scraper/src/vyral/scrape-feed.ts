@@ -24,7 +24,7 @@ import { log } from "../logger.js";
  *   - Caption:     p.css-dkaess
  *   - Creator:     p.css-1vrbd8y
  *   - Avatar:      img.chakra-avatar__image
- *   - Métricas:    div.css-u4muf9 × 4    (views, likes, shares, GMV nessa ordem)
+ *   - Métricas:    div.css-u4muf9 × 4    (views, likes, sales [vendas, ícone laranja .css-1oa66e7], GMV nessa ordem)
  *
  * Se algum desses mudar, ajustar aqui — o resto do sistema continua igual.
  */
@@ -152,8 +152,11 @@ function sortLabel(sortBy: VyralSearchInput["sortBy"]): string {
       return "Engajamento";
     case "recent":
       return "Mais recentes";
+    case "sales":
     case "revenue":
     default:
+      // Vyral só expõe Faturamento como proxy de vendas. Pra "sales" puxamos
+      // por faturamento e reordenamos client-side por vendas no final.
       return "Faturamento";
   }
 }
@@ -223,10 +226,16 @@ function rawCardToSummary(raw: RawCard, index: number, country: CountryCode): Vy
 
   const niche = NICHE_FROM_LABEL[raw.nicheLabel.toLowerCase()];
 
-  const [viewsRaw = "", likesRaw = "", sharesRaw = "", gmvRaw = ""] = raw.metrics;
+  // Ordem dos 4 blocos css-u4muf9 no card do Vyral:
+  //   1) Visualizações (olho)
+  //   2) Curtidas (coração)
+  //   3) Vendas — quantidade de produtos vendidos (ícone laranja .css-1oa66e7)
+  //   4) GMV — receita estimada em R$ (cifrão)
+  // Antes mapeávamos o 3º como `shares`, mas é vendas. Renomeei pra `sales`.
+  const [viewsRaw = "", likesRaw = "", salesRaw = "", gmvRaw = ""] = raw.metrics;
   const views = parseMetric(viewsRaw) ?? 0;
   const likes = parseMetric(likesRaw) ?? 0;
-  const shares = parseMetric(sharesRaw);
+  const sales = parseMetric(salesRaw);
   const gmv = parseMetric(gmvRaw);
 
   const hookPreview =
@@ -249,7 +258,7 @@ function rawCardToSummary(raw: RawCard, index: number, country: CountryCode): Vy
       views,
       likes,
       comments: 0,
-      shares: shares ?? undefined,
+      sales: sales ?? undefined,
       estimatedRevenueBrl: gmv ?? undefined,
     },
     product: raw.productName
@@ -566,11 +575,19 @@ export async function scrapeFeed(
       { niche: params.niche, before: beforeFilter, after: videos.length },
       "scrape-feed: filtrado por nicho",
     );
-    // Re-numera ranks pra refletir a posição dentro do nicho.
-    videos = videos.slice(0, limit).map((v, i) => ({ ...v, rank: i + 1 }));
-  } else {
-    videos = videos.slice(0, limit);
   }
+
+  // Ordenação client-side por VENDAS (sales) quando é o sort default (ou
+  // explicitamente "sales"). O Vyral não tem opção "Ordenar por vendas" — só
+  // por faturamento. Mas vendas é o que importa pra criadora de TikTok Shop,
+  // então reordenamos depois da extração.
+  const sortBy = params.sortBy ?? "sales";
+  if (sortBy === "sales") {
+    videos.sort((a, b) => (b.metrics.sales ?? 0) - (a.metrics.sales ?? 0));
+  }
+
+  // Re-numera ranks pra refletir a ordem final.
+  videos = videos.slice(0, limit).map((v, i) => ({ ...v, rank: i + 1 }));
 
   return {
     query: params,

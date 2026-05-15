@@ -1,22 +1,45 @@
-import type { VyralSearchInput, VyralSearchResult } from "../types.js";
+import type { VyralSearchInput, VyralSearchResult, VyralVideoSummary } from "../types.js";
 import { log } from "../logger.js";
 import { mockSearchVideos } from "./mocks.js";
 import { isMockMode, isDev } from "../config.js";
-import { getCachedSearch, putCachedSearch } from "../persistence/viral.js";
+import {
+  findVideosInDb,
+  getCachedSearch,
+  putCachedSearch,
+  upsertVideos,
+} from "../persistence/viral.js";
 import type { VyralSessionCtx } from "./session.js";
 import { scrapeFeed } from "./scrape-feed.js";
 
 /**
- * Search for trending videos. Caller is `runJob` (in jobs.ts) which already
- * wraps us in withSession — we receive `ctx.page` ready to navigate.
- *
- * Pipeline:
- *   1. MOCK mode (dev sem creds): retorna mocks.
- *   2. Cache local (`viral_cache` no Postgres) — 24h TTL por query.
- *   3. Live: navega o painel via Playwright e extrai do DOM (scrapeFeed).
- *   4. Persiste o resultado no cache.
- *   5. Em dev, se algo falhar, cai no mock. Em produção, propaga.
+ * Search for trending videos. Pipeline (sales-first, banco-first, zero erro visível):
+ *   1. MOCK (dev sem creds).
+ *   2. `viral_cache` (hash exato da query, 24h TTL) — hit perfeito.
+ *   3. `viral_videos` fresh (< 6h, mesmo país/nicho) — DB-first.
+ *   4. Live scrape via Playwright + persist em ambos.
+ *   5. Se scrape falha: degrada gracefully — retorna `viral_videos` velho
+ *      (24h, depois 30d). NUNCA propaga erro pro caller.
  */
+
+const FRESH_HOURS = 6;
+const FALLBACK_HOURS = 24;
+const FALLBACK_DAYS_DEEP = 30;
+
+function buildResultFromDb(
+  input: VyralSearchInput,
+  videos: VyralVideoSummary[],
+): VyralSearchResult {
+  const limit = Math.min(input.limit ?? 10, 50);
+  const trimmed = videos.slice(0, limit).map((v, i) => ({ ...v, rank: i + 1 }));
+  return {
+    query: input,
+    fetchedAt: new Date().toISOString(),
+    cached: true,
+    total: trimmed.length,
+    videos: trimmed,
+  };
+}
+
 export async function searchVideos(
   ctx: VyralSessionCtx,
   input: VyralSearchInput,
@@ -26,12 +49,13 @@ export async function searchVideos(
     return mockSearchVideos(input);
   }
 
+  // 1) Cache exato (mesmo hash)
   try {
     const cached = await getCachedSearch(input);
     if (cached) {
       log.info(
         { input, videos: cached.videos.length },
-        "vyral.search: cache HIT",
+        "vyral.search: cache HIT (viral_cache)",
       );
       return cached;
     }
@@ -42,17 +66,51 @@ export async function searchVideos(
     );
   }
 
+  // 2) DB-first: viral_videos frescos (< 6h)
+  const dbFresh = await findVideosInDb({
+    country: input.country,
+    niche: input.niche,
+    freshHours: FRESH_HOURS,
+    limit: input.limit ?? 10,
+  }).catch((err) => {
+    log.warn(
+      { err: err instanceof Error ? err.message : err },
+      "vyral.search: findVideosInDb (fresh) falhou",
+    );
+    return [] as VyralVideoSummary[];
+  });
+  if (dbFresh.length >= Math.min(input.limit ?? 10, 5)) {
+    log.info(
+      { count: dbFresh.length, country: input.country, niche: input.niche },
+      "vyral.search: DB-first HIT (fresh < 6h)",
+    );
+    return buildResultFromDb(input, dbFresh);
+  }
+
   if (!ctx.page) {
+    // Sem página, ainda assim tenta banco velho antes de jogar erro.
+    const stale = await findVideosInDb({
+      country: input.country,
+      niche: input.niche,
+      freshHours: FALLBACK_DAYS_DEEP * 24,
+      limit: input.limit ?? 10,
+    }).catch(() => [] as VyralVideoSummary[]);
+    if (stale.length > 0) {
+      log.warn(
+        { count: stale.length },
+        "vyral.search: sem page — retornando dado velho do banco",
+      );
+      return buildResultFromDb(input, stale);
+    }
     throw new Error("vyral.search: no page in session (mock or build failed)");
   }
 
+  // 3) Live scrape
   try {
     log.info({ input }, "vyral.search: cache miss — going live");
     const result = await scrapeFeed(ctx.page, input);
 
-    // Não cacheia resultados vazios — provavelmente foi falha de sessão
-    // ou filtro errado. Se cachear, o próximo pedido bate HIT no zero
-    // sem nunca tentar de novo (foi exatamente o bug que vimos).
+    // Persiste em viral_cache e viral_videos. Não cacheia vazio (bug antigo).
     if (result.videos.length > 0) {
       void putCachedSearch(input, result).catch((err) =>
         log.warn(
@@ -60,8 +118,27 @@ export async function searchVideos(
           "vyral.search: cache write failed",
         ),
       );
+      // Upsert pra alimentar o DB-first path da próxima requisição.
+      void upsertVideos(result.videos).catch((err) =>
+        log.warn(
+          { err: err instanceof Error ? err.message : err },
+          "vyral.search: upsertVideos falhou",
+        ),
+      );
     } else {
       log.info({ input }, "vyral.search: resultado vazio — NÃO cacheando");
+      // Resultado vazio + scrape OK = falso negativo (filtro estranho).
+      // Tenta degradar pro banco em vez de retornar zero.
+      const fallback = await findVideosInDb({
+        country: input.country,
+        niche: input.niche,
+        freshHours: FALLBACK_HOURS,
+        limit: input.limit ?? 10,
+      }).catch(() => [] as VyralVideoSummary[]);
+      if (fallback.length > 0) {
+        log.info({ count: fallback.length }, "vyral.search: scrape vazio — usando banco (24h)");
+        return buildResultFromDb(input, fallback);
+      }
     }
 
     return result;
@@ -70,12 +147,39 @@ export async function searchVideos(
       { err: err instanceof Error ? err.message : err, input },
       "vyral.search: live scrape failed",
     );
+
+    // 4) Degrade gracefully: nunca propaga erro pro caller.
+    // Tenta 24h, depois 30d. Se nem isso, mock em dev, lança em prod.
+    for (const hours of [FALLBACK_HOURS, FALLBACK_DAYS_DEEP * 24]) {
+      const fallback = await findVideosInDb({
+        country: input.country,
+        niche: input.niche,
+        freshHours: hours,
+        limit: input.limit ?? 10,
+      }).catch(() => [] as VyralVideoSummary[]);
+      if (fallback.length > 0) {
+        log.warn(
+          { count: fallback.length, hours, country: input.country, niche: input.niche },
+          "vyral.search: scrape FALHOU — servindo do banco (degradado)",
+        );
+        return buildResultFromDb(input, fallback);
+      }
+    }
+
     if (isDev) {
       log.warn("vyral.search: falling back to mock in dev");
       return mockSearchVideos(input);
     }
-    throw err instanceof Error
-      ? err
-      : new Error("vyral live scrape failed (no message)");
+
+    // Última cartada: retorna estrutura vazia em vez de explodir.
+    // O caller (chat route) também tem fallback DB-side, mas isso garante
+    // que o pipeline NUNCA propaga exceção pra cima.
+    return {
+      query: input,
+      fetchedAt: new Date().toISOString(),
+      cached: false,
+      total: 0,
+      videos: [],
+    };
   }
 }

@@ -74,13 +74,13 @@ export async function upsertVideo(
     `
     insert into viral_videos (
       id, url, creator, thumbnail_url, posted_at, country, niche,
-      views, likes, comments, shares, estimated_revenue_brl,
+      views, likes, comments, shares, sales, estimated_revenue_brl,
       product_name, product_shop_url, product_price_brl, hook_preview, raw,
       first_seen_at, last_seen_at
     ) values (
       $1,$2,$3,$4,$5,$6,$7,
-      $8,$9,$10,$11,$12,
-      $13,$14,$15,$16,$17::jsonb,
+      $8,$9,$10,$11,$12,$13,
+      $14,$15,$16,$17,$18::jsonb,
       now(), now()
     )
     on conflict (id) do update set
@@ -94,6 +94,7 @@ export async function upsertVideo(
       likes = excluded.likes,
       comments = excluded.comments,
       shares = excluded.shares,
+      sales = excluded.sales,
       estimated_revenue_brl = excluded.estimated_revenue_brl,
       product_name = excluded.product_name,
       product_shop_url = excluded.product_shop_url,
@@ -114,6 +115,7 @@ export async function upsertVideo(
       summary.metrics.likes,
       summary.metrics.comments,
       summary.metrics.shares ?? null,
+      summary.metrics.sales ?? null,
       summary.metrics.estimatedRevenueBrl ?? null,
       summary.product?.name ?? null,
       summary.product?.shopUrl ?? null,
@@ -162,9 +164,83 @@ export async function findFeedItemById(id: string): Promise<VyralFeedItem | null
   return null;
 }
 
+/**
+ * Pull the VyralVideoSummary previously persisted for a given video id.
+ * Usado pelo transcribe.ts pra reconstruir contexto (caption, product) quando
+ * o scrape de transcrição falha.
+ */
+export async function findVideoSummaryById(
+  id: string,
+): Promise<VyralVideoSummary | null> {
+  const { rows } = await query<{ raw: VyralVideoSummary }>(
+    `select raw from viral_videos where id = $1 limit 1`,
+    [id],
+  );
+  return rows[0]?.raw ?? null;
+}
+
+/**
+ * Fallback DB-first: retorna virais salvos no banco (frescos ou velhos)
+ * pra quando o scraper falha ou ainda não rodou. Permite zero erro visível.
+ *
+ * Janelas sugeridas:
+ *   - 6h pra "fresh" (cache de hit primário)
+ *   - 24h e 30d pra "degradado mas usável"
+ */
+export async function findVideosInDb(opts: {
+  country?: "BR" | "US";
+  niche?: string;
+  /** Quantas horas atrás aceitamos como ainda válido. Default 6h. */
+  freshHours?: number;
+  limit?: number;
+}): Promise<VyralVideoSummary[]> {
+  const country = opts.country ?? "BR";
+  const freshHours = opts.freshHours ?? 6;
+  const limit = Math.min(opts.limit ?? 10, 50);
+
+  // Quando temos niche, filtramos por ele; caso contrário, qualquer nicho serve.
+  const params: unknown[] = [country, freshHours];
+  let nicheClause = "";
+  if (opts.niche) {
+    nicheClause = "and niche = $3";
+    params.push(opts.niche);
+    params.push(limit);
+  } else {
+    params.push(limit);
+  }
+
+  const sql = `
+    select raw
+    from viral_videos
+    where country = $1
+      and last_seen_at > now() - ($2 || ' hours')::interval
+      ${nicheClause}
+    order by sales desc nulls last, last_seen_at desc
+    limit $${opts.niche ? 4 : 3}
+  `;
+
+  const { rows } = await query<{ raw: VyralVideoSummary }>(sql, params);
+  return rows.map((r) => r.raw).filter((v): v is VyralVideoSummary => !!v);
+}
+
 // =================================================================
 // viral_transcriptions
 // =================================================================
+
+/**
+ * Lê transcrição persistida pra um vídeo. Usado como primeiro passo do
+ * `getTranscription` — se já temos o texto no banco (mesmo de horas atrás),
+ * retornamos direto sem novo scrape.
+ */
+export async function findTranscriptionInDb(
+  videoId: string,
+): Promise<VyralTranscription | null> {
+  const { rows } = await query<{ raw: VyralTranscription }>(
+    `select raw from viral_transcriptions where video_id = $1 limit 1`,
+    [videoId],
+  );
+  return rows[0]?.raw ?? null;
+}
 
 export async function upsertTranscription(t: VyralTranscription): Promise<void> {
   await query(

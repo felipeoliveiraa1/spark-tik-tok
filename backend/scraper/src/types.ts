@@ -35,6 +35,12 @@ export type VyralVideoSummary = {
     views: number;
     likes: number;
     comments: number;
+    /**
+     * Quantidade de produtos vendidos (3º bloco do card do Vyral, ícone laranja
+     * `.css-1oa66e7`). É a métrica de ranqueamento principal pra TikTok Shop.
+     */
+    sales?: number;
+    /** @deprecated mantido pra compat com payloads antigos no banco. Use `sales`. */
     shares?: number;
     /** Estimated revenue in BRL */
     estimatedRevenueBrl?: number;
@@ -90,8 +96,8 @@ export type VyralSearchInput = {
   niche?: VyralNiche;
   /** Minimum views threshold */
   minViews?: number;
-  /** Sort by which metric */
-  sortBy?: "views" | "revenue" | "recent" | "engagement";
+  /** Sort by which metric. `sales` é o default — produtos mais vendidos. */
+  sortBy?: "sales" | "views" | "revenue" | "recent" | "engagement";
   /** Last N days */
   lastDays?: 7 | 14 | 30 | 90;
   /** Max results, capped server-side */

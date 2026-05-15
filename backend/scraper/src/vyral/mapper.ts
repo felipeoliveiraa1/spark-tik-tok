@@ -20,6 +20,10 @@ const TIME_BUCKET_BY_LAST_DAYS: Record<number, string> = {
 };
 
 const ORDER_BY_BY_SORT: Record<NonNullable<VyralSearchInput["sortBy"]>, string> = {
+  // `sales` é o default no app — o Vyral não tem campo nativo de vendas
+  // exposto, então usamos revenue (customNumberField3) como proxy e
+  // reordenamos client-side por sales. Mantemos a chave aqui pra TS.
+  sales: "customNumberField3",
   views: "customNumberField1",
   revenue: "customNumberField3", // Vyral's internal score correlates with revenue + virality
   engagement: "customNumberField2",
@@ -117,7 +121,7 @@ export function mapVyralItem(raw: VyralFeedItem): VyralVideoSummary {
       views: raw.customNumberField1 ?? 0,
       likes: parseNumberStr(raw.metaData.product_likes) ?? 0,
       comments: raw.customNumberField2 ?? 0,
-      shares: raw.customNumberField4,
+      sales: parseNumberStr(raw.metaData.totalUnitsSold),
       estimatedRevenueBrl: estimateRevenueBrl(raw, country),
     },
     product: raw.metaData.productTitle

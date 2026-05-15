@@ -88,10 +88,44 @@ async function pollUntilDone<T>(jobId: string, timeoutMs = DEFAULT_POLL_TIMEOUT_
   throw new ScraperClientError(`scraper job ${jobId} timed out after ${timeoutMs}ms`);
 }
 
-async function runJob<T>(input: ScraperJobInput, opts?: { timeoutMs?: number }): Promise<T> {
+async function runJobOnce<T>(input: ScraperJobInput, opts?: { timeoutMs?: number }): Promise<T> {
   const enqueued = (await signedFetch("/jobs", { method: "POST", body: input })) as ScraperJobResult;
   if (!enqueued.jobId) throw new ScraperClientError("scraper did not return a jobId");
   return pollUntilDone<T>(enqueued.jobId, opts?.timeoutMs);
+}
+
+/**
+ * Backoffs (ms) entre tentativas. Total worst case ~30s (sem somar timeout
+ * de cada job). Em prod, o caller (chat route) tem AbortController em 55s,
+ * então o último retry ainda cabe.
+ */
+const RETRY_BACKOFFS_MS = [0, 3_000, 8_000] as const;
+
+async function runJob<T>(
+  input: ScraperJobInput,
+  opts?: { timeoutMs?: number; retries?: number },
+): Promise<T> {
+  const maxAttempts = Math.min(opts?.retries ?? RETRY_BACKOFFS_MS.length, RETRY_BACKOFFS_MS.length);
+  let lastErr: unknown = null;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const delay = RETRY_BACKOFFS_MS[attempt] ?? 0;
+    if (delay > 0) await new Promise((r) => setTimeout(r, delay));
+    try {
+      return await runJobOnce<T>(input, opts);
+    } catch (err) {
+      lastErr = err;
+      // 4xx (auth, validação) não vale a pena retentar.
+      if (err instanceof ScraperClientError && err.status && err.status >= 400 && err.status < 500) {
+        throw err;
+      }
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[scraper-client] attempt ${attempt + 1}/${maxAttempts} failed (${input.kind})`,
+        err instanceof Error ? err.message : err,
+      );
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new ScraperClientError("scraper job failed after retries");
 }
 
 // =================================================================

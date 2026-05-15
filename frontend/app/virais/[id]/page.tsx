@@ -9,8 +9,8 @@ import {
   ExternalLink,
   Eye,
   ThumbsUp,
-  MessageSquare,
-  Share2,
+  ShoppingBag,
+  DollarSign,
   Trash2,
   Play,
 } from "lucide-react";
@@ -36,6 +36,7 @@ type SavedViralDetail = {
   views: number | null;
   likes: number | null;
   comments: number | null;
+  sales: number | null;
   shares: number | null;
   estimated_revenue_brl: number | null;
   product_name: string | null;
@@ -220,10 +221,10 @@ function ViralBody({ id, desktop = false }: { id: string; desktop?: boolean }) {
             </div>
 
             <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2.5">
+              <Metric Icon={ShoppingBag} label="Vendas" value={fmtBig(v.sales)} />
               <Metric Icon={Eye} label="Views" value={fmtBig(v.views)} />
               <Metric Icon={ThumbsUp} label="Likes" value={fmtBig(v.likes)} />
-              <Metric Icon={MessageSquare} label="Comments" value={fmtBig(v.comments)} />
-              <Metric Icon={Share2} label="Receita" value={fmtBrl(v.estimated_revenue_brl)} />
+              <Metric Icon={DollarSign} label="Receita" value={fmtBrl(v.estimated_revenue_brl)} />
             </div>
 
             {v.hook && (
