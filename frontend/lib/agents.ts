@@ -8,6 +8,8 @@ export type AgentMeta = {
   short: string;
   description: string;
   Icon: LucideIcon;
+  /** Foto do agente (asset em /public). Usada no AgentTile/Character/Badge. */
+  image: string;
   fg: string; // hex/oklch color (text/border)
   bg: string; // hex/oklch color (background)
   tailwindFg: string; // tailwind class for fg
@@ -21,6 +23,7 @@ export const AGENTS: Record<AgentId, AgentMeta> = {
     short: "Info",
     description: "Análise de produto · foto, ficha, mercado.",
     Icon: Search,
+    image: "/analista.png",
     fg: "oklch(0.45 0.16 245)",
     bg: "oklch(0.95 0.04 245)",
     tailwindFg: "text-agent-info-fg",
@@ -32,6 +35,7 @@ export const AGENTS: Record<AgentId, AgentMeta> = {
     short: "Virais",
     description: "Descobre o que tá bombando no TikTok Shop.",
     Icon: Flame,
+    image: "/viral.png",
     fg: "oklch(0.55 0.21 30)",
     bg: "oklch(0.96 0.04 35)",
     tailwindFg: "text-agent-viral-fg",
@@ -43,6 +47,7 @@ export const AGENTS: Record<AgentId, AgentMeta> = {
     short: "Scripts",
     description: "Hooks com neurociência e humor brasileiro.",
     Icon: Pen,
+    image: "/script.png",
     fg: "oklch(0.5 0.22 305)",
     bg: "oklch(0.95 0.05 305)",
     tailwindFg: "text-agent-script-fg",
@@ -54,6 +59,7 @@ export const AGENTS: Record<AgentId, AgentMeta> = {
     short: "Dúvidas",
     description: "Suporte sobre TikTok Shop, políticas e melhores práticas.",
     Icon: MessageCircle,
+    image: "/suporte.png",
     fg: "oklch(0.5 0.14 155)",
     bg: "oklch(0.95 0.04 155)",
     tailwindFg: "text-agent-help-fg",

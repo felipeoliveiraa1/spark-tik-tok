@@ -9,6 +9,7 @@ type Props = {
 
 export function AgentBadge({ agent, compact, className }: Props) {
   const a = AGENTS[agent];
+  const dot = compact ? 16 : 18;
   return (
     <span
       className={cn(
@@ -19,16 +20,23 @@ export function AgentBadge({ agent, compact, className }: Props) {
       style={{ background: a.bg, color: a.fg }}
     >
       <span
-        className="inline-flex items-center justify-center"
+        className="inline-flex items-center justify-center overflow-hidden"
         style={{
-          width: 18,
-          height: 18,
-          borderRadius: 5,
+          width: dot,
+          height: dot,
+          borderRadius: dot * 0.28,
           background: "rgba(255,255,255,0.6)",
-          color: a.fg,
         }}
       >
-        <a.Icon size={11} strokeWidth={1.8} />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={a.image}
+          alt=""
+          width={dot}
+          height={dot}
+          className="w-full h-full object-cover"
+          draggable={false}
+        />
       </span>
       {a.label}
     </span>
