@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Sparkle, ArrowRight, Clock, Package, Flame, Pen, Search, MessageCircle, Newspaper } from "lucide-react";
+import { Sparkle, ArrowRight, Package, Newspaper } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { AppHeader } from "@/components/layout/app-header";
 import { BottomNav } from "@/components/layout/bottom-nav";
@@ -67,12 +67,12 @@ function ShortcutCard({ agent, onStart }: { agent: AgentId; onStart: (a: AgentId
   return (
     <button
       onClick={() => onStart(agent)}
-      className="text-left p-4 rounded-2xl bg-spark-surface border border-spark-hairline flex items-start gap-3 hover:border-spark-ink/30 transition-colors"
+      className="text-left p-4 rounded-2xl bg-spark-surface border border-spark-hairline flex items-start gap-3.5 hover:border-spark-ink/30 transition-colors"
     >
-      <AgentCharacter agent={agent} size={48} />
-      <div className="flex-1 min-w-0">
-        <div className="text-[14px] font-extrabold tracking-[-0.01em]">{a.label}</div>
-        <div className="text-[12px] text-spark-ink-50 mt-0.5 leading-snug">{a.description}</div>
+      <AgentCharacter agent={agent} size={72} />
+      <div className="flex-1 min-w-0 pt-1">
+        <div className="text-[15px] font-extrabold tracking-[-0.01em]">{a.label}</div>
+        <div className="text-[12px] text-spark-ink-50 mt-1 leading-snug">{a.description}</div>
       </div>
     </button>
   );
@@ -85,9 +85,6 @@ function HomeBody({ desktop = false }: { desktop?: boolean }) {
   const [creating, setCreating] = React.useState<AgentId | null>(null);
 
   const firstName = (profile?.name?.trim() || profile?.email?.split("@")[0] || "criadora").split(/\s+/)[0];
-  const recent = [...store.conversations]
-    .sort((a, b) => +new Date(b.updatedAt) - +new Date(a.updatedAt))
-    .slice(0, 3);
 
   const start = async (agent: AgentId) => {
     if (creating) return;
@@ -141,50 +138,6 @@ function HomeBody({ desktop = false }: { desktop?: boolean }) {
           ))}
         </div>
       </div>
-
-      {recent.length > 0 && (
-        <div className={`mt-7 ${desktop ? "" : "px-4"}`}>
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-[12px] font-bold text-spark-ink-50 tracking-[0.08em] uppercase">
-              Continue de onde parou
-            </div>
-            <Link href="/chat" className="text-[12px] font-semibold text-spark-brand">
-              Ver tudo
-            </Link>
-          </div>
-          <div className={`grid gap-2.5 ${desktop ? "grid-cols-3 max-w-[920px]" : "grid-cols-1"}`}>
-            {recent.map((c) => {
-              const a = AGENTS[c.agent];
-              return (
-                <Link
-                  key={c.id}
-                  href={`/chat/${c.id}`}
-                  className="rounded-2xl bg-spark-surface border border-spark-hairline p-3.5 hover:border-spark-ink/30 transition-colors"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <AgentCharacter agent={c.agent} size={36} />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[13.5px] font-bold truncate">{c.title}</div>
-                      <div className="text-[11px] text-spark-ink-50 mt-0.5 inline-flex items-center gap-1">
-                        <Clock size={10} strokeWidth={2} />
-                        {timeAgo(c.updatedAt)} · {c.messageCount} msgs
-                      </div>
-                    </div>
-                  </div>
-                  {c.preview && (
-                    <div className="mt-2 text-[12px] text-spark-ink-70 line-clamp-2 leading-snug">
-                      {c.preview}
-                    </div>
-                  )}
-                  <div className="mt-2 inline-flex items-center gap-1 text-[11px] font-bold" style={{ color: a.fg }}>
-                    {a.label}
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       <div className={`mt-7 grid gap-5 ${desktop ? "grid-cols-2 max-w-[920px]" : "grid-cols-1 px-4"}`}>
         <SectionLink

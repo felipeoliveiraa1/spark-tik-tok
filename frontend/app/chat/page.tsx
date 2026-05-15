@@ -3,10 +3,9 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, MoreHorizontal, Sparkle, Clock } from "lucide-react";
+import { ArrowLeft, ArrowRight, MoreHorizontal, Sparkle } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { SparkMark } from "@/components/atoms/spark-mark";
-import { SButton } from "@/components/atoms/s-button";
 import { AgentCharacter } from "@/components/molecules/agent-character";
 import { AGENTS, AGENT_LIST, type AgentId } from "@/lib/agents";
 import { useConversationStore } from "@/lib/conversation-store";
@@ -49,24 +48,10 @@ const TAGLINES: Record<AgentId, string> = {
   help: "A mentora TikTok Shop",
 };
 
-function timeAgo(iso: string): string {
-  const ms = Date.now() - new Date(iso).getTime();
-  const mins = Math.round(ms / 60_000);
-  if (mins < 1) return "agora";
-  if (mins < 60) return `${mins}min`;
-  const hours = Math.round(mins / 60);
-  if (hours < 24) return `${hours}h`;
-  const days = Math.round(hours / 24);
-  return `${days}d`;
-}
-
 function GalleryBody() {
   const router = useRouter();
   const store = useConversationStore();
   const [creating, setCreating] = React.useState<AgentId | null>(null);
-  const recent = [...store.conversations]
-    .sort((a, b) => +new Date(b.updatedAt) - +new Date(a.updatedAt))
-    .slice(0, 4);
 
   const start = async (agent: AgentId) => {
     if (creating) return;
@@ -108,7 +93,7 @@ function GalleryBody() {
             className="text-left rounded-[22px] bg-spark-surface border border-spark-hairline overflow-hidden hover:border-spark-ink/30 transition-all hover:shadow-[0_18px_40px_-22px_rgba(20,20,40,0.25)] active:scale-[0.99]"
           >
             <div className="p-5 pb-3 flex items-start gap-4">
-              <AgentCharacter agent={a.id} size={84} />
+              <AgentCharacter agent={a.id} size={112} />
               <div className="flex-1 min-w-0">
                 <div className="text-[11px] font-bold text-spark-ink-50 uppercase tracking-[0.08em]">
                   {TAGLINES[a.id]}
@@ -144,48 +129,6 @@ function GalleryBody() {
         ))}
       </div>
 
-      {/* Conversas recentes */}
-      {recent.length > 0 && (
-        <div className="mt-10 px-4 lg:px-12">
-          <div className="text-[12px] font-bold text-spark-ink-50 tracking-[0.08em] uppercase mb-3">
-            Continue de onde parou
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2.5">
-            {recent.map((c) => {
-              const a = AGENTS[c.agent];
-              return (
-                <Link
-                  key={c.id}
-                  href={`/chat/${c.id}`}
-                  className="rounded-2xl bg-spark-surface border border-spark-hairline p-3.5 hover:border-spark-ink/30 transition-colors"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <AgentCharacter agent={c.agent} size={42} />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[13.5px] font-bold truncate">{c.title}</div>
-                      <div className="text-[11px] text-spark-ink-50 mt-0.5 inline-flex items-center gap-1">
-                        <Clock size={10} strokeWidth={2} />
-                        {timeAgo(c.updatedAt)} · {c.messageCount} msgs
-                      </div>
-                    </div>
-                  </div>
-                  {c.preview && (
-                    <div className="mt-2 text-[12px] text-spark-ink-70 line-clamp-2 leading-snug">
-                      {c.preview}
-                    </div>
-                  )}
-                  <div
-                    className="mt-2.5 inline-flex items-center gap-1 text-[11px] font-bold"
-                    style={{ color: a.fg }}
-                  >
-                    {a.label}
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
