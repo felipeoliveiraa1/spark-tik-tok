@@ -125,19 +125,18 @@ export default function LandingPage() {
         <div className="relative max-w-[1200px] mx-auto px-5 lg:px-10 pt-12 pb-16 lg:pt-20 lg:pb-24 grid lg:grid-cols-[1.1fr_1fr] gap-10 items-center">
           <div>
             <div className="inline-flex items-center gap-2 text-[12px] font-bold text-spark-brand bg-brand-grad-soft px-3 py-1.5 rounded-full">
-              <Sparkle size={12} strokeWidth={2} />
-              IA pra criadoras de TikTok Shop
+              ✨ IA pra criadoras de TikTok Shop
             </div>
             <h1 className="mt-4 text-[40px] sm:text-[52px] lg:text-[68px] font-extrabold tracking-[-0.03em] leading-[1.02] text-spark-ink">
               Crie scripts
               <br />
-              que <span className="text-spark-brand">vendem</span> no
+              que <span className="text-spark-brand">vendem 💕</span> no
               <br />
               TikTok Shop.
             </h1>
             <p className="mt-5 text-[16px] lg:text-[18px] text-spark-ink-70 leading-[1.55] max-w-[540px]">
               Sua IA pessoal pra analisar produto, achar viral e escrever hook que converte.
-              Pensado pra criadoras brasileiras, em PT-BR, com humor real.
+              Pensado por e pra criadoras brasileiras, em PT-BR, com humor real. 💅
             </p>
             <div className="mt-8">
               <CTAButtonRow />

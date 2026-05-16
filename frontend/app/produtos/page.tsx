@@ -55,13 +55,13 @@ function ProductsBody({ desktop = false }: { desktop?: boolean }) {
     <div className={`flex-1 overflow-auto ${desktop ? "py-8 px-12" : "pb-10"}`}>
       <div className={desktop ? "" : "px-4 pt-6"}>
         <div className="text-[12px] font-bold text-spark-brand tracking-[0.06em] uppercase">
-          Catálogo
+          💄 Catálogo
         </div>
         <h1 className={`mt-1 font-extrabold tracking-[-0.025em] leading-[1.1] ${desktop ? "text-[36px]" : "text-[26px]"}`}>
-          Seus produtos
+          Seus produtos 📦
         </h1>
         <p className="text-[13.5px] text-spark-ink-50 mt-1.5 max-w-[520px]">
-          Tudo que você já analisou com a Informação. Cada produto vira base pros próximos virais e scripts.
+          Tudo que você já analisou com a Informação. Cada produto vira base pros próximos virais e scripts. ✨
         </p>
       </div>
 
@@ -113,12 +113,13 @@ function ProductsBody({ desktop = false }: { desktop?: boolean }) {
 function EmptyProducts() {
   return (
     <div className="rounded-2xl bg-spark-surface border border-spark-hairline p-7 text-center max-w-[520px] mx-auto">
-      <div className="mx-auto w-12 h-12 rounded-2xl bg-brand-grad-soft text-spark-brand-deep flex items-center justify-center">
-        <Package size={22} strokeWidth={1.7} />
+      <div className="mx-auto w-14 h-14 rounded-2xl bg-brand-grad-soft flex items-center justify-center text-[28px]">
+        📦
       </div>
-      <div className="mt-3 text-[16px] font-extrabold">Sem produto ainda</div>
+      <div className="mt-3 text-[16px] font-extrabold">Sem produto ainda 💖</div>
       <p className="text-[13px] text-spark-ink-50 mt-1.5 leading-snug">
-        Abre o chat e manda uma foto ou o nome do produto pra Informação. Ela monta uma ficha completa e salva aqui.
+        Abre o chat e manda uma foto ou o nome do produto pra Informação. Ela monta uma ficha
+        completa e salva aqui. ✨
       </p>
       <div className="mt-4">
         <Link href="/chat">

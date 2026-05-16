@@ -42,7 +42,7 @@ function ContaBody({
           <div className={`font-extrabold ${desktop ? "text-[24px]" : "text-[20px]"}`}>{name || "Criadora"}</div>
           <div className="text-[13px] text-spark-ink-50 font-mono">{email}</div>
           <div className="mt-1.5 flex gap-1.5">
-            <SBadge tone={planActive ? "good" : "warn"}>{planActive ? "Plano ativo" : "Plano inativo"}</SBadge>
+            <SBadge tone={planActive ? "good" : "warn"}>{planActive ? "Plano ativo ✨" : "Plano inativo"}</SBadge>
             {niche && <SBadge>{niche}</SBadge>}
           </div>
         </div>
@@ -113,8 +113,8 @@ export default async function ContaPage({ searchParams }: ContaPageProps) {
       }
       desktop={
         <div className="flex-1 overflow-auto py-8 px-12">
-          <div className="text-[13px] font-bold text-spark-ink-50 tracking-[0.06em] uppercase">Conta</div>
-          <h1 className="text-[36px] font-extrabold tracking-[-0.02em] mt-1 mb-7">Minha conta</h1>
+          <div className="text-[13px] font-bold text-spark-ink-50 tracking-[0.06em] uppercase">💖 Conta</div>
+          <h1 className="text-[36px] font-extrabold tracking-[-0.02em] mt-1 mb-7">Minha conta 💖</h1>
           <ContaBody
             desktop
             email={profile.email}

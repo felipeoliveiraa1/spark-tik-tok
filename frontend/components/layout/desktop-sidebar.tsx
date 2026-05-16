@@ -3,31 +3,21 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  Home,
-  MessageCircle,
-  Package,
-  Flame,
-  Pen,
-  Newspaper,
-  User,
-  MoreHorizontal,
-  type LucideIcon,
-} from "lucide-react";
+import { User } from "lucide-react";
 import { SparkWordmark } from "@/components/atoms/spark-wordmark";
 import { cn } from "@/lib/cn";
 
 export type SidebarActive = "home" | "chat" | "produtos" | "virais" | "scripts" | "news" | "conta";
 
-type Item = { id: SidebarActive; label: string; href: string; Icon: LucideIcon };
+type Item = { id: SidebarActive; label: string; href: string; emoji: string };
 
 const items: Item[] = [
-  { id: "home", label: "Início", href: "/", Icon: Home },
-  { id: "chat", label: "Chat", href: "/chat", Icon: MessageCircle },
-  { id: "produtos", label: "Produtos", href: "/produtos", Icon: Package },
-  { id: "virais", label: "Virais", href: "/virais", Icon: Flame },
-  { id: "scripts", label: "Scripts", href: "/scripts", Icon: Pen },
-  { id: "news", label: "News", href: "/news", Icon: Newspaper },
+  { id: "home", label: "Início", href: "/", emoji: "🏠" },
+  { id: "chat", label: "Chat", href: "/chat", emoji: "💬" },
+  { id: "produtos", label: "Produtos", href: "/produtos", emoji: "📦" },
+  { id: "virais", label: "Virais", href: "/virais", emoji: "🔥" },
+  { id: "scripts", label: "Scripts", href: "/scripts", emoji: "✍️" },
+  { id: "news", label: "News", href: "/news", emoji: "📰" },
 ];
 
 type Profile = { name: string | null; email: string; plan_active: boolean };
@@ -57,7 +47,7 @@ export function DesktopSidebar({ active }: { active?: SidebarActive }) {
 
   const displayName = profile?.name?.trim() || profile?.email?.split("@")[0] || "Você";
   const initial = displayName.charAt(0).toUpperCase();
-  const planLabel = profile?.plan_active ? "Plano ativo" : "Plano inativo";
+  const planLabel = profile?.plan_active ? "Plano ativo ✨" : "Plano inativo";
 
   return (
     <aside className="hidden lg:flex w-[260px] shrink-0 border-r border-spark-hairline bg-spark-surface-elev flex-col">
@@ -74,13 +64,21 @@ export function DesktopSidebar({ active }: { active?: SidebarActive }) {
               key={it.id}
               href={it.href}
               className={cn(
-                "flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13.5px] font-semibold transition-colors",
+                "flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13.5px] transition-colors",
                 isActive
-                  ? "bg-spark-surface-sunken text-spark-ink"
-                  : "text-spark-ink-70 hover:bg-spark-surface-sunken/60 hover:text-spark-ink",
+                  ? "bg-spark-brand-soft text-spark-brand-deep font-extrabold"
+                  : "text-spark-ink-70 font-semibold hover:bg-spark-surface-sunken/60 hover:text-spark-ink",
               )}
             >
-              <it.Icon size={16} strokeWidth={isActive ? 2 : 1.7} />
+              <span
+                aria-hidden
+                className={cn(
+                  "text-[16px] leading-none",
+                  isActive ? "scale-110" : "opacity-75",
+                )}
+              >
+                {it.emoji}
+              </span>
               {it.label}
             </Link>
           );

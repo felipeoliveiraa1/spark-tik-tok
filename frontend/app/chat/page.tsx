@@ -71,16 +71,16 @@ function GalleryBody() {
     <div className="flex-1 overflow-auto pb-10">
       <div className="px-4 lg:px-12 pt-6 lg:pt-10">
         <div className="text-[12px] lg:text-[13px] font-bold text-spark-brand tracking-[0.06em] uppercase">
-          Especialistas Spark
+          ✨ Especialistas Spark
         </div>
         <h1 className="mt-1.5 text-[28px] lg:text-[42px] font-extrabold tracking-[-0.025em] leading-[1.1]">
           Com quem você quer
           <br />
-          falar agora?
+          falar agora? 💕
         </h1>
         <p className="mt-2.5 text-[14px] lg:text-[16px] text-spark-ink-50 max-w-[560px]">
-          Cada especialista é treinado pra uma parte do funil. Escolhe um pra começar — as conversas
-          ficam salvas e organizadas em pastas.
+          Cada especialista é treinada pra uma parte do funil. Escolhe uma pra começar — as conversas
+          ficam salvas e organizadas em pastinhas. 💅
         </p>
       </div>
 
@@ -121,7 +121,7 @@ function GalleryBody() {
               style={{ color: a.fg }}
             >
               <span className="inline-flex items-center gap-1.5">
-                <Sparkle size={14} strokeWidth={1.7} /> Conversar
+                ✨ Conversar
               </span>
               <ArrowRight size={16} strokeWidth={1.7} />
             </div>

@@ -104,23 +104,23 @@ function HomeBody({ desktop = false }: { desktop?: boolean }) {
     <div className={`flex-1 overflow-auto ${desktop ? "py-8 px-12" : "pb-10"}`}>
       <div className={desktop ? "" : "px-4 pt-6"}>
         <div className={`text-[13px] font-bold text-spark-brand tracking-[0.06em] uppercase ${desktop ? "" : ""}`}>
-          Oi, {firstName} 👋
+          Oi, {firstName} 💖
         </div>
         <h1 className={`mt-1.5 font-extrabold tracking-[-0.025em] leading-[1.1] ${desktop ? "text-[42px]" : "text-[30px]"}`}>
           O que vamos
           <br />
-          criar hoje?
+          criar hoje? ✨
         </h1>
 
         <Link
           href="/chat"
-          className={`mt-5 block rounded-[22px] relative overflow-hidden text-white bg-brand-grad-hero shadow-[0_20px_40px_-20px_oklch(0.5_0.22_305/0.4)] ${desktop ? "p-7 max-w-[640px]" : "p-[18px]"}`}
+          className={`mt-5 block rounded-[22px] relative overflow-hidden text-white bg-brand-grad-hero shadow-[0_20px_40px_-20px_oklch(0.55_0.24_340/0.45)] ${desktop ? "p-7 max-w-[640px]" : "p-[18px]"}`}
         >
-          <div className="flex items-center gap-1.5 opacity-85 text-[11px] font-bold uppercase tracking-[0.08em]">
-            <Sparkle size={12} strokeWidth={1.7} /> Nova conversa
+          <div className="flex items-center gap-1.5 opacity-90 text-[11px] font-bold uppercase tracking-[0.08em]">
+            ✨ Nova conversa
           </div>
           <div className={`mt-2.5 font-bold tracking-[-0.015em] leading-[1.25] ${desktop ? "text-[24px]" : "text-[19px]"}`}>
-            &ldquo;Sobe a foto do produto, eu cuido do resto.&rdquo;
+            &ldquo;Sobe a foto do produto, eu cuido do resto. 💅&rdquo;
           </div>
           <div className="mt-3.5 inline-flex items-center gap-1.5 text-[13px] font-bold">
             Abrir chat <ArrowRight size={14} strokeWidth={1.7} />
@@ -130,7 +130,7 @@ function HomeBody({ desktop = false }: { desktop?: boolean }) {
 
       <div className={`mt-7 ${desktop ? "" : "px-4"}`}>
         <div className="text-[12px] font-bold text-spark-ink-50 tracking-[0.08em] uppercase mb-3">
-          Atalhos
+          Atalhos 💕
         </div>
         <div className={`grid gap-2.5 ${desktop ? "grid-cols-4 max-w-[920px]" : "grid-cols-2"}`}>
           {AGENT_LIST.map((a) => (
@@ -142,10 +142,10 @@ function HomeBody({ desktop = false }: { desktop?: boolean }) {
       <div className={`mt-7 grid gap-5 ${desktop ? "grid-cols-2 max-w-[920px]" : "grid-cols-1 px-4"}`}>
         <SectionLink
           href="/produtos"
-          title="Seus produtos"
+          title="Seus produtos 📦"
           icon={Package}
           empty={products.length === 0}
-          emptyHint="Manda uma foto pro chat com a Informação pra criar a primeira ficha."
+          emptyHint="Manda uma foto pro chat com a Informação pra criar a primeira ficha. 💄"
         >
           <div className="flex flex-col gap-2 mt-3">
             {products.map((p) => (
@@ -169,10 +169,10 @@ function HomeBody({ desktop = false }: { desktop?: boolean }) {
 
         <SectionLink
           href="/news"
-          title="News da Aline"
+          title="News da Aline 📰"
           icon={Newspaper}
           empty={news.length === 0}
-          emptyHint="Quando a Aline publicar uma nota, ela aparece aqui."
+          emptyHint="Quando a Aline publicar uma nota, ela aparece aqui. ✨"
         >
           <div className="flex flex-col gap-2 mt-3">
             {news.map((n) => (

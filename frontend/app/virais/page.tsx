@@ -77,17 +77,17 @@ function ViraisBody({ desktop = false }: { desktop?: boolean }) {
     <div className={`flex-1 overflow-auto ${desktop ? "py-8 px-12" : "pb-10"}`}>
       <div className={desktop ? "" : "px-4 pt-6"}>
         <div className="text-[12px] font-bold text-spark-brand tracking-[0.06em] uppercase">
-          Sua biblioteca
+          💕 Sua biblioteca
         </div>
         <h1
           className={`mt-1 font-extrabold tracking-tight leading-[1.1] ${
             desktop ? "text-[36px]" : "text-[26px]"
           }`}
         >
-          Virais salvos
+          Virais salvos 🔥
         </h1>
         <p className="text-[13.5px] text-spark-ink-50 mt-1.5 max-w-[520px]">
-          Os vídeos que você escolheu guardar pra estudar e adaptar. Salva mais pelo chat com a Virais.
+          Os vídeos que você escolheu guardar pra estudar e adaptar. Salva mais pelo chat com a Virais. ✨
         </p>
 
         <div className="mt-4 inline-flex p-1 rounded-full bg-spark-surface-sunken">
@@ -185,13 +185,13 @@ function ViraisBody({ desktop = false }: { desktop?: boolean }) {
 function EmptyVirais() {
   return (
     <div className="rounded-2xl bg-spark-surface border border-spark-hairline p-7 text-center max-w-[520px] mx-auto">
-      <div className="mx-auto w-12 h-12 rounded-2xl bg-brand-grad-soft text-spark-brand-deep flex items-center justify-center">
-        <Flame size={22} strokeWidth={1.7} />
+      <div className="mx-auto w-14 h-14 rounded-2xl bg-brand-grad-soft flex items-center justify-center text-[28px]">
+        🔥
       </div>
-      <div className="mt-3 text-[16px] font-extrabold">Biblioteca vazia</div>
+      <div className="mt-3 text-[16px] font-extrabold">Biblioteca vazia 💖</div>
       <p className="text-[13px] text-spark-ink-50 mt-1.5 leading-snug">
-        Abre o chat com a Virais, vê o que tá bombando e fala &quot;salva esse&quot; — ele vai pra
-        cá com todas as métricas.
+        Abre o chat com a Virais, vê o que tá bombando e fala &quot;salva esse&quot; — ela vai pra
+        cá com todas as métricas. ✨
       </p>
       <div className="mt-4">
         <Link href="/chat">

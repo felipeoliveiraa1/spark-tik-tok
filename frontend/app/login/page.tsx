@@ -81,12 +81,12 @@ function LoginMobile() {
         <h1 className="text-[34px] font-extrabold tracking-[-0.025em] leading-[1.05] text-spark-ink">
           Crie scripts
           <br />
-          que vendem
+          que vendem ✨
           <br />
           no TikTok Shop.
         </h1>
         <p className="mt-3.5 text-[15px] leading-[1.5] text-spark-ink-50 max-w-[300px]">
-          Sua IA pessoal pra analisar produto, achar viral e escrever hook que converte.
+          Sua IA pessoal pra analisar produto, achar viral e escrever hook que converte. 💕
         </p>
 
         <div className="mt-8">
@@ -129,16 +129,16 @@ function LoginDesktop() {
         <SparkWordmark size={22} white />
         <div>
           <div className="text-[13px] font-bold opacity-85 uppercase tracking-[0.1em]">
-            App TikTok Shop
+            ✨ App TikTok Shop
           </div>
           <h1 className="text-[56px] font-extrabold tracking-[-0.03em] leading-[1.02] mt-3 max-w-[480px]">
             Crie scripts
             <br />
-            que vendem.
+            que vendem. 💕
           </h1>
           <p className="mt-4 text-[17px] leading-[1.5] opacity-90 max-w-[440px]">
-            Sua IA pessoal pra analisar produto, achar viral e escrever hook que converte. Pensado pra
-            criadoras brasileiras.
+            Sua IA pessoal pra analisar produto, achar viral e escrever hook que converte. Pensado
+            por e pra criadoras brasileiras. 💅
           </p>
           <div className="mt-9 grid grid-cols-2 gap-3 max-w-[460px]">
             {desktopFeatures.map((it) => (
@@ -163,7 +163,7 @@ function LoginDesktop() {
       <div className="w-[480px] p-14 bg-spark-bg flex flex-col justify-center">
         <div className="text-[13px] font-bold text-spark-ink-50 uppercase tracking-[0.06em]">Entrar</div>
         <h2 className="text-[32px] font-extrabold tracking-[-0.02em] mt-2 leading-[1.15]">
-          Bem-vinda de volta.
+          Bem-vinda de volta. 💖
         </h2>
         <p className="text-[14px] text-spark-ink-50 mt-2">
           Use o email e senha que você recebeu na compra.
