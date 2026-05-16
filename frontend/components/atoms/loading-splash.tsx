@@ -93,15 +93,15 @@ function CutePackage({ size }: { size: number }) {
       {/* Tampa */}
       <rect x="6" y="20" width="52" height="8" rx="2" fill="#E9C28A" />
 
-      {/* Fita vertical */}
-      <rect x="30" y="20" width="4" height="36" fill="oklch(0.55 0.22 305)" />
+      {/* Fita vertical — agora rose-pink pro novo brand */}
+      <rect x="30" y="20" width="4" height="36" fill="oklch(0.65 0.20 350)" />
       {/* Fita horizontal */}
-      <rect x="6" y="22" width="52" height="4" fill="oklch(0.55 0.22 305)" />
+      <rect x="6" y="22" width="52" height="4" fill="oklch(0.65 0.20 350)" />
 
-      {/* Laço */}
-      <ellipse cx="26" cy="16" rx="6" ry="4" fill="oklch(0.62 0.22 340)" />
-      <ellipse cx="38" cy="16" rx="6" ry="4" fill="oklch(0.62 0.22 340)" />
-      <circle cx="32" cy="20" r="3.5" fill="oklch(0.55 0.22 305)" />
+      {/* Laço — rose + magenta */}
+      <ellipse cx="26" cy="16" rx="6" ry="4" fill="oklch(0.68 0.22 345)" />
+      <ellipse cx="38" cy="16" rx="6" ry="4" fill="oklch(0.68 0.22 345)" />
+      <circle cx="32" cy="20" r="3.5" fill="oklch(0.55 0.24 340)" />
 
       {/* Carinha fofa */}
       <circle cx="24" cy="38" r="2" fill="#3D2415" />

@@ -10,7 +10,7 @@ type Props = {
 };
 
 const fillBackground: Record<Tone, string> = {
-  brand: "linear-gradient(135deg, oklch(0.5 0.22 290), oklch(0.62 0.22 340))",
+  brand: "linear-gradient(135deg, oklch(0.65 0.22 350), oklch(0.55 0.24 340))",
   warn: "linear-gradient(90deg, oklch(0.7 0.18 70), oklch(0.65 0.2 30))",
   ink: "oklch(0.18 0.02 285)",
 };

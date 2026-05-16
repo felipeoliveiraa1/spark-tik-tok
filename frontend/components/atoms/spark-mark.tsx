@@ -12,8 +12,8 @@ export function SparkMark({ size = 28, mono = false, white = false, className }:
     <svg width={size} height={size} viewBox="0 0 32 32" className={className} style={{ display: "block" }}>
       <defs>
         <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="oklch(0.5 0.22 290)" />
-          <stop offset="1" stopColor="oklch(0.62 0.22 340)" />
+          <stop offset="0" stopColor="oklch(0.65 0.22 350)" />
+          <stop offset="1" stopColor="oklch(0.55 0.24 340)" />
         </linearGradient>
       </defs>
       <path d="M5 16 L16 4 L19 13 L28 16 L16 28 L13 19 Z" fill={fill} />

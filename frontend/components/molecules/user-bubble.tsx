@@ -33,7 +33,7 @@ export function UserBubble({ children, attachments }: Props) {
           </div>
         )}
         {children && (
-          <div className="bg-brand-grad text-white px-4 py-2.5 rounded-[20px] rounded-br-md text-[14.5px] leading-[1.45] tracking-[-0.005em] shadow-[0_8px_22px_-12px_oklch(0.5_0.22_305/0.55)] font-medium">
+          <div className="bg-brand-grad text-white px-4 py-2.5 rounded-[20px] rounded-br-md text-[14.5px] leading-[1.45] tracking-[-0.005em] shadow-[0_8px_22px_-12px_oklch(0.55_0.24_340/0.55)] font-medium">
             {children}
           </div>
         )}

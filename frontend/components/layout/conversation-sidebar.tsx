@@ -119,7 +119,7 @@ export function ConversationSidebar({ onSelectConversation }: Props) {
         <Link
           href="/chat"
           onClick={onSelectConversation}
-          className="flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl bg-brand-grad text-white text-[13.5px] font-bold shadow-[0_6px_18px_-8px_oklch(0.5_0.22_305/0.5)]"
+          className="flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl bg-brand-grad text-white text-[13.5px] font-bold shadow-[0_6px_18px_-8px_oklch(0.55_0.24_340/0.55)]"
         >
           <span className="inline-flex items-center gap-2">
             <Plus size={16} strokeWidth={1.7} />

@@ -28,7 +28,7 @@ const iconSizes: Record<Size, number> = { sm: 15, md: 17, lg: 18 };
 
 const variantClasses: Record<Variant, string> = {
   primary:
-    "text-white border-none shadow-[0_1px_0_rgba(255,255,255,0.3)_inset,0_6px_18px_-8px_oklch(0.5_0.22_305/0.5)] bg-brand-grad",
+    "text-white border-none shadow-[0_1px_0_rgba(255,255,255,0.3)_inset,0_6px_18px_-8px_oklch(0.55_0.24_340/0.55)] bg-brand-grad",
   dark: "bg-spark-ink text-white border-none",
   ghost: "bg-transparent text-spark-ink border border-spark-border",
   soft: "bg-spark-surface-sunken text-spark-ink border-none",

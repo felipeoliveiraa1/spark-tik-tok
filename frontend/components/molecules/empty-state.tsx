@@ -19,8 +19,8 @@ export function EmptyState({
   description,
   actions,
   className,
-  iconBg = "oklch(0.95 0.05 305)",
-  iconFg = "oklch(0.5 0.22 305)",
+  iconBg = "oklch(0.96 0.04 350)",
+  iconFg = "oklch(0.60 0.22 350)",
 }: Props) {
   return (
     <div className={cn("flex-1 flex flex-col items-center justify-center px-7 text-center", className)}>
