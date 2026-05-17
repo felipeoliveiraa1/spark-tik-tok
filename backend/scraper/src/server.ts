@@ -57,7 +57,7 @@ const SearchSchema = z.object({
       ])
       .optional(),
     minViews: z.number().int().nonnegative().optional(),
-    sortBy: z.enum(["views", "revenue", "recent", "engagement"]).optional(),
+    sortBy: z.enum(["sales", "views", "revenue", "recent", "engagement"]).optional(),
     lastDays: z.union([z.literal(7), z.literal(14), z.literal(30), z.literal(90)]).optional(),
     limit: z.number().int().positive().max(50).optional(),
   }),
@@ -65,7 +65,10 @@ const SearchSchema = z.object({
 
 const TranscribeSchema = z.object({
   kind: z.literal("vyral.get-transcription"),
-  params: z.object({ videoId: z.string().min(1) }),
+  params: z.object({
+    videoId: z.string().min(1),
+    searchQuery: z.string().optional(),
+  }),
 });
 
 const TopProductsSchema = z.object({
