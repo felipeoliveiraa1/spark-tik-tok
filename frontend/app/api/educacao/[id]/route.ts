@@ -1,44 +1,52 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase-server";
 import { requireAdmin } from "@/lib/auth-admin";
+import { extractYoutubeId, youtubeThumbUrl } from "@/lib/youtube";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type Params = { params: Promise<{ slug: string }> };
+type Params = { params: Promise<{ id: string }> };
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function GET(_request: Request, { params }: Params) {
-  const { slug } = await params;
+  const { id } = await params;
   const supabase = await getSupabaseServer();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
+  const column = UUID_RE.test(id) ? "id" : "slug";
   const { data, error } = await supabase
-    .from("news")
+    .from("education_videos")
     .select("*")
-    .eq("slug", slug)
+    .eq(column, id)
     .maybeSingle();
-
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!data) return NextResponse.json({ error: "not_found" }, { status: 404 });
-  return NextResponse.json(data);
+
+  return NextResponse.json({
+    video: {
+      ...data,
+      cover_url: data.cover_url || (data.youtube_id ? youtubeThumbUrl(data.youtube_id, "hq") : null),
+    },
+  });
 }
 
 const EDITABLE_FIELDS = [
   "title",
+  "description",
   "category",
-  "excerpt",
   "cover_url",
-  "body_md",
-  "reading_minutes",
-  "is_new",
-  "published_at",
+  "duration_seconds",
+  "order_index",
+  "is_published",
 ] as const;
 
 export async function PATCH(request: Request, { params }: Params) {
-  const { slug } = await params;
+  const { id } = await params;
   const guard = await requireAdmin();
   if (!guard.ok) return guard.response;
   const { supabase } = guard;
@@ -54,14 +62,31 @@ export async function PATCH(request: Request, { params }: Params) {
   for (const k of EDITABLE_FIELDS) {
     if (k in body) patch[k] = body[k];
   }
+
+  // youtube_url ou youtube_id também podem ser atualizados
+  if ("youtube_url" in body || "youtube_id" in body) {
+    const raw = (body.youtube_url ?? body.youtube_id) as string | null | undefined;
+    const yid = extractYoutubeId(raw ?? null);
+    if (!yid) {
+      return NextResponse.json({ error: "invalid_youtube" }, { status: 400 });
+    }
+    patch.youtube_id = yid;
+  }
+
+  if (typeof body.slug === "string" && body.slug.trim()) {
+    patch.slug = body.slug.trim();
+  }
+
   if (Object.keys(patch).length === 0) {
     return NextResponse.json({ error: "empty_patch" }, { status: 400 });
   }
+  patch.updated_at = new Date().toISOString();
 
+  const column = UUID_RE.test(id) ? "id" : "slug";
   const { data, error } = await supabase
-    .from("news")
+    .from("education_videos")
     .update(patch)
-    .eq("slug", slug)
+    .eq(column, id)
     .select("*")
     .maybeSingle();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -70,12 +95,17 @@ export async function PATCH(request: Request, { params }: Params) {
 }
 
 export async function DELETE(_request: Request, { params }: Params) {
-  const { slug } = await params;
+  const { id } = await params;
   const guard = await requireAdmin();
   if (!guard.ok) return guard.response;
   const { supabase } = guard;
 
-  const { data, error } = await supabase.from("news").delete().eq("slug", slug).select("id");
+  const column = UUID_RE.test(id) ? "id" : "slug";
+  const { data, error } = await supabase
+    .from("education_videos")
+    .delete()
+    .eq(column, id)
+    .select("id");
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!data || data.length === 0) {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
