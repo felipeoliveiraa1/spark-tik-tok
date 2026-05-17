@@ -5,6 +5,8 @@ type IconComp = React.ComponentType<{ size?: number; strokeWidth?: number; class
 
 type Props = {
   defaultValue?: string;
+  value?: string;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   placeholder?: string;
   type?: string;
   Icon?: IconComp;
@@ -14,11 +16,15 @@ type Props = {
   required?: boolean;
   minLength?: number;
   maxLength?: number;
+  min?: number | string;
+  max?: number | string;
   disabled?: boolean;
 };
 
 export function SInput({
   defaultValue,
+  value,
+  onChange,
   placeholder,
   type = "text",
   Icon,
@@ -28,6 +34,8 @@ export function SInput({
   required,
   minLength,
   maxLength,
+  min,
+  max,
   disabled,
 }: Props) {
   return (
@@ -42,11 +50,13 @@ export function SInput({
         type={type}
         name={name}
         autoComplete={autoComplete}
-        defaultValue={defaultValue}
+        {...(value !== undefined ? { value, onChange } : { defaultValue })}
         placeholder={placeholder}
         required={required}
         minLength={minLength}
         maxLength={maxLength}
+        min={min}
+        max={max}
         disabled={disabled}
         className="flex-1 border-none outline-none bg-transparent text-[15px] text-spark-ink tracking-[-0.01em] placeholder:text-spark-ink-35 disabled:opacity-60"
       />

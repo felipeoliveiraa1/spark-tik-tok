@@ -7,7 +7,16 @@ import { User } from "lucide-react";
 import { SparkWordmark } from "@/components/atoms/spark-wordmark";
 import { cn } from "@/lib/cn";
 
-export type SidebarActive = "home" | "chat" | "produtos" | "virais" | "scripts" | "news" | "conta";
+export type SidebarActive =
+  | "home"
+  | "chat"
+  | "produtos"
+  | "virais"
+  | "scripts"
+  | "educacao"
+  | "news"
+  | "conta"
+  | "admin";
 
 type Item = { id: SidebarActive; label: string; href: string; emoji: string };
 
@@ -17,10 +26,11 @@ const items: Item[] = [
   { id: "produtos", label: "Produtos", href: "/produtos", emoji: "📦" },
   { id: "virais", label: "Virais", href: "/virais", emoji: "🔥" },
   { id: "scripts", label: "Scripts", href: "/scripts", emoji: "✍️" },
+  { id: "educacao", label: "Educação", href: "/educacao", emoji: "🎓" },
   { id: "news", label: "News", href: "/news", emoji: "📰" },
 ];
 
-type Profile = { name: string | null; email: string; plan_active: boolean };
+type Profile = { name: string | null; email: string; plan_active: boolean; role?: string };
 
 function useProfile() {
   const [profile, setProfile] = React.useState<Profile | null>(null);
@@ -83,6 +93,23 @@ export function DesktopSidebar({ active }: { active?: SidebarActive }) {
             </Link>
           );
         })}
+
+        {profile?.role === "admin" && (
+          <Link
+            href="/admin"
+            className={cn(
+              "mt-3 flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13.5px] transition-colors border-t border-spark-hairline/60 pt-4",
+              computedActive === "admin"
+                ? "bg-spark-brand-soft text-spark-brand-deep font-extrabold"
+                : "text-spark-ink-70 font-semibold hover:bg-spark-surface-sunken/60 hover:text-spark-ink",
+            )}
+          >
+            <span aria-hidden className="text-[16px] leading-none">
+              🛠️
+            </span>
+            Admin
+          </Link>
+        )}
       </nav>
 
       <Link
@@ -105,10 +132,12 @@ export function DesktopSidebar({ active }: { active?: SidebarActive }) {
 function deriveActive(pathname: string | null): SidebarActive | undefined {
   if (!pathname) return undefined;
   if (pathname === "/") return "home";
+  if (pathname.startsWith("/admin")) return "admin";
   if (pathname.startsWith("/chat")) return "chat";
   if (pathname.startsWith("/produtos")) return "produtos";
   if (pathname.startsWith("/virais")) return "virais";
   if (pathname.startsWith("/scripts")) return "scripts";
+  if (pathname.startsWith("/educacao")) return "educacao";
   if (pathname.startsWith("/news")) return "news";
   if (pathname.startsWith("/conta")) return "conta";
   return undefined;
