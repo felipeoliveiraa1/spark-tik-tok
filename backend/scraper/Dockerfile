@@ -51,6 +51,9 @@ COPY --from=builder /spark-deploy/package.json   ./package.json
 COPY --from=builder /spark-deploy/node_modules   ./node_modules
 COPY --from=builder /spark-deploy/dist           ./dist
 
+# Scripts auxiliares (login interativo etc) — não precisam de compile
+COPY backend/scraper/scripts ./scripts
+
 # Instala Chromium do Playwright DENTRO da imagem (em /ms-playwright pra ficar
 # acessível pra todos os users) + as deps do sistema que o Chrome precisa
 # (libs gráficas, fonts). Sem isso o container recriado perde o browser e os
