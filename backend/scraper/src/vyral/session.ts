@@ -160,11 +160,21 @@ async function buildSession(): Promise<VyralSessionCtx> {
 export async function getSession(): Promise<VyralSessionCtx> {
   if (cached) return cached;
   if (!initializing) {
-    initializing = buildSession().then((s) => {
-      cached = s;
-      initializing = null;
-      return s;
-    });
+    initializing = buildSession().then(
+      (s) => {
+        cached = s;
+        initializing = null;
+        return s;
+      },
+      (err) => {
+        // CRITICAL: reset initializing on failure too. Without this,
+        // a single failure poisons the cache forever — every subsequent
+        // getSession() call resolves the same rejected promise instantly
+        // and the only way to recover is restarting the container.
+        initializing = null;
+        throw err;
+      },
+    );
   }
   return initializing;
 }
