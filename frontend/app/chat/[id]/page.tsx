@@ -9,6 +9,9 @@ import { LoadingSplash } from "@/components/atoms/loading-splash";
 import { UserBubble } from "@/components/molecules/user-bubble";
 import { AgentBubble } from "@/components/molecules/agent-bubble";
 import { AgentCharacter } from "@/components/molecules/agent-character";
+import { MentionPicker, type MentionItem } from "@/components/molecules/mention-picker";
+
+export type ChatMention = { kind: "product" | "viral"; id: string; label: string };
 import { AGENTS, type AgentId } from "@/lib/agents";
 import {
   useConversationStore,
@@ -120,22 +123,77 @@ function ChatComposer({
   onSend,
   disabled,
 }: {
-  onSend: (text: string, attachments: PendingAttachment[]) => void;
+  onSend: (text: string, attachments: PendingAttachment[], mentions: ChatMention[]) => void;
   disabled: boolean;
 }) {
   const [text, setText] = React.useState("");
   const [attachments, setAttachments] = React.useState<PendingAttachment[]>([]);
+  // mentions ficam em state paralelo. NÃO modificamos o texto digitado —
+  // o input mostra "@Nome" puro, e a lista de mentions é enviada como metadata.
+  const [mentions, setMentions] = React.useState<ChatMention[]>([]);
   const [uploading, setUploading] = React.useState(false);
   const [uploadError, setUploadError] = React.useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const textRef = React.useRef<HTMLInputElement>(null);
+
+  // Mentions: ativa popup ao detectar @ no input
+  const [mentionRange, setMentionRange] = React.useState<{ start: number; end: number } | null>(
+    null,
+  );
+  const mentionQuery = mentionRange ? text.slice(mentionRange.start + 1, mentionRange.end) : "";
+
+  const onTextChange = (val: string, caret: number) => {
+    setText(val);
+    // Quando o texto encurta (ex: deletar), drop mentions órfãs (cujo label não
+    // aparece mais como @label no texto). Tolerante a edição parcial.
+    setMentions((prev) =>
+      prev.filter((m) => val.includes(`@${m.label.split(/\s+/)[0]}`)),
+    );
+    // detecta @ aberto
+    const before = val.slice(0, caret);
+    const at = before.lastIndexOf("@");
+    if (at < 0) {
+      setMentionRange(null);
+      return;
+    }
+    const between = before.slice(at + 1);
+    if (/\s/.test(between) || between.length > 30) {
+      setMentionRange(null);
+      return;
+    }
+    setMentionRange({ start: at, end: caret });
+  };
+
+  const insertMention = (item: MentionItem) => {
+    if (!mentionRange) return;
+    const before = text.slice(0, mentionRange.start);
+    const after = text.slice(mentionRange.end);
+    const label = item.title;
+    const visible = `@${label}`;
+    const next = `${before}${visible} ${after}`;
+    setText(next);
+    setMentions((prev) => {
+      // evita duplicar
+      const filtered = prev.filter((m) => !(m.kind === item.kind && m.id === item.id));
+      return [...filtered, { kind: item.kind, id: item.id, label }];
+    });
+    setMentionRange(null);
+    requestAnimationFrame(() => {
+      textRef.current?.focus();
+      const pos = (before + visible + " ").length;
+      textRef.current?.setSelectionRange(pos, pos);
+    });
+  };
 
   const canSend = !disabled && !uploading && (text.trim().length > 0 || attachments.length > 0);
 
   const send = () => {
     if (!canSend) return;
-    onSend(text.trim(), attachments);
+    onSend(text.trim(), attachments, mentions);
     setText("");
     setAttachments([]);
+    setMentions([]);
+    setMentionRange(null);
   };
 
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -167,7 +225,14 @@ function ChatComposer({
   };
 
   return (
-    <div className="px-3 pt-2 pb-[14px] border-t border-spark-hairline bg-white/95 backdrop-blur-md safe-bottom">
+    <div className="relative px-3 pt-2 pb-[14px] border-t border-spark-hairline bg-white/95 backdrop-blur-md safe-bottom">
+      {mentionRange && (
+        <MentionPicker
+          query={mentionQuery}
+          onPick={insertMention}
+          onClose={() => setMentionRange(null)}
+        />
+      )}
       {attachments.length > 0 && (
         <div className="flex gap-2 mb-2 px-1">
           {attachments.map((a, i) => (
@@ -213,10 +278,12 @@ function ChatComposer({
           )}
         </button>
         <input
+          ref={textRef}
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => onTextChange(e.target.value, e.target.selectionStart ?? e.target.value.length)}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
+            // Picker aberto: Enter/setas ficam por conta do window listener do picker
+            if (e.key === "Enter" && !e.shiftKey && !mentionRange) {
               e.preventDefault();
               send();
             }
@@ -228,7 +295,7 @@ function ChatComposer({
                 ? "Aguarda a resposta…"
                 : attachments.length > 0
                   ? "Algo a dizer? (opcional)"
-                  : "Pergunta qualquer coisa…"
+                  : "Pergunta qualquer coisa… (use @ pra mencionar produto ou viral)"
           }
           disabled={disabled}
           className="flex-1 bg-transparent text-[14px] text-spark-ink placeholder:text-spark-ink-50 outline-none disabled:opacity-60"
@@ -274,7 +341,7 @@ function useChatSender(conversationId: string) {
   const [streaming, setStreaming] = React.useState(false);
 
   const send = React.useCallback(
-    async (text: string, attachments: PendingAttachment[] = []) => {
+    async (text: string, attachments: PendingAttachment[] = [], mentions: ChatMention[] = []) => {
       if (streaming) return;
       const trimmed = text.trim();
       if (!trimmed && attachments.length === 0) return;
@@ -312,6 +379,7 @@ function useChatSender(conversationId: string) {
             conversation_id: conversationId,
             messages: apiMessages,
             attachments,
+            mentions,
           }),
         });
 

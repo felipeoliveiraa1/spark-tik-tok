@@ -20,11 +20,13 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 type Attachment = { url: string; mime?: string };
+type ChatMention = { kind: "product" | "viral"; id: string; label: string };
 
 type Body = {
   conversation_id?: string;
   messages?: ModelMessage[];
   attachments?: Attachment[];
+  mentions?: ChatMention[];
 };
 
 const VALID_AGENTS: AgentId[] = ["info", "viral", "script", "help"];
@@ -730,6 +732,39 @@ function buildViralTools(
 function buildScriptTools(supabase: SupabaseClient, userId: string): ToolSet {
   return {
     ...buildProductTools(supabase, userId),
+    list_saved_virais: tool({
+      description:
+        "Lista os virais que a aluna já salvou na biblioteca dela. Use quando ela disser 'inspirado nos meus virais', 'baseado no que salvei' ou similar — pra puxar contexto antes de gerar hooks.",
+      inputSchema: z.object({}),
+      execute: async () => {
+        const { data, error } = await supabase
+          .from("saved_virals")
+          .select("id, source_video_id, creator, niche, hook, caption, product_name, views, likes, sales")
+          .eq("user_id", userId)
+          .order("saved_at", { ascending: false })
+          .limit(20);
+        if (error) return { ok: false, error: error.message };
+        return { ok: true, virais: data ?? [] };
+      },
+    }),
+    get_saved_viral: tool({
+      description:
+        "Pega TODOS os detalhes de um viral salvo (caption, hook, métricas, criador, URL). Use quando a aluna mencionar um viral específico — passa o ID que veio em list_saved_virais.",
+      inputSchema: z.object({
+        viral_id: z.string().describe("UUID do viral salvo."),
+      }),
+      execute: async ({ viral_id }) => {
+        const { data, error } = await supabase
+          .from("saved_virals")
+          .select("*")
+          .eq("user_id", userId)
+          .eq("id", viral_id)
+          .maybeSingle();
+        if (error) return { ok: false, error: error.message };
+        if (!data) return { ok: false, error: "not_found" };
+        return { ok: true, viral: data };
+      },
+    }),
     save_script: tool({
       description:
         "Salva a tabela de hooks gerada pra aluna conseguir consultar depois em /scripts. Chame SEMPRE que terminar uma tabela de hooks completa. Devolva o link [Ver scripts](/scripts/<id>) na sua resposta.",
@@ -802,6 +837,111 @@ function attachImages(messages: ModelMessage[], attachments: Attachment[]): Mode
 }
 
 // =================================================================
+// Mentions: expande @produto / @viral em contexto rico pro modelo
+// =================================================================
+async function expandMentionsContext(
+  supabase: SupabaseClient,
+  mentions: ChatMention[],
+): Promise<string | null> {
+  if (!mentions || mentions.length === 0) return null;
+
+  const productIds = mentions.filter((m) => m.kind === "product").map((m) => m.id);
+  const viralIds = mentions.filter((m) => m.kind === "viral").map((m) => m.id);
+
+  const [pRes, vRes] = await Promise.all([
+    productIds.length > 0
+      ? supabase
+          .from("products")
+          .select(
+            "id, name, category, target_audience, pain_points, strengths, price_range, competitors, image_url",
+          )
+          .in("id", productIds)
+      : Promise.resolve({ data: [] as Array<Record<string, unknown>>, error: null }),
+    viralIds.length > 0
+      ? supabase
+          .from("saved_virals")
+          .select(
+            "id, source_video_id, url, creator, niche, country, caption, hook, views, likes, sales, estimated_revenue_brl, product_name, product_shop_url, thumbnail_url",
+          )
+          .in("id", viralIds)
+      : Promise.resolve({ data: [] as Array<Record<string, unknown>>, error: null }),
+  ]);
+
+  const products = (pRes.data ?? []) as Array<{
+    id: string;
+    name: string;
+    category: string | null;
+    target_audience: string | null;
+    pain_points: string | null;
+    strengths: string | null;
+    price_range: string | null;
+    competitors: string | null;
+    image_url: string | null;
+  }>;
+  const virais = (vRes.data ?? []) as Array<{
+    id: string;
+    source_video_id: string;
+    url: string;
+    creator: string | null;
+    niche: string | null;
+    country: string | null;
+    caption: string | null;
+    hook: string | null;
+    views: number | null;
+    likes: number | null;
+    sales: number | null;
+    estimated_revenue_brl: number | null;
+    product_name: string | null;
+    product_shop_url: string | null;
+    thumbnail_url: string | null;
+  }>;
+
+  const blocks: string[] = [];
+
+  for (const p of products) {
+    const lines: string[] = [`### PRODUTO MENCIONADO: ${p.name}`];
+    if (p.category) lines.push(`- Categoria: ${p.category}`);
+    if (p.target_audience) lines.push(`- Público-alvo: ${p.target_audience}`);
+    if (p.pain_points) lines.push(`- Dores que resolve: ${p.pain_points}`);
+    if (p.strengths) lines.push(`- Pontos fortes: ${p.strengths}`);
+    if (p.price_range) lines.push(`- Faixa de preço: ${p.price_range}`);
+    if (p.competitors) lines.push(`- Concorrentes: ${p.competitors}`);
+    if (p.image_url) lines.push(`- Foto: ${p.image_url}`);
+    blocks.push(lines.join("\n"));
+  }
+
+  for (const v of virais) {
+    const lines: string[] = [
+      `### VIRAL MENCIONADO: ${v.product_name?.trim() || "(sem nome)"}`,
+    ];
+    if (v.creator) lines.push(`- Criadora: @${v.creator}`);
+    if (v.niche) lines.push(`- Nicho: ${v.niche}`);
+    if (v.country) lines.push(`- País: ${v.country}`);
+    const metricBits: string[] = [];
+    if (v.sales != null) metricBits.push(`🛒 ${v.sales} vendas`);
+    if (v.views != null) metricBits.push(`👁 ${v.views} views`);
+    if (v.likes != null) metricBits.push(`❤ ${v.likes} likes`);
+    if (v.estimated_revenue_brl != null) metricBits.push(`💰 R$ ${v.estimated_revenue_brl}`);
+    if (metricBits.length > 0) lines.push(`- Métricas: ${metricBits.join(" · ")}`);
+    if (v.hook) lines.push(`- Hook: "${v.hook}"`);
+    if (v.caption) lines.push(`- Caption completa: ${v.caption}`);
+    if (v.product_shop_url) lines.push(`- Loja: ${v.product_shop_url}`);
+    if (v.url) lines.push(`- TikTok: ${v.url}`);
+    blocks.push(lines.join("\n"));
+  }
+
+  if (blocks.length === 0) return null;
+
+  return [
+    "CONTEXTO DAS MENÇÕES — a aluna citou esses itens com @ na mensagem.",
+    "Use esses dados (e SÓ esses) pra fundamentar sua resposta sobre eles.",
+    "Não invente nada além disso.",
+    "",
+    ...blocks,
+  ].join("\n\n");
+}
+
+// =================================================================
 // Handler
 // =================================================================
 export async function POST(request: Request) {
@@ -829,6 +969,7 @@ export async function POST(request: Request) {
   const conversationId = body.conversation_id;
   const messages = body.messages ?? [];
   const attachments = body.attachments ?? [];
+  const mentions = body.mentions ?? [];
 
   if (!conversationId) {
     return new Response(JSON.stringify({ error: "conversation_id_required" }), {
@@ -893,7 +1034,23 @@ export async function POST(request: Request) {
     tools = buildHelpTools(supabase, user.id);
   }
 
-  const finalMessages = attachImages(messages, attachments);
+  let finalMessages = attachImages(messages, attachments);
+
+  // Mentions: se a aluna mencionou @produto/@viral, busca os dados completos
+  // e injeta como mensagem system extra logo antes da última msg do usuário.
+  // Isso dá pro agente (Scripts principalmente) o contexto completo pra
+  // gerar hooks/análises baseados em fatos, sem precisar chamar tools.
+  if (mentions.length > 0) {
+    const ctx = await expandMentionsContext(supabase, mentions).catch(() => null);
+    if (ctx) {
+      const last = finalMessages[finalMessages.length - 1];
+      finalMessages = [
+        ...finalMessages.slice(0, -1),
+        { role: "system", content: ctx },
+        last,
+      ];
+    }
+  }
 
   // Captura o erro real do streamText (vem via callback).
   let capturedError: string | null = null;
