@@ -32,9 +32,25 @@ async function loadStorageState(): Promise<BrowserContextOptions["storageState"]
   }
 }
 
-async function persistStorageState(context: BrowserContext) {
+/**
+ * Persiste storageState — MAS só se a sessão estiver realmente "boa".
+ * Se o page atual está em /login, /confirm-session, /otp etc, não
+ * sobrescreve a session anterior (que pode ser válida). Evita "envenenar"
+ * o session.json salvo manualmente via login-interactive.mjs.
+ */
+async function persistStorageState(context: BrowserContext, page: Page) {
+  const url = page.url();
+  const badUrlRe = /login|signin|entrar|auth|confirm-session|otp|verify|2fa/i;
+  if (badUrlRe.test(url)) {
+    log.warn(
+      { url },
+      "vyral.session: NÃO salvando state — page em estado intermediário (login/confirm-session)",
+    );
+    return;
+  }
   const state = await context.storageState();
   await writeFile(env.SESSION_FILE, JSON.stringify(state, null, 2), "utf-8");
+  log.info({ url, file: env.SESSION_FILE }, "vyral.session: state salvo");
 }
 
 async function ensureLoggedIn(page: Page): Promise<void> {
@@ -124,7 +140,20 @@ async function ensureLoggedIn(page: Page): Promise<void> {
     );
   }
 
-  log.info({ landedAt: page.url() }, "vyral.session: login OK");
+  // 6. CRÍTICO: se caiu em /confirm-session (2FA por email), não temos como
+  // resolver via headless. Precisa rodar scripts/login-interactive.mjs
+  // manualmente pra colar o código de 6 chars que vem no email.
+  const afterLoginUrl = page.url();
+  if (/confirm-session|otp|verify|2fa/i.test(afterLoginUrl)) {
+    throw new Error(
+      `vyral.session: Vyral exigiu 2FA por email (URL: ${afterLoginUrl}). ` +
+        "Rode: docker compose exec -it scraper node /app/scripts/login.mjs " +
+        "pra completar o login e regravar /app/data/vyral-session.json. " +
+        "Enquanto isso, o pipeline degrada via DB-first.",
+    );
+  }
+
+  log.info({ landedAt: afterLoginUrl }, "vyral.session: login OK");
 }
 
 async function buildSession(): Promise<VyralSessionCtx> {
@@ -148,7 +177,7 @@ async function buildSession(): Promise<VyralSessionCtx> {
 
   const page = await context.newPage();
   await ensureLoggedIn(page);
-  await persistStorageState(context);
+  await persistStorageState(context, page);
 
   return { browser, context, page, mock: false };
 }

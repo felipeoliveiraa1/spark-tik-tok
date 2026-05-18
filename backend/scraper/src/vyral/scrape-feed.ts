@@ -483,7 +483,16 @@ export async function scrapeFeed(
       await page.waitForURL((u) => !/login|signin|entrar/i.test(u.toString()), {
         timeout: 30_000,
       });
-      log.info({ landedAt: page.url() }, "scrape-feed: re-login OK");
+      const after = page.url();
+      log.info({ landedAt: after }, "scrape-feed: re-login passou de /login");
+      // Vyral exige 2FA por email — re-login inline NÃO consegue resolver
+      if (/confirm-session|otp|verify|2fa/i.test(after)) {
+        throw new Error(
+          `vyral.scrape: Vyral pediu 2FA (URL: ${after}). ` +
+            "Rode 'docker compose exec -it scraper node /app/scripts/login.mjs' " +
+            "pra recompletar o login e regravar a session.",
+        );
+      }
       // Vai pra rota do feed mesmo
       if (!page.url().startsWith(FEED_URL)) {
         await page.goto(FEED_URL, { waitUntil: "networkidle", timeout: 30_000 });
