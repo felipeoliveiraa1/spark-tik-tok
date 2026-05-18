@@ -469,25 +469,13 @@ function buildViralTools(
               videos: [],
             };
           });
-          let usedDays: 7 | 14 | 30 | 90 = safeDays;
+          const usedDays: 7 | 14 | 30 | 90 = safeDays;
           let fellBackToGeneral = false;
 
-          // Se zerou E tem filtro estrito (niche ou query), tenta UMA
-          // expansão maior antes do fallback geral.
-          if (data.videos.length === 0 && (safeNiche || safeQuery)) {
-            const expandTo: 7 | 14 | 30 | 90 = safeDays < 30 ? 30 : 90;
-            data = await searchVyralVideos({
-              query: safeQuery,
-              niche: safeNiche,
-              country: safeCountry,
-              lastDays: expandTo,
-              limit: safeLimit,
-              sortBy: safeSortBy,
-            }).catch(() => data);
-            usedDays = expandTo;
-          }
-
-          // Se ainda zerou, cai pro feed geral sem filtros restritivos.
+          // Se zerou e tinha filtro estrito, UMA única tentativa de fallback
+          // pro feed geral. Removido o auto-expand de período pra não estourar
+          // o timeout de 60s do Vercel — múltiplas scrapes (15-25s cada)
+          // somavam e dava FUNCTION_INVOCATION_TIMEOUT.
           if (data.videos.length === 0 && (safeNiche || safeQuery)) {
             data = await searchVyralVideos({
               country: safeCountry,
@@ -550,19 +538,15 @@ function buildViralTools(
           });
           const formatted_response = cards.join("\n\n");
 
-          const expandedPeriod = usedDays !== safeDays;
           return {
             ok: true,
             count: data.videos.length,
             fell_back_to_general: fellBackToGeneral,
             used_days: usedDays,
-            expanded_period: expandedPeriod,
             formatted_response,
             INSTRUCTION: fellBackToGeneral
-              ? `Nicho '${safeNiche}' não tinha vídeos suficientes. Mostre o conteúdo de formatted_response (top virais geral) com intro: 'Não tem viral específico de ${safeNiche} agora, mas isso aqui está bombando no geral:' e termine com 'Quer focar em outro nicho?'`
-              : expandedPeriod
-                ? `Período expandido pra ${usedDays} dias porque ${safeDays} dias tinha poucos cards do nicho. Mostre formatted_response com intro: 'Achei poucos virais de ${safeNiche} nos últimos ${safeDays} dias — então puxei dos últimos ${usedDays} dias pra ter mais variedade:' e outro 'Quer salvar algum ou ver detalhes?'.`
-                : "Use EXATAMENTE o conteúdo de formatted_response como corpo da resposta. Adicione apenas uma intro curta (1 linha) antes e um outro curto (1 linha) depois — convidando a aluna a salvar ou ver detalhes. PROIBIDO modificar números, criadores, URLs dos cards.",
+              ? `Nicho '${safeNiche ?? safeQuery}' não tinha vídeos suficientes. Mostre formatted_response (top virais geral) com intro: 'Não tem viral específico de ${safeNiche ?? safeQuery} agora, mas isso aqui está bombando no geral:' e termine com 'Quer focar em outro nicho?'`
+              : "Use EXATAMENTE o conteúdo de formatted_response como corpo da resposta. Adicione apenas uma intro curta (1 linha) antes e um outro curto (1 linha) depois — convidando a aluna a salvar ou ver detalhes. PROIBIDO modificar números, criadores, URLs dos cards.",
             videos: data.videos.map((v, idx) => ({
               id: v.id,
               rank: v.rank ?? idx + 1,
@@ -1363,16 +1347,11 @@ export async function POST(request: Request) {
               out?.formatted_response &&
               out.formatted_response.trim().length > 0
             ) {
-              const richOut = out as typeof out & {
-                expanded_period?: boolean;
-                used_days?: number;
-              };
+              const richOut = out as typeof out & { used_days?: number };
               let intro = "Aqui está o que tá bombando no TikTok Shop:";
               if (richOut.fell_back_to_general) {
                 intro =
                   "Não tinha viral específico pra esse nicho no período, mas isso aqui está bombando no geral:";
-              } else if (richOut.expanded_period && richOut.used_days) {
-                intro = `Achei poucos virais nesse nicho nos últimos dias, então puxei dos últimos ${richOut.used_days} dias pra ter mais variedade:`;
               }
               const outro =
                 "Quer que eu salve algum desses na sua biblioteca ou veja detalhes? É só falar o número.";
