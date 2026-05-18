@@ -66,25 +66,37 @@ export async function searchVideos(
     );
   }
 
-  // 2) DB-first: viral_videos frescos (< 6h)
-  const dbFresh = await findVideosInDb({
-    country: input.country,
-    niche: input.niche,
-    freshHours: FRESH_HOURS,
-    limit: input.limit ?? 10,
-  }).catch((err) => {
-    log.warn(
-      { err: err instanceof Error ? err.message : err },
-      "vyral.search: findVideosInDb (fresh) falhou",
-    );
-    return [] as VyralVideoSummary[];
-  });
-  if (dbFresh.length >= Math.min(input.limit ?? 10, 5)) {
+  // 2) DB-first: viral_videos frescos (< 6h).
+  // PULAR quando input.query existe — aluna tá pedindo busca textual
+  // específica (ex: "fitness", "creatina"). O banco hoje só indexa por
+  // country/niche, não por full-text. Se servimos do banco sem aplicar
+  // query, retornamos cards genéricos e ela acha que a busca tá quebrada.
+  const hasTextQuery = !!(input.query && input.query.trim().length > 0);
+  if (!hasTextQuery) {
+    const dbFresh = await findVideosInDb({
+      country: input.country,
+      niche: input.niche,
+      freshHours: FRESH_HOURS,
+      limit: input.limit ?? 10,
+    }).catch((err) => {
+      log.warn(
+        { err: err instanceof Error ? err.message : err },
+        "vyral.search: findVideosInDb (fresh) falhou",
+      );
+      return [] as VyralVideoSummary[];
+    });
+    if (dbFresh.length >= Math.min(input.limit ?? 10, 5)) {
+      log.info(
+        { count: dbFresh.length, country: input.country, niche: input.niche },
+        "vyral.search: DB-first HIT (fresh < 6h)",
+      );
+      return buildResultFromDb(input, dbFresh);
+    }
+  } else {
     log.info(
-      { count: dbFresh.length, country: input.country, niche: input.niche },
-      "vyral.search: DB-first HIT (fresh < 6h)",
+      { query: input.query },
+      "vyral.search: pulando DB-first (busca textual exige scrape fresco)",
     );
-    return buildResultFromDb(input, dbFresh);
   }
 
   if (!ctx.page) {
@@ -127,17 +139,20 @@ export async function searchVideos(
       );
     } else {
       log.info({ input }, "vyral.search: resultado vazio — NÃO cacheando");
-      // Resultado vazio + scrape OK = falso negativo (filtro estranho).
-      // Tenta degradar pro banco em vez de retornar zero.
-      const fallback = await findVideosInDb({
-        country: input.country,
-        niche: input.niche,
-        freshHours: FALLBACK_HOURS,
-        limit: input.limit ?? 10,
-      }).catch(() => [] as VyralVideoSummary[]);
-      if (fallback.length > 0) {
-        log.info({ count: fallback.length }, "vyral.search: scrape vazio — usando banco (24h)");
-        return buildResultFromDb(input, fallback);
+      // Resultado vazio + scrape OK = pode ser falso negativo (filtro
+      // estranho). MAS se há busca textual, NÃO mascarar com cards
+      // genéricos do banco — devolve vazio mesmo pra caller decidir.
+      if (!hasTextQuery) {
+        const fallback = await findVideosInDb({
+          country: input.country,
+          niche: input.niche,
+          freshHours: FALLBACK_HOURS,
+          limit: input.limit ?? 10,
+        }).catch(() => [] as VyralVideoSummary[]);
+        if (fallback.length > 0) {
+          log.info({ count: fallback.length }, "vyral.search: scrape vazio — usando banco (24h)");
+          return buildResultFromDb(input, fallback);
+        }
       }
     }
 
@@ -150,6 +165,22 @@ export async function searchVideos(
 
     // 4) Degrade gracefully: nunca propaga erro pro caller.
     // Tenta 24h, depois 30d. Se nem isso, mock em dev, lança em prod.
+    // MAS se há busca textual, NÃO degradar pra cards genéricos do
+    // banco — melhor retornar vazio que enganar a aluna com cards de
+    // outros nichos.
+    if (hasTextQuery) {
+      log.warn(
+        { query: input.query },
+        "vyral.search: scrape falhou em busca textual — retornando vazio (sem degradar pra cards genéricos)",
+      );
+      return {
+        query: input,
+        fetchedAt: new Date().toISOString(),
+        cached: false,
+        total: 0,
+        videos: [],
+      };
+    }
     for (const hours of [FALLBACK_HOURS, FALLBACK_DAYS_DEEP * 24]) {
       const fallback = await findVideosInDb({
         country: input.country,
