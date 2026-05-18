@@ -206,24 +206,43 @@ function wantsViralList(text: string): boolean {
   return false;
 }
 
+const STOP_WORDS = new Set([
+  "virais",
+  "viral",
+  "top",
+  "hoje",
+  "agora",
+  "semana",
+  "brasil",
+  "tiktok",
+  "nicho",
+  "nichos",
+  "produto",
+  "produtos",
+  "video",
+  "videos",
+]);
+
 function deriveQueryFromMessage(text: string): string | undefined {
   if (!text) return undefined;
   const stripAccents = (s: string): string =>
     s.toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "");
   const lower = stripAccents(text);
-  // Procura palavras-chave conhecidas no texto
+  // 1) Palavras-chave conhecidas (academia, creatina, skincare…) — match direto
   for (const hint of KEYWORD_HINTS) {
     if (lower.includes(stripAccents(hint))) return hint;
   }
-  // Padrão "de <palavra>" ou "sobre <palavra>"
-  const match = lower.match(/(?:de|sobre|do nicho|produtos de|virais de|virais do) ([a-z]{4,20})/i);
-  if (match) {
-    const word = match[1];
-    // Ignora palavras genéricas
-    if (["virais", "top", "hoje", "agora", "semana", "brasil", "tiktok"].includes(word)) {
-      return undefined;
-    }
-    return word;
+  // 2) Padrões mais específicos primeiro (alternation em regex tenta ESQUERDA→DIREITA).
+  // "virais do nicho fitness" precisa casar "do nicho" antes de "virais do",
+  // senão captura "nicho" em vez de "fitness".
+  const patterns: RegExp[] = [
+    /(?:do nicho|no nicho|sobre o nicho|nicho de|nicho do)\s+([a-z]{3,20})/i,
+    /(?:produtos de|produtos do|produtos sobre|virais de|virais do|virais sobre)\s+([a-z]{3,20})/i,
+    /(?:de|sobre)\s+([a-z]{3,20})/i,
+  ];
+  for (const re of patterns) {
+    const m = lower.match(re);
+    if (m && !STOP_WORDS.has(m[1])) return m[1];
   }
   return undefined;
 }
