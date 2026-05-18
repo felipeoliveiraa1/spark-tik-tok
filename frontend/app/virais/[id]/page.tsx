@@ -24,6 +24,7 @@ import { useVideoModal } from "@/components/molecules/video-modal";
 type SavedViralDetail = {
   id: string;
   source_video_id: string;
+  product_id: string | null;
   url: string;
   thumbnail_url: string | null;
   rank: number | null;
@@ -46,6 +47,17 @@ type SavedViralDetail = {
   product_price_brl: number | null;
   saved_at: string;
 };
+
+function extractHashtags(caption: string | null): string[] {
+  if (!caption) return [];
+  const found = caption.match(/#[a-zA-Z0-9_À-ſ]+/g) ?? [];
+  return Array.from(new Set(found)).slice(0, 20);
+}
+
+function captionWithoutHashtags(caption: string | null): string {
+  if (!caption) return "";
+  return caption.replace(/#[a-zA-Z0-9_À-ſ]+/g, "").replace(/\s+/g, " ").trim();
+}
 
 function fmtBig(n: number | null): string {
   if (n == null) return "—";
@@ -227,6 +239,9 @@ function ViralBody({ id, desktop = false }: { id: string; desktop?: boolean }) {
               <Metric Icon={Eye} label="Views" value={fmtBig(v.views)} />
               <Metric Icon={ThumbsUp} label="Likes" value={fmtBig(v.likes)} />
               <Metric Icon={DollarSign} label="Receita" value={fmtBrl(v.estimated_revenue_brl)} />
+              {v.comments != null && (
+                <Metric Icon={ShoppingBag} label="Comentários" value={fmtBig(v.comments)} />
+              )}
             </div>
 
             {v.hook && (
@@ -251,25 +266,62 @@ function ViralBody({ id, desktop = false }: { id: string; desktop?: boolean }) {
               </Section>
             )}
 
-            {v.caption && (
+            {captionWithoutHashtags(v.caption) && (
               <Section title="Legenda completa">
                 <p className="text-[14px] text-spark-ink-70 leading-relaxed whitespace-pre-wrap">
-                  {v.caption}
+                  {captionWithoutHashtags(v.caption)}
                 </p>
               </Section>
             )}
 
-            {v.product_shop_url && (
+            {extractHashtags(v.caption).length > 0 && (
+              <Section title="Hashtags">
+                <div className="flex flex-wrap gap-1.5">
+                  {extractHashtags(v.caption).map((tag) => (
+                    <span
+                      key={tag}
+                      className="px-2 py-0.5 rounded-full bg-spark-brand-soft text-spark-brand-deep text-[12px] font-semibold"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </Section>
+            )}
+
+            {(v.product_name || v.product_shop_url || v.product_id) && (
               <Section title="Produto vendido">
-                <a
-                  href={v.product_shop_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 text-spark-brand font-semibold text-[14px]"
-                >
-                  Abrir loja no TikTok
-                  <ExternalLink size={13} strokeWidth={1.7} />
-                </a>
+                {v.product_name && (
+                  <div className="text-[14px] font-semibold text-spark-ink mb-2 leading-snug">
+                    {v.product_name}
+                  </div>
+                )}
+                <div className="flex flex-wrap items-center gap-3 text-[13px]">
+                  {v.product_shop_url && (
+                    <a
+                      href={v.product_shop_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1.5 text-spark-brand font-semibold"
+                    >
+                      🛒 Abrir loja no TikTok
+                      <ExternalLink size={13} strokeWidth={1.7} />
+                    </a>
+                  )}
+                  {v.product_id && (
+                    <Link
+                      href={`/produtos/${v.product_id}`}
+                      className="inline-flex items-center gap-1.5 text-spark-ink-70 font-semibold hover:text-spark-ink"
+                    >
+                      📦 Ver no seu catálogo
+                    </Link>
+                  )}
+                  {v.product_price_brl && (
+                    <span className="text-spark-ink-50 font-mono">
+                      {fmtBrl(v.product_price_brl)}
+                    </span>
+                  )}
+                </div>
               </Section>
             )}
 

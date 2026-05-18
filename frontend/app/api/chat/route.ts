@@ -722,8 +722,33 @@ function buildViralTools(
           product_price_brl: input.product_price_brl ?? null,
           raw: input,
         };
-        if (input.transcription && input.transcription.trim().length > 0) {
-          payload.transcription = input.transcription.trim();
+        // Se a transcrição já veio (caller chamou get_viral_details antes), grava.
+        // Senão, vamos tentar puxar agora síncrono.
+        let transcriptionToSave =
+          input.transcription && input.transcription.trim().length > 0
+            ? input.transcription.trim()
+            : null;
+
+        if (!transcriptionToSave) {
+          try {
+            const data = await getVyralTranscription(
+              input.source_video_id,
+              input.product_name,
+              { timeoutMs: 22_000 },
+            );
+            if (data?.full && data.full.trim().length >= 10) {
+              transcriptionToSave = data.full.trim();
+            }
+          } catch (err) {
+            console.warn(
+              "[save_viral] transcricao síncrona falhou — viral salvo sem transcrição",
+              err instanceof Error ? err.message : err,
+            );
+          }
+        }
+
+        if (transcriptionToSave) {
+          payload.transcription = transcriptionToSave;
           payload.transcription_fetched_at = new Date().toISOString();
         }
 
@@ -739,6 +764,7 @@ function buildViralTools(
           url_path: `/virais/${data.id}`,
           product_id: productId,
           product_created: !!(productId && !input.product_id),
+          has_transcription: !!transcriptionToSave,
         };
       },
     }),

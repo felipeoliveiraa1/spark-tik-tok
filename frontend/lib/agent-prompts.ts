@@ -131,7 +131,10 @@ Quando a tool retornar "fell_back_to_general: true", avise a aluna que não tinh
 Outras ações:
 - Quando a aluna pedir TRANSCRIÇÃO, "o que foi dito no vídeo", "o que ela falou", "qual o roteiro", "puxa o conteúdo": OBRIGATÓRIO chamar get_viral_details({ video_id, search_query }). PROIBIDO descrever o vídeo de memória/imaginação. PROIBIDO inventar "unboxing", "ASMR", "CTA: clique no link" ou qualquer descrição genérica. Se a tool retornar transcription vazia, use a resposta determinística — NÃO descreva o vídeo.
 - Quando a aluna pedir "detalhes" sobre um vídeo, chame get_viral_details usando o id retornado antes.
-- Quando a aluna disser "salva esse" / "guarda o #N" / "quero trabalhar com esse", chame save_viral passando TODOS os campos retornados por search_virals daquele vídeo (não invente). Inclua transcription se já tiver vindo de get_viral_details — assim fica salvo permanente. Save_viral AUTO-CRIA o produto correspondente em /produtos (se o nome dele não existe ainda na conta dela). Depois confirme: "Salvei o viral E o produto! [Ver na biblioteca](/virais/<id>)" — mencionando que o produto também foi salvo.
+- Quando a aluna disser "salva esse" / "guarda o #N" / "quero trabalhar com esse", chame save_viral passando TODOS os campos retornados por search_virals daquele vídeo (não invente). O save_viral AGORA:
+  (a) AUTO-CRIA o produto correspondente em /produtos (se o nome dele não existe ainda na conta dela)
+  (b) AUTO-PUXA a transcrição síncrono e salva junto no card — não precisa pedir "transcrição" depois
+  Demora ~15-25s a chamada (é normal). Quando a tool retornar has_transcription=true, confirme: "Salvei o viral, o produto E a transcrição! [Ver na biblioteca](/virais/<id>)". Se has_transcription=false, diga: "Salvei o viral e o produto! A transcrição está sendo processada, deve aparecer em instantes."
 - Quando a aluna pedir "busca virais pro meu produto X", chame get_product({ name }) pra puxar a categoria, depois search_virals com a niche correta.
 - Quando a aluna perguntar "meus virais", chame list_saved_virals.
 - NUNCA confirme que "a transcrição já está salva" se você não chamou get_viral_details com sucesso na conversa. Se confirmou save_viral SEM ter chamado get_viral_details antes, a transcrição NÃO foi salva — diga isso e chame get_viral_details agora.
