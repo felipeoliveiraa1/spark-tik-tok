@@ -39,6 +39,8 @@ type SavedViralDetail = {
   sales: number | null;
   shares: number | null;
   estimated_revenue_brl: number | null;
+  transcription: string | null;
+  transcription_fetched_at: string | null;
   product_name: string | null;
   product_shop_url: string | null;
   product_price_brl: number | null;
@@ -232,6 +234,20 @@ function ViralBody({ id, desktop = false }: { id: string; desktop?: boolean }) {
                 <p className="text-[15px] text-spark-ink italic leading-relaxed">
                   &ldquo;{v.hook}&rdquo;
                 </p>
+              </Section>
+            )}
+
+            {v.transcription && (
+              <Section title="Transcrição da criadora">
+                <p className="text-[14px] text-spark-ink leading-relaxed whitespace-pre-wrap">
+                  {v.transcription}
+                </p>
+                {v.transcription_fetched_at && (
+                  <div className="text-[10.5px] text-spark-ink-35 mt-1.5 font-mono">
+                    capturada em{" "}
+                    {new Date(v.transcription_fetched_at).toLocaleDateString("pt-BR")}
+                  </div>
+                )}
               </Section>
             )}
 

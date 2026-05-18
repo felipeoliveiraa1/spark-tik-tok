@@ -589,10 +589,25 @@ function buildViralTools(
             err instanceof ScraperClientError ? err.message : err,
           );
         }
-        // Resultado pode vir com texto curto (modal abriu mas não havia
-        // análise pronta) — trata como vazio. O deterministicResponse
-        // server-side cobre o caso "transcription === ''" com mensagem neutra.
         if (transcription.length < 10) transcription = "";
+
+        // Se a aluna já salvou esse viral, persistimos a transcrição no
+        // saved_virals dela pra ela conseguir consultar offline depois.
+        if (transcription) {
+          try {
+            await supabase
+              .from("saved_virals")
+              .update({
+                transcription,
+                transcription_fetched_at: new Date().toISOString(),
+              })
+              .eq("user_id", userId)
+              .eq("source_video_id", video_id);
+          } catch (err) {
+            console.warn("[get_viral_details] update transcription failed", err);
+          }
+        }
+
         return {
           ok: true,
           video_id,
@@ -634,13 +649,59 @@ function buildViralTools(
         product_id: z
           .string()
           .optional()
-          .describe("UUID do produto da aluna que esse viral inspira (opcional)."),
+          .describe(
+            "UUID de produto existente. Se omitido E product_name vier, criamos um produto novo automaticamente.",
+          ),
+        transcription: z
+          .string()
+          .optional()
+          .describe(
+            "Transcrição completa do vídeo, se já tiver vindo de get_viral_details. Salva junto pra histórico permanente.",
+          ),
       }),
       execute: async (input) => {
-        const payload = {
+        // 1) Auto-criar produto se a aluna ainda não tem um com esse nome.
+        //    Quando ela salva um viral, queremos que o produto vendido apareça
+        //    em /produtos automaticamente — assim ela pode pedir scripts pra
+        //    ele sem ter que cadastrar manualmente.
+        let productId = input.product_id ?? null;
+        if (!productId && input.product_name && input.product_name.trim()) {
+          const nameTrim = input.product_name.trim().slice(0, 200);
+          const { data: existing } = await supabase
+            .from("products")
+            .select("id")
+            .eq("user_id", userId)
+            .ilike("name", nameTrim)
+            .maybeSingle();
+          if (existing?.id) {
+            productId = existing.id;
+          } else {
+            const { data: created, error: prodErr } = await supabase
+              .from("products")
+              .insert({
+                user_id: userId,
+                name: nameTrim,
+                image_url: input.thumbnail_url ?? null,
+                category: input.niche ?? null,
+                raw_analysis: {
+                  source: "viral_save",
+                  source_video_id: input.source_video_id,
+                  shop_url: input.product_shop_url ?? null,
+                  price_brl: input.product_price_brl ?? null,
+                  creator: input.creator ?? null,
+                  hook: input.hook ?? null,
+                },
+              })
+              .select("id")
+              .single();
+            if (!prodErr && created?.id) productId = created.id;
+          }
+        }
+
+        const payload: Record<string, unknown> = {
           user_id: userId,
           source_video_id: input.source_video_id,
-          product_id: input.product_id ?? null,
+          product_id: productId,
           url: input.url,
           thumbnail_url: input.thumbnail_url ?? null,
           rank: input.rank ?? null,
@@ -661,13 +722,24 @@ function buildViralTools(
           product_price_brl: input.product_price_brl ?? null,
           raw: input,
         };
+        if (input.transcription && input.transcription.trim().length > 0) {
+          payload.transcription = input.transcription.trim();
+          payload.transcription_fetched_at = new Date().toISOString();
+        }
+
         const { data, error } = await supabase
           .from("saved_virals")
           .upsert(payload, { onConflict: "user_id,source_video_id" })
           .select("id")
           .single();
         if (error) return { ok: false, error: error.message };
-        return { ok: true, id: data.id, url_path: `/virais/${data.id}` };
+        return {
+          ok: true,
+          id: data.id,
+          url_path: `/virais/${data.id}`,
+          product_id: productId,
+          product_created: !!(productId && !input.product_id),
+        };
       },
     }),
 

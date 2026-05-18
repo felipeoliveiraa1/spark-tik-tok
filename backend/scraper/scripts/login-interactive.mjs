@@ -87,12 +87,15 @@ try {
   exit(0);
 }
 
-console.log("\n📧 Vyral mandou um código de 6 dígitos pro email da Yara.");
+console.log("\n📧 Vyral mandou código de 6 caracteres (letras+números) pro email da Yara.");
 console.log("   Abre oficialyarasantos@gmail.com → procura email da Vyral.");
 const codeRaw = await rl.question("\n👉 Cola o código aqui e dá Enter: ");
-const code = codeRaw.replace(/\D/g, "").slice(0, 6);
+const code = codeRaw
+  .replace(/[^A-Za-z0-9]/g, "")
+  .slice(0, 6)
+  .toUpperCase();
 if (code.length !== 6) {
-  console.error(`✗ Código inválido (esperava 6 dígitos, recebi ${code.length}: "${code}")`);
+  console.error(`✗ Código inválido (esperava 6 chars alfanuméricos, recebi ${code.length}: "${code}")`);
   await browser.close();
   rl.close();
   exit(1);
@@ -101,10 +104,8 @@ if (code.length !== 6) {
 console.log("→ Preenchendo código:", code);
 
 // Vyral pode usar 6 inputs separados (cada um com maxlength=1) OU um input único.
-// Tentamos os dois.
-const sixInputs = page.locator(
-  'input[maxlength="1"], input[type="text"][inputmode="numeric"]',
-);
+// Tentamos os dois. NÃO usamos inputmode=numeric porque o código tem letras.
+const sixInputs = page.locator('input[maxlength="1"]');
 const sixCount = await sixInputs.count();
 
 if (sixCount >= 6) {
