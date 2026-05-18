@@ -407,26 +407,32 @@ function buildViralTools(
       }),
       execute: async ({ query, niche, country, days, limit, sortBy }) => {
         try {
-          // Prioridade dos filtros:
-          // 1. Niche explícito do modelo (se válido) ou derivado da mensagem
-          //    do user — quando "fitness/beleza/casa" aparece, é filtro categórico.
-          // 2. Query textual do modelo ou derivada (palavra-chave livre).
-          // Se OS DOIS aparecem, priorizamos NICHE (mais preciso).
+          // Estratégia: SEMPRE usar QUERY textual no Vyral. O filtro categórico
+          // por niche (pós-extração) zera quando o Vyral não classifica os
+          // cards do feed top como nosso enum — a maioria dos top virais não
+          // tem categoria "fitness" explícita, então niche=fitness zerava.
+          //
+          // Quando user fala "do nicho fitness", convertemos pra query="fitness"
+          // (busca textual no Vyral, que retorna cards mencionando a palavra
+          // no produto/caption).
           const nicheFromModel =
             niche && NICHE_ENUM.includes(niche as (typeof NICHE_ENUM)[number])
               ? (niche as (typeof NICHE_ENUM)[number])
               : undefined;
-          const safeNiche = nicheFromModel ?? fallbackNiche;
 
-          let safeQuery: string | undefined;
-          if (safeNiche) {
-            // Niche tem precedência. Query só entra se o user mencionou uma
-            // palavra-chave ESPECÍFICA além do nicho (ex: "creatina no nicho fitness").
-            const explicitQuery = query?.trim() || undefined;
-            safeQuery = explicitQuery && explicitQuery !== safeNiche ? explicitQuery : undefined;
-          } else {
-            safeQuery = (query?.trim() || undefined) ?? fallbackQuery;
-          }
+          // Query final em ordem de prioridade:
+          //   1. Query explícita do modelo
+          //   2. Query derivada da mensagem (KEYWORD_HINTS / regex "de X")
+          //   3. Nicho explícito do modelo virando query
+          //   4. Nicho derivado da mensagem virando query
+          const safeQuery =
+            (query?.trim() || undefined) ??
+            fallbackQuery ??
+            nicheFromModel ??
+            fallbackNiche;
+          // Mantemos safeNiche undefined pra pular o filtro pós-extração.
+          // O Vyral já filtrou textualmente pra gente.
+          const safeNiche: (typeof NICHE_ENUM)[number] | undefined = undefined;
 
           console.log("[search_virals] filtros resolvidos", {
             modelInput: { query, niche },
