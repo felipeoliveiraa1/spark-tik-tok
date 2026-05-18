@@ -67,7 +67,10 @@ function fmtBig(n: number | null): string {
 }
 
 function fmtBrl(n: number | null): string {
-  if (n == null) return "—";
+  // Trata 0 igual a null — o Vyral nem sempre tem o preço do produto,
+  // então vem 0/null. Mostrar "R$ 0" induz erro (a aluna acha que o
+  // viral não vendeu nada). "—" deixa claro que o dado não é confiável.
+  if (n == null || n === 0) return "—";
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
@@ -239,10 +242,8 @@ function ViralBody({ id, desktop = false }: { id: string; desktop?: boolean }) {
               <Metric Icon={Eye} label="Views" value={fmtBig(v.views)} />
               <Metric Icon={ThumbsUp} label="Likes" value={fmtBig(v.likes)} />
               <Metric Icon={DollarSign} label="Receita" value={fmtBrl(v.estimated_revenue_brl)} />
-              {v.comments != null && (
-                <Metric Icon={ShoppingBag} label="Comentários" value={fmtBig(v.comments)} />
-              )}
             </div>
+            {/* Comments hoje não vem do scraper — campo deprecated. */}
 
             {v.hook && (
               <Section title="Hook">

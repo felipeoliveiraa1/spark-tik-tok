@@ -228,6 +228,42 @@ function deriveQueryFromMessage(text: string): string | undefined {
   return undefined;
 }
 
+/**
+ * Quando a aluna pede "do nicho X" ou menciona explicitamente um nicho do
+ * enum (beleza, fitness, casa…), o filtro CORRETO é `niche`, não `query`.
+ * Senão o Vyral tenta busca textual por "fitness" como palavra e devolve
+ * cards que mencionam fitness sem ser do nicho.
+ */
+function deriveNicheFromMessage(text: string): (typeof NICHE_ENUM)[number] | undefined {
+  if (!text) return undefined;
+  const lower = text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "");
+  const NICHE_SYNONYMS: Record<(typeof NICHE_ENUM)[number], string[]> = {
+    beleza: ["beleza", "cosmetic", "makeup", "maquiagem", "skincare"],
+    saude: ["saude", "suplemento", "vitamina"],
+    moda: ["moda", "roupa", "vestuario"],
+    casa: ["casa", "cozinha", "decoracao"],
+    eletronicos: ["eletronico", "tecnologia", "gadget"],
+    pet: ["pet", "cachorro", "gato", "petshop"],
+    fitness: ["fitness", "academia", "treino", "musculacao"],
+    acessorios: ["acessorio", "joia", "bijuteria"],
+    infantil: ["infantil", "crianca", "bebe"],
+    outros: [],
+  };
+  for (const [niche, words] of Object.entries(NICHE_SYNONYMS) as Array<
+    [(typeof NICHE_ENUM)[number], string[]]
+  >) {
+    for (const w of words) {
+      // Bate só como palavra inteira (evita "casa" dentro de "casamento")
+      const re = new RegExp(`\\b${w}\\b`, "i");
+      if (re.test(lower)) return niche;
+    }
+  }
+  return undefined;
+}
+
 // COUNTRY_ENUM antes era usado em z.enum, mas agora aceitamos string e
 // validamos com `=== "US"`. Mantemos a list só pra referência humana.
 // const COUNTRY_ENUM = ["BR", "US"] as const;
@@ -331,6 +367,7 @@ function buildViralTools(
   lastUserText: string,
 ): ToolSet {
   const fallbackQuery = deriveQueryFromMessage(lastUserText);
+  const fallbackNiche = deriveNicheFromMessage(lastUserText);
   return {
     ...buildProductTools(supabase, userId),
     search_virals: tool({
@@ -370,31 +407,33 @@ function buildViralTools(
       }),
       execute: async ({ query, niche, country, days, limit, sortBy }) => {
         try {
-          // Se o Gemini não passou query, derivamos da última mensagem do user.
-          // Garante que "virais de academia" → query="academia" mesmo quando
-          // o modelo "esquece" do prompt.
-          const safeQuery =
-            (query?.trim() || undefined) ?? fallbackQuery;
-          if (!query?.trim() && fallbackQuery) {
-            console.log("[search_virals] query derivada do user message", {
-              fallbackQuery,
-              lastUserText: lastUserText.slice(0, 120),
-            });
-          }
-          // Quando temos query, IGNORA niche. A busca textual do Vyral já
-          // é mais específica e categorias do Vyral nem sempre batem com
-          // nosso enum. Gemini costuma passar ambos ("query+niche=beleza")
-          // e isso fazia o filtro pós-extração zerar tudo.
-          const safeNiche =
-            !safeQuery && niche && NICHE_ENUM.includes(niche as (typeof NICHE_ENUM)[number])
+          // Prioridade dos filtros:
+          // 1. Niche explícito do modelo (se válido) ou derivado da mensagem
+          //    do user — quando "fitness/beleza/casa" aparece, é filtro categórico.
+          // 2. Query textual do modelo ou derivada (palavra-chave livre).
+          // Se OS DOIS aparecem, priorizamos NICHE (mais preciso).
+          const nicheFromModel =
+            niche && NICHE_ENUM.includes(niche as (typeof NICHE_ENUM)[number])
               ? (niche as (typeof NICHE_ENUM)[number])
               : undefined;
-          if (niche && safeQuery && niche !== safeQuery) {
-            console.log("[search_virals] ignorando niche pq query está presente", {
-              query: safeQuery,
-              niche_ignorado: niche,
-            });
+          const safeNiche = nicheFromModel ?? fallbackNiche;
+
+          let safeQuery: string | undefined;
+          if (safeNiche) {
+            // Niche tem precedência. Query só entra se o user mencionou uma
+            // palavra-chave ESPECÍFICA além do nicho (ex: "creatina no nicho fitness").
+            const explicitQuery = query?.trim() || undefined;
+            safeQuery = explicitQuery && explicitQuery !== safeNiche ? explicitQuery : undefined;
+          } else {
+            safeQuery = (query?.trim() || undefined) ?? fallbackQuery;
           }
+
+          console.log("[search_virals] filtros resolvidos", {
+            modelInput: { query, niche },
+            fallback: { fallbackQuery, fallbackNiche },
+            usado: { safeQuery, safeNiche },
+            userText: lastUserText.slice(0, 120),
+          });
           const safeCountry = country === "US" ? "US" : "BR";
           const safeDays = ([7, 14, 30, 90] as const).includes(days as 7 | 14 | 30 | 90)
             ? (days as 7 | 14 | 30 | 90)
@@ -539,7 +578,7 @@ function buildViralTools(
               posted_at: v.postedAt ?? null,
               views: v.metrics.views,
               likes: v.metrics.likes,
-              comments: v.metrics.comments,
+              // comments: NÃO retornamos — scraper não extrai esse campo hoje
               sales: v.metrics.sales ?? null,
               gmv_brl: v.metrics.estimatedRevenueBrl ?? null,
               product: v.product
@@ -636,7 +675,6 @@ function buildViralTools(
         hook: z.string().optional(),
         views: z.number().optional(),
         likes: z.number().optional(),
-        comments: z.number().optional(),
         sales: z
           .number()
           .optional()
@@ -713,7 +751,6 @@ function buildViralTools(
           hook: input.hook ?? null,
           views: input.views ?? null,
           likes: input.likes ?? null,
-          comments: input.comments ?? null,
           shares: input.shares ?? null,
           sales: input.sales ?? null,
           estimated_revenue_brl: input.gmv_brl ?? null,
