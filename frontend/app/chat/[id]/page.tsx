@@ -524,7 +524,7 @@ function ChatDesktop({
 
   return (
     <div className="flex-1 flex min-h-0">
-      <aside className="w-[280px] shrink-0 border-r border-spark-hairline">
+      <aside className="w-[260px] shrink-0 border-r border-spark-hairline overflow-y-auto">
         <ConversationSidebar />
       </aside>
 
@@ -578,7 +578,7 @@ export default function ChatPage() {
       <ResponsiveShell
         mobile={<LoadingSplash message="Abrindo conversa" />}
         desktop={<LoadingSplash message="Abrindo conversa" size="lg" />}
-        customSidebar
+        active="chat"
       />
     );
   }
@@ -587,7 +587,7 @@ export default function ChatPage() {
     <ResponsiveShell
       mobile={<ChatMobile conversationId={conv.id} agent={conv.agent} title={conv.title} />}
       desktop={<ChatDesktop conversationId={conv.id} agent={conv.agent} title={conv.title} />}
-      customSidebar
+      active="chat"
     />
   );
 }
