@@ -1235,10 +1235,15 @@ export async function POST(request: Request) {
     abortSignal: abortController.signal,
     providerOptions: {
       google: {
-        thinkingConfig: {
-          thinkingBudget: 0,
-          includeThoughts: false,
-        },
+        // Gemini 2.5 Pro EXIGE thinking mode (budget >0). Flash funciona com 0
+        // (mais rápido, sem thinking). Pra cada agente, calibra de acordo:
+        //   - info/script (Pro): budget pequeno (256 tokens) — pensa pouco mas
+        //     respeita a API. Mais qualidade e ainda rápido.
+        //   - viral/help (Flash): 0 — sem thinking, latência mínima.
+        thinkingConfig:
+          agent === "info" || agent === "script"
+            ? { thinkingBudget: 256, includeThoughts: false }
+            : { thinkingBudget: 0, includeThoughts: false },
       },
     },
     onError: ({ error }) => {
