@@ -206,6 +206,37 @@ function wantsViralList(text: string): boolean {
   return false;
 }
 
+/**
+ * Detecta se a aluna está confirmando uma ação de SALVAR após o agente
+ * Info ter analisado um produto. Gemini Pro às vezes diz "estou salvando"
+ * sem chamar save_product — esse helper força toolChoice quando true.
+ */
+function wantsSaveProduct(text: string, messageCount: number): boolean {
+  if (!text || messageCount < 2) return false; // precisa ter análise anterior
+  const lower = text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .trim();
+  // Saudações ou pergunta direta — não força
+  if (/^(oi+|ola|hi+|hey|bom\s+dia|boa\s+(tarde|noite))[\s.,!?]*$/i.test(lower)) {
+    return false;
+  }
+  // Verbos explícitos de save
+  if (/(\b|^)(salv|guard|adicion|armazen|memoriz|registr|grav)/i.test(lower)) {
+    return true;
+  }
+  // Confirmações simples — só forçam se a mensagem é curta (< 20 chars)
+  // e a anterior do agente parecia perguntar "quero salvar?".
+  if (
+    lower.length <= 25 &&
+    /^(sim|claro|pode|isso|vamos|quero|por\s+favor|pfv|aceito)/i.test(lower)
+  ) {
+    return true;
+  }
+  return false;
+}
+
 const STOP_WORDS = new Set([
   "virais",
   "viral",
@@ -1219,6 +1250,19 @@ export async function POST(request: Request) {
     });
   }
 
+  // Pra agente Info: se a aluna confirmou salvar produto depois de já ter
+  // recebido análise, FORÇA o modelo a chamar save_product. Sem isso o
+  // Gemini Pro respondia "estou salvando" sem chamar a tool — o produto
+  // nunca entrava no catálogo e a aluna ficava esperando.
+  const forceSaveProduct =
+    agent === "info" && wantsSaveProduct(lastUserText, messages.length);
+  if (forceSaveProduct) {
+    console.log("[api/chat] forçando toolChoice=save_product", {
+      lastUserText: lastUserText.slice(0, 100),
+      messages: messages.length,
+    });
+  }
+
   const result = streamText({
     model: models[agent],
     system: SYSTEM_PROMPTS[agent],
@@ -1226,7 +1270,9 @@ export async function POST(request: Request) {
     tools,
     toolChoice: forceSearchVirals
       ? { type: "tool", toolName: "search_virals" }
-      : undefined,
+      : forceSaveProduct
+        ? { type: "tool", toolName: "save_product" }
+        : undefined,
     stopWhen: stepCountIs(3),
     maxOutputTokens: 8192,
     // Temperature 0 pro Virais — modelo SÓ copia formatted_response da tool.
