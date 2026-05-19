@@ -1197,10 +1197,11 @@ export async function POST(request: Request) {
   // Monta toolset por agente
   let tools: ToolSet | undefined;
   if (agent === "info") {
-    tools = {
-      google_search: google.tools.googleSearch({}),
-      ...buildInfoTools(supabase, user.id),
-    };
+    // IMPORTANTE: NÃO combinar google_search (provider-defined) com nossas
+    // function tools — Gemini 2.5 Pro retorna warning e IGNORA as function
+    // tools (incluindo save_product). Aluna ficava sem o produto salvo.
+    // Modelo usa conhecimento próprio + dados do catálogo via tools.
+    tools = buildInfoTools(supabase, user.id);
   } else if (agent === "viral") {
     tools = buildViralTools(supabase, user.id, lastUserText);
   } else if (agent === "script") {
