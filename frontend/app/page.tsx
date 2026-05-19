@@ -8,7 +8,7 @@ import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { AppHeader } from "@/components/layout/app-header";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { AgentCharacter } from "@/components/molecules/agent-character";
-import { AGENT_LIST, AGENTS, type AgentId } from "@/lib/agents";
+import { VISIBLE_AGENTS, AGENTS, type AgentId } from "@/lib/agents";
 import { useConversationStore } from "@/lib/conversation-store";
 
 type Profile = { name: string | null; email: string };
@@ -133,7 +133,7 @@ function HomeBody({ desktop = false }: { desktop?: boolean }) {
           Atalhos 💕
         </div>
         <div className={`grid gap-2.5 ${desktop ? "grid-cols-4 max-w-[920px]" : "grid-cols-2"}`}>
-          {AGENT_LIST.map((a) => (
+          {VISIBLE_AGENTS.map((a) => (
             <ShortcutCard key={a.id} agent={a.id} onStart={start} />
           ))}
         </div>

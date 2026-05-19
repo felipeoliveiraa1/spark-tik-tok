@@ -14,7 +14,7 @@ const items: Item[] = [
   { id: "home", label: "Início", href: "/", emoji: "🏠" },
   { id: "chat", label: "Chat", href: "/chat", emoji: "💬" },
   { id: "produtos", label: "Produtos", href: "/produtos", emoji: "📦" },
-  { id: "virais", label: "Virais", href: "/virais", emoji: "🔥" },
+  // Virais temporariamente oculto — feature de scraping pausada
   { id: "educacao", label: "Aulas", href: "/educacao", emoji: "🎓" },
   { id: "conta", label: "Conta", href: "/conta", emoji: "👤" },
 ];

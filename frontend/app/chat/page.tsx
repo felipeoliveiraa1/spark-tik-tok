@@ -7,7 +7,7 @@ import { ArrowLeft, ArrowRight, MoreHorizontal, Sparkle } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { SparkMark } from "@/components/atoms/spark-mark";
 import { AgentCharacter } from "@/components/molecules/agent-character";
-import { AGENTS, AGENT_LIST, type AgentId } from "@/lib/agents";
+import { AGENTS, VISIBLE_AGENTS, type AgentId } from "@/lib/agents";
 import { useConversationStore } from "@/lib/conversation-store";
 
 /**
@@ -86,7 +86,7 @@ function GalleryBody() {
 
       {/* 4 cards de especialistas */}
       <div className="mt-6 lg:mt-8 px-4 lg:px-12 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5">
-        {AGENT_LIST.map((a) => (
+        {VISIBLE_AGENTS.map((a) => (
           <button
             key={a.id}
             onClick={() => start(a.id)}

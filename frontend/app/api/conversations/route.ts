@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase-server";
-import { type AgentId } from "@/lib/agents";
+import { AGENTS, type AgentId } from "@/lib/agents";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -54,6 +54,12 @@ export async function POST(request: Request) {
 
   const agent = body.agent && VALID_AGENTS.includes(body.agent) ? body.agent : null;
   if (!agent) return NextResponse.json({ error: "invalid_agent" }, { status: 400 });
+  if (AGENTS[agent]?.hidden) {
+    return NextResponse.json(
+      { error: "agent_disabled", message: `Agente ${agent} está temporariamente desativado.` },
+      { status: 403 },
+    );
+  }
 
   let folderId = body.folder_id ?? null;
   if (!folderId) {

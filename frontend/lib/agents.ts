@@ -14,6 +14,12 @@ export type AgentMeta = {
   bg: string; // hex/oklch color (background)
   tailwindFg: string; // tailwind class for fg
   tailwindBg: string; // tailwind class for bg
+  /**
+   * Quando true, agente é escondido da galeria e nav, e bloqueamos a criação
+   * de novas conversas. Conversas antigas continuam acessíveis.
+   * Útil pra parar uma feature em prod sem deletar código.
+   */
+  hidden?: boolean;
 };
 
 export const AGENTS: Record<AgentId, AgentMeta> = {
@@ -40,6 +46,9 @@ export const AGENTS: Record<AgentId, AgentMeta> = {
     bg: "oklch(0.96 0.05 25)",
     tailwindFg: "text-agent-viral-fg",
     tailwindBg: "bg-agent-viral-bg",
+    // Temporariamente ocultado — feature de scraping do Vyral pausada
+    // até decidirmos nova fonte de dados (Apify ou similar).
+    hidden: true,
   },
   script: {
     id: "script",
@@ -68,3 +77,6 @@ export const AGENTS: Record<AgentId, AgentMeta> = {
 };
 
 export const AGENT_LIST: AgentMeta[] = [AGENTS.info, AGENTS.viral, AGENTS.script, AGENTS.help];
+
+/** Lista filtrada — só os agentes que aparecem na UI. */
+export const VISIBLE_AGENTS: AgentMeta[] = AGENT_LIST.filter((a) => !a.hidden);
