@@ -15,6 +15,17 @@ type ConfirmOptions = {
   destructive?: boolean;
 };
 
+type PromptOptions = {
+  title: string;
+  description?: string;
+  placeholder?: string;
+  defaultValue?: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  /** Validador opcional — retorna mensagem de erro ou null se ok. */
+  validate?: (value: string) => string | null;
+};
+
 type ToastKind = "success" | "error" | "info";
 
 type Toast = {
@@ -26,6 +37,7 @@ type Toast = {
 
 type DialogContextValue = {
   confirm: (opts: ConfirmOptions) => Promise<boolean>;
+  prompt: (opts: PromptOptions) => Promise<string | null>;
   toast: (message: string, kind?: ToastKind) => void;
   toastSuccess: (message: string) => void;
   toastError: (message: string) => void;
@@ -42,11 +54,21 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
     opts: ConfirmOptions;
     resolve: (v: boolean) => void;
   } | null>(null);
+  const [promptState, setPromptState] = React.useState<{
+    opts: PromptOptions;
+    resolve: (v: string | null) => void;
+  } | null>(null);
   const [toasts, setToasts] = React.useState<Toast[]>([]);
 
   const confirm = React.useCallback((opts: ConfirmOptions) => {
     return new Promise<boolean>((resolve) => {
       setConfirmState({ opts, resolve });
+    });
+  }, []);
+
+  const prompt = React.useCallback((opts: PromptOptions) => {
+    return new Promise<string | null>((resolve) => {
+      setPromptState({ opts, resolve });
     });
   }, []);
 
@@ -66,8 +88,8 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
   const toastError = React.useCallback((m: string) => toast(m, "error"), [toast]);
 
   const value = React.useMemo<DialogContextValue>(
-    () => ({ confirm, toast, toastSuccess, toastError }),
-    [confirm, toast, toastSuccess, toastError],
+    () => ({ confirm, prompt, toast, toastSuccess, toastError }),
+    [confirm, prompt, toast, toastSuccess, toastError],
   );
 
   const handleConfirm = (result: boolean) => {
@@ -77,12 +99,23 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const handlePrompt = (result: string | null) => {
+    if (promptState) {
+      promptState.resolve(result);
+      setPromptState(null);
+    }
+  };
+
   return (
     <DialogContext.Provider value={value}>
       {children}
       {/* Confirm dialog */}
       {confirmState && (
         <ConfirmDialog opts={confirmState.opts} onAnswer={handleConfirm} />
+      )}
+      {/* Prompt dialog */}
+      {promptState && (
+        <PromptDialog opts={promptState.opts} onAnswer={handlePrompt} />
       )}
       {/* Toast stack */}
       <ToastStack toasts={toasts} onDismiss={(id) => setToasts((p) => p.filter((t) => t.id !== id))} />
@@ -105,6 +138,11 @@ export function useDialog(): DialogContextValue {
 /** Atalho — só o confirm. */
 export function useConfirm() {
   return useDialog().confirm;
+}
+
+/** Atalho — só o prompt (pedir texto). */
+export function usePrompt() {
+  return useDialog().prompt;
 }
 
 /** Atalho — só o toast. */
@@ -186,6 +224,117 @@ function ConfirmDialog({
             {opts.cancelLabel ?? "Cancelar"}
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// =================================================================
+// Prompt Dialog UI
+// =================================================================
+
+function PromptDialog({
+  opts,
+  onAnswer,
+}: {
+  opts: PromptOptions;
+  onAnswer: (v: string | null) => void;
+}) {
+  const [value, setValue] = React.useState(opts.defaultValue ?? "");
+  const [err, setErr] = React.useState<string | null>(null);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    // Auto-focus + select all
+    requestAnimationFrame(() => {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    });
+  }, []);
+
+  React.useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onAnswer(null);
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [onAnswer]);
+
+  const submit = () => {
+    const trimmed = value.trim();
+    if (opts.validate) {
+      const msg = opts.validate(trimmed);
+      if (msg) {
+        setErr(msg);
+        return;
+      }
+    }
+    if (!trimmed) {
+      setErr("Esse campo é obrigatório");
+      return;
+    }
+    onAnswer(trimmed);
+  };
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-150"
+    >
+      <button
+        type="button"
+        aria-label="Fechar"
+        onClick={() => onAnswer(null)}
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm cursor-default"
+      />
+      <div className="relative w-full max-w-[440px] rounded-3xl bg-spark-surface border border-spark-hairline shadow-[0_30px_80px_-30px_rgba(20,20,40,0.4)] overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-200">
+        <div className="h-1.5 bg-brand-grad" />
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            submit();
+          }}
+          className="px-6 pt-6 pb-5"
+        >
+          <div className="text-[28px] mb-2">📁</div>
+          <h2 className="text-[20px] font-extrabold tracking-[-0.015em] leading-tight text-spark-ink">
+            {opts.title}
+          </h2>
+          {opts.description && (
+            <p className="mt-2 text-[13.5px] text-spark-ink-70 leading-relaxed">
+              {opts.description}
+            </p>
+          )}
+          <input
+            ref={inputRef}
+            value={value}
+            onChange={(e) => {
+              setValue(e.target.value);
+              if (err) setErr(null);
+            }}
+            placeholder={opts.placeholder}
+            className="mt-4 w-full px-4 h-[46px] rounded-[14px] bg-spark-surface-sunken border border-spark-border focus:border-spark-brand outline-none text-[15px] text-spark-ink placeholder:text-spark-ink-35"
+          />
+          {err && (
+            <div className="mt-1.5 text-[12px] text-bad font-semibold">{err}</div>
+          )}
+          <div className="mt-5 flex gap-2 flex-row-reverse">
+            <button
+              type="submit"
+              className="flex-1 h-[46px] rounded-full font-semibold text-[14px] text-white bg-brand-grad shadow-[0_6px_18px_-8px_oklch(0.55_0.24_340/0.5)] hover:opacity-90 active:scale-[0.98] transition"
+            >
+              {opts.confirmLabel ?? "Salvar"}
+            </button>
+            <button
+              type="button"
+              onClick={() => onAnswer(null)}
+              className="flex-1 h-[46px] rounded-full font-semibold text-[14px] text-spark-ink-70 bg-spark-surface-sunken hover:bg-spark-surface-sunken/80 hover:text-spark-ink transition"
+            >
+              {opts.cancelLabel ?? "Cancelar"}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

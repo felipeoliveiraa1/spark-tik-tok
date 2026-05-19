@@ -24,7 +24,7 @@ import {
   type Folder as FolderType,
 } from "@/lib/conversation-store";
 import { LoadingSplash } from "@/components/atoms/loading-splash";
-import { useConfirm } from "@/components/molecules/dialog-provider";
+import { useConfirm, usePrompt } from "@/components/molecules/dialog-provider";
 import { cn } from "@/lib/cn";
 
 type Profile = { name: string | null; email: string; plan_active: boolean };
@@ -81,6 +81,7 @@ export function ConversationSidebar({ onSelectConversation }: Props) {
   const store = useConversationStore();
   const profile = useProfile();
   const confirm = useConfirm();
+  const prompt = usePrompt();
 
   const activeId = React.useMemo(() => {
     const match = pathname?.match(/^\/chat\/([^/]+)/);
@@ -105,8 +106,13 @@ export function ConversationSidebar({ onSelectConversation }: Props) {
   const toggleCollapse = (folderId: string) =>
     setCollapsed((prev) => ({ ...prev, [folderId]: !prev[folderId] }));
 
-  const handleNewFolder = () => {
-    const name = window.prompt("Nome da pasta:");
+  const handleNewFolder = async () => {
+    const name = await prompt({
+      title: "Nova pasta de conversas",
+      description: "Organize suas conversas em pastas — tipo \"Produtos pra estudar\" ou \"Ideias de viral\". 💕",
+      placeholder: "Ex: Skincare",
+      confirmLabel: "Criar pasta",
+    });
     if (name?.trim()) void store.createFolder(name);
   };
 
