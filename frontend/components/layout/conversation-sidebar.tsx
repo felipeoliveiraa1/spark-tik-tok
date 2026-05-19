@@ -27,29 +27,6 @@ import { LoadingSplash } from "@/components/atoms/loading-splash";
 import { useConfirm, usePrompt } from "@/components/molecules/dialog-provider";
 import { cn } from "@/lib/cn";
 
-type Profile = { name: string | null; email: string; plan_active: boolean };
-
-function useProfile() {
-  const [profile, setProfile] = React.useState<Profile | null>(null);
-  React.useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch("/api/me", { cache: "no-store" });
-        if (!res.ok) return;
-        const data = (await res.json()) as { profile: Profile | null };
-        if (!cancelled) setProfile(data.profile);
-      } catch {
-        /* ignore */
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-  return profile;
-}
-
 /**
  * Sidebar estilo ChatGPT — lista de pastas (acordeão) com conversas dentro.
  * Suporta criar pasta, renomear, deletar, e mover conversa entre pastas via
@@ -79,7 +56,6 @@ export function ConversationSidebar({ onSelectConversation }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const store = useConversationStore();
-  const profile = useProfile();
   const confirm = useConfirm();
   const prompt = usePrompt();
 
@@ -115,10 +91,6 @@ export function ConversationSidebar({ onSelectConversation }: Props) {
     });
     if (name?.trim()) void store.createFolder(name);
   };
-
-  const displayName = profile?.name?.trim() || profile?.email?.split("@")[0] || "Você";
-  const initial = displayName.charAt(0).toUpperCase();
-  const planLabel = profile?.plan_active ? "Plano ativo" : "Plano inativo";
 
   return (
     <div className="flex flex-col h-full bg-spark-surface-elev">
@@ -199,21 +171,7 @@ export function ConversationSidebar({ onSelectConversation }: Props) {
         </button>
       </nav>
 
-      {/* User footer */}
-      <Link
-        href="/conta"
-        onClick={onSelectConversation}
-        className="border-t border-spark-hairline px-3.5 py-3 flex items-center gap-2.5 hover:bg-spark-surface-sunken transition-colors"
-      >
-        <div className="w-9 h-9 rounded-full bg-brand-grad text-white flex items-center justify-center font-extrabold text-[13px]">
-          {initial}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="text-[12.5px] font-bold truncate">{displayName}</div>
-          <div className="text-[10.5px] text-spark-ink-50 font-mono truncate">{planLabel}</div>
-        </div>
-        <MoreHorizontal size={14} strokeWidth={1.7} className="text-spark-ink-50" />
-      </Link>
+      {/* User footer removido — já existe no nav lateral global (DesktopSidebar) */}
     </div>
   );
 }
