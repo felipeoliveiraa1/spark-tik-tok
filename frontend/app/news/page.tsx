@@ -54,13 +54,13 @@ function NewsBody({ desktop = false }: { desktop?: boolean }) {
     <div className={`flex-1 overflow-auto ${desktop ? "py-8 px-12" : "pb-10"}`}>
       <div className={desktop ? "" : "px-4 pt-6"}>
         <div className="text-[12px] font-bold text-spark-brand tracking-[0.06em] uppercase">
-          📰 Jornal da Aline
+          📰 Jornal da Yara
         </div>
         <h1 className={`mt-1 font-extrabold tracking-[-0.025em] leading-[1.1] ${desktop ? "text-[36px]" : "text-[26px]"}`}>
           News ✨
         </h1>
         <p className="text-[13.5px] text-spark-ink-50 mt-1.5 max-w-[520px]">
-          Atualizações, dicas e novidades publicadas pela Aline pra você ficar à frente. 💕
+          Atualizações, dicas e novidades publicadas pela Yara pra você ficar à frente. 💕
         </p>
       </div>
 
@@ -157,7 +157,7 @@ function EmptyNews() {
       </div>
       <div className="mt-3 text-[16px] font-extrabold">Sem novidades ainda 💖</div>
       <p className="text-[13px] text-spark-ink-50 mt-1.5 leading-snug">
-        Quando a Aline publicar uma nota, ela aparece aqui. Bora trazer a primeira em breve. ✨
+        Quando a Yara publicar uma nota, ela aparece aqui. Bora trazer a primeira em breve. ✨
       </p>
     </div>
   );

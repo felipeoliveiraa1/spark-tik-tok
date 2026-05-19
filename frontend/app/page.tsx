@@ -88,6 +88,14 @@ function HomeBody({ desktop = false }: { desktop?: boolean }) {
 
   const start = async (agent: AgentId) => {
     if (creating) return;
+    // Continua na última conversa desse agente, se existir
+    const existing = [...store.conversations]
+      .filter((c) => c.agent === agent)
+      .sort((a, b) => +new Date(b.updatedAt) - +new Date(a.updatedAt))[0];
+    if (existing) {
+      router.push(`/chat/${existing.id}`);
+      return;
+    }
     setCreating(agent);
     try {
       const id = await store.createConversation({
@@ -169,10 +177,10 @@ function HomeBody({ desktop = false }: { desktop?: boolean }) {
 
         <SectionLink
           href="/news"
-          title="News da Aline 📰"
+          title="News da Yara 📰"
           icon={Newspaper}
           empty={news.length === 0}
-          emptyHint="Quando a Aline publicar uma nota, ela aparece aqui. ✨"
+          emptyHint="Quando a Yara publicar uma nota, ela aparece aqui. ✨"
         >
           <div className="flex flex-col gap-2 mt-3">
             {news.map((n) => (

@@ -2,7 +2,7 @@ import { AGENTS, type AgentId } from "@/lib/agents";
 
 /**
  * Foto do agente (em /public). Anteriormente era um SVG estilizado;
- * agora usamos a imagem personalizada que a Aline subiu pra cada agente.
+ * agora usamos a imagem personalizada que a Yara subiu pra cada agente.
  */
 
 type Props = {

@@ -87,7 +87,7 @@ function EducacaoBody({ desktop = false }: { desktop?: boolean }) {
           Educação ✨
         </h1>
         <p className="text-[13.5px] text-spark-ink-50 mt-1.5 max-w-[520px]">
-          Videoaulas da Aline pra você dominar o TikTok Shop do zero ao avançado. 💕
+          Videoaulas da Yara pra você dominar o TikTok Shop do zero ao avançado. 💕
         </p>
       </div>
 
@@ -170,7 +170,7 @@ function EmptyEducation() {
       </div>
       <div className="mt-3 text-[16px] font-extrabold">Sem aulas ainda 💖</div>
       <p className="text-[13px] text-spark-ink-50 mt-1.5 leading-snug">
-        A Aline está preparando o conteúdo. Em breve você terá videoaulas exclusivas aqui. ✨
+        A Yara está preparando o conteúdo. Em breve você terá videoaulas exclusivas aqui. ✨
       </p>
     </div>
   );

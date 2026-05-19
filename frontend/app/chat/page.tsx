@@ -55,6 +55,17 @@ function GalleryBody() {
 
   const start = async (agent: AgentId) => {
     if (creating) return;
+    // Procura a ÚLTIMA conversa desse agente. Se existe, abre ela direto.
+    // Felipe pediu: clicar no agente NÃO deve criar nova conversa todo vez —
+    // continua a última. Pra começar do zero, usar botão "Nova conversa" na
+    // sidebar dentro do chat.
+    const existing = [...store.conversations]
+      .filter((c) => c.agent === agent)
+      .sort((a, b) => +new Date(b.updatedAt) - +new Date(a.updatedAt))[0];
+    if (existing) {
+      router.push(`/chat/${existing.id}`);
+      return;
+    }
     setCreating(agent);
     try {
       const id = await store.createConversation({

@@ -1,7 +1,14 @@
 import Link from "next/link";
 import { cn } from "@/lib/cn";
 
-export type NavId = "home" | "chat" | "produtos" | "virais" | "educacao" | "conta";
+export type NavId =
+  | "home"
+  | "chat"
+  | "produtos"
+  | "virais"
+  | "ao-vivo"
+  | "educacao"
+  | "conta";
 
 type Item = {
   id: NavId;
@@ -15,6 +22,7 @@ const items: Item[] = [
   { id: "chat", label: "Chat", href: "/chat", emoji: "💬" },
   { id: "produtos", label: "Produtos", href: "/produtos", emoji: "📦" },
   // Virais temporariamente oculto — feature de scraping pausada
+  { id: "ao-vivo", label: "Live", href: "/ao-vivo", emoji: "🔴" },
   { id: "educacao", label: "Aulas", href: "/educacao", emoji: "🎓" },
   { id: "conta", label: "Conta", href: "/conta", emoji: "👤" },
 ];

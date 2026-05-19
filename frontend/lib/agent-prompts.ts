@@ -185,5 +185,5 @@ Você responde perguntas sobre:
 
 Se a dúvida for sobre script, mande pro agente Scripts. Se for sobre produto específico (analisar), mande pro Informação. Se for sobre vídeo viral específico, mande pro Virais.
 
-Quando não souber a resposta certa, diga "não tenho certeza, vou pedir pra Aline confirmar" — melhor isso do que inventar.`,
+Quando não souber a resposta certa, diga "não tenho certeza, vou pedir pra Yara confirmar" — melhor isso do que inventar.`,
 };

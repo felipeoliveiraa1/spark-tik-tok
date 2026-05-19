@@ -5,14 +5,16 @@ export const dynamic = "force-dynamic";
 
 async function getCounts() {
   const supabase = await getSupabaseServer();
-  const [news, videos, users] = await Promise.all([
+  const [news, videos, lives, users] = await Promise.all([
     supabase.from("news").select("id", { count: "exact", head: true }),
     supabase.from("education_videos").select("id", { count: "exact", head: true }),
+    supabase.from("live_events").select("id", { count: "exact", head: true }),
     supabase.from("profiles").select("id", { count: "exact", head: true }),
   ]);
   return {
     news: news.count ?? 0,
     videos: videos.count ?? 0,
+    lives: lives.count ?? 0,
     users: users.count ?? 0,
   };
 }
@@ -28,24 +30,31 @@ export default async function AdminHome() {
         Gerencie o que aparece pra todas as alunas. Mudanças entram em ar instantaneamente.
       </p>
 
-      <div className="mt-7 grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="mt-7 grid grid-cols-2 sm:grid-cols-4 gap-3">
         <StatCard label="Notícias publicadas" value={counts.news} emoji="📰" />
         <StatCard label="Videoaulas" value={counts.videos} emoji="🎓" />
+        <StatCard label="Lives ao vivo" value={counts.lives} emoji="🔴" />
         <StatCard label="Alunas cadastradas" value={counts.users} emoji="💖" />
       </div>
 
-      <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-3">
         <ActionCard
           href="/admin/news"
           emoji="📰"
           title="Gerenciar News"
-          desc="Criar, editar e despublicar artigos do jornal da Aline."
+          desc="Criar, editar e despublicar artigos do jornal da Yara."
         />
         <ActionCard
           href="/admin/educacao"
           emoji="🎓"
           title="Gerenciar Educação"
           desc="Adicionar videoaulas do YouTube, organizar categorias."
+        />
+        <ActionCard
+          href="/admin/ao-vivo"
+          emoji="🔴"
+          title="Agendar Lives"
+          desc="Marcar encontros ao vivo via YouTube Live. Replay automático."
         />
       </div>
     </div>

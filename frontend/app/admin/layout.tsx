@@ -32,6 +32,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <Link href="/admin/educacao" className="text-spark-ink-70 hover:text-spark-ink">
             🎓 Aulas
           </Link>
+          <Link href="/admin/ao-vivo" className="text-spark-ink-70 hover:text-spark-ink">
+            🔴 Ao vivo
+          </Link>
           <Link href="/" className="text-spark-ink-50 hover:text-spark-ink">
             ← App
           </Link>

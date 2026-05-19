@@ -13,6 +13,7 @@ export type SidebarActive =
   | "produtos"
   | "virais"
   | "scripts"
+  | "ao-vivo"
   | "educacao"
   | "news"
   | "conta"
@@ -26,6 +27,7 @@ const items: Item[] = [
   { id: "produtos", label: "Produtos", href: "/produtos", emoji: "📦" },
   // Virais temporariamente oculto — feature de scraping pausada
   { id: "scripts", label: "Scripts", href: "/scripts", emoji: "✍️" },
+  { id: "ao-vivo", label: "Ao vivo", href: "/ao-vivo", emoji: "🔴" },
   { id: "educacao", label: "Educação", href: "/educacao", emoji: "🎓" },
   { id: "news", label: "News", href: "/news", emoji: "📰" },
 ];
@@ -137,6 +139,7 @@ function deriveActive(pathname: string | null): SidebarActive | undefined {
   if (pathname.startsWith("/produtos")) return "produtos";
   if (pathname.startsWith("/virais")) return "virais";
   if (pathname.startsWith("/scripts")) return "scripts";
+  if (pathname.startsWith("/ao-vivo")) return "ao-vivo";
   if (pathname.startsWith("/educacao")) return "educacao";
   if (pathname.startsWith("/news")) return "news";
   if (pathname.startsWith("/conta")) return "conta";
