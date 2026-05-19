@@ -9,6 +9,7 @@ import { BottomNav } from "@/components/layout/bottom-nav";
 import { SButton } from "@/components/atoms/s-button";
 import { SBadge } from "@/components/atoms/s-badge";
 import { LoadingSplash } from "@/components/atoms/loading-splash";
+import { useConfirm, useToast } from "@/components/molecules/dialog-provider";
 
 type Hook = { n?: number; hook?: string; trigger?: string; why?: string; fire?: string };
 
@@ -58,6 +59,8 @@ function ScriptBody({ id, desktop = false }: { id: string; desktop?: boolean }) 
   const router = useRouter();
   const { script, loading, error } = useScript(id);
   const [deleting, setDeleting] = React.useState(false);
+  const confirm = useConfirm();
+  const toast = useToast();
 
   const copyAll = async () => {
     if (!script) return;
@@ -66,13 +69,20 @@ function ScriptBody({ id, desktop = false }: { id: string; desktop?: boolean }) 
       .join("\n");
     try {
       await navigator.clipboard.writeText(text);
+      toast.success("Hooks copiados 💕");
     } catch {
-      /* ignore */
+      toast.error("Não consegui copiar");
     }
   };
 
   const remove = async () => {
-    if (!window.confirm("Apagar este conjunto de scripts?")) return;
+    const ok = await confirm({
+      title: "Apagar esses scripts?",
+      description: "Os hooks somem da sua biblioteca. Você pode pedir pra Scripts gerar de novo. ✨",
+      confirmLabel: "Apagar",
+      destructive: true,
+    });
+    if (!ok) return;
     setDeleting(true);
     const res = await fetch(`/api/scripts/${id}`, { method: "DELETE" });
     setDeleting(false);

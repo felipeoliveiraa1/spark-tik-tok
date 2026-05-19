@@ -9,6 +9,7 @@ import { BottomNav } from "@/components/layout/bottom-nav";
 import { SButton } from "@/components/atoms/s-button";
 import { SBadge } from "@/components/atoms/s-badge";
 import { LoadingSplash } from "@/components/atoms/loading-splash";
+import { useConfirm, useToast } from "@/components/molecules/dialog-provider";
 
 type ProductDetail = {
   id: string;
@@ -66,13 +67,26 @@ function ProductBody({ id, desktop = false }: { id: string; desktop?: boolean })
   const router = useRouter();
   const { product, loading, error } = useProduct(id);
   const [deleting, setDeleting] = React.useState(false);
+  const confirm = useConfirm();
+  const toast = useToast();
 
   const remove = async () => {
-    if (!window.confirm("Apagar este produto?")) return;
+    const ok = await confirm({
+      title: "Apagar esse produto?",
+      description: "A ficha some do seu catálogo. Você pode analisar de novo pelo chat com a Informação. 💕",
+      confirmLabel: "Apagar",
+      destructive: true,
+    });
+    if (!ok) return;
     setDeleting(true);
     const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
     setDeleting(false);
-    if (res.ok) router.push("/produtos");
+    if (res.ok) {
+      toast.success("Produto removido 💕");
+      router.push("/produtos");
+    } else {
+      toast.error("Não consegui remover agora");
+    }
   };
 
   if (loading) {

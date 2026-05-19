@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Plus, Trash2 } from "lucide-react";
 import { SButton } from "@/components/atoms/s-button";
 import { SBadge } from "@/components/atoms/s-badge";
+import { useConfirm, useToast } from "@/components/molecules/dialog-provider";
 
 type NewsRow = {
   id: string;
@@ -37,10 +38,23 @@ export default function AdminNewsPage() {
     void load();
   }, [load]);
 
+  const confirm = useConfirm();
+  const toast = useToast();
   const remove = async (slug: string) => {
-    if (!confirm(`Remover "${slug}"?`)) return;
+    const ok = await confirm({
+      title: "Despublicar essa notícia?",
+      description: `"${slug}" some do feed das alunas. Você pode reescrever depois.`,
+      confirmLabel: "Remover",
+      destructive: true,
+    });
+    if (!ok) return;
     const res = await fetch(`/api/news/${slug}`, { method: "DELETE" });
-    if (res.ok) await load();
+    if (res.ok) {
+      toast.success("Notícia removida 💕");
+      await load();
+    } else {
+      toast.error("Não consegui remover agora");
+    }
   };
 
   return (

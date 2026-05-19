@@ -20,6 +20,7 @@ import { SBadge } from "@/components/atoms/s-badge";
 import { SButton } from "@/components/atoms/s-button";
 import { LoadingSplash } from "@/components/atoms/loading-splash";
 import { useVideoModal } from "@/components/molecules/video-modal";
+import { useConfirm } from "@/components/molecules/dialog-provider";
 
 type SavedViralDetail = {
   id: string;
@@ -114,10 +115,17 @@ function ViralBody({ id, desktop = false }: { id: string; desktop?: boolean }) {
   const router = useRouter();
   const { data: v, loading, error } = useSavedViral(id);
   const videoModal = useVideoModal();
+  const confirm = useConfirm();
   const [deleting, setDeleting] = React.useState(false);
 
   const remove = async () => {
-    if (!window.confirm("Remover este viral da sua biblioteca?")) return;
+    const ok = await confirm({
+      title: "Remover esse viral da sua biblioteca?",
+      description: "Você pode salvar de novo depois pelo chat com a Virais. 💕",
+      confirmLabel: "Remover",
+      destructive: true,
+    });
+    if (!ok) return;
     setDeleting(true);
     const res = await fetch(`/api/virais/${id}`, { method: "DELETE" });
     setDeleting(false);

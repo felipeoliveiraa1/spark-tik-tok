@@ -1351,7 +1351,7 @@ export async function POST(request: Request) {
               out?.ok &&
               out.url_path
             ) {
-              deterministicResponse = `Salvei na sua biblioteca! [Ver agora](${out.url_path})\n\nQuer que eu te mostre detalhes desse vídeo ou bora pra outro?`;
+              deterministicResponse = `Pronto, salvei na sua biblioteca 💕 [Ver agora](${out.url_path})\n\nQuer que eu te mostre detalhes desse vídeo ou bora pra outro?`;
             }
             // Resposta determinística pra save_product
             if (
@@ -1360,7 +1360,7 @@ export async function POST(request: Request) {
               out.url_path
             ) {
               const name = out.name ?? "produto";
-              deterministicResponse = `Salvei! [Ver ${name}](${out.url_path})\n\nQuer gerar scripts pra ele agora ou ver os virais que combinam?`;
+              deterministicResponse = `Salvinho aqui pra você 💖 [Ver ${name}](${out.url_path})\n\nQuer que eu te leve pra Scripts gerar hooks pra ele? ✨`;
             }
             // Resposta determinística pra save_script
             if (
@@ -1369,7 +1369,7 @@ export async function POST(request: Request) {
               out.url_path
             ) {
               const title = out.title ?? "scripts";
-              deterministicResponse = `Salvei! [Ver ${title}](${out.url_path})\n\nQuer que eu gere uma variação ou foca em outro produto?`;
+              deterministicResponse = `Prontinho, salvei pra você 💕 [Ver ${title}](${out.url_path})\n\nQuer uma variação com outro tom ou prefere ir pra outro produto?`;
             }
 
             if (

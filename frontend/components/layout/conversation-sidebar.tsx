@@ -24,6 +24,7 @@ import {
   type Folder as FolderType,
 } from "@/lib/conversation-store";
 import { LoadingSplash } from "@/components/atoms/loading-splash";
+import { useConfirm } from "@/components/molecules/dialog-provider";
 import { cn } from "@/lib/cn";
 
 type Profile = { name: string | null; email: string; plan_active: boolean };
@@ -79,6 +80,7 @@ export function ConversationSidebar({ onSelectConversation }: Props) {
   const pathname = usePathname();
   const store = useConversationStore();
   const profile = useProfile();
+  const confirm = useConfirm();
 
   const activeId = React.useMemo(() => {
     const match = pathname?.match(/^\/chat\/([^/]+)/);
@@ -149,14 +151,14 @@ export function ConversationSidebar({ onSelectConversation }: Props) {
               onDeleteFolder={
                 folder.isDefault
                   ? undefined
-                  : () => {
-                      if (
-                        window.confirm(
-                          `Apagar a pasta "${folder.name}"? As conversas vão pra "Geral".`,
-                        )
-                      ) {
-                        void store.deleteFolder(folder.id);
-                      }
+                  : async () => {
+                      const ok = await confirm({
+                        title: `Apagar a pasta "${folder.name}"?`,
+                        description: `As conversas dentro vão pra pasta "Geral" — você não perde elas. 💕`,
+                        confirmLabel: "Apagar pasta",
+                        destructive: true,
+                      });
+                      if (ok) void store.deleteFolder(folder.id);
                     }
               }
               onSelectConversation={(id) => {
@@ -164,8 +166,14 @@ export function ConversationSidebar({ onSelectConversation }: Props) {
                 onSelectConversation?.();
               }}
               onRenameConversation={(id, title) => void store.renameConversation(id, title)}
-              onDeleteConversation={(id) => {
-                if (window.confirm("Apagar esta conversa?")) {
+              onDeleteConversation={async (id) => {
+                const ok = await confirm({
+                  title: "Apagar essa conversa?",
+                  description: "As mensagens somem da sua biblioteca. ✨",
+                  confirmLabel: "Apagar",
+                  destructive: true,
+                });
+                if (ok) {
                   void store.deleteConversation(id);
                   if (id === activeId) router.push("/chat");
                 }
