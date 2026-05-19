@@ -12,6 +12,7 @@ import {
   getVyralTopProducts,
   ScraperClientError,
 } from "@/lib/scraper-client";
+import { webSearch } from "@/lib/web-search";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -368,6 +369,31 @@ function buildProductTools(supabase: SupabaseClient, _userId: string): ToolSet {
 function buildInfoTools(supabase: SupabaseClient, userId: string): ToolSet {
   return {
     ...buildProductTools(supabase, userId),
+    web_search: tool({
+      description:
+        "Busca no Google pra confirmar fatos sobre produto: preço atual no BR, concorrentes reais, reviews, regulamentação (ANVISA, INMETRO), tendências. Use SEMPRE pra puxar dado quantitativo (preço, faixa de mercado) — não chute. Retorna 5 resultados com title, snippet e URL.",
+      inputSchema: z.object({
+        query: z
+          .string()
+          .describe(
+            "O que pesquisar. Seja específica. Ex: 'preço Mini ventilador cílios Brasil 2026' ou 'concorrentes body splash masculino TikTok Shop'.",
+          ),
+        count: z
+          .number()
+          .optional()
+          .describe("Quantidade de resultados (1-10). Default 5."),
+      }),
+      execute: async ({ query, count }) => {
+        const result = await webSearch(query, { count });
+        if (!result.ok) return { ok: false, reason: result.reason };
+        return {
+          ok: true,
+          query: result.query,
+          count: result.hits.length,
+          hits: result.hits,
+        };
+      },
+    }),
     save_product: tool({
       description:
         "Salva uma nova ficha de produto pra aluna conseguir consultar depois em /produtos e referenciar em conversas com outros agentes. Chame SEMPRE que a aluna disser 'salva', 'guarda', 'adiciona aos meus produtos' ou similar. Devolva pra ela algo como 'Salvei! Você consulta em [Nome](/produtos/<id>)' usando markdown.",
