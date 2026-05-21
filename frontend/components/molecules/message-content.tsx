@@ -66,6 +66,7 @@ export function MessageContent({ children }: { children: string }) {
                 alt={typeof alt === "string" ? alt : ""}
                 className="my-2 w-full max-w-[260px] aspect-[9/14] rounded-2xl border border-spark-hairline object-cover bg-spark-surface-sunken"
                 loading="lazy"
+                decoding="async"
                 referrerPolicy="no-referrer"
               />
             );

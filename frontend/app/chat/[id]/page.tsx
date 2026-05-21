@@ -260,7 +260,7 @@ function ChatComposer({
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+          accept="image/*"
           onChange={onFileChange}
           className="hidden"
         />
@@ -452,10 +452,12 @@ function ChatMobile({
 
   return (
     <>
-      <div className="pt-14 pl-2 pr-3 pb-2.5 flex items-center gap-1.5 border-b border-spark-hairline">
+      <div className="pt-14 pl-2 pr-3 pb-2.5 flex items-center gap-1.5 border-b border-spark-hairline safe-top">
         <button
+          type="button"
+          aria-label="Voltar pra galeria de agentes"
           onClick={() => router.push("/chat")}
-          className="w-9 h-9 rounded-full flex items-center justify-center text-spark-ink"
+          className="w-10 h-10 rounded-full flex items-center justify-center text-spark-ink active:scale-95 transition-transform"
         >
           <ArrowLeft size={20} strokeWidth={1.7} />
         </button>
@@ -464,8 +466,10 @@ function ChatMobile({
           <div className="text-[11px] text-spark-ink-50 font-mono">{AGENTS[agent].label}</div>
         </div>
         <button
+          type="button"
+          aria-label="Abrir lista de conversas"
           onClick={() => setDrawerOpen(true)}
-          className="w-9 h-9 rounded-full flex items-center justify-center text-spark-ink"
+          className="w-10 h-10 rounded-full flex items-center justify-center text-spark-ink active:scale-95 transition-transform"
         >
           <Menu size={20} strokeWidth={1.7} />
         </button>
@@ -480,20 +484,24 @@ function ChatMobile({
 
       {drawerOpen && (
         <>
-          <div
+          <button
+            type="button"
+            aria-label="Fechar lista de conversas"
             onClick={() => setDrawerOpen(false)}
-            className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm animate-in fade-in"
+            className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm animate-in fade-in cursor-default"
           />
-          <div className="fixed top-0 right-0 bottom-0 w-[300px] z-50 bg-spark-surface-elev border-l border-spark-hairline shadow-[0_0_40px_-10px_rgba(20,20,40,0.3)] flex flex-col animate-in slide-in-from-right">
+          <div className="fixed top-0 right-0 bottom-0 w-[85vw] max-w-[320px] z-50 bg-spark-surface-elev border-l border-spark-hairline shadow-[0_0_40px_-10px_rgba(20,20,40,0.3)] flex flex-col animate-in slide-in-from-right safe-top">
             <div className="px-3 pt-4 pb-1 flex items-center justify-between">
               <div className="text-[13px] font-bold text-spark-ink-50 tracking-[0.06em] uppercase">
                 Conversas
               </div>
               <button
+                type="button"
+                aria-label="Fechar"
                 onClick={() => setDrawerOpen(false)}
-                className="w-8 h-8 rounded-full text-spark-ink-50 flex items-center justify-center hover:text-spark-ink"
+                className="w-10 h-10 rounded-full text-spark-ink-50 flex items-center justify-center hover:text-spark-ink active:scale-95 transition-transform"
               >
-                <X size={16} strokeWidth={1.7} />
+                <X size={18} strokeWidth={1.7} />
               </button>
             </div>
             <div className="flex-1 min-h-0">

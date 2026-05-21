@@ -26,7 +26,9 @@ export function UserBubble({ children, attachments }: Props) {
                 <img
                   src={a.url}
                   alt="anexo"
-                  className="w-40 h-40 object-cover bg-spark-surface-sunken"
+                  loading="lazy"
+                  decoding="async"
+                  className="w-32 h-32 sm:w-40 sm:h-40 object-cover bg-spark-surface-sunken"
                 />
               </a>
             ))}

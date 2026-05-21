@@ -13,6 +13,7 @@ type Props = {
   className?: string;
   name?: string;
   autoComplete?: string;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
   required?: boolean;
   minLength?: number;
   maxLength?: number;
@@ -31,6 +32,7 @@ export function SInput({
   className,
   name,
   autoComplete,
+  inputMode,
   required,
   minLength,
   maxLength,
@@ -38,6 +40,18 @@ export function SInput({
   max,
   disabled,
 }: Props) {
+  // Auto-deriva inputMode pra teclados otimizados em mobile.
+  const computedInputMode =
+    inputMode ??
+    (type === "email"
+      ? "email"
+      : type === "tel"
+        ? "tel"
+        : type === "url"
+          ? "url"
+          : type === "number"
+            ? "decimal"
+            : undefined);
   return (
     <label
       className={cn(
@@ -50,6 +64,7 @@ export function SInput({
         type={type}
         name={name}
         autoComplete={autoComplete}
+        inputMode={computedInputMode}
         {...(value !== undefined ? { value, onChange } : { defaultValue })}
         placeholder={placeholder}
         required={required}
