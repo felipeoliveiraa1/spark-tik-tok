@@ -410,6 +410,102 @@ function buildInfoTools(supabase: SupabaseClient, userId: string): ToolSet {
         return { ok: true, id: data.id, name: data.name, url_path: `/produtos/${data.id}` };
       },
     }),
+    update_product: tool({
+      description:
+        "Agrega informação a um produto JÁ salvo. Use quando a aluna pedir 'adiciona essa info', 'agrega isso', 'esqueci de falar X' sobre produto que já existe. Por default, arrays são MERGED (não substitui) — passe append=false só quando quiser SUBSTITUIR (ex: 'corrige a faixa de preço'). Sempre identifique o produto pelo id (use list_my_products ou get_product antes).",
+      inputSchema: z.object({
+        id: z.string().describe("UUID do produto a atualizar."),
+        name: z.string().optional().describe("Mude só se a aluna pediu pra renomear."),
+        image_url: z.string().optional(),
+        category: z.string().optional(),
+        target_audience: z
+          .string()
+          .optional()
+          .describe("Substitui o público-alvo se a aluna trouxer novo recorte."),
+        pain_points: z
+          .array(z.string())
+          .optional()
+          .describe("Dores novas a ADICIONAR (default merge com as existentes)."),
+        strengths: z
+          .array(z.string())
+          .optional()
+          .describe("Pontos fortes a ADICIONAR (default merge)."),
+        price_range: z.string().optional().describe("Substitui a faixa de preço."),
+        competitors: z
+          .array(z.string())
+          .optional()
+          .describe("Concorrentes a ADICIONAR (default merge)."),
+        append: z
+          .boolean()
+          .optional()
+          .describe(
+            "true (default): arrays viram merge com o que já tem. false: SUBSTITUI (use só pra correção).",
+          ),
+      }),
+      execute: async (input) => {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/api/products/${input.id}`,
+          {
+            method: "PATCH",
+            headers: { "content-type": "application/json", cookie: "" },
+            body: JSON.stringify(input),
+          },
+        ).catch(() => null);
+        // Como esse fetch é server-to-server, o cookie de auth não vai —
+        // mais simples chamar o supabase diretamente.
+        void res; // descarta — abaixo usamos supabase direto
+        const append = input.append !== false;
+        const { data: current, error: readErr } = await supabase
+          .from("products")
+          .select("*")
+          .eq("id", input.id)
+          .eq("user_id", userId)
+          .maybeSingle();
+        if (readErr) return { ok: false, error: readErr.message };
+        if (!current) return { ok: false, error: "produto não encontrado" };
+
+        const ARRAY_FIELDS = ["pain_points", "strengths", "competitors"] as const;
+        const SCALAR_FIELDS = [
+          "name",
+          "image_url",
+          "category",
+          "target_audience",
+          "price_range",
+        ] as const;
+        const patch: Record<string, unknown> = {};
+        for (const f of SCALAR_FIELDS) {
+          if (input[f] !== undefined) patch[f] = input[f];
+        }
+        for (const f of ARRAY_FIELDS) {
+          const incoming = input[f] as string[] | undefined;
+          if (!incoming || incoming.length === 0) continue;
+          const existing = ((current as Record<string, unknown>)[f] as string[] | null) ?? [];
+          patch[f] = append
+            ? Array.from(new Set([...existing, ...incoming]))
+            : incoming;
+        }
+        if (Object.keys(patch).length === 0) {
+          return { ok: false, error: "nada pra atualizar" };
+        }
+        patch.updated_at = new Date().toISOString();
+
+        const { data, error } = await supabase
+          .from("products")
+          .update(patch)
+          .eq("id", input.id)
+          .eq("user_id", userId)
+          .select("id, name")
+          .single();
+        if (error) return { ok: false, error: error.message };
+        return {
+          ok: true,
+          id: data.id,
+          name: data.name,
+          url_path: `/produtos/${data.id}`,
+          updated_fields: Object.keys(patch).filter((k) => k !== "updated_at"),
+        };
+      },
+    }),
   };
 }
 
@@ -1413,6 +1509,15 @@ export async function POST(request: Request) {
             ) {
               const name = out.name ?? "produto";
               deterministicResponse = `Salvinho aqui pra você 💖 [Ver ${name}](${out.url_path})\n\nQuer que eu te leve pra Scripts gerar hooks pra ele? ✨`;
+            }
+            // Resposta determinística pra update_product
+            if (
+              part.toolName === "update_product" &&
+              out?.ok &&
+              out.url_path
+            ) {
+              const name = out.name ?? "produto";
+              deterministicResponse = `Anotei aqui na ficha 💕 [Ver ${name}](${out.url_path}) — atualizei pra você.\n\nMais alguma coisa pra agregar?`;
             }
             // Resposta determinística pra save_script
             if (
