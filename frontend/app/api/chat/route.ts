@@ -1113,30 +1113,46 @@ function buildScriptTools(supabase: SupabaseClient, userId: string): ToolSet {
     }),
     save_script: tool({
       description:
-        "Salva a tabela de hooks gerada pra aluna conseguir consultar depois em /scripts. Chame SEMPRE que terminar uma tabela de hooks completa. Devolva o link [Ver scripts](/scripts/<id>) na sua resposta.",
+        "Salva os ROTEIROS gerados pra aluna consultar em /scripts. Cada roteiro tem 4 blocos (gancho 3s, desenvolvimento, benefício, CTA) e um estilo (fofoca, polêmico, engraçado, educativo, storytelling, comparação, transformação). Chame SEMPRE que entregar o conjunto completo de roteiros. Devolva [Ver scripts](/scripts/<id>) em markdown.",
       inputSchema: z.object({
-        title: z.string().optional().describe("Título descritivo, ex: '10 hooks · Hidratante NAC'."),
-        product_id: z.string().optional().describe("UUID do produto relacionado, se houver."),
-        hooks: z
+        title: z
+          .string()
+          .describe(
+            "Título descritivo, ex: '5 roteiros · Figurinhas da Copa' ou '3 roteiros · Hidratante NAC'.",
+          ),
+        product_id: z.string().optional().describe("UUID do produto relacionado."),
+        scripts: z
           .array(
             z.object({
-              n: z.number().optional(),
-              hook: z.string(),
-              trigger: z.string().optional(),
-              why: z.string().optional(),
-              fire: z.string().optional(),
+              n: z.number().describe("Número sequencial do roteiro (1, 2, 3...)."),
+              style: z
+                .string()
+                .describe(
+                  "Estilo do roteiro. Um destes: fofoca, polemico, engracado, educativo, storytelling, comparacao, transformacao.",
+                ),
+              hook: z.string().describe("Gancho de até 3s. Frase curta, gera curiosidade ou contraste."),
+              development: z
+                .string()
+                .describe("Desenvolvimento com analogia/explicação simples. 2-4 frases."),
+              benefit: z.string().describe("Benefício REAL do produto, sem promessa milagrosa."),
+              cta: z.string().describe("CTA leve incentivando compra. 1 frase curta."),
+              duration_sec: z.number().optional().describe("Duração estimada em segundos (15/30/45/60)."),
             }),
           )
-          .describe("Array com a tabela de hooks gerada."),
+          .min(3)
+          .describe("Array com 3-5 roteiros completos, um por estilo."),
       }),
-      execute: async ({ title, product_id, hooks }) => {
+      execute: async ({ title, product_id, scripts }) => {
+        // Reaproveita a coluna `hooks` (jsonb) pra guardar os roteiros — sem
+        // migration. O render detecta o formato (item com `development` → roteiro
+        // completo; sem → hook legado).
         const { data, error } = await supabase
           .from("generated_scripts")
           .insert({
             user_id: userId,
             product_id: product_id ?? null,
-            title: title ?? "10 hooks",
-            hooks,
+            title,
+            hooks: scripts,
             model: "gemini-flash-latest",
           })
           .select("id, title")
@@ -1582,8 +1598,8 @@ export async function POST(request: Request) {
               out?.ok &&
               out.url_path
             ) {
-              const title = out.title ?? "scripts";
-              deterministicResponse = `Prontinho, salvei pra você 💕 [Ver ${title}](${out.url_path})\n\nQuer uma variação com outro tom ou prefere ir pra outro produto?`;
+              const title = out.title ?? "roteiros";
+              deterministicResponse = `Prontinho, salvei os roteiros pra você 💕 [Ver ${title}](${out.url_path})\n\nQuer mais variações com outro estilo ou prefere ir pra outro produto?`;
             }
 
             if (

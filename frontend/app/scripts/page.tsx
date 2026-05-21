@@ -10,16 +10,26 @@ import { SButton } from "@/components/atoms/s-button";
 import { SBadge } from "@/components/atoms/s-badge";
 import { LoadingSplash } from "@/components/atoms/loading-splash";
 
-type Hook = { n?: number; hook?: string; trigger?: string; why?: string };
+type ScriptItem = {
+  n?: number;
+  hook?: string;
+  development?: string;
+  trigger?: string;
+  why?: string;
+};
 
 type ScriptRow = {
   id: string;
   title: string;
-  hooks: Hook[];
+  hooks: ScriptItem[];
   product_id: string | null;
   model: string | null;
   created_at: string;
 };
+
+function hasFullScripts(items: ScriptItem[]): boolean {
+  return items.some((i) => Boolean(i.development));
+}
 
 function timeAgo(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
@@ -55,13 +65,13 @@ function ScriptsBody({ desktop = false }: { desktop?: boolean }) {
     <div className={`flex-1 overflow-auto ${desktop ? "py-8 px-12" : "pb-10"}`}>
       <div className={desktop ? "" : "px-4 pt-6"}>
         <div className="text-[12px] font-bold text-spark-brand tracking-[0.06em] uppercase">
-          ✨ Hooks salvos
+          ✨ Roteiros prontos
         </div>
-        <h1 className={`mt-1 font-extrabold tracking-[-0.025em] leading-[1.1] ${desktop ? "text-[36px]" : "text-[26px]"}`}>
+        <h1 className={`mt-1 font-extrabold tracking-tight leading-[1.1] ${desktop ? "text-[36px]" : "text-[26px]"}`}>
           Seus scripts ✍️
         </h1>
         <p className="text-[13.5px] text-spark-ink-50 mt-1.5 max-w-[520px]">
-          Cada conjunto gerado pela Scripts. Copia, exporta ou pede uma variação no chat. 💕
+          Cada conjunto de roteiros gerado pela Scripts — gancho, desenvolvimento, benefício e CTA prontos pra gravar. 💕
         </p>
       </div>
 
@@ -85,7 +95,7 @@ function ScriptsBody({ desktop = false }: { desktop?: boolean }) {
                   <div className="flex-1 min-w-0">
                     <div className="text-[14px] font-bold">{s.title}</div>
                     <div className="text-[11.5px] text-spark-ink-50 mt-0.5">
-                      {s.hooks.length} hooks · {timeAgo(s.created_at)}
+                      {s.hooks.length} {hasFullScripts(s.hooks) ? "roteiros" : "hooks"} · {timeAgo(s.created_at)}
                     </div>
                   </div>
                 </div>
@@ -112,14 +122,14 @@ function EmptyScripts() {
       <div className="mx-auto w-14 h-14 rounded-2xl bg-brand-grad-soft flex items-center justify-center text-[28px]">
         ✍️
       </div>
-      <div className="mt-3 text-[16px] font-extrabold">Sem scripts ainda 💖</div>
+      <div className="mt-3 text-[16px] font-extrabold">Sem roteiros ainda 💖</div>
       <p className="text-[13px] text-spark-ink-50 mt-1.5 leading-snug">
-        Abre o chat com a Scripts e pede 10 hooks pro seu produto. A tabela completa fica salva aqui. ✨
+        Abre o chat com a Scripts, menciona seu produto com @ e ela gera 5 roteiros completos no estilo da Yara — gancho, desenvolvimento, benefício e CTA. ✨
       </p>
       <div className="mt-4">
         <Link href="/chat">
           <SButton variant="primary" size="md" IconRight={Sparkle}>
-            Gerar scripts
+            Gerar roteiros
           </SButton>
         </Link>
       </div>
