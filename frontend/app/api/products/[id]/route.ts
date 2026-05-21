@@ -34,6 +34,13 @@ const EDITABLE = [
   "strengths",
   "price_range",
   "competitors",
+  "differentiators",
+  "objections",
+  "emotional_triggers",
+  "usage_moments",
+  "content_angles",
+  "hook_ideas",
+  "seasonality",
 ] as const;
 
 /**

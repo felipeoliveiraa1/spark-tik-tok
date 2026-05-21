@@ -21,6 +21,13 @@ type ProductDetail = {
   strengths: string[] | null;
   price_range: string | null;
   competitors: string[] | null;
+  differentiators: string[] | null;
+  objections: string[] | null;
+  emotional_triggers: string[] | null;
+  usage_moments: string[] | null;
+  content_angles: string[] | null;
+  hook_ideas: string[] | null;
+  seasonality: string | null;
   raw_analysis: Record<string, unknown> | null;
   created_at: string;
 };
@@ -108,6 +115,12 @@ function ProductBody({ id, desktop = false }: { id: string; desktop?: boolean })
   const pains = toStringList(product.pain_points);
   const strengths = toStringList(product.strengths);
   const competitors = toStringList(product.competitors);
+  const differentiators = toStringList(product.differentiators);
+  const objections = toStringList(product.objections);
+  const triggers = toStringList(product.emotional_triggers);
+  const moments = toStringList(product.usage_moments);
+  const angles = toStringList(product.content_angles);
+  const hooks = toStringList(product.hook_ideas);
 
   return (
     <div className={`flex-1 overflow-auto ${desktop ? "py-8 px-12" : "pb-10"}`}>
@@ -168,8 +181,88 @@ function ProductBody({ id, desktop = false }: { id: string; desktop?: boolean })
           </Section>
         )}
 
+        {differentiators.length > 0 && (
+          <Section title="Diferenciais únicos" emoji="✨">
+            <ul className="space-y-1.5">
+              {differentiators.map((d) => (
+                <li key={d} className="text-[14px] text-spark-ink-70 leading-snug">
+                  · {d}
+                </li>
+              ))}
+            </ul>
+          </Section>
+        )}
+
+        {objections.length > 0 && (
+          <Section title="Objeções a quebrar" emoji="🛡️">
+            <ul className="space-y-1.5">
+              {objections.map((o) => (
+                <li key={o} className="text-[14px] text-spark-ink-70 leading-snug">
+                  · &ldquo;{o}&rdquo;
+                </li>
+              ))}
+            </ul>
+          </Section>
+        )}
+
+        {triggers.length > 0 && (
+          <Section title="Gatilhos emocionais" emoji="💗">
+            <div className="flex flex-wrap gap-1.5">
+              {triggers.map((t) => (
+                <SBadge key={t} tone="brand">{t}</SBadge>
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {moments.length > 0 && (
+          <Section title="Momentos de uso" emoji="⏰">
+            <ul className="space-y-1.5">
+              {moments.map((m) => (
+                <li key={m} className="text-[14px] text-spark-ink-70 leading-snug">
+                  · {m}
+                </li>
+              ))}
+            </ul>
+          </Section>
+        )}
+
+        {angles.length > 0 && (
+          <Section title="Ângulos de conteúdo" emoji="🎬">
+            <ul className="space-y-1.5">
+              {angles.map((a) => (
+                <li key={a} className="text-[14px] text-spark-ink-70 leading-snug">
+                  · {a}
+                </li>
+              ))}
+            </ul>
+          </Section>
+        )}
+
+        {hooks.length > 0 && (
+          <Section title="Hooks prontos" emoji="🎣">
+            <ol className="space-y-2">
+              {hooks.map((h, i) => (
+                <li
+                  key={h}
+                  className="text-[14px] text-spark-ink leading-snug p-3 rounded-xl bg-spark-brand-soft/60 border border-spark-brand/15"
+                >
+                  <span className="font-bold text-spark-brand-deep mr-1.5">{i + 1}.</span>
+                  {h}
+                </li>
+              ))}
+            </ol>
+          </Section>
+        )}
+
+        {product.seasonality && (
+          <Section title="Sazonalidade" emoji="📅">
+            <p className="text-[14px] text-spark-ink-70 leading-relaxed">{product.seasonality}</p>
+          </Section>
+        )}
+
         {competitors.length > 0 && (
-          <Section title="Concorrentes">
+          <Section title="Concorrentes" emoji="🥊">
             <div className="flex flex-wrap gap-1.5">
               {competitors.map((c) => (
                 <SBadge key={c}>{c}</SBadge>
@@ -193,10 +286,19 @@ function ProductBody({ id, desktop = false }: { id: string; desktop?: boolean })
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  emoji,
+  children,
+}: {
+  title: string;
+  emoji?: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="mt-6">
-      <div className="text-[12px] font-bold text-spark-ink-50 tracking-[0.06em] uppercase mb-2">
+      <div className="text-[12px] font-bold text-spark-ink-50 tracking-[0.06em] uppercase mb-2 flex items-center gap-1.5">
+        {emoji && <span className="text-[14px] leading-none">{emoji}</span>}
         {title}
       </div>
       {children}

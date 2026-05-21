@@ -375,19 +375,26 @@ function buildInfoTools(supabase: SupabaseClient, userId: string): ToolSet {
     ...buildProductTools(supabase, userId),
     save_product: tool({
       description:
-        "Salva uma nova ficha de produto pra aluna conseguir consultar depois em /produtos e referenciar em conversas com outros agentes. Chame SEMPRE que a aluna disser 'salva', 'guarda', 'adiciona aos meus produtos' ou similar. Devolva pra ela algo como 'Salvei! Você consulta em [Nome](/produtos/<id>)' usando markdown.",
+        "Salva uma ficha COMPLETA do produto pra aluna consultar em /produtos e referenciar em outros agentes. Chame SEMPRE que a aluna disser 'salva', 'guarda', 'adiciona'. TODOS os campos são obrigatórios — se você não tem certeza absoluta de algum, INFIRA baseado no que sabe do produto e do mercado BR. Pra arrays, sempre entregue 3-5 itens (hook_ideas: 5 hooks). Devolva 'Salvei a ficha completa! [Nome](/produtos/<id>) 💕' em markdown.",
       inputSchema: z.object({
-        name: z.string().describe("Nome do produto."),
+        name: z.string().describe("Nome do produto. Ex: 'Figurinhas da Copa do Mundo 2026'."),
         image_url: z
           .string()
           .optional()
-          .describe("URL pública da foto (se a aluna anexou no chat, passe essa URL aqui)."),
-        category: z.string().optional(),
-        target_audience: z.string().optional().describe("Público-alvo descrito em 1-2 frases."),
-        pain_points: z.array(z.string()).optional().describe("Lista de dores que o produto resolve."),
-        strengths: z.array(z.string()).optional().describe("Lista de pontos fortes."),
-        price_range: z.string().optional().describe("Faixa de preço esperada no BR, ex: 'R$ 89-149'."),
-        competitors: z.array(z.string()).optional().describe("Lista de marcas/produtos concorrentes."),
+          .describe("URL pública da foto (se a aluna anexou no chat, passe a URL aqui)."),
+        category: z.string().describe("Categoria principal. Ex: 'Colecionável sazonal', 'Skincare', 'Acessório tech'."),
+        target_audience: z.string().describe("Público-alvo em 1-2 frases ricas. Idade, gênero, perfil emocional. Ex: 'Homens 25-45 fãs de futebol que colecionavam figurinhas na infância e querem reviver a nostalgia com os filhos.'"),
+        pain_points: z.array(z.string()).min(3).max(5).describe("3-5 dores que o produto resolve. Frases curtas, diretas."),
+        strengths: z.array(z.string()).min(3).max(5).describe("3-5 pontos fortes objetivos do produto."),
+        price_range: z.string().describe("Faixa de preço esperada no BR. Ex: 'R$ 8 pacote / R$ 50+ raras'."),
+        competitors: z.array(z.string()).min(2).max(5).describe("2-5 marcas/produtos concorrentes diretos no mercado BR."),
+        differentiators: z.array(z.string()).min(3).max(5).describe("3-5 diferenciais ÚNICOS vs concorrentes. NÃO repita strengths — foque no que SÓ esse produto tem."),
+        objections: z.array(z.string()).min(3).max(5).describe("3-5 objeções que a aluna precisa quebrar nos vídeos (motivos que fazem o cliente NÃO comprar). Escreva em 1ª pessoa do cliente. Ex: 'Vou gastar uma fortuna pra completar', 'Não tenho com quem trocar'."),
+        emotional_triggers: z.array(z.string()).min(3).max(5).describe("3-5 gatilhos emocionais que movem a compra. Ex: 'Nostalgia da infância', 'FOMO de coleção sazonal', 'Status de colecionador'."),
+        usage_moments: z.array(z.string()).min(2).max(4).describe("2-4 momentos/contextos de uso reais. Ex: 'Abrindo pacotes antes do jogo com amigos', 'Trocando no recreio/trabalho'."),
+        content_angles: z.array(z.string()).min(3).max(5).describe("3-5 formatos/ângulos de vídeo recomendados. Ex: 'Unboxing surpresa', 'Reaction de figurinha rara', 'Antes/depois do álbum cheio'."),
+        hook_ideas: z.array(z.string()).length(5).describe("EXATAMENTE 5 hooks prontos, curtos (até 80 chars), em PT-BR, prontos pra abrir um vídeo TikTok. Estilo Aline Moreira: direto, com gancho de curiosidade ou FOMO."),
+        seasonality: z.string().describe("Sazonalidade em 1 frase. Quando vende mais e quando esfria. Ex: 'Pico nos 30 dias antes da Copa do Mundo, vendas caem 80% pós-evento'. Se não sazonal, escreva 'Demanda estável o ano todo, sem picos significativos.'"),
       }),
       execute: async (input) => {
         // DEDUP: se já existe produto com mesmo nome (ilike — case insensitive),
@@ -416,12 +423,19 @@ function buildInfoTools(supabase: SupabaseClient, userId: string): ToolSet {
             user_id: userId,
             name: nameTrim,
             image_url: input.image_url ?? null,
-            category: input.category ?? null,
-            target_audience: input.target_audience ?? null,
-            pain_points: input.pain_points ?? null,
-            strengths: input.strengths ?? null,
-            price_range: input.price_range ?? null,
-            competitors: input.competitors ?? null,
+            category: input.category,
+            target_audience: input.target_audience,
+            pain_points: input.pain_points,
+            strengths: input.strengths,
+            price_range: input.price_range,
+            competitors: input.competitors,
+            differentiators: input.differentiators,
+            objections: input.objections,
+            emotional_triggers: input.emotional_triggers,
+            usage_moments: input.usage_moments,
+            content_angles: input.content_angles,
+            hook_ideas: input.hook_ideas,
+            seasonality: input.seasonality,
             raw_analysis: input,
           })
           .select("id, name")
@@ -455,6 +469,31 @@ function buildInfoTools(supabase: SupabaseClient, userId: string): ToolSet {
           .array(z.string())
           .optional()
           .describe("Concorrentes a ADICIONAR (default merge)."),
+        differentiators: z
+          .array(z.string())
+          .optional()
+          .describe("Diferenciais novos a ADICIONAR (default merge)."),
+        objections: z
+          .array(z.string())
+          .optional()
+          .describe("Objeções novas a ADICIONAR (default merge)."),
+        emotional_triggers: z
+          .array(z.string())
+          .optional()
+          .describe("Gatilhos emocionais novos a ADICIONAR (default merge)."),
+        usage_moments: z
+          .array(z.string())
+          .optional()
+          .describe("Momentos de uso novos a ADICIONAR (default merge)."),
+        content_angles: z
+          .array(z.string())
+          .optional()
+          .describe("Ângulos de conteúdo novos a ADICIONAR (default merge)."),
+        hook_ideas: z
+          .array(z.string())
+          .optional()
+          .describe("Hooks novos a ADICIONAR (default merge). Não duplica."),
+        seasonality: z.string().optional().describe("Substitui a sazonalidade."),
         append: z
           .boolean()
           .optional()
@@ -484,13 +523,24 @@ function buildInfoTools(supabase: SupabaseClient, userId: string): ToolSet {
         if (readErr) return { ok: false, error: readErr.message };
         if (!current) return { ok: false, error: "produto não encontrado" };
 
-        const ARRAY_FIELDS = ["pain_points", "strengths", "competitors"] as const;
+        const ARRAY_FIELDS = [
+          "pain_points",
+          "strengths",
+          "competitors",
+          "differentiators",
+          "objections",
+          "emotional_triggers",
+          "usage_moments",
+          "content_angles",
+          "hook_ideas",
+        ] as const;
         const SCALAR_FIELDS = [
           "name",
           "image_url",
           "category",
           "target_audience",
           "price_range",
+          "seasonality",
         ] as const;
         const patch: Record<string, unknown> = {};
         for (const f of SCALAR_FIELDS) {
@@ -1147,21 +1197,36 @@ async function expandMentionsContext(
   const { data: pData } = await supabase
     .from("products")
     .select(
-      "id, name, category, target_audience, pain_points, strengths, price_range, competitors, image_url",
+      "id, name, category, target_audience, pain_points, strengths, price_range, competitors, differentiators, objections, emotional_triggers, usage_moments, content_angles, hook_ideas, seasonality, image_url",
     )
     .in("id", productIds);
 
+  type ArrayMaybe = string[] | string | null;
   const products = (pData ?? []) as Array<{
     id: string;
     name: string;
     category: string | null;
     target_audience: string | null;
-    pain_points: string | null;
-    strengths: string | null;
+    pain_points: ArrayMaybe;
+    strengths: ArrayMaybe;
     price_range: string | null;
-    competitors: string | null;
+    competitors: ArrayMaybe;
+    differentiators: ArrayMaybe;
+    objections: ArrayMaybe;
+    emotional_triggers: ArrayMaybe;
+    usage_moments: ArrayMaybe;
+    content_angles: ArrayMaybe;
+    hook_ideas: ArrayMaybe;
+    seasonality: string | null;
     image_url: string | null;
   }>;
+
+  // Formata array (jsonb) como lista com bullet, ou null se vazio.
+  const fmtList = (v: ArrayMaybe): string | null => {
+    if (Array.isArray(v) && v.length > 0) return v.map((x) => `  · ${x}`).join("\n");
+    if (typeof v === "string" && v.trim()) return `  · ${v}`;
+    return null;
+  };
 
   const blocks: string[] = [];
 
@@ -1169,10 +1234,26 @@ async function expandMentionsContext(
     const lines: string[] = [`### PRODUTO MENCIONADO: ${p.name}`];
     if (p.category) lines.push(`- Categoria: ${p.category}`);
     if (p.target_audience) lines.push(`- Público-alvo: ${p.target_audience}`);
-    if (p.pain_points) lines.push(`- Dores que resolve: ${p.pain_points}`);
-    if (p.strengths) lines.push(`- Pontos fortes: ${p.strengths}`);
     if (p.price_range) lines.push(`- Faixa de preço: ${p.price_range}`);
-    if (p.competitors) lines.push(`- Concorrentes: ${p.competitors}`);
+    if (p.seasonality) lines.push(`- Sazonalidade: ${p.seasonality}`);
+    const pains = fmtList(p.pain_points);
+    if (pains) lines.push(`- Dores que resolve:\n${pains}`);
+    const strs = fmtList(p.strengths);
+    if (strs) lines.push(`- Pontos fortes:\n${strs}`);
+    const diffs = fmtList(p.differentiators);
+    if (diffs) lines.push(`- Diferenciais únicos:\n${diffs}`);
+    const objs = fmtList(p.objections);
+    if (objs) lines.push(`- Objeções a quebrar:\n${objs}`);
+    const triggers = fmtList(p.emotional_triggers);
+    if (triggers) lines.push(`- Gatilhos emocionais:\n${triggers}`);
+    const moments = fmtList(p.usage_moments);
+    if (moments) lines.push(`- Momentos de uso:\n${moments}`);
+    const angles = fmtList(p.content_angles);
+    if (angles) lines.push(`- Ângulos de conteúdo:\n${angles}`);
+    const hooks = fmtList(p.hook_ideas);
+    if (hooks) lines.push(`- Hooks prontos da ficha:\n${hooks}`);
+    const comps = fmtList(p.competitors);
+    if (comps) lines.push(`- Concorrentes:\n${comps}`);
     if (p.image_url) lines.push(`- Foto: ${p.image_url}`);
     blocks.push(lines.join("\n"));
   }
