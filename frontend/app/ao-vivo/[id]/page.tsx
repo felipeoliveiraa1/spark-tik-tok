@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { MobileHeader } from "@/components/layout/mobile-header";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { LoadingSplash } from "@/components/atoms/loading-splash";
@@ -98,18 +98,8 @@ function LiveBody({ idOrSlug, desktop = false }: { idOrSlug: string; desktop?: b
 
   return (
     <div className={`flex-1 overflow-auto ${desktop ? "py-8 px-12" : "pb-10"}`}>
-      <div className={desktop ? "max-w-[1200px]" : "px-4 pt-4"}>
-        {!desktop && (
-          <Link
-            href="/ao-vivo"
-            className="inline-flex items-center gap-1.5 text-[13px] text-spark-ink-50"
-          >
-            <ArrowLeft size={14} strokeWidth={1.7} />
-            Ao vivo
-          </Link>
-        )}
-
-        <div className="mt-3 grid lg:grid-cols-[1.4fr_1fr] gap-4">
+      <div className={desktop ? "max-w-[1200px]" : "px-4 pt-2"}>
+        <div className="grid lg:grid-cols-[1.4fr_1fr] gap-4">
           {/* Player / cover */}
           <div className="aspect-video rounded-2xl overflow-hidden bg-black">
             {status === "upcoming" ? (
@@ -206,15 +196,7 @@ function CountdownCover({ event }: { event: LiveEvent }) {
 function LiveMobile({ idOrSlug }: { idOrSlug: string }) {
   return (
     <>
-      <div className="pt-12 px-4 pb-2 flex items-center gap-2">
-        <Link
-          href="/ao-vivo"
-          className="w-9 h-9 rounded-full flex items-center justify-center text-spark-ink"
-        >
-          <ArrowLeft size={18} strokeWidth={1.7} />
-        </Link>
-        <div className="text-[13px] font-bold text-spark-ink-50">Live</div>
-      </div>
+      <MobileHeader title="Live" back={{ href: "/ao-vivo" }} />
       <LiveBody idOrSlug={idOrSlug} />
       <BottomNav active="ao-vivo" />
     </>

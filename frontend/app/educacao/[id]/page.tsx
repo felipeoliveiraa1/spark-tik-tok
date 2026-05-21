@@ -3,7 +3,8 @@
 import * as React from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Check } from "lucide-react";
+import { Check } from "lucide-react";
+import { MobileHeader } from "@/components/layout/mobile-header";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { LoadingSplash } from "@/components/atoms/loading-splash";
@@ -89,18 +90,8 @@ function VideoBody({ idOrSlug, desktop = false }: { idOrSlug: string; desktop?: 
 
   return (
     <div className={`flex-1 overflow-auto ${desktop ? "py-8 px-12" : "pb-10"}`}>
-      <div className={desktop ? "max-w-[920px]" : "px-4 pt-4"}>
-        {!desktop && (
-          <Link
-            href="/educacao"
-            className="inline-flex items-center gap-1.5 text-[13px] text-spark-ink-50"
-          >
-            <ArrowLeft size={14} strokeWidth={1.7} />
-            Educação
-          </Link>
-        )}
-
-        <div className="mt-3 aspect-video rounded-2xl overflow-hidden bg-black">
+      <div className={desktop ? "max-w-[920px]" : "px-4 pt-2"}>
+        <div className="aspect-video rounded-2xl overflow-hidden bg-black">
           <iframe
             src={youtubeEmbedUrl(video.youtube_id, { autoplay: false })}
             title={video.title}
@@ -153,15 +144,7 @@ function VideoBody({ idOrSlug, desktop = false }: { idOrSlug: string; desktop?: 
 function VideoMobile({ idOrSlug }: { idOrSlug: string }) {
   return (
     <>
-      <div className="pt-12 px-4 pb-2 flex items-center gap-2">
-        <Link
-          href="/educacao"
-          className="w-9 h-9 rounded-full flex items-center justify-center text-spark-ink"
-        >
-          <ArrowLeft size={18} strokeWidth={1.7} />
-        </Link>
-        <div className="text-[13px] font-bold text-spark-ink-50">Aula</div>
-      </div>
+      <MobileHeader title="Aula" back={{ href: "/educacao" }} />
       <VideoBody idOrSlug={idOrSlug} />
       <BottomNav active="educacao" />
     </>

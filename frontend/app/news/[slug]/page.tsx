@@ -3,7 +3,8 @@
 import * as React from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Newspaper } from "lucide-react";
+import { Newspaper } from "lucide-react";
+import { MobileHeader } from "@/components/layout/mobile-header";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { SBadge } from "@/components/atoms/s-badge";
@@ -76,16 +77,9 @@ function NewsBody({ slug, desktop = false }: { slug: string; desktop?: boolean }
 
   return (
     <div className={`flex-1 overflow-auto ${desktop ? "py-8 px-12" : "pb-10"}`}>
-      <article className={desktop ? "max-w-[720px]" : "px-4 pt-4"}>
-        {!desktop && (
-          <Link href="/news" className="inline-flex items-center gap-1.5 text-[13px] text-spark-ink-50">
-            <ArrowLeft size={14} strokeWidth={1.7} />
-            News
-          </Link>
-        )}
-
+      <article className={desktop ? "max-w-[720px]" : "px-4 pt-2"}>
         {item.cover_url && (
-          <div className="mt-3 rounded-2xl overflow-hidden">
+          <div className="rounded-2xl overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={item.cover_url} alt="" className="w-full h-[200px] md:h-[280px] object-cover" />
           </div>
@@ -146,14 +140,9 @@ function NewsBody({ slug, desktop = false }: { slug: string; desktop?: boolean }
 function MobileWrap({ slug }: { slug: string }) {
   return (
     <>
-      <div className="pt-12 px-4 pb-2 flex items-center gap-2">
-        <Link href="/news" className="w-9 h-9 rounded-full flex items-center justify-center text-spark-ink">
-          <ArrowLeft size={18} strokeWidth={1.7} />
-        </Link>
-        <div className="text-[13px] font-bold text-spark-ink-50">News</div>
-      </div>
+      <MobileHeader title="News" back={{ href: "/news" }} />
       <NewsBody slug={slug} />
-      <BottomNav active="home" />
+      <BottomNav active="news" />
     </>
   );
 }

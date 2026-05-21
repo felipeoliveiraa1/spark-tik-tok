@@ -3,9 +3,10 @@
 import * as React from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Copy, Trash2, Pen } from "lucide-react";
+import { Copy, Trash2, Pen } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { MobileHeader } from "@/components/layout/mobile-header";
 import { SButton } from "@/components/atoms/s-button";
 import { SBadge } from "@/components/atoms/s-badge";
 import { LoadingSplash } from "@/components/atoms/loading-splash";
@@ -152,15 +153,8 @@ function ScriptBody({ id, desktop = false }: { id: string; desktop?: boolean }) 
 
   return (
     <div className={`flex-1 overflow-auto ${desktop ? "py-8 px-12" : "pb-10"}`}>
-      <div className={desktop ? "max-w-[760px]" : "px-4 pt-4"}>
-        {!desktop && (
-          <Link href="/scripts" className="inline-flex items-center gap-1.5 text-[13px] text-spark-ink-50">
-            <ArrowLeft size={14} strokeWidth={1.7} />
-            Scripts
-          </Link>
-        )}
-
-        <div className="mt-3 flex items-start gap-3">
+      <div className={desktop ? "max-w-[760px]" : "px-4 pt-2"}>
+        <div className="flex items-start gap-3">
           <div className="w-12 h-12 rounded-2xl bg-spark-brand-soft text-spark-brand-deep flex items-center justify-center">
             <Pen size={20} strokeWidth={1.7} />
           </div>
@@ -298,12 +292,7 @@ function Block({
 function MobileWrap({ id }: { id: string }) {
   return (
     <>
-      <div className="pt-12 px-4 pb-2 flex items-center gap-2">
-        <Link href="/scripts" className="w-9 h-9 rounded-full flex items-center justify-center text-spark-ink">
-          <ArrowLeft size={18} strokeWidth={1.7} />
-        </Link>
-        <div className="text-[13px] font-bold text-spark-ink-50">Script</div>
-      </div>
+      <MobileHeader title="Roteiros" back={{ href: "/scripts" }} />
       <ScriptBody id={id} />
       <BottomNav active="scripts" />
     </>

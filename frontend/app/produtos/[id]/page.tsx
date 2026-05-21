@@ -3,9 +3,10 @@
 import * as React from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Package, Trash2, Pen } from "lucide-react";
+import { Package, Trash2, Pen } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { MobileHeader } from "@/components/layout/mobile-header";
 import { SButton } from "@/components/atoms/s-button";
 import { SBadge } from "@/components/atoms/s-badge";
 import { LoadingSplash } from "@/components/atoms/loading-splash";
@@ -124,14 +125,8 @@ function ProductBody({ id, desktop = false }: { id: string; desktop?: boolean })
 
   return (
     <div className={`flex-1 overflow-auto ${desktop ? "py-8 px-12" : "pb-10"}`}>
-      <div className={desktop ? "max-w-[760px]" : "px-4 pt-4"}>
-        {!desktop && (
-          <Link href="/produtos" className="inline-flex items-center gap-1.5 text-[13px] text-spark-ink-50">
-            <ArrowLeft size={14} strokeWidth={1.7} />
-            Produtos
-          </Link>
-        )}
-        <div className={`mt-${desktop ? "0" : "3"} flex items-start gap-4`}>
+      <div className={desktop ? "max-w-[760px]" : "px-4 pt-2"}>
+        <div className="flex items-start gap-4">
           <div className="w-20 h-20 rounded-2xl bg-spark-surface-sunken overflow-hidden shrink-0 flex items-center justify-center text-spark-ink-50">
             {product.image_url ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -309,12 +304,7 @@ function Section({
 function MobileWrap({ id }: { id: string }) {
   return (
     <>
-      <div className="pt-12 px-4 pb-2 flex items-center gap-2">
-        <Link href="/produtos" className="w-9 h-9 rounded-full flex items-center justify-center text-spark-ink">
-          <ArrowLeft size={18} strokeWidth={1.7} />
-        </Link>
-        <div className="text-[13px] font-bold text-spark-ink-50">Produto</div>
-      </div>
+      <MobileHeader title="Produto" back={{ href: "/produtos" }} />
       <ProductBody id={id} />
       <BottomNav active="produtos" />
     </>

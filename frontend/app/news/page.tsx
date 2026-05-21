@@ -2,10 +2,10 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Newspaper, MoreHorizontal } from "lucide-react";
+import { Newspaper } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
-import { AppHeader } from "@/components/layout/app-header";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { MobileHeader } from "@/components/layout/mobile-header";
 import { SBadge } from "@/components/atoms/s-badge";
 import { LoadingSplash } from "@/components/atoms/loading-splash";
 
@@ -166,10 +166,22 @@ function EmptyNews() {
 function NewsMobile() {
   return (
     <>
-      <AppHeader TrailingIcon={MoreHorizontal} showAvatar={false} />
+      <MobileHeader title="News 📰" trailing={<HomeShortcut />} />
       <NewsBody />
-      <BottomNav active="home" />
+      <BottomNav active="news" />
     </>
+  );
+}
+
+function HomeShortcut() {
+  return (
+    <Link
+      href="/"
+      aria-label="Início"
+      className="w-10 h-10 rounded-full flex items-center justify-center text-spark-ink active:scale-95 transition-transform"
+    >
+      <span className="text-[18px]">🏠</span>
+    </Link>
   );
 }
 

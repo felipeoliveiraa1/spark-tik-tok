@@ -8,6 +8,7 @@ export type NavId =
   | "scripts"
   | "ao-vivo"
   | "educacao"
+  | "news"
   | "conta";
 
 type Item = {
