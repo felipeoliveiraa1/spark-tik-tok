@@ -241,7 +241,7 @@ function HomeBody({ desktop = false }: { desktop?: boolean }) {
           <h1
             className={`mt-1.5 font-extrabold tracking-tight leading-[1.1] ${desktop ? "text-[36px]" : "text-[28px]"}`}
           >
-            Como anda seu trampo hoje? 💕
+            Pronta pra criar algo lindo hoje? ✨
           </h1>
         </div>
 
