@@ -197,15 +197,25 @@ function HomeBody({ desktop = false }: { desktop?: boolean }) {
 
   const start = async (agent: AgentId) => {
     if (creating) return;
-    const existing = [...store.conversations]
-      .filter((c) => c.agent === agent)
-      .sort((a, b) => +new Date(b.updatedAt) - +new Date(a.updatedAt))[0];
-    if (existing) {
-      router.push(`/chat/${existing.id}`);
-      return;
-    }
     setCreating(agent);
     try {
+      // Fetch direto: store local pode estar vazio em race com o fetch
+      // inicial. Sem isso, clique rápido caía em "criar nova" sempre.
+      const res = await fetch("/api/conversations", { cache: "no-store" }).catch(
+        () => null,
+      );
+      if (res?.ok) {
+        const data = (await res.json()) as {
+          conversations: Array<{ id: string; agent: AgentId; updated_at: string }>;
+        };
+        const existing = data.conversations
+          .filter((c) => c.agent === agent)
+          .sort((a, b) => +new Date(b.updated_at) - +new Date(a.updated_at))[0];
+        if (existing) {
+          router.push(`/chat/${existing.id}`);
+          return;
+        }
+      }
       const id = await store.createConversation({
         agent,
         title: `Conversa com ${AGENTS[agent].label}`,

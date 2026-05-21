@@ -55,19 +55,26 @@ function GalleryBody() {
 
   const start = async (agent: AgentId) => {
     if (creating) return;
-    // Procura a ÚLTIMA conversa desse agente. Se existe, abre ela direto.
-    // Felipe pediu: clicar no agente NÃO deve criar nova conversa todo vez —
-    // continua a última. Pra começar do zero, usar botão "Nova conversa" na
-    // sidebar dentro do chat.
-    const existing = [...store.conversations]
-      .filter((c) => c.agent === agent)
-      .sort((a, b) => +new Date(b.updatedAt) - +new Date(a.updatedAt))[0];
-    if (existing) {
-      router.push(`/chat/${existing.id}`);
-      return;
-    }
     setCreating(agent);
     try {
+      // Fetch direto: o store local pode não estar populado ainda quando
+      // a aluna clica rápido (race com /api/conversations). Sem esse fetch,
+      // o filtro vinha vazio e a gente criava conversa nova todo clique.
+      const res = await fetch("/api/conversations", { cache: "no-store" }).catch(
+        () => null,
+      );
+      if (res?.ok) {
+        const data = (await res.json()) as {
+          conversations: Array<{ id: string; agent: AgentId; updated_at: string }>;
+        };
+        const existing = data.conversations
+          .filter((c) => c.agent === agent)
+          .sort((a, b) => +new Date(b.updated_at) - +new Date(a.updated_at))[0];
+        if (existing) {
+          router.push(`/chat/${existing.id}`);
+          return;
+        }
+      }
       const id = await store.createConversation({
         agent,
         title: `Conversa com ${AGENTS[agent].label}`,
