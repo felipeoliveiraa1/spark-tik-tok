@@ -2,10 +2,11 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Pen, MoreHorizontal, Sparkle } from "lucide-react";
+import { Pen, Sparkle } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
-import { AppHeader } from "@/components/layout/app-header";
+import { MobileHeader } from "@/components/layout/mobile-header";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { AccountLink } from "@/components/molecules/account-link";
 import { SButton } from "@/components/atoms/s-button";
 import { SBadge } from "@/components/atoms/s-badge";
 import { LoadingSplash } from "@/components/atoms/loading-splash";
@@ -140,7 +141,7 @@ function EmptyScripts() {
 function ScriptsMobile() {
   return (
     <>
-      <AppHeader TrailingIcon={MoreHorizontal} showAvatar={false} />
+      <MobileHeader title="Scripts ✍️" trailing={<AccountLink />} />
       <ScriptsBody />
       <BottomNav active="scripts" />
     </>

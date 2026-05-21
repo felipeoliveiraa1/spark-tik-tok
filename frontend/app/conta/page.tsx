@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
-import { MoreHorizontal, LogOut, KeyRound } from "lucide-react";
+import { LogOut, KeyRound } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
-import { AppHeader } from "@/components/layout/app-header";
+import { MobileHeader } from "@/components/layout/mobile-header";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { SBadge } from "@/components/atoms/s-badge";
 import { getCurrentProfile } from "@/lib/supabase-server";
@@ -98,8 +98,8 @@ export default async function ContaPage({ searchParams }: ContaPageProps) {
     <ResponsiveShell
       mobile={
         <>
-          <AppHeader TrailingIcon={MoreHorizontal} showAvatar={false} />
-          <div className="flex-1 overflow-auto px-4">
+          <MobileHeader title="Minha conta 💖" />
+          <div className="flex-1 overflow-auto px-4 pt-2 pb-6">
             <ContaBody
               email={profile.email}
               name={profile.name ?? ""}

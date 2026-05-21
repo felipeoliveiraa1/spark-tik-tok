@@ -2,10 +2,11 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { MoreHorizontal, Radio, PlayCircle } from "lucide-react";
+import { Radio, PlayCircle } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
-import { AppHeader } from "@/components/layout/app-header";
+import { MobileHeader } from "@/components/layout/mobile-header";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { AccountLink } from "@/components/molecules/account-link";
 import { LoadingSplash } from "@/components/atoms/loading-splash";
 import { SBadge } from "@/components/atoms/s-badge";
 import { getLiveStatus, formatCountdown, minutesUntil } from "@/lib/live-status";
@@ -251,7 +252,7 @@ function EmptyLives() {
 function AoVivoMobile() {
   return (
     <>
-      <AppHeader TrailingIcon={MoreHorizontal} showAvatar={false} />
+      <MobileHeader title="Ao vivo 🔴" trailing={<AccountLink />} />
       <AoVivoBody />
       <BottomNav active="ao-vivo" />
     </>

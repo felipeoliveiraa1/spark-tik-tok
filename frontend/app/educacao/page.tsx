@@ -2,10 +2,11 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { MoreHorizontal, PlayCircle, GraduationCap } from "lucide-react";
+import { PlayCircle, GraduationCap } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
-import { AppHeader } from "@/components/layout/app-header";
+import { MobileHeader } from "@/components/layout/mobile-header";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { AccountLink } from "@/components/molecules/account-link";
 import { LoadingSplash } from "@/components/atoms/loading-splash";
 import { SBadge } from "@/components/atoms/s-badge";
 
@@ -179,7 +180,7 @@ function EmptyEducation() {
 function EducacaoMobile() {
   return (
     <>
-      <AppHeader TrailingIcon={MoreHorizontal} showAvatar={false} />
+      <MobileHeader title="Aulas 🎓" trailing={<AccountLink />} />
       <EducacaoBody />
       <BottomNav active="educacao" />
     </>

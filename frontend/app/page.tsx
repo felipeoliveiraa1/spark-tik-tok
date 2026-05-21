@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Package, Radio } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
-import { AppHeader } from "@/components/layout/app-header";
+import { MobileHeader } from "@/components/layout/mobile-header";
+import { AccountLink } from "@/components/molecules/account-link";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { AgentCharacter } from "@/components/molecules/agent-character";
 import { VISIBLE_AGENTS, AGENTS, type AgentId } from "@/lib/agents";
@@ -555,7 +556,7 @@ function SectionCard({
 function HomeMobile() {
   return (
     <>
-      <AppHeader />
+      <MobileHeader trailing={<AccountLink />} />
       <HomeBody />
       <BottomNav active="home" />
     </>

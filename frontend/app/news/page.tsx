@@ -6,6 +6,7 @@ import { Newspaper } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { MobileHeader } from "@/components/layout/mobile-header";
+import { AccountLink } from "@/components/molecules/account-link";
 import { SBadge } from "@/components/atoms/s-badge";
 import { LoadingSplash } from "@/components/atoms/loading-splash";
 
@@ -166,22 +167,10 @@ function EmptyNews() {
 function NewsMobile() {
   return (
     <>
-      <MobileHeader title="News 📰" trailing={<HomeShortcut />} />
+      <MobileHeader title="News 📰" trailing={<AccountLink />} />
       <NewsBody />
       <BottomNav active="news" />
     </>
-  );
-}
-
-function HomeShortcut() {
-  return (
-    <Link
-      href="/"
-      aria-label="Início"
-      className="w-10 h-10 rounded-full flex items-center justify-center text-spark-ink active:scale-95 transition-transform"
-    >
-      <span className="text-[18px]">🏠</span>
-    </Link>
   );
 }
 
