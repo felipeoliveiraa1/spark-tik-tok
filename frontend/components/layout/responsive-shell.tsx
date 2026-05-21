@@ -32,10 +32,10 @@ export function ResponsiveShell({
       <div className="lg:hidden">
         <MobileFrame>{mobileNode}</MobileFrame>
       </div>
-      <div className="hidden lg:flex flex-col min-h-dvh w-full bg-spark-bg">
+      <div className="hidden lg:flex flex-col h-dvh w-full bg-spark-bg overflow-hidden">
         <div className="flex flex-1 min-h-0">
           {showSidebar && <DesktopSidebar active={active} />}
-          <main className="flex-1 min-w-0 flex flex-col">{desktopNode}</main>
+          <main className="flex-1 min-w-0 flex flex-col min-h-0 overflow-hidden">{desktopNode}</main>
         </div>
       </div>
     </>

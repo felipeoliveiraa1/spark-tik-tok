@@ -471,7 +471,7 @@ function ChatMobile({
         </button>
       </div>
 
-      <div className="flex-1 overflow-auto pt-4 pb-2">
+      <div className="flex-1 min-h-0 overflow-auto pt-4 pb-2">
         <ChatStream agent={agent} messages={messages} streaming={streaming} />
         <div ref={bottomRef} />
       </div>
@@ -544,7 +544,7 @@ function ChatDesktop({
           </button>
         </div>
 
-        <div className="flex-1 overflow-auto py-5">
+        <div className="flex-1 min-h-0 overflow-auto py-5">
           <div className="max-w-[760px] mx-auto px-4">
             <ChatStream agent={agent} messages={messages} streaming={streaming} />
             <div ref={bottomRef} />
