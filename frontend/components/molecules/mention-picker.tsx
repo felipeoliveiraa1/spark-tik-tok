@@ -117,7 +117,7 @@ export function MentionPicker({ query, onPick, onClose }: Props) {
   }, [filtered, activeIdx, onPick, onClose]);
 
   return (
-    <div className="absolute bottom-full left-3 right-3 mb-2 max-w-[420px] mx-auto rounded-2xl bg-white border border-spark-hairline shadow-[0_18px_40px_-22px_rgba(20,20,40,0.35)] overflow-hidden z-10">
+    <div className="absolute bottom-full left-3 right-3 mb-2 max-w-[420px] mx-auto rounded-2xl bg-white border border-spark-hairline shadow-[0_18px_40px_-22px_rgba(20,20,40,0.35)] overflow-hidden z-10 max-h-[50vh] flex flex-col">
       <div className="px-3 py-2 text-[11px] font-bold uppercase tracking-[0.08em] text-spark-ink-50 bg-spark-surface-sunken">
         💕 Mencionar produto
       </div>
@@ -128,14 +128,14 @@ export function MentionPicker({ query, onPick, onClose }: Props) {
           Nada encontrado pra &ldquo;{query}&rdquo;. Salva um produto pelo chat com a Informação antes. 💕
         </div>
       ) : (
-        <ul className="max-h-[280px] overflow-y-auto">
+        <ul className="flex-1 overflow-y-auto">
           {filtered.map((it, i) => (
             <li key={`${it.kind}-${it.id}`}>
               <button
                 type="button"
                 onClick={() => onPick(it)}
                 onMouseEnter={() => setActiveIdx(i)}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors ${
+                className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-left transition-colors min-h-[52px] ${
                   i === activeIdx ? "bg-spark-brand-soft" : "hover:bg-spark-surface-sunken"
                 }`}
               >

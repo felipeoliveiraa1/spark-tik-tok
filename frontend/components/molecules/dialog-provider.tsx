@@ -184,7 +184,7 @@ function ConfirmDialog({
         onClick={() => onAnswer(false)}
         className="absolute inset-0 bg-black/40 backdrop-blur-sm cursor-default"
       />
-      <div className="relative w-full max-w-[400px] rounded-3xl bg-spark-surface border border-spark-hairline shadow-[0_30px_80px_-30px_rgba(20,20,40,0.4)] overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-200">
+      <div className="relative w-full max-w-[400px] max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-3xl bg-spark-surface border border-spark-hairline shadow-[0_30px_80px_-30px_rgba(20,20,40,0.4)] animate-in zoom-in-95 slide-in-from-bottom-4 duration-200">
         <div
           className={
             opts.destructive
@@ -288,7 +288,7 @@ function PromptDialog({
         onClick={() => onAnswer(null)}
         className="absolute inset-0 bg-black/40 backdrop-blur-sm cursor-default"
       />
-      <div className="relative w-full max-w-[440px] rounded-3xl bg-spark-surface border border-spark-hairline shadow-[0_30px_80px_-30px_rgba(20,20,40,0.4)] overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-200">
+      <div className="relative w-full max-w-[440px] max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-3xl bg-spark-surface border border-spark-hairline shadow-[0_30px_80px_-30px_rgba(20,20,40,0.4)] animate-in zoom-in-95 slide-in-from-bottom-4 duration-200">
         <div className="h-1.5 bg-brand-grad" />
         <form
           onSubmit={(e) => {
@@ -352,8 +352,11 @@ function ToastStack({
   onDismiss: (id: string) => void;
 }) {
   if (toasts.length === 0) return null;
+  // bottom em mobile precisa subir pra não cobrir o BottomNav (~84px +
+  // safe-area). Em lg+ (desktop tem sidebar lateral, não bottom nav) volta pro
+  // bottom-4 padrão.
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 px-3 max-w-[420px] w-full pointer-events-none">
+    <div className="fixed bottom-[calc(88px+env(safe-area-inset-bottom))] lg:bottom-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 px-3 max-w-[420px] w-full pointer-events-none">
       {toasts.map((t) => (
         <button
           key={t.id}

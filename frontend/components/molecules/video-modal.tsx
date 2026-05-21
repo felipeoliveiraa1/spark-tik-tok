@@ -61,11 +61,11 @@ function VideoModal({ url, onClose }: { url: string; onClose: () => void }) {
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 z-[100] bg-black/75 backdrop-blur-md flex items-center justify-center animate-in fade-in"
+      className="fixed inset-0 z-[100] bg-black/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 animate-in fade-in"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-[420px] mx-4 rounded-3xl overflow-hidden bg-black shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)] animate-in zoom-in-95"
+        className="relative w-full max-w-[420px] max-h-[calc(100dvh-1.5rem)] rounded-3xl overflow-hidden bg-black shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)] animate-in zoom-in-95"
       >
         <button
           type="button"

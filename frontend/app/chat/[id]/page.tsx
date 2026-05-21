@@ -247,9 +247,9 @@ function ChatComposer({
                 type="button"
                 aria-label="Remover anexo"
                 onClick={() => removeAttachment(i)}
-                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-spark-ink text-white flex items-center justify-center shadow-sm hover:scale-110 transition-transform"
+                className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-spark-ink text-white flex items-center justify-center shadow-md hover:scale-110 active:scale-95 transition-transform"
               >
-                <X size={11} strokeWidth={2.5} />
+                <X size={14} strokeWidth={2.5} />
               </button>
             </div>
           ))}
@@ -269,7 +269,7 @@ function ChatComposer({
           aria-label="Anexar foto"
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading || disabled}
-          className="text-spark-ink-50 hover:text-spark-ink shrink-0 disabled:opacity-50"
+          className="w-10 h-10 -ml-1 rounded-full flex items-center justify-center text-spark-ink-50 hover:text-spark-ink active:scale-95 transition-transform shrink-0 disabled:opacity-50"
         >
           {uploading ? (
             <Sparkle size={20} strokeWidth={1.7} className="animate-pulse text-spark-brand" />
@@ -305,9 +305,9 @@ function ChatComposer({
           aria-label="Enviar"
           onClick={send}
           disabled={!canSend}
-          className="w-9 h-9 rounded-full text-white flex items-center justify-center bg-brand-grad shrink-0 active:scale-95 transition-transform disabled:opacity-50"
+          className="w-11 h-11 rounded-full text-white flex items-center justify-center bg-brand-grad shrink-0 active:scale-95 transition-transform disabled:opacity-50 shadow-[0_4px_14px_-6px_oklch(0.55_0.24_340/0.5)]"
         >
-          <Send size={16} strokeWidth={1.7} />
+          <Send size={18} strokeWidth={1.8} />
         </button>
       </div>
 
