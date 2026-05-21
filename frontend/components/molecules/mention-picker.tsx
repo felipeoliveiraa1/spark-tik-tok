@@ -3,7 +3,7 @@
 import * as React from "react";
 
 export type MentionItem = {
-  kind: "product" | "viral";
+  kind: "product";
   id: string;
   title: string;
   subtitle?: string;
@@ -23,15 +23,6 @@ type ProductRow = {
   image_url: string | null;
 };
 
-type ViralRow = {
-  id: string;
-  source_video_id: string;
-  product_name: string | null;
-  creator: string | null;
-  hook: string | null;
-  thumbnail_url: string | null;
-};
-
 function useMentionable() {
   const [items, setItems] = React.useState<MentionItem[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -39,10 +30,7 @@ function useMentionable() {
   React.useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [pRes, vRes] = await Promise.all([
-        fetch("/api/products", { cache: "no-store" }),
-        fetch("/api/virais", { cache: "no-store" }),
-      ]);
+      const pRes = await fetch("/api/products", { cache: "no-store" });
       if (cancelled) return;
       const list: MentionItem[] = [];
       if (pRes.ok) {
@@ -54,18 +42,6 @@ function useMentionable() {
             title: p.name,
             subtitle: p.category ?? undefined,
             image: p.image_url ?? undefined,
-          });
-        }
-      }
-      if (vRes.ok) {
-        const { virais } = (await vRes.json()) as { virais: ViralRow[] };
-        for (const v of virais ?? []) {
-          list.push({
-            kind: "viral",
-            id: v.id,
-            title: v.product_name?.trim() || v.hook?.slice(0, 50) || "viral salvo",
-            subtitle: v.creator ? `@${v.creator}` : undefined,
-            image: v.thumbnail_url ?? undefined,
           });
         }
       }
@@ -143,13 +119,13 @@ export function MentionPicker({ query, onPick, onClose }: Props) {
   return (
     <div className="absolute bottom-full left-3 right-3 mb-2 max-w-[420px] mx-auto rounded-2xl bg-white border border-spark-hairline shadow-[0_18px_40px_-22px_rgba(20,20,40,0.35)] overflow-hidden z-10">
       <div className="px-3 py-2 text-[11px] font-bold uppercase tracking-[0.08em] text-spark-ink-50 bg-spark-surface-sunken">
-        💕 Mencionar produto ou viral
+        💕 Mencionar produto
       </div>
       {loading ? (
         <div className="px-3 py-4 text-[13px] text-spark-ink-50">Carregando…</div>
       ) : filtered.length === 0 ? (
         <div className="px-3 py-4 text-[13px] text-spark-ink-50">
-          Nada encontrado pra &ldquo;{query}&rdquo;. Salva produto ou viral antes pra mencionar aqui.
+          Nada encontrado pra &ldquo;{query}&rdquo;. Salva um produto pelo chat com a Informação antes. 💕
         </div>
       ) : (
         <ul className="max-h-[280px] overflow-y-auto">
@@ -168,14 +144,13 @@ export function MentionPicker({ query, onPick, onClose }: Props) {
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={it.image} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-[16px]">{it.kind === "product" ? "📦" : "🔥"}</span>
+                    <span className="text-[16px]">📦</span>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-[13.5px] font-bold truncate">{it.title}</div>
                   <div className="text-[11px] text-spark-ink-50 truncate">
-                    {it.kind === "product" ? "📦 produto" : "🔥 viral"}
-                    {it.subtitle ? ` · ${it.subtitle}` : ""}
+                    📦 produto{it.subtitle ? ` · ${it.subtitle}` : ""}
                   </div>
                 </div>
               </button>
@@ -193,29 +168,23 @@ export function MentionPicker({ query, onPick, onClose }: Props) {
 
 /**
  * Token inserido no texto da mensagem. O backend extrai esses tokens
- * e injeta contexto rico (ficha do produto / detalhes do viral).
+ * e injeta contexto rico (ficha do produto).
  *
  *   @[produto:UUID|Nome]
- *   @[viral:UUID|Hook]
  */
 export function buildMentionToken(item: MentionItem): string {
   const safeTitle = item.title.replace(/[\]\\|]/g, " ").slice(0, 80);
-  const kind = item.kind === "product" ? "produto" : "viral";
-  return `@[${kind}:${item.id}|${safeTitle}]`;
+  return `@[produto:${item.id}|${safeTitle}]`;
 }
 
-const TOKEN_RE = /@\[(produto|viral):([0-9a-f-]{36})\|([^\]]+)\]/g;
+const TOKEN_RE = /@\[produto:([0-9a-f-]{36})\|([^\]]+)\]/g;
 
 export function extractMentions(
   text: string,
-): { kind: "product" | "viral"; id: string; label: string }[] {
-  const out: { kind: "product" | "viral"; id: string; label: string }[] = [];
+): { kind: "product"; id: string; label: string }[] {
+  const out: { kind: "product"; id: string; label: string }[] = [];
   for (const m of text.matchAll(TOKEN_RE)) {
-    out.push({
-      kind: m[1] === "produto" ? "product" : "viral",
-      id: m[2],
-      label: m[3],
-    });
+    out.push({ kind: "product", id: m[1], label: m[2] });
   }
   return out;
 }
@@ -224,5 +193,5 @@ export function extractMentions(
  * Versão "limpa" do texto pra mostrar pro usuário: troca tokens por @label.
  */
 export function renderMentionsAsText(text: string): string {
-  return text.replace(TOKEN_RE, (_, _kind, _id, label) => `@${label}`);
+  return text.replace(TOKEN_RE, (_, _id, label) => `@${label}`);
 }

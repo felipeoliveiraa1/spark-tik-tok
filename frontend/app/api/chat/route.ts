@@ -21,7 +21,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 type Attachment = { url: string; mime?: string };
-type ChatMention = { kind: "product" | "viral"; id: string; label: string };
+type ChatMention = { kind: "product"; id: string; label: string };
 
 type Body = {
   conversation_id?: string;
@@ -390,11 +390,31 @@ function buildInfoTools(supabase: SupabaseClient, userId: string): ToolSet {
         competitors: z.array(z.string()).optional().describe("Lista de marcas/produtos concorrentes."),
       }),
       execute: async (input) => {
+        // DEDUP: se já existe produto com mesmo nome (ilike — case insensitive),
+        // retorna o existente em vez de criar duplicado. Evita o bug onde
+        // toolChoice forçado fazia o modelo chamar save_product 3x no mesmo turno.
+        const nameTrim = input.name.trim().slice(0, 200);
+        const { data: existing } = await supabase
+          .from("products")
+          .select("id, name")
+          .eq("user_id", userId)
+          .ilike("name", nameTrim)
+          .maybeSingle();
+        if (existing) {
+          return {
+            ok: true,
+            id: existing.id,
+            name: existing.name,
+            url_path: `/produtos/${existing.id}`,
+            already_existed: true,
+          };
+        }
+
         const { data, error } = await supabase
           .from("products")
           .insert({
             user_id: userId,
-            name: input.name,
+            name: nameTrim,
             image_url: input.image_url ?? null,
             category: input.category ?? null,
             target_audience: input.target_audience ?? null,
@@ -1122,28 +1142,16 @@ async function expandMentionsContext(
   if (!mentions || mentions.length === 0) return null;
 
   const productIds = mentions.filter((m) => m.kind === "product").map((m) => m.id);
-  const viralIds = mentions.filter((m) => m.kind === "viral").map((m) => m.id);
+  if (productIds.length === 0) return null;
 
-  const [pRes, vRes] = await Promise.all([
-    productIds.length > 0
-      ? supabase
-          .from("products")
-          .select(
-            "id, name, category, target_audience, pain_points, strengths, price_range, competitors, image_url",
-          )
-          .in("id", productIds)
-      : Promise.resolve({ data: [] as Array<Record<string, unknown>>, error: null }),
-    viralIds.length > 0
-      ? supabase
-          .from("saved_virals")
-          .select(
-            "id, source_video_id, url, creator, niche, country, caption, hook, views, likes, sales, estimated_revenue_brl, product_name, product_shop_url, thumbnail_url",
-          )
-          .in("id", viralIds)
-      : Promise.resolve({ data: [] as Array<Record<string, unknown>>, error: null }),
-  ]);
+  const { data: pData } = await supabase
+    .from("products")
+    .select(
+      "id, name, category, target_audience, pain_points, strengths, price_range, competitors, image_url",
+    )
+    .in("id", productIds);
 
-  const products = (pRes.data ?? []) as Array<{
+  const products = (pData ?? []) as Array<{
     id: string;
     name: string;
     category: string | null;
@@ -1153,23 +1161,6 @@ async function expandMentionsContext(
     price_range: string | null;
     competitors: string | null;
     image_url: string | null;
-  }>;
-  const virais = (vRes.data ?? []) as Array<{
-    id: string;
-    source_video_id: string;
-    url: string;
-    creator: string | null;
-    niche: string | null;
-    country: string | null;
-    caption: string | null;
-    hook: string | null;
-    views: number | null;
-    likes: number | null;
-    sales: number | null;
-    estimated_revenue_brl: number | null;
-    product_name: string | null;
-    product_shop_url: string | null;
-    thumbnail_url: string | null;
   }>;
 
   const blocks: string[] = [];
@@ -1183,26 +1174,6 @@ async function expandMentionsContext(
     if (p.price_range) lines.push(`- Faixa de preço: ${p.price_range}`);
     if (p.competitors) lines.push(`- Concorrentes: ${p.competitors}`);
     if (p.image_url) lines.push(`- Foto: ${p.image_url}`);
-    blocks.push(lines.join("\n"));
-  }
-
-  for (const v of virais) {
-    const lines: string[] = [
-      `### VIRAL MENCIONADO: ${v.product_name?.trim() || "(sem nome)"}`,
-    ];
-    if (v.creator) lines.push(`- Criadora: @${v.creator}`);
-    if (v.niche) lines.push(`- Nicho: ${v.niche}`);
-    if (v.country) lines.push(`- País: ${v.country}`);
-    const metricBits: string[] = [];
-    if (v.sales != null) metricBits.push(`🛒 ${v.sales} vendas`);
-    if (v.views != null) metricBits.push(`👁 ${v.views} views`);
-    if (v.likes != null) metricBits.push(`❤ ${v.likes} likes`);
-    if (v.estimated_revenue_brl != null) metricBits.push(`💰 R$ ${v.estimated_revenue_brl}`);
-    if (metricBits.length > 0) lines.push(`- Métricas: ${metricBits.join(" · ")}`);
-    if (v.hook) lines.push(`- Hook: "${v.hook}"`);
-    if (v.caption) lines.push(`- Caption completa: ${v.caption}`);
-    if (v.product_shop_url) lines.push(`- Loja: ${v.product_shop_url}`);
-    if (v.url) lines.push(`- TikTok: ${v.url}`);
     blocks.push(lines.join("\n"));
   }
 
@@ -1375,7 +1346,12 @@ export async function POST(request: Request) {
       : forceSaveProduct
         ? { type: "tool", toolName: "save_product" }
         : undefined,
-    stopWhen: stepCountIs(3),
+    // Quando força uma tool específica, limitamos a 1 step — o modelo chama
+    // a tool e a resposta determinística substitui o texto. Sem isso, o
+    // toolChoice forçado se aplica a cada step e o modelo chamava a mesma
+    // tool 3x (bug: produto salvo 3x). Sem força → 3 steps pra permitir
+    // chain (busca → analisa → responde).
+    stopWhen: stepCountIs(forceSearchVirals || forceSaveProduct ? 1 : 3),
     maxOutputTokens: 8192,
     // Temperature 0 pro Virais — modelo SÓ copia formatted_response da tool.
     // Scripts pode ficar criativo. Info/Help meio termo.

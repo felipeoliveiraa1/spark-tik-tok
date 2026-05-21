@@ -19,13 +19,6 @@ import { getLiveStatus, formatCountdown, minutesUntil } from "@/lib/live-status"
 type Profile = { name: string | null; email: string };
 type ProductRow = { id: string; name: string; category: string | null; created_at: string };
 type ScriptRow = { id: string; title: string; created_at: string; product_id: string | null };
-type ViralRow = {
-  id: string;
-  thumbnail_url: string | null;
-  product_name: string | null;
-  creator: string | null;
-  saved_at: string;
-};
 type EducationRow = { id: string; slug: string; title: string };
 type ProgressRow = { video_id: string; completed: boolean };
 type LiveRow = {
@@ -56,7 +49,6 @@ function useDashboardData() {
     profile: Profile | null;
     products: ProductRow[];
     scripts: ScriptRow[];
-    virais: ViralRow[];
     education: EducationRow[];
     progress: ProgressRow[];
     lives: LiveRow[];
@@ -66,7 +58,6 @@ function useDashboardData() {
     profile: null,
     products: [],
     scripts: [],
-    virais: [],
     education: [],
     progress: [],
     lives: [],
@@ -77,11 +68,10 @@ function useDashboardData() {
   React.useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [me, prod, scripts, virais, edu, prog, lives, news] = await Promise.all([
+      const [me, prod, scripts, edu, prog, lives, news] = await Promise.all([
         fetch("/api/me", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)),
         fetch("/api/products", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)),
         fetch("/api/scripts", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)),
-        fetch("/api/virais", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)),
         fetch("/api/educacao", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)),
         fetch("/api/educacao/progress", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)),
         fetch("/api/ao-vivo", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)),
@@ -92,7 +82,6 @@ function useDashboardData() {
         profile: me?.profile ?? null,
         products: prod?.products ?? [],
         scripts: scripts?.scripts ?? [],
-        virais: virais?.virais ?? [],
         education: edu?.videos ?? [],
         progress: prog?.progress ?? [],
         lives: lives?.events ?? [],
@@ -247,7 +236,7 @@ function HomeBody({ desktop = false }: { desktop?: boolean }) {
 
         {/* KPI cards */}
         <div className={`mt-5 ${pad}`}>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <div className="grid grid-cols-3 gap-2.5">
             <KpiCard
               emoji="📦"
               label="Produtos"
@@ -260,12 +249,6 @@ function HomeBody({ desktop = false }: { desktop?: boolean }) {
               label="Scripts"
               value={data.scripts.length}
               href="/scripts"
-            />
-            <KpiCard
-              emoji="🔥"
-              label="Virais salvos"
-              value={data.virais.length}
-              href="/virais"
             />
             <KpiCard
               emoji="🎓"

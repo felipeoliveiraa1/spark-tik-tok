@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Package, Trash2, Pen, Flame } from "lucide-react";
+import { ArrowLeft, Package, Trash2, Pen } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { SButton } from "@/components/atoms/s-button";
@@ -182,11 +182,6 @@ function ProductBody({ id, desktop = false }: { id: string; desktop?: boolean })
           <Link href="/chat">
             <SButton variant="primary" size="md" Icon={Pen}>
               Gerar scripts
-            </SButton>
-          </Link>
-          <Link href="/virais">
-            <SButton variant="ghost" size="md" Icon={Flame}>
-              Ver virais
             </SButton>
           </Link>
           <SButton variant="ghost" size="md" Icon={Trash2} onClick={remove} disabled={deleting}>

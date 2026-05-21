@@ -11,7 +11,7 @@ import { AgentBubble } from "@/components/molecules/agent-bubble";
 import { AgentCharacter } from "@/components/molecules/agent-character";
 import { MentionPicker, type MentionItem } from "@/components/molecules/mention-picker";
 
-export type ChatMention = { kind: "product" | "viral"; id: string; label: string };
+export type ChatMention = { kind: "product"; id: string; label: string };
 import { AGENTS, type AgentId } from "@/lib/agents";
 import {
   useConversationStore,
@@ -295,7 +295,7 @@ function ChatComposer({
                 ? "Aguarda a resposta…"
                 : attachments.length > 0
                   ? "Algo a dizer? (opcional)"
-                  : "Pergunta qualquer coisa… (use @ pra mencionar produto ou viral)"
+                  : "Pergunta qualquer coisa… (use @ pra mencionar um produto)"
           }
           disabled={disabled}
           className="flex-1 bg-transparent text-[14px] text-spark-ink placeholder:text-spark-ink-50 outline-none disabled:opacity-60"

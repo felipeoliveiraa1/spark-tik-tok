@@ -26,7 +26,6 @@ const items: Item[] = [
   { id: "home", label: "Início", href: "/", emoji: "🏠" },
   { id: "chat", label: "Chat", href: "/chat", emoji: "💬" },
   { id: "produtos", label: "Produtos", href: "/produtos", emoji: "📦" },
-  // Virais temporariamente oculto — feature de scraping pausada
   { id: "scripts", label: "Scripts", href: "/scripts", emoji: "✍️" },
   { id: "ao-vivo", label: "Ao vivo", href: "/ao-vivo", emoji: "🔴" },
   { id: "educacao", label: "Educação", href: "/educacao", emoji: "🎓" },

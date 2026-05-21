@@ -61,7 +61,7 @@ function ProductsBody({ desktop = false }: { desktop?: boolean }) {
           Seus produtos 📦
         </h1>
         <p className="text-[13.5px] text-spark-ink-50 mt-1.5 max-w-[520px]">
-          Tudo que você já analisou com a Informação. Cada produto vira base pros próximos virais e scripts. ✨
+          Tudo que você já analisou com a Informação. Cada produto vira base pros próximos scripts. ✨
         </p>
       </div>
 

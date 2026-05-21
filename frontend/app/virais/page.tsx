@@ -209,7 +209,7 @@ function ViraisMobile() {
     <>
       <AppHeader TrailingIcon={MoreHorizontal} showAvatar={false} />
       <ViraisBody />
-      <BottomNav active="virais" />
+      <BottomNav active="produtos" />
     </>
   );
 }

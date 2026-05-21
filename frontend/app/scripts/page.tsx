@@ -132,7 +132,7 @@ function ScriptsMobile() {
     <>
       <AppHeader TrailingIcon={MoreHorizontal} showAvatar={false} />
       <ScriptsBody />
-      <BottomNav active="virais" />
+      <BottomNav active="scripts" />
     </>
   );
 }

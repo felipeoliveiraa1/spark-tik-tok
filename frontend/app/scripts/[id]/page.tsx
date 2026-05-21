@@ -177,7 +177,7 @@ function MobileWrap({ id }: { id: string }) {
         <div className="text-[13px] font-bold text-spark-ink-50">Script</div>
       </div>
       <ScriptBody id={id} />
-      <BottomNav active="virais" />
+      <BottomNav active="scripts" />
     </>
   );
 }

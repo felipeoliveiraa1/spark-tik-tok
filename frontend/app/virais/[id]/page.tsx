@@ -400,7 +400,7 @@ function MobileWrap({ id }: { id: string }) {
         <div className="text-[13px] font-bold text-spark-ink-50">Viral salvo</div>
       </div>
       <ViralBody id={id} />
-      <BottomNav active="virais" />
+      <BottomNav active="produtos" />
     </>
   );
 }
