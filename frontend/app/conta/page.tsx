@@ -104,7 +104,12 @@ function ContaBody({
             <SBadge tone={planActive ? "good" : "warn"}>
               {planActive ? "Plano ativo ✨" : "Plano inativo"}
             </SBadge>
-            {niche && <SBadge>{niche}</SBadge>}
+            {niche &&
+              niche
+                .split(",")
+                .map((n) => n.trim())
+                .filter(Boolean)
+                .map((n) => <SBadge key={n}>{n}</SBadge>)}
           </div>
         </div>
       </div>

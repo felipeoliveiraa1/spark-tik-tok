@@ -1,29 +1,61 @@
 "use client";
 
 import * as React from "react";
-import { ArrowRight, AlertCircle } from "lucide-react";
+import { ArrowRight, AlertCircle, Plus, X, Check } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { SparkMark } from "@/components/atoms/spark-mark";
 import { SInput } from "@/components/atoms/s-input";
 import { SButton } from "@/components/atoms/s-button";
 import { completeOnboardingAction } from "@/lib/auth";
 
-const NICHES = [
-  "Beleza e skincare",
-  "Suplementos e saúde",
-  "Moda feminina",
+// Nichos baseados nos templates da Yara — alinhado com Scripts AI.
+const PRESET_NICHES = [
+  "Skincare",
+  "Makeup",
+  "Suplementos",
+  "Cabelo",
+  "Perfumaria",
   "Casa e decoração",
+  "Moda feminina",
+  "Maternidade",
+  "Eletrônicos",
   "Acessórios",
-  "Outro",
+  "Pet",
+  "Calçados",
 ];
 
 function WelcomeForm({ desktop = false }: { desktop?: boolean }) {
   const [error, setError] = React.useState<string | null>(null);
   const [pending, setPending] = React.useState(false);
-  const [niche, setNiche] = React.useState(NICHES[0]);
+  const [selected, setSelected] = React.useState<string[]>([]);
+  const [customOpen, setCustomOpen] = React.useState(false);
+  const [customValue, setCustomValue] = React.useState("");
+
+  const toggle = (n: string) => {
+    setSelected((prev) => (prev.includes(n) ? prev.filter((x) => x !== n) : [...prev, n]));
+  };
+
+  const addCustom = () => {
+    const v = customValue.trim();
+    if (!v) return;
+    if (selected.some((s) => s.toLowerCase() === v.toLowerCase())) {
+      setCustomValue("");
+      setCustomOpen(false);
+      return;
+    }
+    setSelected((prev) => [...prev, v]);
+    setCustomValue("");
+    setCustomOpen(false);
+  };
 
   async function onSubmit(formData: FormData) {
     setError(null);
+    if (selected.length === 0) {
+      setError("Escolhe pelo menos um nicho.");
+      return;
+    }
+    // Junta os nichos em CSV pra salvar na coluna niche (text).
+    formData.set("niche", selected.join(", "));
     setPending(true);
     const result = await completeOnboardingAction(formData);
     setPending(false);
@@ -33,19 +65,24 @@ function WelcomeForm({ desktop = false }: { desktop?: boolean }) {
   }
 
   return (
-    <form action={onSubmit} className={`flex flex-col flex-1 ${desktop ? "max-w-[480px] mx-auto py-14 px-8" : "px-5"}`}>
+    <form
+      action={onSubmit}
+      className={`flex flex-col flex-1 ${desktop ? "max-w-[520px] mx-auto py-14 px-8" : "px-5"}`}
+    >
       <div className={desktop ? "" : "pt-[70px]"}>
         <SparkMark size={desktop ? 44 : 36} />
         <div className="mt-7 text-[13px] font-bold text-spark-brand uppercase tracking-[0.06em]">
           Bem-vinda
         </div>
-        <h1 className={`font-extrabold tracking-[-0.025em] mt-2 leading-[1.1] ${desktop ? "text-[40px]" : "text-[28px]"}`}>
+        <h1
+          className={`font-extrabold tracking-[-0.025em] mt-2 leading-[1.1] ${desktop ? "text-[40px]" : "text-[28px]"}`}
+        >
           Vamos te conhecer
           <br />
-          rapidinho.
+          rapidinho. 💕
         </h1>
-        <p className="text-[14px] text-spark-ink-50 mt-2.5 max-w-[400px]">
-          A IA usa essas informações pra calibrar o tom dos scripts e as recomendações de virais.
+        <p className="text-[14px] text-spark-ink-50 mt-2.5 max-w-[440px]">
+          A IA usa essas informações pra calibrar o tom dos scripts e adaptar o conteúdo pros seus nichos.
         </p>
       </div>
 
@@ -53,34 +90,109 @@ function WelcomeForm({ desktop = false }: { desktop?: boolean }) {
         <div className="text-[12px] font-bold text-spark-ink-50 mb-1.5 uppercase tracking-[0.04em]">
           Como podemos te chamar?
         </div>
-        <SInput
-          name="name"
-          placeholder="Seu primeiro nome"
-          autoComplete="given-name"
-          required
-        />
+        <SInput name="name" placeholder="Seu primeiro nome" autoComplete="given-name" required />
       </div>
 
-      <div className="mt-4">
-        <div className="text-[12px] font-bold text-spark-ink-50 mb-1.5 uppercase tracking-[0.04em]">
-          Qual o nicho que você foca?
+      <div className="mt-5">
+        <div className="flex items-baseline justify-between mb-2">
+          <div className="text-[12px] font-bold text-spark-ink-50 uppercase tracking-[0.04em]">
+            Em quais nichos você atua?
+          </div>
+          <div className="text-[11px] text-spark-ink-50 font-mono">
+            {selected.length > 0 && `${selected.length} selecionado${selected.length > 1 ? "s" : ""}`}
+          </div>
         </div>
-        <input type="hidden" name="niche" value={niche} />
+        <p className="text-[12px] text-spark-ink-50 mb-3 leading-snug">
+          Pode marcar quantos quiser. Não tá na lista? Toca em &ldquo;Outro&rdquo; e adiciona o seu. ✨
+        </p>
+
         <div className="flex flex-wrap gap-1.5">
-          {NICHES.map((n) => (
+          {PRESET_NICHES.map((n) => {
+            const active = selected.includes(n);
+            return (
+              <button
+                key={n}
+                type="button"
+                onClick={() => toggle(n)}
+                className={`px-3 py-2 rounded-full border text-[13px] font-semibold transition-colors inline-flex items-center gap-1.5 ${
+                  active
+                    ? "bg-brand-grad text-white border-transparent shadow-[0_4px_14px_-6px_oklch(0.55_0.24_340/0.5)]"
+                    : "bg-spark-surface border-spark-hairline text-spark-ink-70 hover:border-spark-ink/30"
+                }`}
+              >
+                {active && <Check size={12} strokeWidth={2.5} />}
+                {n}
+              </button>
+            );
+          })}
+
+          {/* Chips custom (não-preset) já selecionados */}
+          {selected
+            .filter((s) => !PRESET_NICHES.includes(s))
+            .map((custom) => (
+              <button
+                key={custom}
+                type="button"
+                onClick={() => toggle(custom)}
+                className="px-3 py-2 rounded-full border bg-brand-grad text-white border-transparent text-[13px] font-semibold inline-flex items-center gap-1.5 shadow-[0_4px_14px_-6px_oklch(0.55_0.24_340/0.5)]"
+              >
+                <Check size={12} strokeWidth={2.5} />
+                {custom}
+                <X size={12} strokeWidth={2.5} className="opacity-80" />
+              </button>
+            ))}
+
+          {/* Botão Outro / input pra digitar */}
+          {customOpen ? (
+            <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-spark-surface border border-spark-brand/40">
+              <input
+                autoFocus
+                value={customValue}
+                onChange={(e) => setCustomValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addCustom();
+                  } else if (e.key === "Escape") {
+                    e.preventDefault();
+                    setCustomOpen(false);
+                    setCustomValue("");
+                  }
+                }}
+                placeholder="Digita seu nicho"
+                maxLength={40}
+                className="bg-transparent outline-none text-[13px] font-semibold w-[140px] px-1 placeholder:text-spark-ink-35"
+              />
+              <button
+                type="button"
+                onClick={addCustom}
+                aria-label="Adicionar nicho"
+                className="w-7 h-7 rounded-full bg-brand-grad text-white flex items-center justify-center active:scale-95 transition-transform"
+              >
+                <Check size={12} strokeWidth={2.5} />
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setCustomOpen(false);
+                  setCustomValue("");
+                }}
+                aria-label="Cancelar"
+                className="w-7 h-7 rounded-full text-spark-ink-50 flex items-center justify-center"
+              >
+                <X size={12} strokeWidth={2.5} />
+              </button>
+            </div>
+          ) : (
             <button
-              key={n}
               type="button"
-              onClick={() => setNiche(n)}
-              className={`px-3 py-2 rounded-full border text-[13px] font-semibold transition-colors ${
-                niche === n
-                  ? "bg-spark-ink text-white border-spark-ink"
-                  : "bg-spark-surface border-spark-hairline text-spark-ink-70 hover:border-spark-ink/30"
-              }`}
+              onClick={() => setCustomOpen(true)}
+              className="px-3 py-2 rounded-full border-2 border-dashed border-spark-brand/40 text-spark-brand-deep text-[13px] font-semibold hover:bg-spark-brand-soft transition-colors inline-flex items-center gap-1.5"
             >
-              {n}
+              <Plus size={13} strokeWidth={2} />
+              Outro
             </button>
-          ))}
+          )}
         </div>
       </div>
 
@@ -103,11 +215,5 @@ function WelcomeForm({ desktop = false }: { desktop?: boolean }) {
 }
 
 export default function WelcomePage() {
-  return (
-    <ResponsiveShell
-      mobile={<WelcomeForm />}
-      desktop={<WelcomeForm desktop />}
-      fullBleed
-    />
-  );
+  return <ResponsiveShell mobile={<WelcomeForm />} desktop={<WelcomeForm desktop />} fullBleed />;
 }
