@@ -84,6 +84,39 @@ export async function resetPasswordAction(formData: FormData): Promise<AuthError
   redirect("/chat");
 }
 
+/**
+ * Alteração de senha pra aluna que JÁ está logada e quer trocar (a partir da
+ * /conta). Diferente do resetPasswordAction que redireciona pra /chat (caso
+ * de senha temporária), aqui retorna ok e o front mostra toast — sem sair
+ * da tela.
+ */
+export async function changePasswordAction(
+  formData: FormData,
+): Promise<AuthError | { ok: true }> {
+  const password = formData.get("password") as string | null;
+  if (!password || password.length < 8) {
+    return { error: "Senha precisa ter no mínimo 8 caracteres." };
+  }
+
+  const supabase = await getSupabaseServer();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) {
+    return { error: "Sessão expirou. Faz login de novo." };
+  }
+
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) {
+    return { error: error.message };
+  }
+
+  await supabase
+    .from("profiles")
+    .update({ must_reset_password: false })
+    .eq("id", userData.user.id);
+
+  return { ok: true };
+}
+
 export async function logoutAction() {
   const supabase = await getSupabaseServer();
   await supabase.auth.signOut();

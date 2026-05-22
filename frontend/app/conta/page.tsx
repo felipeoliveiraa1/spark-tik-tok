@@ -8,6 +8,7 @@ import { getCurrentProfile, getSupabaseServer } from "@/lib/supabase-server";
 import { logoutAction } from "@/lib/auth";
 import { ResetPasswordForm } from "./reset-password-form";
 import { ProfileEditor } from "./profile-editor";
+import { ChangePasswordForm } from "./change-password-form";
 
 type ContaPageProps = {
   searchParams?: Promise<{ reset?: string }>;
@@ -135,7 +136,7 @@ function ContaBody({
       {/* Edição de perfil */}
       <ProfileEditor initialName={name} initialNiche={niche ?? ""} />
 
-      {/* Reset senha */}
+      {/* Reset senha em destaque (apenas se entrou com senha temporária) */}
       {showReset && (
         <div className="mt-6 p-4 rounded-[18px] bg-spark-brand-soft border border-spark-brand/20">
           <div className="flex items-center gap-2 text-[13px] font-bold text-spark-brand-deep">
@@ -150,6 +151,9 @@ function ContaBody({
           </div>
         </div>
       )}
+
+      {/* Alterar senha — disponível sempre */}
+      {!showReset && <ChangePasswordForm />}
 
       {/* Logout */}
       <div className="mt-6 bg-spark-surface rounded-[18px] border border-spark-hairline overflow-hidden">
