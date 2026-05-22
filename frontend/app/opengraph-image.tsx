@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
-export const alt = "Spark — IA pra TikTok Shop";
+export const alt = "Método TTS — IA pra TikTok Shop";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -26,7 +26,10 @@ export default async function OpenGraphImage() {
           <svg width="56" height="56" viewBox="0 0 32 32">
             <path d="M5 16 L16 4 L19 13 L28 16 L16 28 L13 19 Z" fill="#fff" />
           </svg>
-          <span style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.02em" }}>spark</span>
+          <span style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.02em", display: "flex", gap: 8, alignItems: "baseline" }}>
+            <span style={{ fontWeight: 600, opacity: 0.85 }}>método</span>
+            <span>TTS</span>
+          </span>
           <span
             style={{
               marginLeft: 8,

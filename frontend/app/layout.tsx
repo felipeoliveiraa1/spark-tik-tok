@@ -26,29 +26,29 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Spark · IA pra TikTok Shop",
-    template: "%s · Spark",
+    default: "Método TTS · IA pra TikTok Shop",
+    template: "%s · Método TTS",
   },
   description,
-  applicationName: "Spark",
-  authors: [{ name: "Spark" }],
+  applicationName: "Método TTS",
+  authors: [{ name: "Método TTS" }],
   keywords: ["TikTok Shop", "IA", "scripts virais", "neuromarketing", "criadoras", "Brasil"],
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
-    title: "Spark",
+    title: "Método TTS",
     statusBarStyle: "default",
   },
   openGraph: {
     type: "website",
     locale: "pt_BR",
-    title: "Spark · IA pra TikTok Shop",
+    title: "Método TTS · IA pra TikTok Shop",
     description,
-    siteName: "Spark",
+    siteName: "Método TTS",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Spark · IA pra TikTok Shop",
+    title: "Método TTS · IA pra TikTok Shop",
     description,
   },
   formatDetection: {

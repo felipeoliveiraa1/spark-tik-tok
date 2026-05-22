@@ -89,7 +89,7 @@ function GalleryBody() {
     <div className="flex-1 overflow-auto pb-10">
       <div className="px-4 lg:px-12 pt-6 lg:pt-10">
         <div className="text-[12px] lg:text-[13px] font-bold text-spark-brand tracking-[0.06em] uppercase">
-          ✨ Especialistas Spark
+          ✨ Especialistas Método TTS
         </div>
         <h1 className="mt-1.5 text-[28px] lg:text-[42px] font-extrabold tracking-[-0.025em] leading-[1.1]">
           Com quem você quer

@@ -11,14 +11,15 @@ export function SparkWordmark({ size = 22, white = false, className }: Props) {
     <div className={`flex items-center gap-2 ${className ?? ""}`}>
       <SparkMark size={size + 4} white={white} />
       <span
-        className="font-extrabold tracking-tight"
+        className="font-extrabold tracking-tight inline-flex items-baseline gap-1"
         style={{
           fontSize: size,
           letterSpacing: "-0.02em",
           color: white ? "#fff" : "oklch(0.18 0.02 285)",
         }}
       >
-        spark
+        <span style={{ fontWeight: 600, opacity: 0.75 }}>método</span>
+        <span>TTS</span>
       </span>
     </div>
   );

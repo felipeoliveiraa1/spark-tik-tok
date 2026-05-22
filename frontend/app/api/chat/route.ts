@@ -326,7 +326,7 @@ function buildProductTools(supabase: SupabaseClient, _userId: string): ToolSet {
   return {
     list_my_products: tool({
       description:
-        "Lista os produtos que a aluna já salvou no Spark (id, nome, categoria, faixa de preço). Use sempre que ela mencionar 'meu produto X' ou pedir pra você lembrar do catálogo dela.",
+        "Lista os produtos que a aluna já salvou no Método TTS (id, nome, categoria, faixa de preço). Use sempre que ela mencionar 'meu produto X' ou pedir pra você lembrar do catálogo dela.",
       inputSchema: z.object({}),
       execute: async () => {
         const { data, error } = await supabase

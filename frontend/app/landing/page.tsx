@@ -210,7 +210,7 @@ export default function LandingPage() {
       <section className="max-w-[1200px] mx-auto px-5 lg:px-10 py-14 lg:py-20">
         <div className="text-center max-w-[640px] mx-auto">
           <div className="text-[12px] font-bold text-spark-brand uppercase tracking-[0.08em]">
-            Por que Spark
+            Por que Método TTS
           </div>
           <h2 className="mt-2 text-[32px] lg:text-[42px] font-extrabold tracking-[-0.025em] leading-[1.1]">
             Você não precisa virar especialista em IA pra vender.

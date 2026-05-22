@@ -131,7 +131,7 @@ function VideoBody({ idOrSlug, desktop = false }: { idOrSlug: string; desktop?: 
             </SButton>
             <Link href="/chat">
               <SButton variant="ghost" size="md">
-                Aplicar com a Spark
+                Aplicar no Método TTS
               </SButton>
             </Link>
           </div>
