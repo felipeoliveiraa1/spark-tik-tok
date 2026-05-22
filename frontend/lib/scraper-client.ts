@@ -9,7 +9,7 @@ import type {
 } from "@scraper/types";
 
 /**
- * Client for the Spark scraper worker (running on the Contabo VPS).
+ * Client for the Método TTS scraper worker (running on the Contabo VPS).
  *
  * Pulls config from process.env so it works both on Vercel server actions and
  * Next.js API route handlers. The shared HMAC secret must match the worker's
