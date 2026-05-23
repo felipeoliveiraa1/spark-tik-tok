@@ -28,6 +28,8 @@ type Props = {
   subtitle?: string | null;
   back?: BackProp;
   trailing?: React.ReactNode;
+  /** Conteúdo central custom (ex: logo). Quando passado, ignora title/subtitle. */
+  center?: React.ReactNode;
   className?: string;
   /** Sem borda inferior. Default: sem borda. */
   bordered?: boolean;
@@ -41,13 +43,18 @@ export function MobileHeader({
   subtitle,
   back,
   trailing,
+  center,
   className,
   bordered = false,
 }: Props) {
+  // Quando passa `center` (ex: logo), usa layout com center absolute pra
+  // garantir centralização verdadeira independente das larguras de back/trailing.
+  const hasCenter = Boolean(center);
   return (
     <div
       className={cn(
-        "pt-12 pb-2.5 px-2 safe-top flex items-center gap-1.5",
+        "pt-12 pb-2.5 px-2 safe-top flex items-center gap-1.5 relative",
+        hasCenter && "pt-10 pb-3",
         bordered && "border-b border-spark-hairline",
         className,
       )}
@@ -69,18 +76,29 @@ export function MobileHeader({
         <div className="w-2" />
       )}
 
-      <div className="flex-1 min-w-0 px-1">
-        {title && (
-          <div className="text-[14px] font-bold text-spark-ink truncate">
-            {title}
+      {hasCenter ? (
+        <>
+          {/* Center absolute pra ficar perfeitamente centralizado independente
+              do back/trailing terem larguras diferentes. */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+            <div className="pointer-events-auto">{center}</div>
           </div>
-        )}
-        {subtitle && (
-          <div className="text-[11px] text-spark-ink-50 font-mono truncate">
-            {subtitle}
-          </div>
-        )}
-      </div>
+          <div className="flex-1" />
+        </>
+      ) : (
+        <div className="flex-1 min-w-0 px-1">
+          {title && (
+            <div className="text-[14px] font-bold text-spark-ink truncate">
+              {title}
+            </div>
+          )}
+          {subtitle && (
+            <div className="text-[11px] text-spark-ink-50 font-mono truncate">
+              {subtitle}
+            </div>
+          )}
+        </div>
+      )}
 
       {trailing ?? <div className="w-2" />}
     </div>
