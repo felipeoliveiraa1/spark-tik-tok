@@ -292,10 +292,10 @@ function HomeBody({ desktop = false }: { desktop?: boolean }) {
                 <Link
                   key={s.id}
                   href={s.href}
-                  className="p-4 rounded-2xl bg-spark-surface border border-spark-hairline hover:border-spark-brand/40 hover:bg-spark-brand-soft/30 transition-colors block"
+                  className="p-4 rounded-3xl bg-spark-surface border border-spark-hairline hover:border-spark-brand/40 hover:bg-spark-brand-soft/30 active:scale-[0.99] transition-all block shadow-[0_2px_10px_-6px_rgba(20,20,40,0.08)]"
                 >
-                  <div className="text-[22px]">{s.emoji}</div>
-                  <div className="mt-1.5 text-[13.5px] font-extrabold leading-snug">{s.title}</div>
+                  <div className="text-[24px]">{s.emoji}</div>
+                  <div className="mt-1.5 text-[14px] font-extrabold leading-snug">{s.title}</div>
                   <div className="mt-2 inline-flex items-center gap-1 text-[12px] font-semibold text-spark-brand">
                     {s.cta} <ArrowRight size={11} strokeWidth={2} />
                   </div>
@@ -406,21 +406,21 @@ function KpiCard({
   return (
     <Link
       href={href}
-      className={`rounded-2xl p-3.5 transition-colors block ${
+      className={`rounded-3xl p-4 transition-all block active:scale-[0.98] ${
         tone === "brand"
-          ? "bg-brand-grad-soft border border-spark-brand/15 hover:border-spark-brand/40"
-          : "bg-spark-surface border border-spark-hairline hover:border-spark-ink/30"
+          ? "bg-brand-grad-soft border border-spark-brand/15 hover:border-spark-brand/40 shadow-[0_6px_18px_-10px_oklch(0.55_0.24_340/0.3)]"
+          : "bg-spark-surface border border-spark-hairline hover:border-spark-ink/30 shadow-[0_2px_10px_-6px_rgba(20,20,40,0.08)]"
       }`}
     >
-      <div className="text-[20px] leading-none">{emoji}</div>
+      <div className="text-[22px] leading-none">{emoji}</div>
       <div
-        className={`mt-1.5 font-extrabold font-mono tracking-tight text-[24px] ${
+        className={`mt-2 font-extrabold font-mono tracking-tight text-[26px] leading-none ${
           tone === "brand" ? "text-spark-brand-deep" : "text-spark-ink"
         }`}
       >
         {value}
       </div>
-      <div className="text-[11px] text-spark-ink-50 font-semibold mt-0.5">{label}</div>
+      <div className="text-[11.5px] text-spark-ink-50 font-semibold mt-1">{label}</div>
     </Link>
   );
 }
@@ -503,11 +503,11 @@ function ShortcutCard({ agent, onStart }: { agent: AgentId; onStart: (a: AgentId
   return (
     <button
       onClick={() => onStart(agent)}
-      className="text-left p-4 rounded-2xl bg-spark-surface border border-spark-hairline flex items-start gap-3.5 hover:border-spark-ink/30 transition-colors"
+      className="text-left p-4 rounded-3xl bg-spark-surface border border-spark-hairline flex items-start gap-3.5 hover:border-spark-brand/40 active:scale-[0.99] transition-all shadow-[0_2px_10px_-6px_rgba(20,20,40,0.08)]"
     >
       <AgentCharacter agent={agent} size={56} />
       <div className="flex-1 min-w-0 pt-1">
-        <div className="text-[14.5px] font-extrabold tracking-[-0.01em]">{a.label}</div>
+        <div className="text-[15px] font-extrabold tracking-tight">{a.label}</div>
         <div className="text-[12px] text-spark-ink-50 mt-0.5 leading-snug line-clamp-2">
           {a.description}
         </div>
@@ -530,20 +530,20 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="p-4 rounded-2xl bg-spark-surface border border-spark-hairline">
+    <div className="p-4 rounded-3xl bg-spark-surface border border-spark-hairline shadow-[0_2px_10px_-6px_rgba(20,20,40,0.08)]">
       <div className="flex items-center justify-between">
         <div className="text-[12px] font-bold text-spark-ink tracking-[0.04em] uppercase">
           {title}
         </div>
         <Link
           href={href}
-          className="text-[12px] font-semibold text-spark-brand inline-flex items-center gap-1"
+          className="text-[12px] font-semibold text-spark-brand inline-flex items-center gap-1 hover:text-spark-brand-deep"
         >
           Abrir <ArrowRight size={12} strokeWidth={2} />
         </Link>
       </div>
       {empty ? (
-        <div className="mt-3 p-4 rounded-xl bg-spark-surface-sunken text-[12.5px] text-spark-ink-50 leading-snug">
+        <div className="mt-3 p-4 rounded-2xl bg-spark-surface-sunken text-[12.5px] text-spark-ink-50 leading-snug">
           {emptyHint}
         </div>
       ) : (
