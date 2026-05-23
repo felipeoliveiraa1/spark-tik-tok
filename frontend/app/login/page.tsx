@@ -76,7 +76,7 @@ function LoginMobile() {
       <div className="pt-[90px]" />
       <div>
         <div className="mb-9">
-          <SparkMark size={56} />
+          <SparkMark size={84} />
         </div>
         <h1 className="text-[34px] font-extrabold tracking-[-0.025em] leading-[1.05] text-spark-ink">
           Crie scripts
@@ -126,7 +126,7 @@ function LoginDesktop() {
   return (
     <div className="flex-1 min-h-dvh flex w-full">
       <div className="flex-1 p-14 relative overflow-hidden text-white bg-brand-grad-hero flex flex-col justify-between">
-        <SparkWordmark size={22} white />
+        <SparkWordmark size={30} white />
         <div>
           <div className="text-[13px] font-bold opacity-85 uppercase tracking-[0.1em]">
             ✨ App TikTok Shop

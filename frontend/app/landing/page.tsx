@@ -99,7 +99,7 @@ export default function LandingPage() {
       {/* Top bar */}
       <header className="sticky top-0 z-30 bg-spark-bg/90 backdrop-blur-md border-b border-spark-hairline">
         <div className="max-w-[1200px] mx-auto px-5 lg:px-10 py-3.5 flex items-center gap-3">
-          <SparkWordmark size={20} />
+          <SparkWordmark size={26} />
           <SBadge tone="brand">Beta</SBadge>
           <div className="flex-1" />
           <Link
@@ -385,7 +385,9 @@ export default function LandingPage() {
       {/* CTA final */}
       <section className="max-w-[1200px] mx-auto px-5 lg:px-10 pb-16 lg:pb-24">
         <div className="rounded-[28px] p-8 lg:p-14 text-white bg-brand-grad-hero shadow-[0_40px_80px_-40px_oklch(0.5_0.22_305/0.6)] text-center">
-          <SparkMark size={48} white />
+          <div className="flex justify-center">
+            <SparkMark size={64} white />
+          </div>
           <h2 className="mt-4 text-[28px] lg:text-[44px] font-extrabold tracking-[-0.025em] leading-[1.1] max-w-[640px] mx-auto">
             Bora trocar o &ldquo;eu não sei o que postar&rdquo; por &ldquo;já tem 10 hooks prontos&rdquo;?
           </h2>
@@ -408,7 +410,7 @@ export default function LandingPage() {
       <footer className="border-t border-spark-hairline">
         <div className="max-w-[1200px] mx-auto px-5 lg:px-10 py-8 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <SparkWordmark size={16} />
+            <SparkWordmark size={22} />
             <span className="text-[11px] text-spark-ink-50 font-mono">v1.4.0 · PWA</span>
           </div>
           <div className="flex items-center gap-4 text-[12px] text-spark-ink-50">

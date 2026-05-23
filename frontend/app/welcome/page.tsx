@@ -70,7 +70,7 @@ function WelcomeForm({ desktop = false }: { desktop?: boolean }) {
       className={`flex flex-col flex-1 ${desktop ? "max-w-[520px] mx-auto py-14 px-8" : "px-5"}`}
     >
       <div className={desktop ? "" : "pt-[70px]"}>
-        <SparkMark size={desktop ? 44 : 36} />
+        <SparkMark size={desktop ? 64 : 52} />
         <div className="mt-7 text-[13px] font-bold text-spark-brand uppercase tracking-[0.06em]">
           Bem-vinda
         </div>

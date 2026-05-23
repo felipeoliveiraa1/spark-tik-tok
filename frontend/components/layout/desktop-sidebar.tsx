@@ -97,7 +97,7 @@ export function DesktopSidebar({ active }: { active?: SidebarActive }) {
       >
         <div className="px-4 pt-5 pb-2 h-[58px] flex items-center">
           <Link href="/" className="inline-flex items-center">
-            {expanded ? <SparkWordmark size={20} /> : <SparkMark size={26} />}
+            {expanded ? <SparkWordmark size={24} /> : <SparkMark size={32} />}
           </Link>
         </div>
 
