@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, Package, Radio } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { MobileHeader } from "@/components/layout/mobile-header";
-import { AccountLink } from "@/components/molecules/account-link";
 import { SparkWordmark } from "@/components/atoms/spark-wordmark";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { AgentCharacter } from "@/components/molecules/agent-character";
@@ -557,10 +556,7 @@ function SectionCard({
 function HomeMobile() {
   return (
     <>
-      <MobileHeader
-        center={<SparkWordmark size={44} />}
-        trailing={<AccountLink />}
-      />
+      <MobileHeader center={<SparkWordmark size={44} />} />
       <HomeBody />
       <BottomNav active="home" />
     </>

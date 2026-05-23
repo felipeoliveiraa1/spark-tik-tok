@@ -6,7 +6,6 @@ import { PlayCircle, GraduationCap } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { MobileHeader } from "@/components/layout/mobile-header";
 import { BottomNav } from "@/components/layout/bottom-nav";
-import { AccountLink } from "@/components/molecules/account-link";
 import { LoadingSplash } from "@/components/atoms/loading-splash";
 import { SBadge } from "@/components/atoms/s-badge";
 
@@ -180,7 +179,7 @@ function EmptyEducation() {
 function EducacaoMobile() {
   return (
     <>
-      <MobileHeader title="Aulas 🎓" trailing={<AccountLink />} />
+      <MobileHeader title="Aulas 🎓" />
       <EducacaoBody />
       <BottomNav active="educacao" />
     </>

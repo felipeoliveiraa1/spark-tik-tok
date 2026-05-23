@@ -6,7 +6,6 @@ import { Radio, PlayCircle } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { MobileHeader } from "@/components/layout/mobile-header";
 import { BottomNav } from "@/components/layout/bottom-nav";
-import { AccountLink } from "@/components/molecules/account-link";
 import { LoadingSplash } from "@/components/atoms/loading-splash";
 import { SBadge } from "@/components/atoms/s-badge";
 import { getLiveStatus, formatCountdown, minutesUntil } from "@/lib/live-status";
@@ -252,7 +251,7 @@ function EmptyLives() {
 function AoVivoMobile() {
   return (
     <>
-      <MobileHeader title="Ao vivo 🔴" trailing={<AccountLink />} />
+      <MobileHeader title="Ao vivo 🔴" />
       <AoVivoBody />
       <BottomNav active="ao-vivo" />
     </>

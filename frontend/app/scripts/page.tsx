@@ -6,7 +6,6 @@ import { Pen, Sparkle } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { MobileHeader } from "@/components/layout/mobile-header";
 import { BottomNav } from "@/components/layout/bottom-nav";
-import { AccountLink } from "@/components/molecules/account-link";
 import { SButton } from "@/components/atoms/s-button";
 import { SBadge } from "@/components/atoms/s-badge";
 import { LoadingSplash } from "@/components/atoms/loading-splash";
@@ -141,7 +140,7 @@ function EmptyScripts() {
 function ScriptsMobile() {
   return (
     <>
-      <MobileHeader title="Scripts ✍️" trailing={<AccountLink />} />
+      <MobileHeader title="Scripts ✍️" />
       <ScriptsBody />
       <BottomNav active="scripts" />
     </>

@@ -6,7 +6,6 @@ import { Newspaper } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { MobileHeader } from "@/components/layout/mobile-header";
-import { AccountLink } from "@/components/molecules/account-link";
 import { SBadge } from "@/components/atoms/s-badge";
 import { LoadingSplash } from "@/components/atoms/loading-splash";
 
@@ -167,7 +166,7 @@ function EmptyNews() {
 function NewsMobile() {
   return (
     <>
-      <MobileHeader title="News 📰" trailing={<AccountLink />} />
+      <MobileHeader title="News 📰" />
       <NewsBody />
       <BottomNav active="news" />
     </>

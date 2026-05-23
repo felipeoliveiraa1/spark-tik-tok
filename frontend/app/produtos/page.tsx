@@ -6,7 +6,6 @@ import { Package, ArrowRight, Sparkle } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { MobileHeader } from "@/components/layout/mobile-header";
 import { BottomNav } from "@/components/layout/bottom-nav";
-import { AccountLink } from "@/components/molecules/account-link";
 import { SButton } from "@/components/atoms/s-button";
 import { LoadingSplash } from "@/components/atoms/loading-splash";
 
@@ -136,7 +135,7 @@ function EmptyProducts() {
 function ProductsMobile() {
   return (
     <>
-      <MobileHeader title="Produtos 📦" trailing={<AccountLink />} />
+      <MobileHeader title="Produtos 📦" />
       <ProductsBody />
       <BottomNav active="produtos" />
     </>
