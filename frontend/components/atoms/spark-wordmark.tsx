@@ -1,26 +1,36 @@
-import { SparkMark } from "./spark-mark";
+import Image from "next/image";
 
 type Props = {
+  /** Altura do wordmark em px. Largura é auto (aspect-ratio mantida). */
   size?: number;
+  /** mantido por compat — a logo PNG é colorida fixa. */
   white?: boolean;
   className?: string;
 };
 
-export function SparkWordmark({ size = 22, white = false, className }: Props) {
+/**
+ * Wordmark horizontal do Método TTS: ícone TTS + texto "MÉTODO TTS".
+ */
+export function SparkWordmark({ size = 22, className }: Props) {
+  // A logo horizontal tem proporção ~2.5:1 (largura:altura). Setamos altura
+  // pelo `size` e largura proporcional.
+  const height = size + 4;
+  const width = Math.round(height * 2.5);
   return (
-    <div className={`flex items-center gap-2 ${className ?? ""}`}>
-      <SparkMark size={size + 4} white={white} />
-      <span
-        className="font-extrabold tracking-tight inline-flex items-baseline gap-1"
-        style={{
-          fontSize: size,
-          letterSpacing: "-0.02em",
-          color: white ? "#fff" : "oklch(0.18 0.02 285)",
-        }}
-      >
-        <span style={{ fontWeight: 600, opacity: 0.75 }}>método</span>
-        <span>TTS</span>
-      </span>
-    </div>
+    <Image
+      src="/tts-logo-horizontal.png"
+      alt="Método TTS"
+      width={width}
+      height={height}
+      priority
+      className={className}
+      style={{
+        display: "block",
+        height,
+        width: "auto",
+        maxWidth: "100%",
+        objectFit: "contain",
+      }}
+    />
   );
 }

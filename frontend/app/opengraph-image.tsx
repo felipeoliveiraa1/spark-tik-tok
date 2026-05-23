@@ -6,6 +6,9 @@ export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 export default async function OpenGraphImage() {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://spark-tik-tok-app.vercel.app";
+  const logoUrl = `${siteUrl}/tts-logo-horizontal.png`;
+
   return new ImageResponse(
     (
       <div
@@ -17,25 +20,22 @@ export default async function OpenGraphImage() {
           justifyContent: "space-between",
           padding: "72px",
           fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif',
-          background: "linear-gradient(135deg, oklch(0.5 0.22 290), oklch(0.62 0.22 340))",
-          color: "#fff",
+          background:
+            "linear-gradient(135deg, oklch(0.96 0.04 350), oklch(0.92 0.06 25))",
+          color: "#1d1d1f",
         }}
       >
         {/* Top: wordmark */}
         <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
-          <svg width="56" height="56" viewBox="0 0 32 32">
-            <path d="M5 16 L16 4 L19 13 L28 16 L16 28 L13 19 Z" fill="#fff" />
-          </svg>
-          <span style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.02em", display: "flex", gap: 8, alignItems: "baseline" }}>
-            <span style={{ fontWeight: 600, opacity: 0.85 }}>método</span>
-            <span>TTS</span>
-          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={logoUrl} alt="Método TTS" width={260} height={104} style={{ objectFit: "contain" }} />
           <span
             style={{
               marginLeft: 8,
-              padding: "6px 14px",
+              padding: "8px 16px",
               borderRadius: 999,
-              background: "rgba(255,255,255,0.2)",
+              background: "oklch(0.55 0.24 340)",
+              color: "#fff",
               fontSize: 18,
               fontWeight: 700,
               letterSpacing: "0.04em",
@@ -52,9 +52,10 @@ export default async function OpenGraphImage() {
             style={{
               fontSize: 22,
               fontWeight: 700,
-              opacity: 0.85,
+              opacity: 0.7,
               letterSpacing: "0.1em",
               textTransform: "uppercase",
+              color: "oklch(0.5 0.22 345)",
             }}
           >
             IA pra criadoras de TikTok Shop
@@ -74,35 +75,37 @@ export default async function OpenGraphImage() {
           <div
             style={{
               fontSize: 28,
-              opacity: 0.9,
+              opacity: 0.75,
               marginTop: 22,
-              maxWidth: 880,
+              maxWidth: 920,
               lineHeight: 1.4,
             }}
           >
-            Foto do produto → ficha completa → virais → 10 hooks com neurociência.
+            Foto do produto → ficha completa → 5 roteiros prontos com gancho, desenvolvimento, benefício e CTA.
           </div>
         </div>
 
         {/* Bottom row: agent labels */}
         <div style={{ display: "flex", gap: 14 }}>
           {[
-            { l: "Análise", c: "rgba(255,255,255,0.18)" },
-            { l: "Virais", c: "rgba(255,255,255,0.18)" },
-            { l: "Scripts", c: "rgba(255,255,255,0.18)" },
-            { l: "Tira-dúvidas", c: "rgba(255,255,255,0.18)" },
-          ].map((a) => (
+            "📦 Análise",
+            "✍️ Scripts",
+            "🎓 Aulas",
+            "💬 Suporte",
+          ].map((label) => (
             <div
-              key={a.l}
+              key={label}
               style={{
                 padding: "12px 24px",
                 borderRadius: 999,
-                background: a.c,
+                background: "#fff",
+                border: "1px solid oklch(0.9 0.05 345)",
                 fontSize: 22,
                 fontWeight: 700,
+                color: "oklch(0.4 0.18 345)",
               }}
             >
-              {a.l}
+              {label}
             </div>
           ))}
         </div>

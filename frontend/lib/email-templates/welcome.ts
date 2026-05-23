@@ -13,6 +13,10 @@ type WelcomeInput = {
   loginUrl: string;
 };
 
+function getSiteUrl(): string {
+  return process.env.NEXT_PUBLIC_SITE_URL ?? "https://spark-tik-tok-app.vercel.app";
+}
+
 export function buildWelcomeEmail(input: WelcomeInput): { subject: string; text: string; html: string } {
   const subject = `Bem-vinda ao Método TTS, ${input.firstName} 💕`;
 
@@ -42,11 +46,16 @@ export function buildWelcomeEmail(input: WelcomeInput): { subject: string; text:
     `Equipe Método TTS 🌹`,
   ].join("\n");
 
+  const logoUrl = `${getSiteUrl()}/tts-logo-horizontal.png`;
+
   const html = `<!doctype html>
 <html lang="pt-BR">
 <body style="margin:0;padding:24px;background:oklch(0.96 0.04 350);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1d1d1f;line-height:1.5;">
   <div style="max-width:520px;margin:0 auto;background:#fff;border-radius:24px;overflow:hidden;box-shadow:0 8px 24px -10px rgba(20,20,40,0.12);">
-    <div style="padding:32px 28px 24px;background:linear-gradient(135deg,oklch(0.65 0.22 350),oklch(0.55 0.24 340));color:#fff;">
+    <div style="padding:28px 28px 8px;background:#fff;text-align:center;">
+      <img src="${escapeHtml(logoUrl)}" alt="Método TTS" width="180" style="max-width:180px;height:auto;display:inline-block;" />
+    </div>
+    <div style="padding:8px 28px 24px;background:linear-gradient(135deg,oklch(0.65 0.22 350),oklch(0.55 0.24 340));color:#fff;">
       <div style="font-weight:600;opacity:0.85;font-size:13px;letter-spacing:0.04em;text-transform:uppercase;">Bem-vinda</div>
       <h1 style="margin:6px 0 0;font-size:26px;font-weight:800;letter-spacing:-0.02em;">
         Oi ${escapeHtml(input.firstName)} 💕

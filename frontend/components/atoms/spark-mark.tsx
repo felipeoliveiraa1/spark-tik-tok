@@ -1,22 +1,30 @@
+import Image from "next/image";
+
 type Props = {
   size?: number;
+  /** mantido por compat — não muda renderização da imagem. */
   mono?: boolean;
+  /** mantido por compat — não muda renderização da imagem. */
   white?: boolean;
   className?: string;
 };
 
-export function SparkMark({ size = 28, mono = false, white = false, className }: Props) {
-  const gradId = "spark-grad-mark";
-  const fill = white ? "#fff" : mono ? "oklch(0.18 0.02 285)" : `url(#${gradId})`;
+/**
+ * Mark visual do Método TTS — sacola TTS com play e gráfico.
+ *
+ * As props `mono`/`white` ficam só pra compat com call sites antigos (o
+ * Spark antigo tinha variantes monocromáticas). O logo PNG é colorido fixo.
+ */
+export function SparkMark({ size = 28, className }: Props) {
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" className={className} style={{ display: "block" }}>
-      <defs>
-        <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="oklch(0.65 0.22 350)" />
-          <stop offset="1" stopColor="oklch(0.55 0.24 340)" />
-        </linearGradient>
-      </defs>
-      <path d="M5 16 L16 4 L19 13 L28 16 L16 28 L13 19 Z" fill={fill} />
-    </svg>
+    <Image
+      src="/tts-logo-mark.png"
+      alt="Método TTS"
+      width={size}
+      height={size}
+      priority
+      className={className}
+      style={{ display: "block", objectFit: "contain" }}
+    />
   );
 }
