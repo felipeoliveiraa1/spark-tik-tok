@@ -53,14 +53,18 @@ function ProductsBody({ desktop = false }: { desktop?: boolean }) {
   const { products, loading } = useProducts();
   return (
     <div className={`flex-1 overflow-auto ${desktop ? "py-8 px-12" : "pb-10"}`}>
-      <div className={desktop ? "" : "px-4 pt-3"}>
-        <div className="text-[12px] font-bold text-spark-brand tracking-[0.06em] uppercase">
-          💄 Catálogo
-        </div>
-        <h1 className={`mt-1 font-extrabold tracking-[-0.025em] leading-[1.1] ${desktop ? "text-[36px]" : "text-[24px]"}`}>
-          Seus produtos 📦
-        </h1>
-        <p className="text-[13.5px] text-spark-ink-50 mt-1.5 max-w-[520px]">
+      <div className={desktop ? "" : "px-4 pt-4"}>
+        {desktop && (
+          <>
+            <div className="text-[12px] font-bold text-spark-brand tracking-[0.06em] uppercase">
+              💄 Catálogo
+            </div>
+            <h1 className="mt-1 font-extrabold tracking-tight leading-[1.1] text-[36px]">
+              Seus produtos 📦
+            </h1>
+          </>
+        )}
+        <p className={`text-[13.5px] text-spark-ink-50 max-w-[520px] ${desktop ? "mt-1.5" : ""}`}>
           Tudo que você já analisou com a Informação. Cada produto vira base pros próximos scripts. ✨
         </p>
       </div>

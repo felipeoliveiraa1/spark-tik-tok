@@ -63,14 +63,18 @@ function ScriptsBody({ desktop = false }: { desktop?: boolean }) {
   const { scripts, loading } = useScripts();
   return (
     <div className={`flex-1 overflow-auto ${desktop ? "py-8 px-12" : "pb-10"}`}>
-      <div className={desktop ? "" : "px-4 pt-6"}>
-        <div className="text-[12px] font-bold text-spark-brand tracking-[0.06em] uppercase">
-          ✨ Roteiros prontos
-        </div>
-        <h1 className={`mt-1 font-extrabold tracking-tight leading-[1.1] ${desktop ? "text-[36px]" : "text-[26px]"}`}>
-          Seus scripts ✍️
-        </h1>
-        <p className="text-[13.5px] text-spark-ink-50 mt-1.5 max-w-[520px]">
+      <div className={desktop ? "" : "px-4 pt-4"}>
+        {desktop && (
+          <>
+            <div className="text-[12px] font-bold text-spark-brand tracking-[0.06em] uppercase">
+              ✨ Roteiros prontos
+            </div>
+            <h1 className="mt-1 font-extrabold tracking-tight leading-[1.1] text-[36px]">
+              Seus scripts ✍️
+            </h1>
+          </>
+        )}
+        <p className={`text-[13.5px] text-spark-ink-50 max-w-[520px] ${desktop ? "mt-1.5" : ""}`}>
           Cada conjunto de roteiros gerado pela Scripts — gancho, desenvolvimento, benefício e CTA prontos pra gravar. 💕
         </p>
       </div>

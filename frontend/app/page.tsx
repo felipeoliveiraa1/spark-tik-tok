@@ -234,12 +234,12 @@ function HomeBody({ desktop = false }: { desktop?: boolean }) {
     <div className={`flex-1 overflow-auto ${desktop ? "py-8 px-12" : "pb-10"}`}>
       <div className={maxW}>
         {/* Saudação */}
-        <div className={`${pad} ${desktop ? "" : "pt-6"}`}>
+        <div className={`${pad} ${desktop ? "" : "pt-5"}`}>
           <div className="text-[13px] font-bold text-spark-brand tracking-[0.06em] uppercase">
             {hi.text}, {firstName} {hi.emoji}
           </div>
           <h1
-            className={`mt-1.5 font-extrabold tracking-tight leading-[1.1] ${desktop ? "text-[36px]" : "text-[28px]"}`}
+            className={`mt-1.5 font-extrabold tracking-tight leading-[1.1] ${desktop ? "text-[36px]" : "text-[26px]"}`}
           >
             Pronta pra criar algo lindo hoje? ✨
           </h1>
