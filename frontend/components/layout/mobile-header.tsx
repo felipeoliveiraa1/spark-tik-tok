@@ -54,7 +54,7 @@ export function MobileHeader({
     <div
       className={cn(
         "pt-12 pb-2.5 px-2 safe-top flex items-center gap-1.5 relative",
-        hasCenter && "pt-10 pb-3",
+        hasCenter && "pt-16 pb-4 min-h-[96px]",
         bordered && "border-b border-spark-hairline",
         className,
       )}

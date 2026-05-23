@@ -95,9 +95,9 @@ export function DesktopSidebar({ active }: { active?: SidebarActive }) {
         )}
         style={{ width: expanded ? FULL_WIDTH : RAIL_WIDTH }}
       >
-        <div className="px-4 pt-5 pb-2 h-[58px] flex items-center">
+        <div className="px-3 pt-4 pb-2 h-[76px] flex items-center">
           <Link href="/" className="inline-flex items-center">
-            {expanded ? <SparkWordmark size={28} /> : <SparkMark size={40} />}
+            {expanded ? <SparkWordmark size={40} /> : <SparkMark size={56} />}
           </Link>
         </div>
 
