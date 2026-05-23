@@ -2,10 +2,10 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft, ArrowRight, MoreHorizontal, Sparkle } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { SparkMark } from "@/components/atoms/spark-mark";
+import { MobileHeader } from "@/components/layout/mobile-header";
 import { AgentCharacter } from "@/components/molecules/agent-character";
 import { AGENTS, VISIBLE_AGENTS, type AgentId } from "@/lib/agents";
 import { useConversationStore } from "@/lib/conversation-store";
@@ -87,66 +87,100 @@ function GalleryBody() {
 
   return (
     <div className="flex-1 overflow-auto pb-10">
-      <div className="px-4 lg:px-12 pt-6 lg:pt-10">
-        <div className="text-[12px] lg:text-[13px] font-bold text-spark-brand tracking-[0.06em] uppercase">
-          ✨ Especialistas Método TTS
+      <div className="px-4 lg:px-12 pt-5 lg:pt-10">
+        {/* Hero só no desktop — mobile usa o header gradient como hero */}
+        <div className="hidden lg:block">
+          <div className="text-[13px] font-bold text-spark-brand tracking-[0.06em] uppercase">
+            ✨ Especialistas Método TTS
+          </div>
+          <h1 className="mt-1.5 text-[42px] font-extrabold tracking-tight leading-[1.1]">
+            Com quem você quer
+            <br />
+            falar agora? 💕
+          </h1>
         </div>
-        <h1 className="mt-1.5 text-[28px] lg:text-[42px] font-extrabold tracking-[-0.025em] leading-[1.1]">
-          Com quem você quer
-          <br />
-          falar agora? 💕
-        </h1>
-        <p className="mt-2.5 text-[14px] lg:text-[16px] text-spark-ink-50 max-w-[560px]">
-          Cada especialista é treinada pra uma parte do funil. Escolhe uma pra começar — as conversas
-          ficam salvas e organizadas em pastinhas. 💅
+        <p className="text-[14px] lg:text-[16px] text-spark-ink-70 max-w-[560px] lg:mt-2.5 leading-relaxed">
+          Cada especialista é treinada pra uma parte do funil. Escolhe uma — as conversas ficam salvas e organizadas em pastinhas. 💅
         </p>
       </div>
 
-      {/* 4 cards de especialistas */}
-      <div className="mt-6 lg:mt-8 px-4 lg:px-12 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5">
+      {/* Cards de especialistas */}
+      <div className="mt-5 lg:mt-8 px-4 lg:px-12 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
         {VISIBLE_AGENTS.map((a) => (
           <button
             key={a.id}
             onClick={() => start(a.id)}
-            className="text-left rounded-[22px] bg-spark-surface border border-spark-hairline overflow-hidden hover:border-spark-ink/30 transition-all hover:shadow-[0_18px_40px_-22px_rgba(20,20,40,0.25)] active:scale-[0.99]"
+            className="text-left rounded-3xl overflow-hidden relative active:scale-[0.99] transition-all border shadow-[0_8px_24px_-16px_rgba(20,20,40,0.18)] hover:shadow-[0_18px_40px_-22px_rgba(20,20,40,0.28)]"
+            style={{
+              background: `linear-gradient(135deg, ${a.bg} 0%, oklch(0.98 0.01 0) 100%)`,
+              borderColor: a.bg,
+            }}
           >
-            <div className="p-5 pb-3 flex items-start gap-4">
-              <AgentCharacter agent={a.id} size={112} />
+            {/* Decorative blob no canto */}
+            <div
+              aria-hidden
+              className="absolute -top-10 -right-10 w-32 h-32 rounded-full opacity-50 blur-2xl pointer-events-none"
+              style={{ background: a.fg }}
+            />
+
+            <div className="relative p-4 flex items-center gap-4">
+              <div
+                className="shrink-0 rounded-2xl flex items-center justify-center"
+                style={{
+                  width: 96,
+                  height: 96,
+                  background: "rgba(255,255,255,0.6)",
+                  backdropFilter: "blur(6px)",
+                }}
+              >
+                <AgentCharacter agent={a.id} size={88} />
+              </div>
               <div className="flex-1 min-w-0">
-                <div className="text-[11px] font-bold text-spark-ink-50 uppercase tracking-[0.08em]">
+                <div
+                  className="text-[10.5px] font-bold uppercase tracking-[0.08em]"
+                  style={{ color: a.fg }}
+                >
                   {TAGLINES[a.id]}
                 </div>
-                <div className="mt-1 text-[20px] font-extrabold tracking-[-0.015em] leading-tight">
+                <div className="mt-0.5 text-[20px] font-extrabold tracking-tight leading-tight text-spark-ink">
                   {a.label}
                 </div>
-                <div className="mt-1 text-[12.5px] text-spark-ink-70 leading-snug">
+                <div className="mt-1 text-[12.5px] text-spark-ink-70 leading-snug line-clamp-2">
                   {a.description}
                 </div>
               </div>
             </div>
-            <div className="px-5 pb-4">
+
+            <div className="relative px-4 pb-4">
               <ul className="flex flex-col gap-1">
                 {SPECIALTIES[a.id].map((sp) => (
-                  <li key={sp} className="flex gap-2 text-[12.5px] text-spark-ink-70 leading-snug">
-                    <span style={{ color: a.fg }} className="font-bold">·</span>
+                  <li
+                    key={sp}
+                    className="flex gap-2 text-[12.5px] text-spark-ink-70 leading-snug"
+                  >
+                    <span style={{ color: a.fg }} className="font-bold shrink-0">
+                      ·
+                    </span>
                     {sp}
                   </li>
                 ))}
               </ul>
             </div>
+
             <div
-              className="px-5 py-3.5 border-t border-spark-hairline flex items-center justify-between text-[13px] font-bold"
-              style={{ color: a.fg }}
+              className="relative px-4 py-3.5 flex items-center justify-between text-[13px] font-extrabold text-white"
+              style={{
+                background: `linear-gradient(90deg, ${a.fg} 0%, ${a.fg} 100%)`,
+              }}
             >
               <span className="inline-flex items-center gap-1.5">
                 ✨ Conversar
               </span>
-              <ArrowRight size={16} strokeWidth={1.7} />
+              <ArrowRight size={16} strokeWidth={2.2} />
             </div>
           </button>
         ))}
       </div>
-
     </div>
   );
 }
@@ -154,18 +188,7 @@ function GalleryBody() {
 function NewChatMobile() {
   return (
     <>
-      <div className="pt-14 px-4 pb-2 flex items-center justify-between">
-        <Link
-          href="/"
-          className="w-9 h-9 rounded-full text-spark-ink flex items-center justify-center"
-        >
-          <ArrowLeft size={18} strokeWidth={1.7} />
-        </Link>
-        <div className="text-[13px] font-bold text-spark-ink-50">Especialistas</div>
-        <button className="w-9 h-9 rounded-full text-spark-ink flex items-center justify-center">
-          <MoreHorizontal size={18} strokeWidth={1.7} />
-        </button>
-      </div>
+      <MobileHeader title="Especialistas ✨" back={{ href: "/" }} />
       <GalleryBody />
     </>
   );

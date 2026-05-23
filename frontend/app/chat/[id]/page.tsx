@@ -452,26 +452,49 @@ function ChatMobile({
 
   return (
     <>
-      <div className="pt-14 pl-2 pr-3 pb-2.5 flex items-center gap-1.5 border-b border-spark-hairline safe-top">
+      <div
+        className="relative pl-2 pr-3 pb-4 flex items-center gap-2.5 rounded-b-[28px] shadow-[0_12px_30px_-18px_oklch(0.55_0.24_340/0.5)]"
+        style={{
+          paddingTop: "calc(env(safe-area-inset-top) + 52px)",
+          background: `linear-gradient(135deg, ${AGENTS[agent].fg} 0%, oklch(0.55 0.24 340) 100%)`,
+        }}
+      >
+        {/* Glow superior sutil pra dar profundidade ao gradient */}
+        <div
+          aria-hidden
+          className="absolute inset-0 rounded-b-[28px] pointer-events-none"
+          style={{
+            background:
+              "linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 60%)",
+          }}
+        />
         <button
           type="button"
           aria-label="Voltar pra galeria de agentes"
           onClick={() => router.push("/chat")}
-          className="w-10 h-10 rounded-full flex items-center justify-center text-spark-ink active:scale-95 transition-transform"
+          className="relative w-10 h-10 rounded-full flex items-center justify-center text-white hover:bg-white/15 active:scale-95 transition-all"
         >
-          <ArrowLeft size={20} strokeWidth={1.7} />
+          <ArrowLeft size={22} strokeWidth={2.2} />
         </button>
-        <div className="flex-1 min-w-0">
-          <div className="text-[14px] font-bold truncate">{title}</div>
-          <div className="text-[11px] text-spark-ink-50 font-mono">{AGENTS[agent].label}</div>
+        <div
+          className="relative w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shrink-0"
+          style={{ background: "rgba(255,255,255,0.85)" }}
+        >
+          <AgentCharacter agent={agent} size={36} />
+        </div>
+        <div className="relative flex-1 min-w-0">
+          <div className="text-[15px] font-extrabold text-white tracking-tight truncate leading-tight">
+            {title}
+          </div>
+          <div className="text-[11px] text-white/80 font-mono">{AGENTS[agent].label}</div>
         </div>
         <button
           type="button"
           aria-label="Abrir lista de conversas"
           onClick={() => setDrawerOpen(true)}
-          className="w-10 h-10 rounded-full flex items-center justify-center text-spark-ink active:scale-95 transition-transform"
+          className="relative w-10 h-10 rounded-full flex items-center justify-center text-white hover:bg-white/15 active:scale-95 transition-all"
         >
-          <Menu size={20} strokeWidth={1.7} />
+          <Menu size={20} strokeWidth={2} />
         </button>
       </div>
 

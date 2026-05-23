@@ -233,40 +233,42 @@ function HomeBody({ desktop = false }: { desktop?: boolean }) {
   return (
     <div className={`flex-1 overflow-auto ${desktop ? "py-8 px-12" : "pb-10"}`}>
       <div className={maxW}>
-        {/* Saudação */}
-        <div className={`${pad} ${desktop ? "" : "pt-5"}`}>
+        {/* Saudação — em mobile sobe um pouco pra "abraçar" o header */}
+        <div className={`${pad} ${desktop ? "" : "-mt-2 pt-2"}`}>
           <div className="text-[13px] font-bold text-spark-brand tracking-[0.06em] uppercase">
             {hi.text}, {firstName} {hi.emoji}
           </div>
           <h1
-            className={`mt-1.5 font-extrabold tracking-tight leading-[1.1] ${desktop ? "text-[36px]" : "text-[26px]"}`}
+            className={`mt-1.5 font-extrabold tracking-tight leading-[1.05] ${desktop ? "text-[36px]" : "text-[24px]"}`}
           >
             Pronta pra criar algo lindo hoje? ✨
           </h1>
         </div>
 
-        {/* KPI cards */}
-        <div className={`mt-5 ${pad}`}>
-          <div className="grid grid-cols-3 gap-2.5">
-            <KpiCard
-              emoji="📦"
-              label="Produtos"
-              value={data.products.length}
-              href="/produtos"
-              tone="brand"
-            />
-            <KpiCard
-              emoji="✍️"
-              label="Scripts"
-              value={data.scripts.length}
-              href="/scripts"
-            />
-            <KpiCard
-              emoji="🎓"
-              label="Aulas vistas"
-              value={`${eduCompleted}/${data.education.length || 0}`}
-              href="/educacao"
-            />
+        {/* KPI cards — card unificado com 3 stats */}
+        <div className={`mt-4 ${pad}`}>
+          <div className="rounded-3xl bg-spark-surface border border-spark-hairline overflow-hidden shadow-[0_4px_16px_-8px_rgba(20,20,40,0.08)]">
+            <div className="grid grid-cols-3 divide-x divide-spark-hairline">
+              <KpiCell
+                emoji="📦"
+                label="Produtos"
+                value={data.products.length}
+                href="/produtos"
+                tone="brand"
+              />
+              <KpiCell
+                emoji="✍️"
+                label="Scripts"
+                value={data.scripts.length}
+                href="/scripts"
+              />
+              <KpiCell
+                emoji="🎓"
+                label="Aulas"
+                value={`${eduCompleted}/${data.education.length || 0}`}
+                href="/educacao"
+              />
+            </div>
           </div>
         </div>
 
@@ -390,7 +392,7 @@ function HomeBody({ desktop = false }: { desktop?: boolean }) {
 // Sub-componentes
 // =================================================================
 
-function KpiCard({
+function KpiCell({
   emoji,
   label,
   value,
@@ -406,21 +408,21 @@ function KpiCard({
   return (
     <Link
       href={href}
-      className={`rounded-3xl p-4 transition-all block active:scale-[0.98] ${
-        tone === "brand"
-          ? "bg-brand-grad-soft border border-spark-brand/15 hover:border-spark-brand/40 shadow-[0_6px_18px_-10px_oklch(0.55_0.24_340/0.3)]"
-          : "bg-spark-surface border border-spark-hairline hover:border-spark-ink/30 shadow-[0_2px_10px_-6px_rgba(20,20,40,0.08)]"
+      className={`p-3.5 text-center transition-colors active:bg-spark-surface-sunken hover:bg-spark-surface-sunken/60 ${
+        tone === "brand" ? "bg-brand-grad-soft/60" : ""
       }`}
     >
       <div className="text-[22px] leading-none">{emoji}</div>
       <div
-        className={`mt-2 font-extrabold font-mono tracking-tight text-[26px] leading-none ${
+        className={`mt-2 font-extrabold font-mono tracking-tight text-[24px] leading-none ${
           tone === "brand" ? "text-spark-brand-deep" : "text-spark-ink"
         }`}
       >
         {value}
       </div>
-      <div className="text-[11.5px] text-spark-ink-50 font-semibold mt-1">{label}</div>
+      <div className="text-[10.5px] text-spark-ink-50 font-semibold mt-1 uppercase tracking-[0.04em]">
+        {label}
+      </div>
     </Link>
   );
 }
