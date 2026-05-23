@@ -175,7 +175,7 @@ function NewChatDesktop() {
   return (
     <div className="flex-1 flex flex-col min-h-0">
       <div className="px-6 lg:px-12 py-3.5 border-b border-spark-hairline flex items-center gap-2.5">
-        <SparkMark size={22} />
+        <SparkMark size={32} />
         <div className="text-[14px] font-bold">Galeria de especialistas</div>
       </div>
       <GalleryBody />

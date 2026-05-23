@@ -17,7 +17,7 @@ type Props = {
  * uma versão branca abstrata (estrela) porque o PNG colorido tem fundo
  * claro e ficaria como "carimbo" feio em cima do gradient.
  */
-export function SparkMark({ size = 36, white = false, className }: Props) {
+export function SparkMark({ size = 48, white = false, className }: Props) {
   if (white) {
     return (
       <svg

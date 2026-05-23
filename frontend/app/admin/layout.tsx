@@ -16,7 +16,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <header className="border-b border-spark-hairline bg-spark-surface-elev px-4 lg:px-12 py-3.5 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link href="/" className="inline-flex">
-            <SparkWordmark size={26} />
+            <SparkWordmark size={32} />
           </Link>
           <span className="text-[12px] font-bold uppercase tracking-[0.08em] text-spark-brand">
             🛠️ Admin

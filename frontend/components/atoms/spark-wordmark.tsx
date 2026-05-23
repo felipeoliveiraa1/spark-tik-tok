@@ -15,7 +15,7 @@ type Props = {
  * `white=true` em fundos rose/gradient: renderiza texto branco sem
  * imagem (a logo PNG tem fundo claro e visualmente fica como carimbo).
  */
-export function SparkWordmark({ size = 28, white = false, className }: Props) {
+export function SparkWordmark({ size = 36, white = false, className }: Props) {
   if (white) {
     return (
       <div
