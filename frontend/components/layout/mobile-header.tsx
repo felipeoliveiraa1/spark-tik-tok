@@ -6,18 +6,20 @@ import { ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 /**
- * Header mobile com 2 variantes:
- *  - `solid` (default): fundo branco translúcido, texto escuro.
- *  - `gradient`: fundo gradient rose-pink com curve na base, texto branco.
- *    Usado nas listagens e páginas detalhe pra dar identidade visual.
+ * Header mobile com 3 variantes:
+ *  - `solid`: fundo branco com border-bottom. Texto escuro.
+ *  - `gradient` (default): fundo gradient rose-pink + curve. Texto branco.
+ *    Usado nas listagens e páginas detalhe.
+ *  - `soft`: fundo blush claro com glow rose + curve. Texto escuro.
+ *    Usado APENAS na home pra destacar (logo colorida em destaque sem
+ *    competir com o gradient rose das outras telas).
  *
- * Padding top é aditivo: env(safe-area-inset-top) + base. Antes a class
- * `safe-top` sobrescrevia o pt em devices sem notch.
+ * Padding top é aditivo: env(safe-area-inset-top) + base.
  *
  * Uso:
- *   <MobileHeader title="Produtos 📦" variant="gradient" />
- *   <MobileHeader title="Produto" back={{ href: "/produtos" }} variant="gradient" />
- *   <MobileHeader center={<Logo />} variant="gradient" />
+ *   <MobileHeader title="Produtos 📦" />               // gradient (default)
+ *   <MobileHeader center={<Logo />} variant="soft" />  // home
+ *   <MobileHeader title="Login" variant="solid" />     // tela sem identidade
  */
 
 type BackProp = {
@@ -28,7 +30,7 @@ type BackProp = {
   ariaLabel?: string;
 };
 
-type Variant = "solid" | "gradient";
+type Variant = "solid" | "gradient" | "soft";
 
 type Props = {
   title?: string | null;
@@ -54,29 +56,46 @@ export function MobileHeader({
 }: Props) {
   const hasCenter = Boolean(center);
   const isGradient = variant === "gradient";
+  const isSoft = variant === "soft";
   const basePt = hasCenter ? 60 : 52;
   const basePb = hasCenter ? 24 : 22;
 
+  // Text colors: branco no gradient (contraste alto), escuro nos demais.
   const textCls = isGradient ? "text-white" : "text-spark-ink";
   const subtitleCls = isGradient ? "text-white/75" : "text-spark-ink-50";
-  const hitCls = cn(HIT_BASE, isGradient ? "text-white hover:bg-white/10" : "text-spark-ink hover:bg-spark-surface-sunken");
+  const hitCls = cn(
+    HIT_BASE,
+    isGradient
+      ? "text-white hover:bg-white/10"
+      : "text-spark-ink hover:bg-spark-surface-sunken",
+  );
+
+  // Background por variant
+  let bgClass = "bg-white/95 border-b border-spark-hairline"; // solid
+  if (isGradient) {
+    bgClass = "bg-brand-grad shadow-[0_12px_30px_-18px_oklch(0.55_0.24_340/0.55)]";
+  } else if (isSoft) {
+    bgClass = "shadow-[0_12px_30px_-18px_oklch(0.55_0.24_340/0.25)]";
+  }
 
   return (
     <div
       className={cn(
         "relative px-2 flex items-center gap-1.5 rounded-b-[28px]",
-        isGradient
-          ? "bg-brand-grad shadow-[0_12px_30px_-18px_oklch(0.55_0.24_340/0.55)]"
-          : "bg-white/95 border-b border-spark-hairline",
+        bgClass,
         hasCenter && "min-h-[112px]",
         className,
       )}
       style={{
         paddingTop: `calc(env(safe-area-inset-top) + ${basePt}px)`,
         paddingBottom: `${basePb}px`,
+        ...(isSoft && {
+          background:
+            "linear-gradient(180deg, oklch(0.98 0.02 350) 0%, oklch(0.96 0.04 350) 100%)",
+        }),
       }}
     >
-      {/* Highlight diagonal sutil pro gradient ganhar profundidade */}
+      {/* Glow no gradient pra profundidade */}
       {isGradient && (
         <div
           aria-hidden
@@ -86,6 +105,21 @@ export function MobileHeader({
               "linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 60%)",
           }}
         />
+      )}
+      {/* Blobs decorativos rose no soft pra dar identidade sem ser plano */}
+      {isSoft && (
+        <>
+          <div
+            aria-hidden
+            className="absolute -top-6 -left-8 w-32 h-32 rounded-full opacity-40 blur-3xl pointer-events-none"
+            style={{ background: "oklch(0.65 0.20 350)" }}
+          />
+          <div
+            aria-hidden
+            className="absolute -bottom-10 -right-4 w-40 h-40 rounded-full opacity-30 blur-3xl pointer-events-none"
+            style={{ background: "oklch(0.62 0.22 20)" }}
+          />
+        </>
       )}
 
       <div className="relative flex items-center gap-1.5 w-full">

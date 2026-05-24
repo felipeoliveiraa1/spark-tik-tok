@@ -558,7 +558,7 @@ function SectionCard({
 function HomeMobile() {
   return (
     <>
-      <MobileHeader center={<SparkWordmark size={44} />} />
+      <MobileHeader center={<SparkWordmark size={44} />} variant="soft" />
       <HomeBody />
       <BottomNav active="home" />
     </>
