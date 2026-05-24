@@ -1,14 +1,27 @@
 import { redirect } from "next/navigation";
-import { LogOut, KeyRound, Calendar, Package, Pen, GraduationCap } from "lucide-react";
+import {
+  LogOut,
+  KeyRound,
+  Calendar,
+  Package,
+  Pen,
+  GraduationCap,
+  ExternalLink,
+  CreditCard,
+} from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { MobileHeader } from "@/components/layout/mobile-header";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { SBadge } from "@/components/atoms/s-badge";
 import { getCurrentProfile, getSupabaseServer } from "@/lib/supabase-server";
 import { logoutAction } from "@/lib/auth";
+import { getDisplayStatus, statusLabel } from "@/lib/plan-access";
 import { ResetPasswordForm } from "./reset-password-form";
 import { ProfileEditor } from "./profile-editor";
 import { ChangePasswordForm } from "./change-password-form";
+
+const KIWIFY_PORTAL_URL =
+  process.env.NEXT_PUBLIC_KIWIFY_PORTAL_URL ?? "https://dashboard.kiwify.com.br";
 
 type ContaPageProps = {
   searchParams?: Promise<{ reset?: string }>;
@@ -71,6 +84,10 @@ function ContaBody({
   name,
   niche,
   planActive,
+  planStatus,
+  planExpiresAt,
+  planNextPayment,
+  planCanceledAt,
   showReset,
   createdAt,
   planRenewedAt,
@@ -81,11 +98,25 @@ function ContaBody({
   name: string;
   niche: string | null;
   planActive: boolean;
+  planStatus: string | null;
+  planExpiresAt: string | null;
+  planNextPayment: string | null;
+  planCanceledAt: string | null;
   showReset: boolean;
   createdAt: string | null;
   planRenewedAt: string | null;
   stats: Stats;
 }) {
+  const status = getDisplayStatus({
+    plan_active: planActive,
+    plan_status: planStatus,
+    plan_expires_at: planExpiresAt,
+  });
+  const { label: statusBadgeLabel, tone: statusTone } = statusLabel(status);
+  // SBadge não tem variante "bad" — mapeamos bad → warn (visual amarelo) ou
+  // criamos pílula manual mais à frente. Por ora bad vira warn.
+  const badgeTone: "good" | "warn" | "neutral" =
+    statusTone === "good" ? "good" : statusTone === "neutral" ? "neutral" : "warn";
   return (
     <div className={desktop ? "max-w-[640px]" : ""}>
       {/* Avatar + nome + email + plan */}
@@ -101,9 +132,7 @@ function ContaBody({
           </div>
           <div className="text-[13px] text-spark-ink-50 font-mono truncate">{email}</div>
           <div className="mt-1.5 flex flex-wrap gap-1.5">
-            <SBadge tone={planActive ? "good" : "warn"}>
-              {planActive ? "Plano ativo ✨" : "Plano inativo"}
-            </SBadge>
+            <SBadge tone={badgeTone}>{statusBadgeLabel}</SBadge>
             {niche &&
               niche
                 .split(",")
@@ -132,10 +161,58 @@ function ContaBody({
             label="Membro desde"
             value={`${formatDate(createdAt)} (${daysSince(createdAt)} dias)`}
           />
-          {planActive && planRenewedAt && (
-            <InfoRow Icon={Calendar} label="Último renew do plano" value={formatDate(planRenewedAt)} />
+          {planRenewedAt && (
+            <InfoRow Icon={Calendar} label="Última renovação" value={formatDate(planRenewedAt)} />
           )}
         </div>
+      </div>
+
+      {/* Plano detalhado */}
+      <div className="mt-4 bg-spark-surface rounded-[18px] border border-spark-hairline p-4">
+        <div className="flex items-center justify-between">
+          <div className="text-[10.5px] uppercase tracking-[0.08em] font-bold text-spark-ink-50">
+            Plano
+          </div>
+          <SBadge tone={badgeTone}>{statusBadgeLabel}</SBadge>
+        </div>
+        <div className="mt-2.5 space-y-2.5">
+          {status === "active" && planNextPayment && (
+            <InfoRow
+              Icon={CreditCard}
+              label="Próxima cobrança"
+              value={formatDate(planNextPayment)}
+            />
+          )}
+          {status === "late" && (
+            <div className="p-3 rounded-xl bg-warn/10 border border-warn/20 text-[13px] text-warn leading-snug">
+              ⚠️ A última cobrança ficou pendente. Atualize seu cartão pelo Kiwify pra não perder acesso.
+            </div>
+          )}
+          {status === "canceled" && planExpiresAt && (
+            <>
+              <InfoRow
+                Icon={Calendar}
+                label="Acesso até"
+                value={formatDate(planExpiresAt)}
+              />
+              {planCanceledAt && (
+                <InfoRow
+                  Icon={Calendar}
+                  label="Cancelado em"
+                  value={formatDate(planCanceledAt)}
+                />
+              )}
+            </>
+          )}
+        </div>
+        <a
+          href={KIWIFY_PORTAL_URL}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-3 w-full inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-full bg-spark-surface-sunken hover:bg-spark-surface-sunken/80 text-[13px] font-semibold text-spark-ink transition-colors"
+        >
+          Gerenciar pelo Kiwify <ExternalLink size={12} strokeWidth={2} />
+        </a>
       </div>
 
       {/* Edição de perfil */}
@@ -252,6 +329,10 @@ export default async function ContaPage({ searchParams }: ContaPageProps) {
               name={profile.name ?? ""}
               niche={profile.niche}
               planActive={profile.plan_active}
+              planStatus={profile.plan_status ?? null}
+              planExpiresAt={profile.plan_expires_at ?? null}
+              planNextPayment={profile.plan_next_payment ?? null}
+              planCanceledAt={profile.plan_canceled_at ?? null}
               showReset={showReset}
               createdAt={profile.created_at}
               planRenewedAt={profile.plan_renewed_at}
@@ -273,6 +354,10 @@ export default async function ContaPage({ searchParams }: ContaPageProps) {
             name={profile.name ?? ""}
             niche={profile.niche}
             planActive={profile.plan_active}
+            planStatus={profile.plan_status ?? null}
+            planExpiresAt={profile.plan_expires_at ?? null}
+            planNextPayment={profile.plan_next_payment ?? null}
+            planCanceledAt={profile.plan_canceled_at ?? null}
             showReset={showReset}
             createdAt={profile.created_at}
             planRenewedAt={profile.plan_renewed_at}

@@ -4,28 +4,30 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { generateFriendlyPassword } from "@/lib/password-gen";
 import { sendEmail } from "@/lib/resend";
 import { buildWelcomeEmail } from "@/lib/email-templates/welcome";
+import {
+  buildPlanRenewedEmail,
+  buildPlanLateEmail,
+  buildPlanCanceledEmail,
+  buildPlanRefundedEmail,
+} from "@/lib/email-templates/plan";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * Webhook Kiwify — recebe POST quando um evento acontece (compra aprovada,
- * renovação, etc).
+ * Webhook Kiwify — ciclo de vida da assinatura.
  *
- * Fluxo (somente `order_approved`):
- *   1. Valida token (env KIWIFY_WEBHOOK_TOKEN)
- *   2. Idempotência: se event_id já existe na tabela kiwify_events, retorna 200
- *      sem fazer nada (Kiwify pode reenviar — não duplicar conta).
- *   3. Lookup profile por email:
- *      - Existe: atualiza plan_active=true + kiwify_customer_id + subscription_id.
- *        Envia email "plano reativado".
- *      - NÃO existe: cria user em auth.users com senha temporária + metadata
- *        { name, must_reset_password: true }. O trigger on_auth_user_created
- *        cria o profile automaticamente. Atualiza profile com kiwify IDs +
- *        plan_active=true. Envia email de boas-vindas com a senha.
- *   4. Registra evento em kiwify_events pra auditoria.
+ * Eventos tratados:
+ *   order_approved/paid       → cria conta (1ª vez) OU reativa plano + welcome/reactivate email
+ *   subscription_renewed      → atualiza next_payment + status=active (renovação mensal OK)
+ *   subscription_late         → status=late + email warning (acesso continua)
+ *   subscription_canceled     → status=canceled + expires_at=access_until + email (acesso vai até a data)
+ *   order_refunded            → status=refunded + plan_active=false IMEDIATO + email
+ *   chargeback                → status=chargeback + plan_active=false IMEDIATO
+ *   outros                    → loga em kiwify_events e ignora
  *
- * Eventos não tratados (refunded, canceled, etc): apenas loga e retorna 200.
+ * Segurança: HMAC-SHA1(body, secret) na query string `?signature=`.
+ * Idempotência: tabela kiwify_events com unique event_id (order_id::event_type).
  */
 
 type KiwifyCustomer = {
@@ -45,7 +47,14 @@ type KiwifyPayload = {
   Subscription?: {
     id?: string;
     subscription_id?: string;
+    start_date?: string;
     next_payment?: string;
+    status?: string;
+    customer_access?: {
+      has_access?: boolean;
+      active_period?: boolean;
+      access_until?: string;
+    };
   };
   subscription_id?: string;
   Product?: {
@@ -77,6 +86,19 @@ function fullName(customer: KiwifyCustomer | undefined): string {
   return parts.join(" ").trim();
 }
 
+function siteUrl(): string {
+  return process.env.NEXT_PUBLIC_SITE_URL ?? "https://spark-tik-tok-app.vercel.app";
+}
+
+function subscriptionIdOf(payload: KiwifyPayload): string | null {
+  return (
+    payload.subscription_id ??
+    payload.Subscription?.subscription_id ??
+    payload.Subscription?.id ??
+    null
+  );
+}
+
 export async function POST(request: Request) {
   const secret = process.env.KIWIFY_WEBHOOK_TOKEN;
   if (!secret) {
@@ -84,17 +106,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "webhook_not_configured" }, { status: 500 });
   }
 
-  // Pegamos a signature da query string (Kiwify envia em `?signature=`).
   const url = new URL(request.url);
   const signature = url.searchParams.get("signature");
   if (!signature) {
     return NextResponse.json({ error: "missing_signature" }, { status: 401 });
   }
 
-  // Validação HMAC SHA1 conforme doc oficial:
-  //   signature = hmac_sha1(JSON.stringify(body), secret)
-  // Lemos body como texto, parseamos, depois RE-stringificamos pra calcular
-  // o HMAC. Isso replica o JSON.stringify(req.body) do exemplo da doc.
   const rawBody = await request.text();
   let payload: KiwifyPayload;
   try {
@@ -107,15 +124,11 @@ export async function POST(request: Request) {
     .update(JSON.stringify(payload))
     .digest("hex");
 
-  // timingSafeEqual previne timing attacks. Strings precisam ter mesmo tamanho.
   if (
     signature.length !== calculatedSignature.length ||
     !timingSafeEqual(Buffer.from(signature), Buffer.from(calculatedSignature))
   ) {
-    console.warn("[kiwify webhook] signature invalida", {
-      provided: signature.slice(0, 8),
-      expected: calculatedSignature.slice(0, 8),
-    });
+    console.warn("[kiwify webhook] signature invalida");
     return NextResponse.json({ error: "invalid_signature" }, { status: 401 });
   }
 
@@ -137,9 +150,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "supabase_not_configured" }, { status: 500 });
   }
 
-  // === Idempotência ===
-  // event_id único da Kiwify: usamos order_id + event_type pra evitar duplicar
-  // se Kiwify reenviar o mesmo evento.
+  // Idempotência: event_id = order_id::event_type pra evitar reprocessar
+  // (Kiwify reenvia até 5x se não receber 2xx em 40s).
   const eventId = `${orderId}::${eventType}`;
   const { data: existing } = await supabase
     .from("kiwify_events")
@@ -147,13 +159,11 @@ export async function POST(request: Request) {
     .eq("event_id", eventId)
     .maybeSingle();
   if (existing) {
-    console.log("[kiwify webhook] evento já processado, ignorando", { eventId });
     return NextResponse.json({ ok: true, status: "already_processed" });
   }
 
-  // Por enquanto só tratamos order_approved + status=paid (doc oficial Kiwify
-  // recomenda checar status pra liberar acesso a área de membros propria).
-  if (eventType !== "order_approved" || payload.order_status !== "paid") {
+  // Sempre logamos o evento bruto pra auditoria (mesmo se for ignorado).
+  const logEvent = async () => {
     await supabase.from("kiwify_events").insert({
       event_id: eventId,
       event_type: eventType,
@@ -161,19 +171,93 @@ export async function POST(request: Request) {
       customer_email: email,
       payload,
     });
-    console.log("[kiwify webhook] evento ignorado", {
-      eventType,
-      orderStatus: payload.order_status,
-      orderId,
-    });
-    return NextResponse.json({ ok: true, status: "ignored" });
+  };
+
+  try {
+    switch (eventType) {
+      case "order_approved":
+        if (payload.order_status === "paid") {
+          const result = await handleOrderApproved({ supabase, payload, email, customer });
+          await logEvent();
+          return NextResponse.json(result);
+        }
+        await logEvent();
+        return NextResponse.json({ ok: true, status: "ignored_not_paid" });
+
+      case "subscription_renewed": {
+        const result = await handleSubscriptionRenewed({ supabase, payload, email });
+        await logEvent();
+        return NextResponse.json(result);
+      }
+
+      case "subscription_late": {
+        const result = await handleSubscriptionLate({ supabase, payload, email, customer });
+        await logEvent();
+        return NextResponse.json(result);
+      }
+
+      case "subscription_canceled": {
+        const result = await handleSubscriptionCanceled({ supabase, payload, email, customer });
+        await logEvent();
+        return NextResponse.json(result);
+      }
+
+      case "order_refunded": {
+        const result = await handleOrderRefunded({ supabase, payload, email, customer });
+        await logEvent();
+        return NextResponse.json(result);
+      }
+
+      case "chargeback": {
+        const result = await handleChargeback({ supabase, payload, email });
+        await logEvent();
+        return NextResponse.json(result);
+      }
+
+      default:
+        await logEvent();
+        return NextResponse.json({ ok: true, status: "ignored", eventType });
+    }
+  } catch (err) {
+    console.error("[kiwify webhook] erro processando evento", { eventType, orderId, err });
+    // Logamos mesmo em erro pra auditoria
+    try {
+      await logEvent();
+    } catch {
+      /* noop */
+    }
+    return NextResponse.json(
+      { error: "internal_error", detail: err instanceof Error ? err.message : "unknown" },
+      { status: 500 },
+    );
   }
+}
 
-  const subscriptionId =
-    payload.subscription_id ?? payload.Subscription?.subscription_id ?? payload.Subscription?.id ?? null;
+// =================================================================
+// Handlers de evento
+// =================================================================
+
+type HandlerArgs = {
+  supabase: SupabaseClient;
+  payload: KiwifyPayload;
+  email: string;
+  customer?: KiwifyCustomer;
+};
+
+/**
+ * order_approved + paid = compra/renovação aprovada.
+ * Se profile existe → reativa. Se não → cria conta com senha temporária.
+ */
+async function handleOrderApproved({
+  supabase,
+  payload,
+  email,
+  customer,
+}: HandlerArgs): Promise<Record<string, unknown>> {
+  const subscriptionId = subscriptionIdOf(payload);
   const name = fullName(customer);
+  const nextPayment = payload.Subscription?.next_payment ?? null;
 
-  // === Verifica se profile já existe ===
   const { data: existingProfile } = await supabase
     .from("profiles")
     .select("id, email, name")
@@ -181,95 +265,68 @@ export async function POST(request: Request) {
     .maybeSingle();
 
   if (existingProfile) {
-    // Reativa o plano da aluna existente. Não cria conta nova, não troca senha.
+    // Reativa plano da aluna existente.
     await supabase
       .from("profiles")
       .update({
         plan_active: true,
+        plan_status: "active",
+        plan_expires_at: null,
+        plan_canceled_at: null,
+        plan_renewed_at: new Date().toISOString(),
+        plan_next_payment: nextPayment,
         kiwify_customer_id: customer?.CPF ?? null,
         kiwify_subscription_id: subscriptionId,
-        plan_renewed_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
       .eq("id", existingProfile.id);
 
-    await supabase.from("kiwify_events").insert({
-      event_id: eventId,
-      event_type: eventType,
-      order_id: orderId,
-      customer_email: email,
-      payload,
-    });
-
-    // Email de reativação (texto simples)
-    const loginUrl = `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://spark-tik-tok-app.vercel.app"}/login`;
     const fname = (existingProfile.name?.split(/\s+/)[0] || firstName(customer)).trim();
+    const loginUrl = `${siteUrl()}/login`;
     await sendEmail({
       to: email,
       subject: `Plano reativado, ${fname} 💕`,
       text: `Oi ${fname}, tudo bem? ✨\n\nSeu plano no Método TTS foi reativado. Você já pode entrar com a senha de sempre:\n\n${loginUrl}\n\nQualquer coisa é só responder esse email.\n\nBeijos,\nEquipe Método TTS 🌹`,
-      tags: [{ name: "kind", value: "plan_renewed" }],
+      tags: [{ name: "kind", value: "plan_reactivated" }],
     });
 
-    return NextResponse.json({
-      ok: true,
-      status: "plan_renewed",
-      profile_id: existingProfile.id,
-    });
+    return { ok: true, status: "plan_reactivated", profile_id: existingProfile.id };
   }
 
-  // === Cria conta nova ===
+  // Cria conta nova
   const password = generateFriendlyPassword();
   const { data: created, error: createErr } = await supabase.auth.admin.createUser({
     email,
     password,
     email_confirm: true,
-    user_metadata: {
-      name,
-      must_reset_password: true,
-    },
+    user_metadata: { name, must_reset_password: true },
   });
 
   if (createErr || !created.user) {
-    console.error("[kiwify webhook] falha ao criar user", createErr);
-    return NextResponse.json(
-      { error: "create_user_failed", detail: createErr?.message },
-      { status: 500 },
-    );
+    throw new Error(`createUser failed: ${createErr?.message ?? "unknown"}`);
   }
 
-  // O trigger on_auth_user_created cria o profile automaticamente.
-  // Aqui só atualizamos os campos Kiwify-específicos + plan_active.
   await supabase
     .from("profiles")
     .update({
       name: name || null,
       plan_active: true,
+      plan_status: "active",
+      plan_renewed_at: new Date().toISOString(),
+      plan_next_payment: nextPayment,
       kiwify_customer_id: customer?.CPF ?? null,
       kiwify_subscription_id: subscriptionId,
-      plan_renewed_at: new Date().toISOString(),
       must_reset_password: true,
       updated_at: new Date().toISOString(),
     })
     .eq("id", created.user.id);
 
-  await supabase.from("kiwify_events").insert({
-    event_id: eventId,
-    event_type: eventType,
-    order_id: orderId,
-    customer_email: email,
-    payload,
-  });
-
-  // === Email de boas-vindas com senha temporária ===
-  const loginUrl = `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://spark-tik-tok-app.vercel.app"}/login`;
   const welcome = buildWelcomeEmail({
     firstName: firstName(customer),
     email,
     temporaryPassword: password,
-    loginUrl,
+    loginUrl: `${siteUrl()}/login`,
   });
-
   const sent = await sendEmail({
     to: email,
     subject: welcome.subject,
@@ -277,17 +334,215 @@ export async function POST(request: Request) {
     html: welcome.html,
     tags: [{ name: "kind", value: "welcome" }],
   });
-
   if (!sent.ok) {
-    // Logamos mas não retornamos erro — a conta foi criada. Felipe pode
-    // reenviar manualmente pelo admin.
-    console.error("[kiwify webhook] falha ao enviar email de boas-vindas", sent.error);
+    console.error("[kiwify webhook] falha email boas-vindas", sent.error);
+  }
+  return { ok: true, status: "account_created", user_id: created.user.id, email_sent: sent.ok };
+}
+
+/**
+ * subscription_renewed = renovação mensal aprovada. Apenas atualiza
+ * datas + garante status=active. Email opcional (curto).
+ */
+async function handleSubscriptionRenewed({
+  supabase,
+  payload,
+  email,
+}: HandlerArgs): Promise<Record<string, unknown>> {
+  const subscriptionId = subscriptionIdOf(payload);
+  const nextPayment = payload.Subscription?.next_payment ?? null;
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id, name")
+    .eq("email", email)
+    .maybeSingle();
+
+  if (!profile) {
+    // Renovação sem profile? Estranho. Logamos e seguimos.
+    console.warn("[kiwify webhook] subscription_renewed sem profile", { email });
+    return { ok: true, status: "renewed_no_profile" };
   }
 
-  return NextResponse.json({
-    ok: true,
-    status: "account_created",
-    user_id: created.user.id,
-    email_sent: sent.ok,
+  await supabase
+    .from("profiles")
+    .update({
+      plan_active: true,
+      plan_status: "active",
+      plan_expires_at: null,
+      plan_canceled_at: null,
+      plan_renewed_at: new Date().toISOString(),
+      plan_next_payment: nextPayment,
+      kiwify_subscription_id: subscriptionId,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", profile.id);
+
+  // Email leve de confirmação
+  const fname = profile.name?.split(/\s+/)[0] || "criadora";
+  const tmpl = buildPlanRenewedEmail({ firstName: fname, nextPayment });
+  await sendEmail({
+    to: email,
+    subject: tmpl.subject,
+    text: tmpl.text,
+    html: tmpl.html,
+    tags: [{ name: "kind", value: "plan_renewed" }],
   });
+
+  return { ok: true, status: "renewed", profile_id: profile.id };
+}
+
+/**
+ * subscription_late = cobrança atrasada. Acesso CONTINUA. Marca status=late
+ * pra app mostrar banner warning. Email com link pra atualizar pagamento.
+ */
+async function handleSubscriptionLate({
+  supabase,
+  payload,
+  email,
+  customer,
+}: HandlerArgs): Promise<Record<string, unknown>> {
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id, name")
+    .eq("email", email)
+    .maybeSingle();
+  if (!profile) return { ok: true, status: "late_no_profile" };
+
+  await supabase
+    .from("profiles")
+    .update({
+      plan_active: true, // acesso continua
+      plan_status: "late",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", profile.id);
+
+  const fname = profile.name?.split(/\s+/)[0] || firstName(customer);
+  const tmpl = buildPlanLateEmail({ firstName: fname });
+  await sendEmail({
+    to: email,
+    subject: tmpl.subject,
+    text: tmpl.text,
+    html: tmpl.html,
+    tags: [{ name: "kind", value: "plan_late" }],
+  });
+
+  return { ok: true, status: "marked_late", profile_id: profile.id };
+}
+
+/**
+ * subscription_canceled = aluna cancelou. Acesso continua até access_until
+ * (período já pago). Quando passar, hasActiveAccess() bloqueia automaticamente.
+ */
+async function handleSubscriptionCanceled({
+  supabase,
+  payload,
+  email,
+  customer,
+}: HandlerArgs): Promise<Record<string, unknown>> {
+  const accessUntil = payload.Subscription?.customer_access?.access_until ?? null;
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id, name")
+    .eq("email", email)
+    .maybeSingle();
+  if (!profile) return { ok: true, status: "canceled_no_profile" };
+
+  await supabase
+    .from("profiles")
+    .update({
+      plan_active: true, // acesso continua até access_until
+      plan_status: "canceled",
+      plan_expires_at: accessUntil,
+      plan_canceled_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", profile.id);
+
+  const fname = profile.name?.split(/\s+/)[0] || firstName(customer);
+  const tmpl = buildPlanCanceledEmail({ firstName: fname, accessUntil });
+  await sendEmail({
+    to: email,
+    subject: tmpl.subject,
+    text: tmpl.text,
+    html: tmpl.html,
+    tags: [{ name: "kind", value: "plan_canceled" }],
+  });
+
+  return { ok: true, status: "canceled", profile_id: profile.id, access_until: accessUntil };
+}
+
+/**
+ * order_refunded = reembolso. Acesso CORTADO imediato.
+ */
+async function handleOrderRefunded({
+  supabase,
+  email,
+  customer,
+}: HandlerArgs): Promise<Record<string, unknown>> {
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id, name")
+    .eq("email", email)
+    .maybeSingle();
+  if (!profile) return { ok: true, status: "refunded_no_profile" };
+
+  await supabase
+    .from("profiles")
+    .update({
+      plan_active: false,
+      plan_status: "refunded",
+      plan_expires_at: new Date().toISOString(),
+      plan_canceled_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", profile.id);
+
+  const fname = profile.name?.split(/\s+/)[0] || firstName(customer);
+  const tmpl = buildPlanRefundedEmail({ firstName: fname });
+  await sendEmail({
+    to: email,
+    subject: tmpl.subject,
+    text: tmpl.text,
+    html: tmpl.html,
+    tags: [{ name: "kind", value: "plan_refunded" }],
+  });
+
+  return { ok: true, status: "refunded", profile_id: profile.id };
+}
+
+/**
+ * chargeback = chargeback bancário. Acesso CORTADO imediato. Sem email
+ * pra aluna (caso suspeito), só log pra Felipe acompanhar via admin.
+ */
+async function handleChargeback({
+  supabase,
+  email,
+}: HandlerArgs): Promise<Record<string, unknown>> {
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("email", email)
+    .maybeSingle();
+  if (!profile) return { ok: true, status: "chargeback_no_profile" };
+
+  await supabase
+    .from("profiles")
+    .update({
+      plan_active: false,
+      plan_status: "chargeback",
+      plan_expires_at: new Date().toISOString(),
+      plan_canceled_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", profile.id);
+
+  console.warn("[kiwify webhook] CHARGEBACK recebido — revisar caso", {
+    email,
+    profile_id: profile.id,
+  });
+
+  return { ok: true, status: "chargeback", profile_id: profile.id };
 }
