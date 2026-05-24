@@ -1,3 +1,4 @@
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { generateFriendlyPassword } from "@/lib/password-gen";
@@ -77,29 +78,45 @@ function fullName(customer: KiwifyCustomer | undefined): string {
 }
 
 export async function POST(request: Request) {
-  // Validação de token. Kiwify envia o token via query string `?signature=...`
-  // (configurável no painel). Pode também aceitar header `x-kiwify-token` pra
-  // compatibilidade.
-  const url = new URL(request.url);
-  const tokenFromQuery = url.searchParams.get("signature") ?? url.searchParams.get("token");
-  const tokenFromHeader = request.headers.get("x-kiwify-token");
-  const provided = tokenFromQuery ?? tokenFromHeader;
-
-  const expected = process.env.KIWIFY_WEBHOOK_TOKEN;
-  if (!expected) {
+  const secret = process.env.KIWIFY_WEBHOOK_TOKEN;
+  if (!secret) {
     console.error("[kiwify webhook] KIWIFY_WEBHOOK_TOKEN não configurado");
     return NextResponse.json({ error: "webhook_not_configured" }, { status: 500 });
   }
-  if (provided !== expected) {
-    console.warn("[kiwify webhook] token inválido", { provided: provided?.slice(0, 6) });
-    return NextResponse.json({ error: "invalid_token" }, { status: 401 });
+
+  // Pegamos a signature da query string (Kiwify envia em `?signature=`).
+  const url = new URL(request.url);
+  const signature = url.searchParams.get("signature");
+  if (!signature) {
+    return NextResponse.json({ error: "missing_signature" }, { status: 401 });
   }
 
+  // Validação HMAC SHA1 conforme doc oficial:
+  //   signature = hmac_sha1(JSON.stringify(body), secret)
+  // Lemos body como texto, parseamos, depois RE-stringificamos pra calcular
+  // o HMAC. Isso replica o JSON.stringify(req.body) do exemplo da doc.
+  const rawBody = await request.text();
   let payload: KiwifyPayload;
   try {
-    payload = (await request.json()) as KiwifyPayload;
+    payload = JSON.parse(rawBody) as KiwifyPayload;
   } catch {
     return NextResponse.json({ error: "invalid_json" }, { status: 400 });
+  }
+
+  const calculatedSignature = createHmac("sha1", secret)
+    .update(JSON.stringify(payload))
+    .digest("hex");
+
+  // timingSafeEqual previne timing attacks. Strings precisam ter mesmo tamanho.
+  if (
+    signature.length !== calculatedSignature.length ||
+    !timingSafeEqual(Buffer.from(signature), Buffer.from(calculatedSignature))
+  ) {
+    console.warn("[kiwify webhook] signature invalida", {
+      provided: signature.slice(0, 8),
+      expected: calculatedSignature.slice(0, 8),
+    });
+    return NextResponse.json({ error: "invalid_signature" }, { status: 401 });
   }
 
   const eventType = payload.webhook_event_type ?? "";
@@ -134,8 +151,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, status: "already_processed" });
   }
 
-  // Por enquanto só tratamos order_approved.
-  if (eventType !== "order_approved") {
+  // Por enquanto só tratamos order_approved + status=paid (doc oficial Kiwify
+  // recomenda checar status pra liberar acesso a área de membros propria).
+  if (eventType !== "order_approved" || payload.order_status !== "paid") {
     await supabase.from("kiwify_events").insert({
       event_id: eventId,
       event_type: eventType,
@@ -143,7 +161,11 @@ export async function POST(request: Request) {
       customer_email: email,
       payload,
     });
-    console.log("[kiwify webhook] evento ignorado", { eventType, orderId });
+    console.log("[kiwify webhook] evento ignorado", {
+      eventType,
+      orderStatus: payload.order_status,
+      orderId,
+    });
     return NextResponse.json({ ok: true, status: "ignored" });
   }
 
