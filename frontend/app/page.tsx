@@ -233,13 +233,13 @@ function HomeBody({ desktop = false }: { desktop?: boolean }) {
   return (
     <div className={`flex-1 overflow-auto ${desktop ? "py-8 px-12" : "pb-10"}`}>
       <div className={maxW}>
-        {/* Saudação — em mobile sobe um pouco pra "abraçar" o header */}
-        <div className={`${pad} ${desktop ? "" : "-mt-2 pt-2"}`}>
+        {/* Saudação — respira do header */}
+        <div className={`${pad} ${desktop ? "" : "pt-6"}`}>
           <div className="text-[13px] font-bold text-spark-brand tracking-[0.06em] uppercase">
             {hi.text}, {firstName} {hi.emoji}
           </div>
           <h1
-            className={`mt-1.5 font-extrabold tracking-tight leading-[1.05] ${desktop ? "text-[36px]" : "text-[24px]"}`}
+            className={`mt-1.5 font-extrabold tracking-tight leading-[1.1] ${desktop ? "text-[36px]" : "text-[26px]"}`}
           >
             Pronta pra criar algo lindo hoje? ✨
           </h1>
@@ -558,7 +558,7 @@ function SectionCard({
 function HomeMobile() {
   return (
     <>
-      <MobileHeader center={<SparkWordmark size={44} />} variant="soft" />
+      <MobileHeader center={<SparkWordmark size={64} />} variant="solid" />
       <HomeBody />
       <BottomNav active="home" />
     </>

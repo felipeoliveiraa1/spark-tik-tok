@@ -71,7 +71,7 @@ export function MobileHeader({
   );
 
   // Background por variant
-  let bgClass = "bg-white/95 border-b border-spark-hairline"; // solid
+  let bgClass = "bg-white shadow-[0_8px_24px_-16px_rgba(20,20,40,0.12)]"; // solid
   if (isGradient) {
     bgClass = "bg-brand-grad shadow-[0_12px_30px_-18px_oklch(0.55_0.24_340/0.55)]";
   } else if (isSoft) {
