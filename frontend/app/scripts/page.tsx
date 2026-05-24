@@ -144,7 +144,7 @@ function EmptyScripts() {
 function ScriptsMobile() {
   return (
     <>
-      <MobileHeader title="Scripts ✍️" />
+      <MobileHeader title="Scripts ✍️" back={{ href: "/" }} />
       <ScriptsBody />
       <BottomNav active="scripts" />
     </>

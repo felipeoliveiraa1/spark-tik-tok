@@ -170,7 +170,7 @@ function EmptyNews() {
 function NewsMobile() {
   return (
     <>
-      <MobileHeader title="News 📰" />
+      <MobileHeader title="News 📰" back={{ href: "/" }} />
       <NewsBody />
       <BottomNav active="news" />
     </>

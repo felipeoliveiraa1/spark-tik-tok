@@ -181,7 +181,7 @@ function EmptyEducation() {
 function EducacaoMobile() {
   return (
     <>
-      <MobileHeader title="Aulas 🎓" />
+      <MobileHeader title="Aulas 🎓" back={{ href: "/" }} />
       <EducacaoBody />
       <BottomNav active="educacao" />
     </>

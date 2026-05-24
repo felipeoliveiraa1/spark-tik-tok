@@ -231,10 +231,24 @@ function HomeBody({ desktop = false }: { desktop?: boolean }) {
   const maxW = desktop ? "max-w-[1080px]" : "";
 
   return (
-    <div className={`flex-1 overflow-auto ${desktop ? "py-8 px-12" : "pb-10"}`}>
+    <div
+      className={`flex-1 overflow-auto ${desktop ? "py-8 px-12" : "pb-10"}`}
+      style={
+        desktop
+          ? undefined
+          : { paddingTop: "calc(env(safe-area-inset-top) + 16px)" }
+      }
+    >
       <div className={maxW}>
-        {/* Saudação — respira do header */}
-        <div className={`${pad} ${desktop ? "" : "pt-6"}`}>
+        {/* Logo grande direto no body do mobile */}
+        {!desktop && (
+          <div className="flex justify-center px-4">
+            <SparkWordmark size={88} />
+          </div>
+        )}
+
+        {/* Saudação */}
+        <div className={`${pad} ${desktop ? "" : "mt-6"}`}>
           <div className="text-[13px] font-bold text-spark-brand tracking-[0.06em] uppercase">
             {hi.text}, {firstName} {hi.emoji}
           </div>
@@ -558,7 +572,6 @@ function SectionCard({
 function HomeMobile() {
   return (
     <>
-      <MobileHeader center={<SparkWordmark size={64} />} variant="solid" />
       <HomeBody />
       <BottomNav active="home" />
     </>

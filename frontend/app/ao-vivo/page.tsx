@@ -253,7 +253,7 @@ function EmptyLives() {
 function AoVivoMobile() {
   return (
     <>
-      <MobileHeader title="Ao vivo 🔴" />
+      <MobileHeader title="Ao vivo 🔴" back={{ href: "/" }} />
       <AoVivoBody />
       <BottomNav active="ao-vivo" />
     </>

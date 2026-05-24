@@ -139,7 +139,7 @@ function EmptyProducts() {
 function ProductsMobile() {
   return (
     <>
-      <MobileHeader title="Produtos 📦" />
+      <MobileHeader title="Produtos 📦" back={{ href: "/" }} />
       <ProductsBody />
       <BottomNav active="produtos" />
     </>
