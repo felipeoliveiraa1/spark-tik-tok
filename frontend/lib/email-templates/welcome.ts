@@ -14,7 +14,7 @@ type WelcomeInput = {
 };
 
 function getSiteUrl(): string {
-  return process.env.NEXT_PUBLIC_SITE_URL ?? "https://spark-tik-tok-app.vercel.app";
+  return process.env.NEXT_PUBLIC_SITE_URL ?? "https://metodotts.app";
 }
 
 export function buildWelcomeEmail(input: WelcomeInput): { subject: string; text: string; html: string } {

@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
  * estão funcionando. Só admin pode chamar.
  *
  * Exemplos:
- *   curl -X POST https://spark-tik-tok-app.vercel.app/api/admin/email-test \
+ *   curl -X POST https://metodotts.app/api/admin/email-test \
  *     -H "content-type: application/json" \
  *     -H "cookie: <seu cookie de sessao>" \
  *     -d '{"to":"felipe@email.com"}'
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
       firstName: "Felipe",
       email: to,
       temporaryPassword: "rosa-flor-7321",
-      loginUrl: `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://spark-tik-tok-app.vercel.app"}/login`,
+      loginUrl: `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://metodotts.app"}/login`,
     });
     const sent = await sendEmail({
       to,
