@@ -3,34 +3,37 @@ import { google } from "@ai-sdk/google";
 /**
  * Modelos Gemini por agente. Trade-off custo × qualidade:
  *
- * - **gemini-flash-latest** (≈ 2.5 Flash): rápido, barato, suficiente
- *   pra tool routing simples + cospe markdown. Usado quando o servidor
- *   já injeta determinismo (formatted_response do Virais, ou Q&A direto).
+ * Pricing (USD por 1M tokens):
+ *   PRO        = $1.25 in / $10.00 out  — reasoning + criatividade
+ *   FLASH      = $0.30 in / $2.50  out  — vision + Q&A estruturado (4x mais barato)
+ *   FLASH_LITE = $0.10 in / $0.40  out  — Q&A simples, classificação (25x mais barato)
  *
- * - **gemini-2.5-pro**: reasoning + tool calling muito melhor que Flash.
- *   ~5-10× mais caro. Usado onde criatividade ou raciocínio importam:
- *   - Info: precisa decidir quando chamar google_search e cruzar info
- *   - Script: precisa gerar hooks brasileiros com gatilho cerebral —
- *     output é o produto, não pode ser genérico
+ * Decisão por agente:
+ * - Info: Flash (vision OK, schema rico funciona com Flash, economia grande)
+ * - Scripts: Pro (criatividade dos roteiros é o produto — output é o que vende)
+ * - Help: Flash-Lite (Q&A direto, sem reasoning pesado)
  *
- * Se algum agente quiser baixar custo, troca pra "gemini-flash-latest"
- * aqui — só esse arquivo muda.
+ * Pra reverter algum: troca a const no models{} abaixo.
  */
 
-const FLASH = "gemini-flash-latest";
 const PRO = "gemini-2.5-pro";
+const FLASH = "gemini-flash-latest";
+const FLASH_LITE = "gemini-flash-lite-latest";
 
 export const models = {
   default: google(FLASH),
 
-  /** Agente Informação: vision + web search → reasoning beneficia */
-  info: google(PRO),
-  /** Agente Virais: tool forçado + markdown determinístico → Flash basta */
+  /** Análise de produto: vision + estruturação JSON rica. Flash dá conta. */
+  info: google(FLASH),
+
+  /** Virais (oculto). Mantido caso reativem. */
   viral: google(FLASH),
-  /** Agente Scripts: gera hooks de neuromarketing → criatividade importa */
+
+  /** Scripts: criatividade dos 5 roteiros é o produto que a aluna paga. Pro. */
   script: google(PRO),
-  /** Agente Tira-dúvidas: Q&A simples → Flash suficiente */
-  help: google(FLASH),
+
+  /** Tira-dúvidas: Q&A direto sobre TikTok Shop. Flash-Lite suficiente. */
+  help: google(FLASH_LITE),
 };
 
 export type SparkModel = keyof typeof models;
