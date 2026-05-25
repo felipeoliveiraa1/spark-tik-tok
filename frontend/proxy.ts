@@ -100,17 +100,20 @@ export async function proxy(request: NextRequest) {
   if (isPageRoute) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("name, niche, plan_active, plan_status, plan_expires_at")
+      .select("name, niche, plan_active, plan_status, plan_expires_at, role")
       .eq("id", user.id)
       .maybeSingle();
 
-    // Profile incompleto → onboarding
-    if (!profile?.name) {
+    // Admin tem acesso a tudo, ignora guards de onboarding e plano.
+    const isAdmin = profile?.role === "admin";
+
+    // Profile incompleto → onboarding (admin pula)
+    if (!isAdmin && !profile?.name) {
       return NextResponse.redirect(new URL("/welcome", request.url));
     }
 
-    // Plano inativo → /plano-inativo (exceto rotas livres desse guard)
-    if (!isFreeFromPlanGuard(pathname) && !hasActiveAccess(profile)) {
+    // Plano inativo → /plano-inativo (admin pula; rotas livres tb)
+    if (!isAdmin && !isFreeFromPlanGuard(pathname) && !hasActiveAccess(profile)) {
       return NextResponse.redirect(new URL("/plano-inativo", request.url));
     }
   }
