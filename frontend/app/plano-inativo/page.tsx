@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 // URL do checkout Kiwify pra renovação. Felipe troca quando tiver o produto
 // real configurado no painel.
 const KIWIFY_CHECKOUT_URL =
-  process.env.NEXT_PUBLIC_KIWIFY_CHECKOUT_URL ?? "https://kiwify.com.br";
+  process.env.NEXT_PUBLIC_KIWIFY_CHECKOUT_URL ?? "https://pay.kiwify.com.br/YOR83Pu";
 
 const STATUS_COPY: Record<string, { title: string; description: string }> = {
   inactive: {

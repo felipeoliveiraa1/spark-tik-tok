@@ -19,7 +19,8 @@ import { SBadge } from "@/components/atoms/s-badge";
 import { AgentTile } from "@/components/atoms/agent-tile";
 import { type AgentId } from "@/lib/agents";
 
-const KIWIFY_CHECKOUT_URL = "https://kiwify.com.br";
+const KIWIFY_CHECKOUT_URL =
+  process.env.NEXT_PUBLIC_KIWIFY_CHECKOUT_URL ?? "https://pay.kiwify.com.br/YOR83Pu";
 
 const agents: { id: AgentId; t: string; d: string }[] = [
   {
