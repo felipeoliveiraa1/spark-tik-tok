@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { createClient } from "@supabase/supabase-js";
 import { getSupabaseServer } from "@/lib/supabase-server";
 
 export const dynamic = "force-dynamic";
@@ -32,7 +33,16 @@ function formatUSD(usd: number): string {
   return `$${usd.toFixed(4)}`;
 }
 
+function getServiceClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+  return createClient(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
+
 export default async function AdminUsagePage() {
+  // Auth check via cliente normal (com cookies)
   const supabase = await getSupabaseServer();
   const {
     data: { user },
@@ -48,15 +58,23 @@ export default async function AdminUsagePage() {
     redirect("/");
   }
 
+  // Reads de admin: usa service_role pra bypassar RLS. Já validamos role
+  // acima, então é seguro.
+  const admin = getServiceClient();
+
   // Pega últimos 30 dias
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
 
-  const { data: rowsRaw } = await supabase
+  const { data: rowsRaw, error: usageErr } = await admin
     .from("ai_usage")
     .select("user_id, agent, model, prompt_tokens, completion_tokens, cost_usd, created_at")
     .gte("created_at", thirtyDaysAgo)
     .order("created_at", { ascending: false })
     .limit(1000);
+
+  if (usageErr) {
+    console.error("[admin/usage] read ai_usage failed", usageErr);
+  }
 
   const rows = (rowsRaw ?? []) as UsageRow[];
 
@@ -64,7 +82,7 @@ export default async function AdminUsagePage() {
   const userIds = [...new Set(rows.map((r) => r.user_id))];
   let profiles: ProfileRow[] = [];
   if (userIds.length > 0) {
-    const { data: profsRaw } = await supabase
+    const { data: profsRaw } = await admin
       .from("profiles")
       .select("id, email, name")
       .in("id", userIds);
