@@ -528,7 +528,10 @@ function ChatMobile({
               </button>
             </div>
             <div className="flex-1 min-h-0">
-              <ConversationSidebar onSelectConversation={() => setDrawerOpen(false)} />
+              <ConversationSidebar
+                onSelectConversation={() => setDrawerOpen(false)}
+                currentAgent={agent}
+              />
             </div>
           </div>
         </>
@@ -556,7 +559,7 @@ function ChatDesktop({
   return (
     <div className="flex-1 flex min-h-0">
       <aside className="w-[260px] shrink-0 border-r border-spark-hairline overflow-y-auto">
-        <ConversationSidebar />
+        <ConversationSidebar currentAgent={agent} />
       </aside>
 
       <div className="flex-1 flex flex-col min-h-0">

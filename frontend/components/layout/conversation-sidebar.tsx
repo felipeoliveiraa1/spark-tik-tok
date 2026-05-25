@@ -17,7 +17,7 @@ import {
   X,
 } from "lucide-react";
 import { AgentCharacter } from "@/components/molecules/agent-character";
-import { AGENTS } from "@/lib/agents";
+import { AGENTS, type AgentId } from "@/lib/agents";
 import {
   useConversationStore,
   type Conversation,
@@ -39,6 +39,9 @@ import { cn } from "@/lib/cn";
 type Props = {
   /** Chamado quando uma conversa é selecionada — útil pra fechar o drawer mobile. */
   onSelectConversation?: () => void;
+  /** Quando passado, "Nova conversa" cria conversa NOVA com esse mesmo agent
+   *  em vez de jogar pra galeria /chat. Útil dentro do /chat/[id]. */
+  currentAgent?: AgentId;
 };
 
 function timeAgo(iso: string): string {
@@ -52,7 +55,7 @@ function timeAgo(iso: string): string {
   return `${days}d`;
 }
 
-export function ConversationSidebar({ onSelectConversation }: Props) {
+export function ConversationSidebar({ onSelectConversation, currentAgent }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const store = useConversationStore();
@@ -92,18 +95,38 @@ export function ConversationSidebar({ onSelectConversation }: Props) {
     if (name?.trim()) void store.createFolder(name);
   };
 
+  // Se está dentro de uma conversa (currentAgent passado), "Nova conversa"
+  // cria nova conversa com o MESMO agent. Senão, joga pra galeria.
+  const [creatingNew, setCreatingNew] = React.useState(false);
+  const handleNewConversation = async (e: React.MouseEvent) => {
+    if (!currentAgent) return; // deixa o Link <a href="/chat"> rolar normal
+    e.preventDefault();
+    if (creatingNew) return;
+    setCreatingNew(true);
+    try {
+      const id = await store.createConversation({
+        agent: currentAgent,
+        title: `Conversa com ${AGENTS[currentAgent].label}`,
+      });
+      onSelectConversation?.();
+      router.push(`/chat/${id}`);
+    } finally {
+      setCreatingNew(false);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full bg-spark-surface-elev">
       {/* Header */}
       <div className="px-3 pt-4 pb-2">
         <Link
-          href="/chat"
-          onClick={onSelectConversation}
-          className="flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl bg-brand-grad text-white text-[13.5px] font-bold shadow-[0_6px_18px_-8px_oklch(0.55_0.24_340/0.55)]"
+          href={currentAgent ? `/chat/${currentAgent}` : "/chat"}
+          onClick={handleNewConversation}
+          className="flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl bg-brand-grad text-white text-[13.5px] font-bold shadow-[0_6px_18px_-8px_oklch(0.55_0.24_340/0.55)] active:scale-[0.98] transition-transform"
         >
           <span className="inline-flex items-center gap-2">
             <Plus size={16} strokeWidth={1.7} />
-            Nova conversa
+            {creatingNew ? "Criando…" : currentAgent ? `Nova com ${AGENTS[currentAgent].label}` : "Nova conversa"}
           </span>
           <ArrowRightIcon size={14} strokeWidth={1.7} />
         </Link>
