@@ -1626,12 +1626,15 @@ export async function POST(request: Request) {
           }
         }
 
+        // `totalUsage` soma os tokens de TODOS os steps (quando há tool
+        // calling com stopWhen=N, a chamada faz múltiplos rounds e cada
+        // um conta). `usage` sozinho retorna só o último step — subestima
+        // o custo real em até 5x quando o modelo chama tools.
         const [finishReason, usage] = await Promise.all([
           Promise.resolve(result.finishReason).catch(() => "unknown" as const),
-          Promise.resolve(result.usage).catch(() => ({
-            inputTokens: 0,
-            outputTokens: 0,
-          })),
+          Promise.resolve(result.totalUsage)
+            .catch(() => result.usage)
+            .catch(() => ({ inputTokens: 0, outputTokens: 0 })),
         ]);
 
         // Sobrescreve com a resposta determinística da tool (zero alucinação).
