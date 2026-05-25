@@ -123,6 +123,30 @@ export async function logoutAction() {
   redirect("/login");
 }
 
+/**
+ * Esqueci minha senha — dispara o email do Supabase (com nosso template
+ * custom). O link de recovery redireciona pra /reset-password onde a aluna
+ * define a senha nova. Sempre retorna ok mesmo se o email não existe (anti
+ * enumeration).
+ */
+export async function forgotPasswordAction(
+  formData: FormData,
+): Promise<{ ok: true } | AuthError> {
+  const email = (formData.get("email") as string | null)?.trim().toLowerCase();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { error: "Email inválido." };
+  }
+
+  const supabase = await getSupabaseServer();
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://metodotts.app";
+  // Não checamos se o user existe — Supabase só envia se existir (anti
+  // enumeration). Sempre retornamos { ok: true } pra não vazar info.
+  await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${siteUrl}/reset-password`,
+  });
+  return { ok: true };
+}
+
 function friendlyError(msg: string): string {
   const lower = msg.toLowerCase();
   if (lower.includes("invalid login credentials")) return "Email ou senha incorretos.";

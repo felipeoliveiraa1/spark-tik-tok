@@ -41,7 +41,7 @@ const agents: { id: AgentId; t: string; d: string }[] = [
   {
     id: "script",
     t: "Roteiros prontos",
-    d: "5 roteiros completos (gancho 3s + desenvolvimento + benefício + CTA) com o método da Yara aplicado.",
+    d: "5 roteiros completos (gancho 3s + desenvolvimento + benefício + CTA) com fórmula validada que converte.",
   },
   {
     id: "help",
@@ -72,8 +72,8 @@ const beneficios = [
   },
   {
     Icon: GraduationCap,
-    t: "Aulas e lives da Yara incluídas",
-    d: "Não é só ferramenta. Você ainda tem o método em vídeo, com a Yara te guiando passo a passo.",
+    t: "Aulas e lives ao vivo inclusas",
+    d: "Não é só ferramenta. Você tem o método em vídeo, com trilha completa pra dominar do zero ao avançado.",
   },
   {
     Icon: Heart,
@@ -117,10 +117,10 @@ const steps = [
 
 const features = [
   "Análise de produto ILIMITADA com foto",
-  "Roteiros completos com método Yara",
+  "Roteiros completos com fórmula validada",
   "5 estilos por produto (fofoca, polêmico, educativo, storytelling, transformação)",
   "Templates por nicho: skincare, suplementos, makeup, cabelo, perfumaria, casa, moda, maternidade, pet e mais",
-  "Aulas em vídeo da Yara",
+  "Aulas em vídeo inclusas",
   "Lives ao vivo periodicamente",
   "Suporte tira-dúvidas 24/7 via chat IA",
   "Notícias e atualizações do TikTok Shop",
@@ -142,7 +142,7 @@ const testimonials = [
     name: "Camila S.",
     role: "Começou faz 3 meses",
     quote:
-      "Nunca tinha vendido nada online. A Yara explicou tudo e a IA me deu os roteiros. Em 30 dias bati R$ 2k.",
+      "Nunca tinha vendido nada online. As aulas me ensinaram tudo e a IA me deu os roteiros. Em 30 dias bati R$ 2k.",
     rating: 5,
   },
   {
@@ -298,7 +298,7 @@ export default function LandingPage() {
         <div className="relative max-w-[1200px] mx-auto px-5 lg:px-10 pt-14 pb-20 lg:pt-24 lg:pb-28 grid lg:grid-cols-[1.15fr_1fr] gap-10 lg:gap-16 items-center">
           <div>
             <div className="inline-flex items-center gap-2 text-[12px] font-bold text-spark-brand bg-white border border-spark-brand/20 px-3 py-1.5 rounded-full shadow-sm">
-              ✨ Pra criadoras de TikTok Shop · 100% PT-BR
+              ✨ Pra criadoras de TikTok Shop
             </div>
             <h1 className="mt-5 text-[40px] sm:text-[52px] lg:text-[64px] font-extrabold tracking-tight leading-[1.02] text-spark-ink">
               Pare de travar.
@@ -307,7 +307,7 @@ export default function LandingPage() {
             </h1>
             <p className="mt-5 text-[16px] lg:text-[18px] text-spark-ink-70 leading-[1.55] max-w-[560px]">
               Sua IA pessoal que analisa o produto, escreve <strong>5 roteiros completos</strong> com
-              o método da Yara e te explica o que postar — sem complicação, sem inglês, sem robô.
+              uma fórmula validada e te explica o que postar — sem complicação, sem inglês, sem robô.
             </p>
 
             {/* Lista rápida */}
@@ -315,7 +315,7 @@ export default function LandingPage() {
               {[
                 "5 roteiros prontos pra gravar em segundos",
                 "Análise completa do seu produto com foto",
-                "Aulas e lives da Yara incluídas",
+                "Aulas e lives ao vivo inclusas",
               ].map((item) => (
                 <li key={item} className="flex items-center gap-2 text-[14.5px] text-spark-ink">
                   <div className="w-5 h-5 rounded-full bg-good text-white flex items-center justify-center shrink-0">
@@ -327,7 +327,7 @@ export default function LandingPage() {
             </ul>
 
             <div className="mt-8 max-w-[420px]">
-              <CTAPrimary label="Começar agora · R$ 49,90/mês" />
+              <CTAPrimary label="Começar agora · R$ 49,00/mês" />
               <div className="mt-3 flex items-center justify-center gap-2 text-[12px] text-spark-ink-50">
                 <ShieldCheck size={14} strokeWidth={2} className="text-good" />
                 7 dias de garantia · cancela quando quiser
@@ -556,51 +556,66 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ============== AUTORIDADE YARA ============== */}
+      {/* ============== AUTORIDADE / MÉTODO ============== */}
       <section className="bg-brand-grad-soft border-y border-spark-brand/15">
         <div className="max-w-[1100px] mx-auto px-5 lg:px-10 py-16 lg:py-24">
-          <div className="grid lg:grid-cols-[1fr_1.2fr] gap-10 lg:gap-14 items-center">
-            <div className="text-center lg:text-left">
-              <div className="inline-flex items-center justify-center w-24 h-24 lg:w-32 lg:h-32 rounded-full bg-brand-grad text-white text-[40px] lg:text-[52px] font-extrabold shadow-[0_24px_60px_-20px_oklch(0.55_0.24_340/0.6)]">
-                Y
-              </div>
-              <div className="mt-4 text-[11px] font-bold text-spark-brand uppercase tracking-[0.1em]">
-                Por trás do Método
-              </div>
-              <div className="mt-1 text-[24px] lg:text-[32px] font-extrabold tracking-tight">
-                Yara Felipe
-              </div>
-              <div className="mt-1 text-[14px] text-spark-ink-70">
-                Mentora de criadoras de TikTok Shop
-              </div>
-            </div>
+          <SectionHeading
+            label="O método"
+            title={
+              <>
+                Não é só uma IA qualquer. <br className="hidden sm:block" />
+                É um <span className="text-spark-brand">método validado</span> embutido numa IA.
+              </>
+            }
+            subtitle="Cada roteiro segue uma fórmula testada com criadoras reais que já geraram milhões em vendas no TikTok Shop brasileiro."
+          />
 
-            <div>
-              <h2 className="text-[28px] lg:text-[38px] font-extrabold tracking-tight leading-[1.1]">
-                O método não é da IA. <br className="hidden sm:block" />
-                É da Yara — testado por <span className="text-spark-brand">centenas de criadoras</span>.
-              </h2>
-              <p className="mt-4 text-[15.5px] text-spark-ink-70 leading-[1.6]">
-                A Yara é mentora de criadoras de TikTok Shop. Seu método já gerou <strong>milhões em
-                vendas</strong> pra alunas brasileiras. O Método TTS é o método dela embutido numa
-                IA — você tem ela 24/7, sem precisar pagar mentoria individual.
-              </p>
-              <ul className="mt-5 space-y-2.5">
-                {[
-                  "Roteiros seguem a fórmula que a Yara ensina",
-                  "Templates específicos pros nichos que ela validou",
-                  "Aulas em vídeo dela inclusas no plano",
-                  "Lives ao vivo com Q&A pra tirar dúvidas",
-                ].map((item) => (
-                  <li key={item} className="flex items-start gap-2.5 text-[14.5px]">
-                    <div className="w-5 h-5 rounded-full bg-spark-brand text-white flex items-center justify-center shrink-0 mt-0.5">
-                      <Check size={12} strokeWidth={2.5} />
-                    </div>
-                    <span className="text-spark-ink">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+          <div className="mt-12 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[
+              {
+                Icon: Sparkle,
+                t: "Fórmula validada de roteiro",
+                d: "Gancho 3s + desenvolvimento + benefício real + CTA leve. Estrutura que prende e converte.",
+              },
+              {
+                Icon: GraduationCap,
+                t: "Templates por nicho",
+                d: "12 nichos com estilo próprio: skincare, suplementos, makeup, cabelo, perfumaria, casa, moda, maternidade, pet e mais.",
+              },
+              {
+                Icon: PlayCircle,
+                t: "Aulas em vídeo inclusas",
+                d: "Trilha de educação completa pra você entender o método antes de gravar.",
+              },
+              {
+                Icon: MessageCircle,
+                t: "Lives ao vivo com Q&A",
+                d: "Encontros periódicos pra tirar dúvidas e ver novidades do TikTok Shop em tempo real.",
+              },
+              {
+                Icon: ShieldCheck,
+                t: "Dentro das diretrizes",
+                d: "Roteiros respeitam as regras do TikTok Shop pra evitar bloqueio ou shadowban.",
+              },
+              {
+                Icon: Pen,
+                t: "5 estilos por roteiro",
+                d: "Fofoca, polêmico, educativo, storytelling, transformação — pra você testar o que combina com a sua voz.",
+              },
+            ].map((item) => (
+              <div
+                key={item.t}
+                className="p-6 rounded-3xl bg-white border border-spark-hairline shadow-[0_4px_16px_-10px_rgba(20,20,40,0.1)]"
+              >
+                <div className="w-11 h-11 rounded-2xl bg-brand-grad text-white flex items-center justify-center">
+                  <item.Icon size={20} strokeWidth={2} />
+                </div>
+                <div className="mt-4 text-[15.5px] font-extrabold tracking-tight leading-[1.25]">
+                  {item.t}
+                </div>
+                <div className="mt-2 text-[13.5px] text-spark-ink-70 leading-[1.5]">{item.d}</div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -701,7 +716,7 @@ export default function LandingPage() {
                 </div>
                 <div className="flex items-baseline gap-1.5">
                   <span className="text-[52px] lg:text-[60px] font-extrabold font-mono tracking-tight leading-none">
-                    R$ 49,90
+                    R$ 49,00
                   </span>
                   <span className="text-[15px] opacity-85">/mês</span>
                 </div>
@@ -804,7 +819,7 @@ export default function LandingPage() {
               ?
             </h2>
             <p className="mt-5 text-[15px] lg:text-[18px] opacity-90 max-w-[600px] mx-auto leading-[1.5]">
-              R$ 49,90/mês · acesso a tudo · 7 dias de garantia · cancela quando quiser
+              R$ 49,00/mês · acesso a tudo · 7 dias de garantia · cancela quando quiser
             </p>
             <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center max-w-[520px] mx-auto">
               <a href={KIWIFY_CHECKOUT_URL} target="_blank" rel="noreferrer" className="block flex-1">

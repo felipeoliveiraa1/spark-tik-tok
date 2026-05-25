@@ -14,7 +14,13 @@ import { hasActiveAccess } from "@/lib/plan-access";
  * /welcome pra completar perfil antes de liberar o app.
  */
 
+// Rotas pra quem NÃO está logado (login/landing): se já tá logado, kicka
+// pra /chat. Apenas essas redirecionam.
 const PUBLIC_ROUTES = new Set(["/login", "/landing"]);
+
+// Rotas SEMPRE acessíveis (logado ou não). Necessário pro reset de senha
+// porque o link do email cria sessão temporária — não dá pra kickar.
+const ALWAYS_PUBLIC = new Set(["/forgot-password", "/reset-password"]);
 const ONBOARDING_ROUTES = new Set(["/welcome"]);
 
 // Rotas que SEMPRE liberam mesmo sem assinatura ativa (logada mas sem plano):
@@ -60,6 +66,11 @@ export async function proxy(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  // Always public — passa sempre, mesmo logada (caso forgot/reset password).
+  if (ALWAYS_PUBLIC.has(pathname)) {
+    return response;
+  }
 
   // Public routes (login/landing) — logada já entra direto no app.
   if (PUBLIC_ROUTES.has(pathname)) {

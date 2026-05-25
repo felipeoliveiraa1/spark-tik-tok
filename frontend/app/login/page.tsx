@@ -2,7 +2,15 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Mail, ArrowRight, Lock, Search, Flame, Pen, MessageCircle, AlertCircle } from "lucide-react";
+import {
+  Mail,
+  ArrowRight,
+  Lock,
+  Camera,
+  Pen,
+  MessageCircle,
+  AlertCircle,
+} from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { SparkMark } from "@/components/atoms/spark-mark";
 import { SparkWordmark } from "@/components/atoms/spark-wordmark";
@@ -38,8 +46,16 @@ function LoginForm({ desktop = false }: { desktop?: boolean }) {
         required
       />
       <div className="h-2.5" />
-      <div className="text-[12px] text-spark-ink-50 font-semibold mb-1.5 tracking-[0.04em] uppercase">
-        Senha
+      <div className="flex items-center justify-between mb-1.5">
+        <div className="text-[12px] text-spark-ink-50 font-semibold tracking-[0.04em] uppercase">
+          Senha
+        </div>
+        <Link
+          href="/forgot-password"
+          className="text-[12px] font-semibold text-spark-brand hover:text-spark-brand-deep transition-colors"
+        >
+          Esqueci minha senha
+        </Link>
       </div>
       <SInput
         name="password"
@@ -78,15 +94,11 @@ function LoginMobile() {
         <div className="mb-9">
           <SparkMark size={120} />
         </div>
-        <h1 className="text-[34px] font-extrabold tracking-[-0.025em] leading-[1.05] text-spark-ink">
-          Crie scripts
-          <br />
-          que vendem ✨
-          <br />
-          no TikTok Shop.
+        <h1 className="text-[34px] font-extrabold tracking-tight leading-[1.05] text-spark-ink">
+          Bem-vinda de volta. 💕
         </h1>
         <p className="mt-3.5 text-[15px] leading-[1.5] text-spark-ink-50 max-w-[300px]">
-          Sua IA pessoal pra analisar produto, achar viral e escrever hook que converte. 💕
+          Entra com seu email e senha pra criar seus próximos roteiros.
         </p>
 
         <div className="mt-8">
@@ -99,7 +111,9 @@ function LoginMobile() {
         >
           <div>
             <div className="text-[13px] font-bold text-spark-ink">Ainda não tem acesso?</div>
-            <div className="text-[12px] text-spark-ink-50 mt-0.5">Compra agora e recebe email com senha</div>
+            <div className="text-[12px] text-spark-ink-50 mt-0.5">
+              Compra agora e recebe senha no email
+            </div>
           </div>
           <ArrowRight size={18} strokeWidth={1.7} className="text-spark-brand" />
         </Link>
@@ -116,10 +130,9 @@ function LoginMobile() {
 }
 
 const desktopFeatures = [
-  { Icon: Search, t: "Análise", s: "foto → ficha completa" },
-  { Icon: Flame, t: "Virais", s: "top da semana" },
-  { Icon: Pen, t: "Scripts", s: "hooks com IA" },
-  { Icon: MessageCircle, t: "Suporte", s: "tira-dúvidas" },
+  { Icon: Camera, t: "Análise de produto", s: "foto → ficha completa" },
+  { Icon: Pen, t: "Roteiros prontos", s: "5 por produto" },
+  { Icon: MessageCircle, t: "Suporte 24/7", s: "tira-dúvidas TikTok Shop" },
 ];
 
 function LoginDesktop() {
@@ -132,36 +145,38 @@ function LoginDesktop() {
             ✨ App TikTok Shop
           </div>
           <h1 className="text-[56px] font-extrabold tracking-[-0.03em] leading-[1.02] mt-3 max-w-[480px]">
-            Crie scripts
+            Crie roteiros
             <br />
             que vendem. 💕
           </h1>
           <p className="mt-4 text-[17px] leading-[1.5] opacity-90 max-w-[440px]">
-            Sua IA pessoal pra analisar produto, achar viral e escrever hook que converte. Pensado
-            por e pra criadoras brasileiras. 💅
+            Sua IA pessoal pra analisar produto e escrever os 5 roteiros completos prontos pra
+            gravar. Sem complicação. 💅
           </p>
-          <div className="mt-9 grid grid-cols-2 gap-3 max-w-[460px]">
+          <div className="mt-9 grid grid-cols-1 gap-3 max-w-[440px]">
             {desktopFeatures.map((it) => (
               <div
                 key={it.t}
                 className="p-3.5 rounded-[14px] bg-white/15 backdrop-blur flex items-center gap-2.5"
               >
-                <div className="w-8 h-8 rounded-[9px] bg-white/20 flex items-center justify-center">
-                  <it.Icon size={16} strokeWidth={1.7} />
+                <div className="w-9 h-9 rounded-[10px] bg-white/20 flex items-center justify-center">
+                  <it.Icon size={18} strokeWidth={1.8} />
                 </div>
                 <div>
-                  <div className="text-[13px] font-bold">{it.t}</div>
-                  <div className="text-[11px] opacity-75">{it.s}</div>
+                  <div className="text-[14px] font-bold">{it.t}</div>
+                  <div className="text-[12px] opacity-75">{it.s}</div>
                 </div>
               </div>
             ))}
           </div>
         </div>
-        <div className="text-[11px] opacity-55 font-mono">v1.4.0 · pwa</div>
+        <div className="text-[11px] opacity-55 font-mono">© {new Date().getFullYear()} Método TTS</div>
       </div>
 
       <div className="w-[480px] p-14 bg-spark-bg flex flex-col justify-center">
-        <div className="text-[13px] font-bold text-spark-ink-50 uppercase tracking-[0.06em]">Entrar</div>
+        <div className="text-[13px] font-bold text-spark-ink-50 uppercase tracking-[0.06em]">
+          Entrar
+        </div>
         <h2 className="text-[32px] font-extrabold tracking-[-0.02em] mt-2 leading-[1.15]">
           Bem-vinda de volta. 💖
         </h2>
@@ -181,7 +196,9 @@ function LoginDesktop() {
         >
           <div>
             <div className="text-[13px] font-bold">Ainda não tem acesso?</div>
-            <div className="text-[11px] opacity-80 mt-0.5">Compra agora e recebe senha no email.</div>
+            <div className="text-[11px] opacity-80 mt-0.5">
+              Compra agora e recebe senha no email.
+            </div>
           </div>
           <SButton size="sm" variant="dark" IconRight={ArrowRight}>
             Comprar
