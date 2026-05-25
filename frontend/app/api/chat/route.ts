@@ -3,6 +3,7 @@ import { google } from "@ai-sdk/google";
 import { z } from "zod";
 import { type SupabaseClient } from "@supabase/supabase-js";
 import { models } from "@/lib/ai";
+import { recordUsage } from "@/lib/ai-usage";
 import { SYSTEM_PROMPTS } from "@/lib/agent-prompts";
 import { type AgentId } from "@/lib/agents";
 import { getSupabaseServer } from "@/lib/supabase-server";
@@ -1672,6 +1673,17 @@ export async function POST(request: Request) {
           content: accumulated,
           tokens_in: usage?.inputTokens ?? null,
           tokens_out: usage?.outputTokens ?? null,
+        });
+
+        // Tracking de uso/custo da IA por aluna (best-effort)
+        const modelId =
+          (models[agent] as { modelId?: string }).modelId ?? "unknown";
+        await recordUsage({
+          userId: user.id,
+          agent,
+          model: modelId,
+          promptTokens: usage?.inputTokens ?? 0,
+          completionTokens: usage?.outputTokens ?? 0,
         });
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
