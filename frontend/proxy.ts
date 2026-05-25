@@ -1,8 +1,35 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { hasActiveAccess } from "@/lib/plan-access";
+
+/**
+ * Proxy do Next 16 (era middleware nas versões anteriores). Cobre 2 guards:
+ *
+ *   1. Auth: rotas públicas (/login, /landing) chutam logados pra dentro;
+ *      rotas protegidas chutam não-logados pra /landing.
+ *   2. Plano: alunas logadas sem assinatura ativa caem em /plano-inativo,
+ *      exceto em rotas livres (/conta, /welcome, etc).
+ *
+ * Onboarding: se já tem session mas profile não tem `name`, mandamos pra
+ * /welcome pra completar perfil antes de liberar o app.
+ */
 
 const PUBLIC_ROUTES = new Set(["/login", "/landing"]);
 const ONBOARDING_ROUTES = new Set(["/welcome"]);
+
+// Rotas que SEMPRE liberam mesmo sem assinatura ativa (logada mas sem plano):
+// /conta pra ela gerir assinatura, /plano-inativo é o destino do bloqueio.
+const FREE_FROM_PLAN_GUARD = new Set([
+  "/conta",
+  "/plano-inativo",
+]);
+
+function isFreeFromPlanGuard(pathname: string): boolean {
+  if (FREE_FROM_PLAN_GUARD.has(pathname)) return true;
+  // Permite /conta/qualquer-coisa e /plano-inativo/qualquer-coisa
+  if ([...FREE_FROM_PLAN_GUARD].some((p) => pathname.startsWith(p + "/"))) return true;
+  return false;
+}
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -34,7 +61,7 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Public routes — kick out anyone already logged in.
+  // Public routes (login/landing) — logada já entra direto no app.
   if (PUBLIC_ROUTES.has(pathname)) {
     if (user) {
       return NextResponse.redirect(new URL("/chat", request.url));
@@ -42,7 +69,7 @@ export async function proxy(request: NextRequest) {
     return response;
   }
 
-  // Onboarding — requires session but allows incomplete profile.
+  // Onboarding — precisa session mas permite profile incompleto.
   if (ONBOARDING_ROUTES.has(pathname)) {
     if (!user) {
       return NextResponse.redirect(new URL("/login", request.url));
@@ -50,21 +77,30 @@ export async function proxy(request: NextRequest) {
     return response;
   }
 
-  // Everything else (app routes) needs an active session.
+  // Tudo o resto (app) precisa de session.
   if (!user) {
     return NextResponse.redirect(new URL("/landing", request.url));
   }
 
-  // Session OK — but check profile completeness for non-onboarding routes.
-  if (!pathname.startsWith("/api") && !pathname.startsWith("/_next")) {
+  // Sessão OK — pra rotas de página (não API/assets), checa profile
+  // completeness e plano. APIs gerenciam auth próprio.
+  const isPageRoute = !pathname.startsWith("/api") && !pathname.startsWith("/_next");
+
+  if (isPageRoute) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("name, niche")
+      .select("name, niche, plan_active, plan_status, plan_expires_at")
       .eq("id", user.id)
       .maybeSingle();
 
+    // Profile incompleto → onboarding
     if (!profile?.name) {
       return NextResponse.redirect(new URL("/welcome", request.url));
+    }
+
+    // Plano inativo → /plano-inativo (exceto rotas livres desse guard)
+    if (!isFreeFromPlanGuard(pathname) && !hasActiveAccess(profile)) {
+      return NextResponse.redirect(new URL("/plano-inativo", request.url));
     }
   }
 
