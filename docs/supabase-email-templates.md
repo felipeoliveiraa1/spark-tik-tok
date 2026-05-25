@@ -39,7 +39,10 @@ link, invite, email change) saem do nosso domínio.
 <body style="margin:0;padding:24px;background:#fce7f3;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1d1d1f;line-height:1.5;">
   <div style="max-width:520px;margin:0 auto;background:#fff;border-radius:24px;overflow:hidden;box-shadow:0 8px 24px -10px rgba(20,20,40,0.12);">
     <div style="padding:28px 28px 8px;background:#fff;text-align:center;">
-      <img src="https://metodotts.app/tts-logo-horizontal.png" alt="Método TTS" width="180" style="max-width:180px;height:auto;display:inline-block;" />
+      <div style="display:inline-block;font-weight:800;letter-spacing:-0.02em;line-height:1;">
+        <span style="font-size:22px;font-weight:600;color:#1d1d1f;opacity:0.85;">método</span>
+        <span style="font-size:30px;color:#db2777;margin-left:6px;">TTS</span>
+      </div>
     </div>
     <div style="padding:8px 28px 24px;background:linear-gradient(135deg,#ec4899,#db2777);color:#fff;">
       <div style="font-weight:600;opacity:0.85;font-size:13px;letter-spacing:0.04em;text-transform:uppercase;">Recuperação de senha</div>
@@ -94,7 +97,10 @@ link, invite, email change) saem do nosso domínio.
 <body style="margin:0;padding:24px;background:#fce7f3;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1d1d1f;line-height:1.5;">
   <div style="max-width:520px;margin:0 auto;background:#fff;border-radius:24px;overflow:hidden;box-shadow:0 8px 24px -10px rgba(20,20,40,0.12);">
     <div style="padding:28px 28px 8px;background:#fff;text-align:center;">
-      <img src="https://metodotts.app/tts-logo-horizontal.png" alt="Método TTS" width="180" style="max-width:180px;height:auto;display:inline-block;" />
+      <div style="display:inline-block;font-weight:800;letter-spacing:-0.02em;line-height:1;">
+        <span style="font-size:22px;font-weight:600;color:#1d1d1f;opacity:0.85;">método</span>
+        <span style="font-size:30px;color:#db2777;margin-left:6px;">TTS</span>
+      </div>
     </div>
     <div style="padding:8px 28px 24px;background:linear-gradient(135deg,#ec4899,#db2777);color:#fff;">
       <div style="font-weight:600;opacity:0.85;font-size:13px;letter-spacing:0.04em;text-transform:uppercase;">Confirmação de email</div>
@@ -136,7 +142,10 @@ link, invite, email change) saem do nosso domínio.
 <body style="margin:0;padding:24px;background:#fce7f3;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1d1d1f;line-height:1.5;">
   <div style="max-width:520px;margin:0 auto;background:#fff;border-radius:24px;overflow:hidden;box-shadow:0 8px 24px -10px rgba(20,20,40,0.12);">
     <div style="padding:28px 28px 8px;background:#fff;text-align:center;">
-      <img src="https://metodotts.app/tts-logo-horizontal.png" alt="Método TTS" width="180" style="max-width:180px;height:auto;display:inline-block;" />
+      <div style="display:inline-block;font-weight:800;letter-spacing:-0.02em;line-height:1;">
+        <span style="font-size:22px;font-weight:600;color:#1d1d1f;opacity:0.85;">método</span>
+        <span style="font-size:30px;color:#db2777;margin-left:6px;">TTS</span>
+      </div>
     </div>
     <div style="padding:8px 28px 24px;background:linear-gradient(135deg,#ec4899,#db2777);color:#fff;">
       <h1 style="margin:6px 0 0;font-size:24px;font-weight:800;letter-spacing:-0.02em;">
@@ -175,7 +184,10 @@ link, invite, email change) saem do nosso domínio.
 <body style="margin:0;padding:24px;background:#fce7f3;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1d1d1f;line-height:1.5;">
   <div style="max-width:520px;margin:0 auto;background:#fff;border-radius:24px;overflow:hidden;box-shadow:0 8px 24px -10px rgba(20,20,40,0.12);">
     <div style="padding:28px 28px 8px;background:#fff;text-align:center;">
-      <img src="https://metodotts.app/tts-logo-horizontal.png" alt="Método TTS" width="180" style="max-width:180px;height:auto;display:inline-block;" />
+      <div style="display:inline-block;font-weight:800;letter-spacing:-0.02em;line-height:1;">
+        <span style="font-size:22px;font-weight:600;color:#1d1d1f;opacity:0.85;">método</span>
+        <span style="font-size:30px;color:#db2777;margin-left:6px;">TTS</span>
+      </div>
     </div>
     <div style="padding:8px 28px 24px;background:linear-gradient(135deg,#ec4899,#db2777);color:#fff;">
       <h1 style="margin:6px 0 0;font-size:24px;font-weight:800;letter-spacing:-0.02em;">
