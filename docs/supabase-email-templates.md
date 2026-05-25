@@ -2,9 +2,14 @@
 
 Templates HTML pra colar em **Supabase Dashboard → Authentication → Email Templates**.
 
-Estilo igual ao email de boas-vindas (rose gradient, logo no topo). Variáveis
-do Supabase (`{{ .ConfirmationURL }}`, `{{ .Email }}`, `{{ .Token }}`) ficam
-intactas — Supabase substitui na hora de mandar.
+Estilo igual ao email de boas-vindas (rose-pink sólido, logo em texto no topo).
+Variáveis do Supabase (`{{ .ConfirmationURL }}`, `{{ .Email }}`, `{{ .Token }}`)
+ficam intactas — Supabase substitui na hora de mandar.
+
+> ⚠️ **Sem gradient CSS.** Email HTML é nível Internet Explorer 6: muitos
+> clientes (Gmail, Outlook, Hotmail) **ignoram `linear-gradient`** e renderizam
+> o elemento como branco/transparente. Por isso uso `background:#db2777`
+> (cor sólida rose-600) em vez de gradient. Funciona em qualquer cliente.
 
 ## Pré-requisito: SMTP custom (recomendado)
 
@@ -44,7 +49,7 @@ link, invite, email change) saem do nosso domínio.
         <span style="font-size:30px;color:#db2777;margin-left:6px;">TTS</span>
       </div>
     </div>
-    <div style="padding:8px 28px 24px;background:linear-gradient(135deg,#ec4899,#db2777);color:#fff;">
+    <div style="padding:8px 28px 24px;background-color:#db2777;background:#db2777;color:#fff;">
       <div style="font-weight:600;opacity:0.85;font-size:13px;letter-spacing:0.04em;text-transform:uppercase;">Recuperação de senha</div>
       <h1 style="margin:6px 0 0;font-size:24px;font-weight:800;letter-spacing:-0.02em;">
         Vamos criar uma senha nova 💕
@@ -59,7 +64,7 @@ link, invite, email change) saem do nosso domínio.
         Toca no botão abaixo pra criar sua senha nova. O link é válido por 1 hora.
       </p>
 
-      <a href="{{ .ConfirmationURL }}" style="display:block;width:100%;box-sizing:border-box;text-align:center;background:linear-gradient(135deg,#ec4899,#db2777);color:#fff;text-decoration:none;font-weight:700;font-size:15px;padding:14px 20px;border-radius:999px;margin:0 0 18px;">
+      <a href="{{ .ConfirmationURL }}" style="display:block;width:100%;box-sizing:border-box;text-align:center;background-color:#db2777;background:#db2777;color:#fff;text-decoration:none;font-weight:700;font-size:15px;padding:14px 20px;border-radius:999px;margin:0 0 18px;">
         Redefinir minha senha →
       </a>
 
@@ -102,7 +107,7 @@ link, invite, email change) saem do nosso domínio.
         <span style="font-size:30px;color:#db2777;margin-left:6px;">TTS</span>
       </div>
     </div>
-    <div style="padding:8px 28px 24px;background:linear-gradient(135deg,#ec4899,#db2777);color:#fff;">
+    <div style="padding:8px 28px 24px;background-color:#db2777;background:#db2777;color:#fff;">
       <div style="font-weight:600;opacity:0.85;font-size:13px;letter-spacing:0.04em;text-transform:uppercase;">Confirmação de email</div>
       <h1 style="margin:6px 0 0;font-size:24px;font-weight:800;letter-spacing:-0.02em;">
         Bem-vinda! ✨
@@ -114,7 +119,7 @@ link, invite, email change) saem do nosso domínio.
         Tô animada de te receber no <strong>Método TTS</strong>. Confirma seu email pra começar:
       </p>
 
-      <a href="{{ .ConfirmationURL }}" style="display:block;width:100%;box-sizing:border-box;text-align:center;background:linear-gradient(135deg,#ec4899,#db2777);color:#fff;text-decoration:none;font-weight:700;font-size:15px;padding:14px 20px;border-radius:999px;margin:0 0 18px;">
+      <a href="{{ .ConfirmationURL }}" style="display:block;width:100%;box-sizing:border-box;text-align:center;background-color:#db2777;background:#db2777;color:#fff;text-decoration:none;font-weight:700;font-size:15px;padding:14px 20px;border-radius:999px;margin:0 0 18px;">
         Confirmar email →
       </a>
 
@@ -147,7 +152,7 @@ link, invite, email change) saem do nosso domínio.
         <span style="font-size:30px;color:#db2777;margin-left:6px;">TTS</span>
       </div>
     </div>
-    <div style="padding:8px 28px 24px;background:linear-gradient(135deg,#ec4899,#db2777);color:#fff;">
+    <div style="padding:8px 28px 24px;background-color:#db2777;background:#db2777;color:#fff;">
       <h1 style="margin:6px 0 0;font-size:24px;font-weight:800;letter-spacing:-0.02em;">
         Seu acesso chegou 💕
       </h1>
@@ -158,7 +163,7 @@ link, invite, email change) saem do nosso domínio.
         Toca no botão abaixo pra entrar no <strong>Método TTS</strong> sem digitar senha:
       </p>
 
-      <a href="{{ .ConfirmationURL }}" style="display:block;width:100%;box-sizing:border-box;text-align:center;background:linear-gradient(135deg,#ec4899,#db2777);color:#fff;text-decoration:none;font-weight:700;font-size:15px;padding:14px 20px;border-radius:999px;margin:0 0 18px;">
+      <a href="{{ .ConfirmationURL }}" style="display:block;width:100%;box-sizing:border-box;text-align:center;background-color:#db2777;background:#db2777;color:#fff;text-decoration:none;font-weight:700;font-size:15px;padding:14px 20px;border-radius:999px;margin:0 0 18px;">
         Entrar no app →
       </a>
 
@@ -189,7 +194,7 @@ link, invite, email change) saem do nosso domínio.
         <span style="font-size:30px;color:#db2777;margin-left:6px;">TTS</span>
       </div>
     </div>
-    <div style="padding:8px 28px 24px;background:linear-gradient(135deg,#ec4899,#db2777);color:#fff;">
+    <div style="padding:8px 28px 24px;background-color:#db2777;background:#db2777;color:#fff;">
       <h1 style="margin:6px 0 0;font-size:24px;font-weight:800;letter-spacing:-0.02em;">
         Confirma o novo email 💌
       </h1>
@@ -200,7 +205,7 @@ link, invite, email change) saem do nosso domínio.
         Você pediu pra trocar o email da sua conta no <strong>Método TTS</strong>. Confirma pra ativar:
       </p>
 
-      <a href="{{ .ConfirmationURL }}" style="display:block;width:100%;box-sizing:border-box;text-align:center;background:linear-gradient(135deg,#ec4899,#db2777);color:#fff;text-decoration:none;font-weight:700;font-size:15px;padding:14px 20px;border-radius:999px;margin:0 0 18px;">
+      <a href="{{ .ConfirmationURL }}" style="display:block;width:100%;box-sizing:border-box;text-align:center;background-color:#db2777;background:#db2777;color:#fff;text-decoration:none;font-weight:700;font-size:15px;padding:14px 20px;border-radius:999px;margin:0 0 18px;">
         Confirmar novo email →
       </a>
 
