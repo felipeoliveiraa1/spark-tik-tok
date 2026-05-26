@@ -240,6 +240,95 @@ function wantsSaveProduct(text: string, messageCount: number): boolean {
   return false;
 }
 
+// Padrões de vazamento de tool calling do Gemini: em vez de fazer a tool
+// call estruturada via API, o modelo às vezes "imagina" o código Python e
+// emite como texto. Ex:
+//   tool_code print(save_script(title='5 roteiros · Foo', product_id='...', scripts=[{...}]))
+//   tool_code print(north_star.save_script(...))
+// Esses regexes detectam isso pra a gente recuperar manualmente.
+const TOOL_CODE_LEAK_REGEX = /tool_code\s+print\s*\([\s\S]*?save_script\s*\(([\s\S]*)\)\s*\)\s*$/i;
+
+/**
+ * Tenta extrair os params de uma chamada Python-style vazada em texto.
+ * Retorna null se não conseguir parsear. Best-effort — se falhar, a aluna
+ * vê o lixo no chat mas pelo menos não quebra.
+ *
+ * O Gemini gera com aspas simples (Python). Convertemos pra JSON válido
+ * (aspas duplas) ANTES de chamar JSON.parse. Cuidado com aspas dentro de
+ * strings (escapamos primeiro).
+ */
+function extractLeakedSaveScriptParams(text: string): {
+  title: string;
+  product_id?: string;
+  scripts: Array<Record<string, unknown>>;
+} | null {
+  const match = text.match(TOOL_CODE_LEAK_REGEX);
+  if (!match) return null;
+  let inner = match[1].trim();
+  // Tenta achar `scripts=[...]`
+  const scriptsMatch = inner.match(/scripts\s*=\s*(\[[\s\S]+?\])\s*\)?\s*$/);
+  const titleMatch = inner.match(/title\s*=\s*['"]([^'"]+)['"]/);
+  const productIdMatch = inner.match(/product_id\s*=\s*['"]([^'"]+)['"]/);
+  if (!scriptsMatch || !titleMatch) return null;
+
+  // Converte Python literal pra JSON: troca aspas simples por duplas, mas
+  // preserva apostrofes dentro de strings (best-effort).
+  const pyToJson = (py: string): string => {
+    // Estratégia: faz uma passada char-by-char trackeando se está dentro de string.
+    // Quando encontra ' fora de string, troca por ". Quando dentro, mantém.
+    let out = "";
+    let inStr = false;
+    let strChar = "";
+    let escape = false;
+    for (let i = 0; i < py.length; i++) {
+      const c = py[i];
+      if (escape) {
+        out += c;
+        escape = false;
+        continue;
+      }
+      if (c === "\\") {
+        out += c;
+        escape = true;
+        continue;
+      }
+      if (inStr) {
+        if (c === strChar) {
+          inStr = false;
+          out += strChar === "'" ? '"' : c;
+        } else if (c === '"' && strChar === "'") {
+          // Aspa dupla dentro de string com ' — escapa
+          out += '\\"';
+        } else {
+          out += c;
+        }
+      } else {
+        if (c === "'" || c === '"') {
+          inStr = true;
+          strChar = c;
+          out += '"';
+        } else {
+          out += c;
+        }
+      }
+    }
+    return out;
+  };
+
+  try {
+    const scriptsJson = pyToJson(scriptsMatch[1]);
+    const scripts = JSON.parse(scriptsJson) as Array<Record<string, unknown>>;
+    return {
+      title: titleMatch[1],
+      product_id: productIdMatch?.[1],
+      scripts,
+    };
+  } catch (err) {
+    console.warn("[tool_code leak] parse failed", err);
+    return null;
+  }
+}
+
 /**
  * Detecta se a aluna pediu explicitamente pra salvar os roteiros gerados.
  * Gemini Pro às vezes diz "salvei" sem chamar save_script de verdade —
@@ -1670,6 +1759,49 @@ export async function POST(request: Request) {
             .catch(() => result.usage)
             .catch(() => ({ inputTokens: 0, outputTokens: 0 })),
         ]);
+
+        // RECUPERAÇÃO DE TOOL CODE VAZADO. Gemini às vezes emite a chamada da
+        // tool em formato Python literal no texto em vez de fazer a tool call
+        // estruturada. Detecta e salva manualmente.
+        if (
+          agent === "script" &&
+          !appendResponse &&
+          !deterministicResponse &&
+          accumulated.includes("tool_code") &&
+          accumulated.includes("save_script")
+        ) {
+          const leaked = extractLeakedSaveScriptParams(accumulated);
+          if (leaked) {
+            console.warn("[tool_code leak] recuperando save_script manual", {
+              agent,
+              title: leaked.title,
+              scriptsCount: leaked.scripts.length,
+            });
+            const { data: saved, error: saveErr } = await supabase
+              .from("generated_scripts")
+              .insert({
+                user_id: user.id,
+                product_id: leaked.product_id ?? null,
+                title: leaked.title,
+                hooks: leaked.scripts,
+                model: "gemini-2.5-pro",
+              })
+              .select("id, title")
+              .single();
+            if (!saveErr && saved) {
+              // Limpa o bloco tool_code do output e appenda o link
+              accumulated = accumulated.replace(TOOL_CODE_LEAK_REGEX, "").trimEnd();
+              appendResponse = `\n\n---\n\n💕 Salvei os roteiros pra você acessar quando quiser → [Ver ${saved.title}](/scripts/${saved.id})\n\nQuer mais variações com outro estilo?`;
+            } else {
+              console.error("[tool_code leak] insert falhou", saveErr);
+            }
+          } else {
+            console.warn("[tool_code leak] detectado mas parse falhou", {
+              agent,
+              tail: accumulated.slice(-300),
+            });
+          }
+        }
 
         // Sobrescreve com a resposta determinística da tool (zero alucinação).
         if (deterministicResponse) {
