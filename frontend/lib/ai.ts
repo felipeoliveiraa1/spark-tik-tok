@@ -29,10 +29,10 @@ export const models = {
   /** Virais (oculto). Mantido caso reativem. */
   viral: google(FLASH),
 
-  /** Scripts: trocado de Pro pra Flash pra reduzir custo (~5x mais barato).
-   *  Cache automático do Gemini compensa em conversas longas. Reverter pra
-   *  PRO se a qualidade dos roteiros cair na prática. */
-  script: google(FLASH),
+  /** Scripts: PRO. Tentamos Flash mas qualidade dos roteiros caiu —
+   *  voltamos pra Pro. Criatividade do output (5 roteiros completos com
+   *  framework Yara) é o produto que a aluna paga, vale o custo extra. */
+  script: google(PRO),
 
   /** Tira-dúvidas: Q&A direto sobre TikTok Shop. Flash-Lite suficiente. */
   help: google(FLASH_LITE),

@@ -1404,6 +1404,10 @@ export async function POST(request: Request) {
   // Quando search_virals retorna formatted_response, substituímos o texto
   // do modelo por essa resposta determinística — zero alucinação possível.
   let deterministicResponse: string | null = null;
+  // Diferente de deterministicResponse (que SOBRESCREVE), appendResponse
+  // é colado AO FINAL do que o modelo gerou. Usado pra confirmacoes que
+  // nao devem apagar o conteudo (ex: salvar roteiros).
+  let appendResponse: string | null = null;
 
   // Abort signal — corta o stream com folga antes do maxDuration (60s)
   // pra conseguir devolver texto pro cliente em vez de cair em timeout.
@@ -1593,14 +1597,15 @@ export async function POST(request: Request) {
               const name = out.name ?? "produto";
               deterministicResponse = `Anotei aqui na ficha 💕 [Ver ${name}](${out.url_path}) — atualizei pra você.\n\nMais alguma coisa pra agregar?`;
             }
-            // Resposta determinística pra save_script
+            // save_script: APPENDA confirmação aos roteiros já gerados (não
+            // sobrescreve, senão a aluna perde o conteudo visivel na conversa).
             if (
               part.toolName === "save_script" &&
               out?.ok &&
               out.url_path
             ) {
               const title = out.title ?? "roteiros";
-              deterministicResponse = `Prontinho, salvei os roteiros pra você 💕 [Ver ${title}](${out.url_path})\n\nQuer mais variações com outro estilo ou prefere ir pra outro produto?`;
+              appendResponse = `\n\n---\n\n💕 Salvei os roteiros pra você acessar quando quiser → [Ver ${title}](${out.url_path})\n\nQuer mais variações com outro estilo ou prefere ir pra outro produto?`;
             }
 
             if (
@@ -1645,6 +1650,21 @@ export async function POST(request: Request) {
             agent,
             len: deterministicResponse.length,
           });
+        } else if (appendResponse && accumulated.trim()) {
+          // Tem conteúdo do modelo + tool de confirmação: appenda no final.
+          // Ex: roteiros gerados + "salvei pra você [link]".
+          accumulated = accumulated + appendResponse;
+          controller.enqueue(encoder.encode(appendResponse));
+          console.log("[api/chat] resposta com append", {
+            agent,
+            baseLen: accumulated.length - appendResponse.length,
+            appendLen: appendResponse.length,
+          });
+        } else if (appendResponse) {
+          // Sem conteúdo do modelo, só a confirmação. Usa o append como fallback.
+          const fallback = appendResponse.trimStart();
+          accumulated = fallback;
+          controller.enqueue(encoder.encode(fallback));
         } else if (!accumulated.trim()) {
           // Mensagem neutra positiva — sem palavras proibidas.
           // Log interno tem o motivo técnico.
