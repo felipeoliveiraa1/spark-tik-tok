@@ -330,6 +330,79 @@ function extractLeakedSaveScriptParams(text: string): {
 }
 
 /**
+ * Última rede de segurança: parser de markdown dos roteiros gerados.
+ *
+ * Quando o Gemini NÃO chama save_script (nem estruturada, nem como
+ * tool_code leak), os roteiros aparecem só como markdown na conversa
+ * e somem ao recarregar. Esse parser extrai os 5 roteiros do texto
+ * (formato fixo definido no SYSTEM_PROMPT.script) pra salvar manualmente.
+ *
+ * Formato esperado:
+ *   **ROTEIRO 1 — Estilo: fofoca** (~30s)
+ *   🎣 **Gancho** (3s)
+ *   <texto>
+ *   💡 **Desenvolvimento**
+ *   <texto>
+ *   ✨ **Benefício**
+ *   <texto>
+ *   💕 **CTA**
+ *   <texto>
+ *   ─────
+ *   **ROTEIRO 2 — ...**
+ */
+function parseScriptsFromMarkdown(text: string): Array<{
+  n: number;
+  style: string;
+  hook: string;
+  development: string;
+  benefit: string;
+  cta: string;
+}> {
+  // Separa por separador ───── (ou similar) ou pelos marcadores ROTEIRO N
+  // Mais robusto: regex que pega tudo entre `**ROTEIRO N — Estilo: X**` até
+  // o próximo `**ROTEIRO N+1 —` ou fim.
+  const blockRegex =
+    /\*\*\s*ROTEIRO\s+(\d+)\s*[—–-]\s*Estilo:\s*([^*\n(]+?)\s*\*\*[\s\S]*?(?=\*\*\s*ROTEIRO\s+\d+\s*[—–-]|$)/gi;
+  const results: Array<{
+    n: number;
+    style: string;
+    hook: string;
+    development: string;
+    benefit: string;
+    cta: string;
+  }> = [];
+
+  // Extrai bloco interno por emoji marker
+  const extractByMarker = (block: string, marker: RegExp): string => {
+    const matches = [...block.matchAll(marker)];
+    if (matches.length === 0) return "";
+    const m = matches[0];
+    const startIdx = (m.index ?? 0) + m[0].length;
+    // Pega até o próximo marker ou fim
+    const rest = block.slice(startIdx);
+    const nextMarker = rest.match(/(🎣|💡|✨|💕|─{3,})/);
+    const end = nextMarker?.index ?? rest.length;
+    return rest.slice(0, end).trim();
+  };
+
+  for (const m of text.matchAll(blockRegex)) {
+    const n = parseInt(m[1], 10);
+    const style = m[2].trim().toLowerCase();
+    const block = m[0];
+
+    const hook = extractByMarker(block, /🎣\s*\*\*[^*]*\*\*[^\n]*\n?/g);
+    const development = extractByMarker(block, /💡\s*\*\*[^*]*\*\*[^\n]*\n?/g);
+    const benefit = extractByMarker(block, /✨\s*\*\*[^*]*\*\*[^\n]*\n?/g);
+    const cta = extractByMarker(block, /💕\s*\*\*[^*]*\*\*[^\n]*\n?/g);
+
+    if (hook && development && benefit && cta) {
+      results.push({ n, style, hook, development, benefit, cta });
+    }
+  }
+  return results;
+}
+
+/**
  * Detecta se a aluna pediu explicitamente pra salvar os roteiros gerados.
  * Gemini Pro às vezes diz "salvei" sem chamar save_script de verdade —
  * esse helper força toolChoice quando true.
@@ -1800,6 +1873,49 @@ export async function POST(request: Request) {
               agent,
               tail: accumulated.slice(-300),
             });
+          }
+        }
+
+        // 4ª CAMADA — PARSER DE MARKDOWN. Se ainda não salvou e a resposta
+        // tem 3+ roteiros formatados (ROTEIRO N — Estilo: X), salva pelo
+        // parser. Garante que SE a aluna VIU os 5 roteiros no chat, eles
+        // ESTÃO em /scripts. Funciona mesmo se o modelo só gerou texto
+        // markdown sem nenhuma forma de tool call.
+        if (
+          agent === "script" &&
+          !appendResponse &&
+          !deterministicResponse &&
+          /\*\*\s*ROTEIRO\s+\d+/i.test(accumulated)
+        ) {
+          const parsed = parseScriptsFromMarkdown(accumulated);
+          if (parsed.length >= 3) {
+            // Tenta pegar nome do produto pelas mentions (se houver) ou
+            // usa título genérico.
+            const productLabel =
+              mentions.find((m) => m.kind === "product")?.label ?? "roteiros";
+            const productId =
+              mentions.find((m) => m.kind === "product")?.id ?? null;
+            const title = `${parsed.length} roteiros · ${productLabel}`;
+            console.warn(
+              "[markdown parser] salvando roteiros sem tool call estruturada",
+              { agent, count: parsed.length, title },
+            );
+            const { data: saved, error: saveErr } = await supabase
+              .from("generated_scripts")
+              .insert({
+                user_id: user.id,
+                product_id: productId,
+                title,
+                hooks: parsed,
+                model: "gemini-2.5-pro",
+              })
+              .select("id, title")
+              .single();
+            if (!saveErr && saved) {
+              appendResponse = `\n\n---\n\n💕 Salvei os roteiros pra você acessar quando quiser → [Ver ${saved.title}](/scripts/${saved.id})\n\nQuer mais variações com outro estilo?`;
+            } else {
+              console.error("[markdown parser] insert falhou", saveErr);
+            }
           }
         }
 
