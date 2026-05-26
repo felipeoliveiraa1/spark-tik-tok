@@ -17,9 +17,10 @@ import {
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-// Scraper Playwright leva 15-25s pra retornar a lista de virais. 60s dá
-// margem pra tool rodar + modelo gerar texto final.
-export const maxDuration = 60;
+// 90s pra acomodar: tool calling pesado do Scripts (Pro com ficha rica),
+// scraper Playwright (15-25s), + retry transparente em caso de empty
+// response. Vercel Pro plan suporta até 300s.
+export const maxDuration = 90;
 
 type Attachment = { url: string; mime?: string };
 type ChatMention = { kind: "product"; id: string; label: string };
@@ -1409,10 +1410,10 @@ export async function POST(request: Request) {
   // nao devem apagar o conteudo (ex: salvar roteiros).
   let appendResponse: string | null = null;
 
-  // Abort signal — corta o stream com folga antes do maxDuration (60s)
+  // Abort signal — corta o stream com folga antes do maxDuration (90s)
   // pra conseguir devolver texto pro cliente em vez de cair em timeout.
   const abortController = new AbortController();
-  const abortTimer = setTimeout(() => abortController.abort(), 55_000);
+  const abortTimer = setTimeout(() => abortController.abort(), 80_000);
 
   // Pra agente Virais: se a mensagem da aluna pede listagem de virais
   // (não saudação, não ação sobre card já mostrado), FORÇA o modelo a
