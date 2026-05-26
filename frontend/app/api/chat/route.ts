@@ -240,6 +240,28 @@ function wantsSaveProduct(text: string, messageCount: number): boolean {
   return false;
 }
 
+/**
+ * Detecta se a aluna pediu explicitamente pra salvar os roteiros gerados.
+ * Gemini Pro às vezes diz "salvei" sem chamar save_script de verdade —
+ * esse helper força toolChoice quando true.
+ */
+function wantsSaveScript(text: string, messageCount: number): boolean {
+  if (!text || messageCount < 2) return false;
+  const lower = text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .trim();
+  if (/^(oi+|ola|hi+|hey|bom\s+dia|boa\s+(tarde|noite))[\s.,!?]*$/i.test(lower)) {
+    return false;
+  }
+  // "salve esses scripts", "guarda esses roteiros", "salva isso", etc
+  if (/(\b|^)(salv|guard|adicion|armazen)/i.test(lower)) {
+    return true;
+  }
+  return false;
+}
+
 const STOP_WORDS = new Set([
   "virais",
   "viral",
@@ -1432,6 +1454,8 @@ export async function POST(request: Request) {
   // nunca entrava no catálogo e a aluna ficava esperando.
   const forceSaveProduct =
     agent === "info" && wantsSaveProduct(lastUserText, messages.length);
+  const forceSaveScript =
+    agent === "script" && wantsSaveScript(lastUserText, messages.length);
   if (forceSaveProduct) {
     console.log("[api/chat] forçando toolChoice=save_product", {
       lastUserText: lastUserText.slice(0, 100),
@@ -1448,13 +1472,17 @@ export async function POST(request: Request) {
       ? { type: "tool", toolName: "search_virals" }
       : forceSaveProduct
         ? { type: "tool", toolName: "save_product" }
-        : undefined,
+        : forceSaveScript
+          ? { type: "tool", toolName: "save_script" }
+          : undefined,
     // Quando força uma tool específica, limitamos a 1 step — o modelo chama
     // a tool e a resposta determinística substitui o texto. Sem isso, o
     // toolChoice forçado se aplica a cada step e o modelo chamava a mesma
     // tool 3x (bug: produto salvo 3x). Sem força → 3 steps pra permitir
     // chain (busca → analisa → responde).
-    stopWhen: stepCountIs(forceSearchVirals || forceSaveProduct ? 1 : 3),
+    stopWhen: stepCountIs(
+      forceSearchVirals || forceSaveProduct || forceSaveScript ? 1 : 3,
+    ),
     maxOutputTokens: 8192,
     // Temperature 0 pro Virais — modelo SÓ copia formatted_response da tool.
     // Scripts pode ficar criativo. Info/Help meio termo.
