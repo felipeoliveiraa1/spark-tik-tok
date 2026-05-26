@@ -11,6 +11,8 @@ type WelcomeInput = {
   email: string;
   temporaryPassword: string;
   loginUrl: string;
+  /** Quando > 0, monta mensagem de trial (acesso gratuito limitado). */
+  trialDays?: number;
 };
 
 function getSiteUrl(): string {
@@ -18,13 +20,29 @@ function getSiteUrl(): string {
 }
 
 export function buildWelcomeEmail(input: WelcomeInput): { subject: string; text: string; html: string } {
-  const subject = `Bem-vinda ao Método TTS, ${input.firstName} 💕`;
+  const isTrial = (input.trialDays ?? 0) > 0;
+  const subject = isTrial
+    ? `${input.firstName}, ganhou ${input.trialDays} dias grátis no Método TTS ✨`
+    : `Bem-vinda ao Método TTS, ${input.firstName} 💕`;
+
+  const trialBanner = isTrial
+    ? [
+        ``,
+        `🎁 ACESSO LIBERADO POR ${input.trialDays} DIAS:`,
+        `Você foi convidada pra experimentar o Método TTS de graça. Use tudo à vontade nesse período.`,
+        ``,
+        `Quando o teste acabar, é só assinar pela Kiwify pra continuar — seu histórico (produtos, scripts, conversas) fica salvo, você só renova o acesso.`,
+        ``,
+      ]
+    : [];
 
   const text = [
     `Oi ${input.firstName}, tudo bem? ✨`,
     ``,
-    `Sua conta no Método TTS foi criada. Estamos super felizes de te ter aqui!`,
-    ``,
+    isTrial
+      ? `Sua conta no Método TTS foi criada com acesso gratuito de ${input.trialDays} dias.`
+      : `Sua conta no Método TTS foi criada. Estamos super felizes de te ter aqui!`,
+    ...trialBanner,
     `Pra entrar pela primeira vez:`,
     ``,
     `Email: ${input.email}`,
@@ -37,7 +55,7 @@ export function buildWelcomeEmail(input: WelcomeInput): { subject: string; text:
     `Dentro do app você tem:`,
     `- Análise de produto com foto (Informação)`,
     `- Roteiros completos de TikTok (Scripts) — gancho, desenvolvimento, benefício e CTA`,
-    `- Aulas e lives da Yara`,
+    `- Aulas e lives ao vivo`,
     `- Suporte tira-dúvidas sobre TikTok Shop`,
     ``,
     `Qualquer coisa, é só responder esse email.`,
@@ -66,6 +84,14 @@ export function buildWelcomeEmail(input: WelcomeInput): { subject: string; text:
     </div>
 
     <div style="padding:24px 28px;">
+      ${
+        isTrial
+          ? `<div style="background-color:#fef3c7;background:#fef3c7;border:1px solid #fcd34d;border-radius:12px;padding:14px 16px;margin:0 0 16px;font-size:13.5px;color:#78350f;">
+        <div style="font-weight:700;margin-bottom:4px;">🎁 ${input.trialDays} dias grátis</div>
+        Você ganhou ${input.trialDays} dias de acesso completo. Quando o teste acabar, é só assinar pela Kiwify pra continuar — seu histórico fica salvo.
+      </div>`
+          : ""
+      }
       <p style="margin:0 0 16px;font-size:14.5px;color:#3a3a3f;">
         Pra entrar pela primeira vez, usa essas credenciais:
       </p>

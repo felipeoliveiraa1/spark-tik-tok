@@ -6,6 +6,7 @@
 export type PlanStatus =
   | "inactive"
   | "active"
+  | "trial"
   | "late"
   | "canceled"
   | "refunded"
@@ -21,13 +22,23 @@ export type PlanAccessProfile = {
  * Decide se a aluna tem acesso AGORA.
  *
  * Lógica:
- *   - plan_active=true → liberado (cobre active + late).
- *   - status canceled → libera SE expires_at no futuro (período pago).
  *   - status refunded/chargeback → bloqueado sempre.
+ *   - tem plan_expires_at e já passou → bloqueado (cobre trial expirado).
+ *   - plan_active=true → liberado (cobre active, trial em curso, late).
+ *   - status canceled → libera SE expires_at no futuro.
  *   - inactive → bloqueado.
  */
 export function hasActiveAccess(profile: PlanAccessProfile | null | undefined): boolean {
   if (!profile) return false;
+  // Refunded/chargeback bloqueia sempre, mesmo se plan_active ainda for true
+  if (profile.plan_status === "refunded" || profile.plan_status === "chargeback") {
+    return false;
+  }
+  // Expirado bloqueia (trial vencido cai aqui)
+  if (profile.plan_expires_at) {
+    const expired = new Date(profile.plan_expires_at).getTime() <= Date.now();
+    if (expired) return false;
+  }
   if (profile.plan_active === true) return true;
   if (profile.plan_status === "canceled" && profile.plan_expires_at) {
     return new Date(profile.plan_expires_at).getTime() > Date.now();
@@ -45,6 +56,7 @@ export function getDisplayStatus(profile: PlanAccessProfile | null | undefined):
   const valid: PlanStatus[] = [
     "inactive",
     "active",
+    "trial",
     "late",
     "canceled",
     "refunded",
@@ -61,6 +73,8 @@ export function statusLabel(status: PlanStatus): { label: string; tone: "good" |
   switch (status) {
     case "active":
       return { label: "Plano ativo ✨", tone: "good" };
+    case "trial":
+      return { label: "Período de teste ✨", tone: "good" };
     case "late":
       return { label: "Pagamento atrasado", tone: "warn" };
     case "canceled":
