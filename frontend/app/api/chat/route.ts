@@ -209,221 +209,6 @@ function wantsViralList(text: string): boolean {
   return false;
 }
 
-/**
- * Detecta se a aluna está confirmando uma ação de SALVAR após o agente
- * Info ter analisado um produto. Gemini Pro às vezes diz "estou salvando"
- * sem chamar save_product — esse helper força toolChoice quando true.
- */
-function wantsSaveProduct(text: string, messageCount: number): boolean {
-  if (!text || messageCount < 2) return false; // precisa ter análise anterior
-  const lower = text
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .trim();
-  // Saudações ou pergunta direta — não força
-  if (/^(oi+|ola|hi+|hey|bom\s+dia|boa\s+(tarde|noite))[\s.,!?]*$/i.test(lower)) {
-    return false;
-  }
-  // Verbos explícitos de save
-  if (/(\b|^)(salv|guard|adicion|armazen|memoriz|registr|grav)/i.test(lower)) {
-    return true;
-  }
-  // Confirmações simples — só forçam se a mensagem é curta (< 20 chars)
-  // e a anterior do agente parecia perguntar "quero salvar?".
-  if (
-    lower.length <= 25 &&
-    /^(sim|claro|pode|isso|vamos|quero|por\s+favor|pfv|aceito)/i.test(lower)
-  ) {
-    return true;
-  }
-  return false;
-}
-
-// Padrões de vazamento de tool calling do Gemini: em vez de fazer a tool
-// call estruturada via API, o modelo às vezes "imagina" o código Python e
-// emite como texto. Ex:
-//   tool_code print(save_script(title='5 roteiros · Foo', product_id='...', scripts=[{...}]))
-//   tool_code print(north_star.save_script(...))
-// Esses regexes detectam isso pra a gente recuperar manualmente.
-const TOOL_CODE_LEAK_REGEX = /tool_code\s+print\s*\([\s\S]*?save_script\s*\(([\s\S]*)\)\s*\)\s*$/i;
-
-/**
- * Tenta extrair os params de uma chamada Python-style vazada em texto.
- * Retorna null se não conseguir parsear. Best-effort — se falhar, a aluna
- * vê o lixo no chat mas pelo menos não quebra.
- *
- * O Gemini gera com aspas simples (Python). Convertemos pra JSON válido
- * (aspas duplas) ANTES de chamar JSON.parse. Cuidado com aspas dentro de
- * strings (escapamos primeiro).
- */
-function extractLeakedSaveScriptParams(text: string): {
-  title: string;
-  product_id?: string;
-  scripts: Array<Record<string, unknown>>;
-} | null {
-  const match = text.match(TOOL_CODE_LEAK_REGEX);
-  if (!match) return null;
-  let inner = match[1].trim();
-  // Tenta achar `scripts=[...]`
-  const scriptsMatch = inner.match(/scripts\s*=\s*(\[[\s\S]+?\])\s*\)?\s*$/);
-  const titleMatch = inner.match(/title\s*=\s*['"]([^'"]+)['"]/);
-  const productIdMatch = inner.match(/product_id\s*=\s*['"]([^'"]+)['"]/);
-  if (!scriptsMatch || !titleMatch) return null;
-
-  // Converte Python literal pra JSON: troca aspas simples por duplas, mas
-  // preserva apostrofes dentro de strings (best-effort).
-  const pyToJson = (py: string): string => {
-    // Estratégia: faz uma passada char-by-char trackeando se está dentro de string.
-    // Quando encontra ' fora de string, troca por ". Quando dentro, mantém.
-    let out = "";
-    let inStr = false;
-    let strChar = "";
-    let escape = false;
-    for (let i = 0; i < py.length; i++) {
-      const c = py[i];
-      if (escape) {
-        out += c;
-        escape = false;
-        continue;
-      }
-      if (c === "\\") {
-        out += c;
-        escape = true;
-        continue;
-      }
-      if (inStr) {
-        if (c === strChar) {
-          inStr = false;
-          out += strChar === "'" ? '"' : c;
-        } else if (c === '"' && strChar === "'") {
-          // Aspa dupla dentro de string com ' — escapa
-          out += '\\"';
-        } else {
-          out += c;
-        }
-      } else {
-        if (c === "'" || c === '"') {
-          inStr = true;
-          strChar = c;
-          out += '"';
-        } else {
-          out += c;
-        }
-      }
-    }
-    return out;
-  };
-
-  try {
-    const scriptsJson = pyToJson(scriptsMatch[1]);
-    const scripts = JSON.parse(scriptsJson) as Array<Record<string, unknown>>;
-    return {
-      title: titleMatch[1],
-      product_id: productIdMatch?.[1],
-      scripts,
-    };
-  } catch (err) {
-    console.warn("[tool_code leak] parse failed", err);
-    return null;
-  }
-}
-
-/**
- * Última rede de segurança: parser de markdown dos roteiros gerados.
- *
- * Quando o Gemini NÃO chama save_script (nem estruturada, nem como
- * tool_code leak), os roteiros aparecem só como markdown na conversa
- * e somem ao recarregar. Esse parser extrai os 5 roteiros do texto
- * (formato fixo definido no SYSTEM_PROMPT.script) pra salvar manualmente.
- *
- * Formato esperado:
- *   **ROTEIRO 1 — Estilo: fofoca** (~30s)
- *   🎣 **Gancho** (3s)
- *   <texto>
- *   💡 **Desenvolvimento**
- *   <texto>
- *   ✨ **Benefício**
- *   <texto>
- *   💕 **CTA**
- *   <texto>
- *   ─────
- *   **ROTEIRO 2 — ...**
- */
-function parseScriptsFromMarkdown(text: string): Array<{
-  n: number;
-  style: string;
-  hook: string;
-  development: string;
-  benefit: string;
-  cta: string;
-}> {
-  // Separa por separador ───── (ou similar) ou pelos marcadores ROTEIRO N
-  // Mais robusto: regex que pega tudo entre `**ROTEIRO N — Estilo: X**` até
-  // o próximo `**ROTEIRO N+1 —` ou fim.
-  const blockRegex =
-    /\*\*\s*ROTEIRO\s+(\d+)\s*[—–-]\s*Estilo:\s*([^*\n(]+?)\s*\*\*[\s\S]*?(?=\*\*\s*ROTEIRO\s+\d+\s*[—–-]|$)/gi;
-  const results: Array<{
-    n: number;
-    style: string;
-    hook: string;
-    development: string;
-    benefit: string;
-    cta: string;
-  }> = [];
-
-  // Extrai bloco interno por emoji marker
-  const extractByMarker = (block: string, marker: RegExp): string => {
-    const matches = [...block.matchAll(marker)];
-    if (matches.length === 0) return "";
-    const m = matches[0];
-    const startIdx = (m.index ?? 0) + m[0].length;
-    // Pega até o próximo marker ou fim
-    const rest = block.slice(startIdx);
-    const nextMarker = rest.match(/(🎣|💡|✨|💕|─{3,})/);
-    const end = nextMarker?.index ?? rest.length;
-    return rest.slice(0, end).trim();
-  };
-
-  for (const m of text.matchAll(blockRegex)) {
-    const n = parseInt(m[1], 10);
-    const style = m[2].trim().toLowerCase();
-    const block = m[0];
-
-    const hook = extractByMarker(block, /🎣\s*\*\*[^*]*\*\*[^\n]*\n?/g);
-    const development = extractByMarker(block, /💡\s*\*\*[^*]*\*\*[^\n]*\n?/g);
-    const benefit = extractByMarker(block, /✨\s*\*\*[^*]*\*\*[^\n]*\n?/g);
-    const cta = extractByMarker(block, /💕\s*\*\*[^*]*\*\*[^\n]*\n?/g);
-
-    if (hook && development && benefit && cta) {
-      results.push({ n, style, hook, development, benefit, cta });
-    }
-  }
-  return results;
-}
-
-/**
- * Detecta se a aluna pediu explicitamente pra salvar os roteiros gerados.
- * Gemini Pro às vezes diz "salvei" sem chamar save_script de verdade —
- * esse helper força toolChoice quando true.
- */
-function wantsSaveScript(text: string, messageCount: number): boolean {
-  if (!text || messageCount < 2) return false;
-  const lower = text
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .trim();
-  if (/^(oi+|ola|hi+|hey|bom\s+dia|boa\s+(tarde|noite))[\s.,!?]*$/i.test(lower)) {
-    return false;
-  }
-  // "salve esses scripts", "guarda esses roteiros", "salva isso", etc
-  if (/(\b|^)(salv|guard|adicion|armazen)/i.test(lower)) {
-    return true;
-  }
-  return false;
-}
-
 const STOP_WORDS = new Set([
   "virais",
   "viral",
@@ -559,77 +344,6 @@ function buildInfoTools(supabase: SupabaseClient, userId: string): ToolSet {
   // e seta GOOGLE_CSE_API_KEY + GOOGLE_CSE_ID no Vercel.
   return {
     ...buildProductTools(supabase, userId),
-    save_product: tool({
-      description:
-        "Salva uma ficha COMPLETA do produto pra aluna consultar em /produtos e referenciar em outros agentes. Chame SEMPRE que a aluna disser 'salva', 'guarda', 'adiciona'. TODOS os campos são obrigatórios — se você não tem certeza absoluta de algum, INFIRA baseado no que sabe do produto e do mercado BR. Pra arrays, sempre entregue 3-5 itens (hook_ideas: 5 hooks). Devolva 'Salvei a ficha completa! [Nome](/produtos/<id>) 💕' em markdown.",
-      inputSchema: z.object({
-        name: z.string().describe("Nome do produto. Ex: 'Figurinhas da Copa do Mundo 2026'."),
-        image_url: z
-          .string()
-          .optional()
-          .describe("URL pública da foto (se a aluna anexou no chat, passe a URL aqui)."),
-        category: z.string().describe("Categoria principal. Ex: 'Colecionável sazonal', 'Skincare', 'Acessório tech'."),
-        target_audience: z.string().describe("Público-alvo em 1-2 frases ricas. Idade, gênero, perfil emocional. Ex: 'Homens 25-45 fãs de futebol que colecionavam figurinhas na infância e querem reviver a nostalgia com os filhos.'"),
-        pain_points: z.array(z.string()).min(3).max(5).describe("3-5 dores que o produto resolve. Frases curtas, diretas."),
-        strengths: z.array(z.string()).min(3).max(5).describe("3-5 pontos fortes objetivos do produto."),
-        price_range: z.string().describe("Faixa de preço esperada no BR. Ex: 'R$ 8 pacote / R$ 50+ raras'."),
-        competitors: z.array(z.string()).min(2).max(5).describe("2-5 marcas/produtos concorrentes diretos no mercado BR."),
-        differentiators: z.array(z.string()).min(3).max(5).describe("3-5 diferenciais ÚNICOS vs concorrentes. NÃO repita strengths — foque no que SÓ esse produto tem."),
-        objections: z.array(z.string()).min(3).max(5).describe("3-5 objeções que a aluna precisa quebrar nos vídeos (motivos que fazem o cliente NÃO comprar). Escreva em 1ª pessoa do cliente. Ex: 'Vou gastar uma fortuna pra completar', 'Não tenho com quem trocar'."),
-        emotional_triggers: z.array(z.string()).min(3).max(5).describe("3-5 gatilhos emocionais que movem a compra. Ex: 'Nostalgia da infância', 'FOMO de coleção sazonal', 'Status de colecionador'."),
-        usage_moments: z.array(z.string()).min(2).max(4).describe("2-4 momentos/contextos de uso reais. Ex: 'Abrindo pacotes antes do jogo com amigos', 'Trocando no recreio/trabalho'."),
-        content_angles: z.array(z.string()).min(3).max(5).describe("3-5 formatos/ângulos de vídeo recomendados. Ex: 'Unboxing surpresa', 'Reaction de figurinha rara', 'Antes/depois do álbum cheio'."),
-        hook_ideas: z.array(z.string()).length(5).describe("EXATAMENTE 5 hooks prontos, curtos (até 80 chars), em PT-BR, prontos pra abrir um vídeo TikTok. Estilo Aline Moreira: direto, com gancho de curiosidade ou FOMO."),
-        seasonality: z.string().describe("Sazonalidade em 1 frase. Quando vende mais e quando esfria. Ex: 'Pico nos 30 dias antes da Copa do Mundo, vendas caem 80% pós-evento'. Se não sazonal, escreva 'Demanda estável o ano todo, sem picos significativos.'"),
-      }),
-      execute: async (input) => {
-        // DEDUP: se já existe produto com mesmo nome (ilike — case insensitive),
-        // retorna o existente em vez de criar duplicado. Evita o bug onde
-        // toolChoice forçado fazia o modelo chamar save_product 3x no mesmo turno.
-        const nameTrim = input.name.trim().slice(0, 200);
-        const { data: existing } = await supabase
-          .from("products")
-          .select("id, name")
-          .eq("user_id", userId)
-          .ilike("name", nameTrim)
-          .maybeSingle();
-        if (existing) {
-          return {
-            ok: true,
-            id: existing.id,
-            name: existing.name,
-            url_path: `/produtos/${existing.id}`,
-            already_existed: true,
-          };
-        }
-
-        const { data, error } = await supabase
-          .from("products")
-          .insert({
-            user_id: userId,
-            name: nameTrim,
-            image_url: input.image_url ?? null,
-            category: input.category,
-            target_audience: input.target_audience,
-            pain_points: input.pain_points,
-            strengths: input.strengths,
-            price_range: input.price_range,
-            competitors: input.competitors,
-            differentiators: input.differentiators,
-            objections: input.objections,
-            emotional_triggers: input.emotional_triggers,
-            usage_moments: input.usage_moments,
-            content_angles: input.content_angles,
-            hook_ideas: input.hook_ideas,
-            seasonality: input.seasonality,
-            raw_analysis: input,
-          })
-          .select("id, name")
-          .single();
-        if (error) return { ok: false, error: error.message };
-        return { ok: true, id: data.id, name: data.name, url_path: `/produtos/${data.id}` };
-      },
-    }),
     update_product: tool({
       description:
         "Agrega informação a um produto JÁ salvo. Use quando a aluna pedir 'adiciona essa info', 'agrega isso', 'esqueci de falar X' sobre produto que já existe. Por default, arrays são MERGED (não substitui) — passe append=false só quando quiser SUBSTITUIR (ex: 'corrige a faixa de preço'). Sempre identifique o produto pelo id (use list_my_products ou get_product antes).",
@@ -1297,56 +1011,6 @@ function buildScriptTools(supabase: SupabaseClient, userId: string): ToolSet {
         return { ok: true, viral: data };
       },
     }),
-    save_script: tool({
-      description:
-        "Salva os ROTEIROS gerados pra aluna consultar em /scripts. Cada roteiro tem 4 blocos (gancho 3s, desenvolvimento, benefício, CTA) e um estilo (fofoca, polêmico, engraçado, educativo, storytelling, comparação, transformação). Chame SEMPRE que entregar o conjunto completo de roteiros. Devolva [Ver scripts](/scripts/<id>) em markdown.",
-      inputSchema: z.object({
-        title: z
-          .string()
-          .describe(
-            "Título descritivo, ex: '5 roteiros · Figurinhas da Copa' ou '3 roteiros · Hidratante NAC'.",
-          ),
-        product_id: z.string().optional().describe("UUID do produto relacionado."),
-        scripts: z
-          .array(
-            z.object({
-              n: z.number().describe("Número sequencial do roteiro (1, 2, 3...)."),
-              style: z
-                .string()
-                .describe(
-                  "Estilo do roteiro. Um destes: fofoca, polemico, engracado, educativo, storytelling, comparacao, transformacao.",
-                ),
-              hook: z.string().describe("Gancho de até 3s. Frase curta, gera curiosidade ou contraste."),
-              development: z
-                .string()
-                .describe("Desenvolvimento com analogia/explicação simples. 2-4 frases."),
-              benefit: z.string().describe("Benefício REAL do produto, sem promessa milagrosa."),
-              cta: z.string().describe("CTA leve incentivando compra. 1 frase curta."),
-              duration_sec: z.number().optional().describe("Duração estimada em segundos (15/30/45/60)."),
-            }),
-          )
-          .min(3)
-          .describe("Array com 3-5 roteiros completos, um por estilo."),
-      }),
-      execute: async ({ title, product_id, scripts }) => {
-        // Reaproveita a coluna `hooks` (jsonb) pra guardar os roteiros — sem
-        // migration. O render detecta o formato (item com `development` → roteiro
-        // completo; sem → hook legado).
-        const { data, error } = await supabase
-          .from("generated_scripts")
-          .insert({
-            user_id: userId,
-            product_id: product_id ?? null,
-            title,
-            hooks: scripts,
-            model: "gemini-flash-latest",
-          })
-          .select("id, title")
-          .single();
-        if (error) return { ok: false, error: error.message };
-        return { ok: true, id: data.id, title: data.title, url_path: `/scripts/${data.id}` };
-      },
-    }),
   };
 }
 
@@ -1552,10 +1216,6 @@ export async function POST(request: Request) {
   // Monta toolset por agente
   let tools: ToolSet | undefined;
   if (agent === "info") {
-    // IMPORTANTE: NÃO combinar google_search (provider-defined) com nossas
-    // function tools — Gemini 2.5 Pro retorna warning e IGNORA as function
-    // tools (incluindo save_product). Aluna ficava sem o produto salvo.
-    // Modelo usa conhecimento próprio + dados do catálogo via tools.
     tools = buildInfoTools(supabase, user.id);
   } else if (agent === "viral") {
     tools = buildViralTools(supabase, user.id, lastUserText);
@@ -1708,10 +1368,6 @@ export async function POST(request: Request) {
   // Quando search_virals retorna formatted_response, substituímos o texto
   // do modelo por essa resposta determinística — zero alucinação possível.
   let deterministicResponse: string | null = null;
-  // Diferente de deterministicResponse (que SOBRESCREVE), appendResponse
-  // é colado AO FINAL do que o modelo gerou. Usado pra confirmacoes que
-  // nao devem apagar o conteudo (ex: salvar roteiros).
-  let appendResponse: string | null = null;
 
   // Abort signal — corta o stream com folga antes do maxDuration (90s)
   // pra conseguir devolver texto pro cliente em vez de cair em timeout.
@@ -1729,21 +1385,6 @@ export async function POST(request: Request) {
     });
   }
 
-  // Pra agente Info: se a aluna confirmou salvar produto depois de já ter
-  // recebido análise, FORÇA o modelo a chamar save_product. Sem isso o
-  // Gemini Pro respondia "estou salvando" sem chamar a tool — o produto
-  // nunca entrava no catálogo e a aluna ficava esperando.
-  const forceSaveProduct =
-    agent === "info" && wantsSaveProduct(lastUserText, messages.length);
-  const forceSaveScript =
-    agent === "script" && wantsSaveScript(lastUserText, messages.length);
-  if (forceSaveProduct) {
-    console.log("[api/chat] forçando toolChoice=save_product", {
-      lastUserText: lastUserText.slice(0, 100),
-      messages: messages.length,
-    });
-  }
-
   const result = streamText({
     model: models[agent],
     system: SYSTEM_PROMPTS[agent],
@@ -1751,19 +1392,10 @@ export async function POST(request: Request) {
     tools,
     toolChoice: forceSearchVirals
       ? { type: "tool", toolName: "search_virals" }
-      : forceSaveProduct
-        ? { type: "tool", toolName: "save_product" }
-        : forceSaveScript
-          ? { type: "tool", toolName: "save_script" }
-          : undefined,
-    // Quando força uma tool específica, limitamos a 1 step — o modelo chama
-    // a tool e a resposta determinística substitui o texto. Sem isso, o
-    // toolChoice forçado se aplica a cada step e o modelo chamava a mesma
-    // tool 3x (bug: produto salvo 3x). Sem força → 3 steps pra permitir
-    // chain (busca → analisa → responde).
-    stopWhen: stepCountIs(
-      forceSearchVirals || forceSaveProduct || forceSaveScript ? 1 : 3,
-    ),
+      : undefined,
+    // Quando força search_virals, 1 step. Senão 3 pra permitir chain
+    // (busca → analisa → responde).
+    stopWhen: stepCountIs(forceSearchVirals ? 1 : 3),
     maxOutputTokens: 8192,
     // Temperature 0 pro Virais — modelo SÓ copia formatted_response da tool.
     // Scripts pode ficar criativo. Info/Help meio termo.
@@ -1889,15 +1521,6 @@ export async function POST(request: Request) {
             ) {
               deterministicResponse = `Pronto, salvei na sua biblioteca 💕 [Ver agora](${out.url_path})\n\nQuer que eu te mostre detalhes desse vídeo ou bora pra outro?`;
             }
-            // Resposta determinística pra save_product
-            if (
-              part.toolName === "save_product" &&
-              out?.ok &&
-              out.url_path
-            ) {
-              const name = out.name ?? "produto";
-              deterministicResponse = `Salvinho aqui pra você 💖 [Ver ${name}](${out.url_path})\n\nQuer que eu te leve pra Scripts gerar hooks pra ele? ✨`;
-            }
             // Resposta determinística pra update_product
             if (
               part.toolName === "update_product" &&
@@ -1906,16 +1529,6 @@ export async function POST(request: Request) {
             ) {
               const name = out.name ?? "produto";
               deterministicResponse = `Anotei aqui na ficha 💕 [Ver ${name}](${out.url_path}) — atualizei pra você.\n\nMais alguma coisa pra agregar?`;
-            }
-            // save_script: APPENDA confirmação aos roteiros já gerados (não
-            // sobrescreve, senão a aluna perde o conteudo visivel na conversa).
-            if (
-              part.toolName === "save_script" &&
-              out?.ok &&
-              out.url_path
-            ) {
-              const title = out.title ?? "roteiros";
-              appendResponse = `\n\n---\n\n💕 Salvei os roteiros pra você acessar quando quiser → [Ver ${title}](${out.url_path})\n\nQuer mais variações com outro estilo ou prefere ir pra outro produto?`;
             }
 
             if (
@@ -1952,92 +1565,6 @@ export async function POST(request: Request) {
             .catch(() => ({ inputTokens: 0, outputTokens: 0 })),
         ]);
 
-        // RECUPERAÇÃO DE TOOL CODE VAZADO. Gemini às vezes emite a chamada da
-        // tool em formato Python literal no texto em vez de fazer a tool call
-        // estruturada. Detecta e salva manualmente.
-        if (
-          agent === "script" &&
-          !appendResponse &&
-          !deterministicResponse &&
-          accumulated.includes("tool_code") &&
-          accumulated.includes("save_script")
-        ) {
-          const leaked = extractLeakedSaveScriptParams(accumulated);
-          if (leaked) {
-            console.warn("[tool_code leak] recuperando save_script manual", {
-              agent,
-              title: leaked.title,
-              scriptsCount: leaked.scripts.length,
-            });
-            const { data: saved, error: saveErr } = await supabase
-              .from("generated_scripts")
-              .insert({
-                user_id: user.id,
-                product_id: leaked.product_id ?? null,
-                title: leaked.title,
-                hooks: leaked.scripts,
-                model: "gemini-2.5-pro",
-              })
-              .select("id, title")
-              .single();
-            if (!saveErr && saved) {
-              // Limpa o bloco tool_code do output e appenda o link
-              accumulated = accumulated.replace(TOOL_CODE_LEAK_REGEX, "").trimEnd();
-              appendResponse = `\n\n---\n\n💕 Salvei os roteiros pra você acessar quando quiser → [Ver ${saved.title}](/scripts/${saved.id})\n\nQuer mais variações com outro estilo?`;
-            } else {
-              console.error("[tool_code leak] insert falhou", saveErr);
-            }
-          } else {
-            console.warn("[tool_code leak] detectado mas parse falhou", {
-              agent,
-              tail: accumulated.slice(-300),
-            });
-          }
-        }
-
-        // 4ª CAMADA — PARSER DE MARKDOWN. Se ainda não salvou e a resposta
-        // tem 3+ roteiros formatados (ROTEIRO N — Estilo: X), salva pelo
-        // parser. Garante que SE a aluna VIU os 5 roteiros no chat, eles
-        // ESTÃO em /scripts. Funciona mesmo se o modelo só gerou texto
-        // markdown sem nenhuma forma de tool call.
-        if (
-          agent === "script" &&
-          !appendResponse &&
-          !deterministicResponse &&
-          /\*\*\s*ROTEIRO\s+\d+/i.test(accumulated)
-        ) {
-          const parsed = parseScriptsFromMarkdown(accumulated);
-          if (parsed.length >= 3) {
-            // Tenta pegar nome do produto pelas mentions (se houver) ou
-            // usa título genérico.
-            const productLabel =
-              mentions.find((m) => m.kind === "product")?.label ?? "roteiros";
-            const productId =
-              mentions.find((m) => m.kind === "product")?.id ?? null;
-            const title = `${parsed.length} roteiros · ${productLabel}`;
-            console.warn(
-              "[markdown parser] salvando roteiros sem tool call estruturada",
-              { agent, count: parsed.length, title },
-            );
-            const { data: saved, error: saveErr } = await supabase
-              .from("generated_scripts")
-              .insert({
-                user_id: user.id,
-                product_id: productId,
-                title,
-                hooks: parsed,
-                model: "gemini-2.5-pro",
-              })
-              .select("id, title")
-              .single();
-            if (!saveErr && saved) {
-              appendResponse = `\n\n---\n\n💕 Salvei os roteiros pra você acessar quando quiser → [Ver ${saved.title}](/scripts/${saved.id})\n\nQuer mais variações com outro estilo?`;
-            } else {
-              console.error("[markdown parser] insert falhou", saveErr);
-            }
-          }
-        }
-
         // Sobrescreve com a resposta determinística da tool (zero alucinação).
         if (deterministicResponse) {
           accumulated = deterministicResponse;
@@ -2046,21 +1573,6 @@ export async function POST(request: Request) {
             agent,
             len: deterministicResponse.length,
           });
-        } else if (appendResponse && accumulated.trim()) {
-          // Tem conteúdo do modelo + tool de confirmação: appenda no final.
-          // Ex: roteiros gerados + "salvei pra você [link]".
-          accumulated = accumulated + appendResponse;
-          controller.enqueue(encoder.encode(appendResponse));
-          console.log("[api/chat] resposta com append", {
-            agent,
-            baseLen: accumulated.length - appendResponse.length,
-            appendLen: appendResponse.length,
-          });
-        } else if (appendResponse) {
-          // Sem conteúdo do modelo, só a confirmação. Usa o append como fallback.
-          const fallback = appendResponse.trimStart();
-          accumulated = fallback;
-          controller.enqueue(encoder.encode(fallback));
         } else if (!accumulated.trim()) {
           // Mensagem neutra positiva — sem palavras proibidas.
           // Log interno tem o motivo técnico.
