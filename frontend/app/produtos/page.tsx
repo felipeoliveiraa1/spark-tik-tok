@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Package, ArrowRight, Sparkle } from "lucide-react";
+import { Package, ArrowRight, Plus, Sparkles } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { MobileHeader } from "@/components/layout/mobile-header";
 import { BottomNav } from "@/components/layout/bottom-nav";
@@ -65,8 +65,18 @@ function ProductsBody({ desktop = false }: { desktop?: boolean }) {
           </>
         )}
         <p className={`text-[13.5px] text-spark-ink-50 max-w-[520px] ${desktop ? "mt-1.5" : ""}`}>
-          Tudo que você já analisou com a Informação. Cada produto vira base pros próximos scripts. ✨
+          Seu catálogo. Cadastra a ficha que você gerou no agente Info pra ter tudo organizado. ✨
         </p>
+
+        <div className={`mt-4 ${desktop ? "" : ""}`}>
+          <Link
+            href="/produtos/novo"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-brand-grad text-white text-[13px] font-extrabold shadow-[0_6px_18px_-8px_oklch(0.55_0.24_340/0.5)] active:scale-95 transition-transform"
+          >
+            <Plus size={14} strokeWidth={2.5} />
+            Adicionar produto
+          </Link>
+        </div>
       </div>
 
       <div className={`mt-6 ${desktop ? "" : "px-4"}`}>
@@ -122,13 +132,20 @@ function EmptyProducts() {
       </div>
       <div className="mt-3 text-[16px] font-extrabold">Sem produto ainda 💖</div>
       <p className="text-[13px] text-spark-ink-50 mt-1.5 leading-snug">
-        Abre o chat e manda uma foto ou o nome do produto pra Informação. Ela monta uma ficha
-        completa e salva aqui. ✨
+        1. Vai em <strong>Agentes ✨</strong> e abre o agente <strong>Info</strong> no Gemini ou
+        ChatGPT.<br />
+        2. Cola foto/nome do produto, recebe a ficha completa.<br />
+        3. Volta aqui e clica em <strong>Adicionar produto</strong> pra cadastrar 💕
       </p>
-      <div className="mt-4">
-        <Link href="/chat">
-          <SButton variant="primary" size="md" IconRight={Sparkle}>
-            Abrir o chat
+      <div className="mt-4 flex flex-col sm:flex-row gap-2 justify-center">
+        <Link href="/agentes">
+          <SButton variant="ghost" size="md" IconRight={Sparkles}>
+            Ver agentes
+          </SButton>
+        </Link>
+        <Link href="/produtos/novo">
+          <SButton variant="primary" size="md" IconRight={Plus}>
+            Cadastrar agora
           </SButton>
         </Link>
       </div>

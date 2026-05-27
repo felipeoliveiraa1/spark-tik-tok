@@ -20,9 +20,9 @@ type Item = {
 
 const items: Item[] = [
   { id: "home", label: "Início", href: "/", emoji: "🏠" },
-  { id: "chat", label: "Chat", href: "/chat", emoji: "💬" },
+  { id: "chat", label: "Agentes", href: "/agentes", emoji: "✨" },
   { id: "produtos", label: "Produtos", href: "/produtos", emoji: "📦" },
-  { id: "ao-vivo", label: "Live", href: "/ao-vivo", emoji: "🔴" },
+  { id: "scripts", label: "Scripts", href: "/scripts", emoji: "✍️" },
   { id: "educacao", label: "Aulas", href: "/educacao", emoji: "🎓" },
   { id: "conta", label: "Conta", href: "/conta", emoji: "👤" },
 ];

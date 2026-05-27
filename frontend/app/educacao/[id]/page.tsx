@@ -129,7 +129,7 @@ function VideoBody({ idOrSlug, desktop = false }: { idOrSlug: string; desktop?: 
             >
               {marked ? "Marcada como assistida ✓" : "Marcar como assistida"}
             </SButton>
-            <Link href="/chat">
+            <Link href="/agentes">
               <SButton variant="ghost" size="md">
                 Aplicar no Método TTS
               </SButton>

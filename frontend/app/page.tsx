@@ -496,7 +496,7 @@ function NextLiveBanner({ live, desktop }: { live: LiveRow; desktop: boolean }) 
 function DefaultCtaBanner({ desktop }: { desktop: boolean }) {
   return (
     <Link
-      href="/chat"
+      href="/agentes"
       className={`block rounded-[22px] relative overflow-hidden text-white bg-brand-grad-hero shadow-[0_20px_40px_-20px_oklch(0.55_0.24_340/0.45)] ${desktop ? "p-7" : "p-[18px]"}`}
     >
       <div className="flex items-center gap-1.5 opacity-90 text-[11px] font-bold uppercase tracking-[0.08em]">

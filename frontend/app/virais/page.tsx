@@ -194,7 +194,7 @@ function EmptyVirais() {
         cá com todas as métricas. ✨
       </p>
       <div className="mt-4">
-        <Link href="/chat">
+        <Link href="/agentes">
           <SButton variant="primary" size="md" IconRight={Sparkle}>
             Buscar virais no chat
           </SButton>

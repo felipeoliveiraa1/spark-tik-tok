@@ -267,7 +267,7 @@ function ProductBody({ id, desktop = false }: { id: string; desktop?: boolean })
         )}
 
         <div className="mt-7 flex flex-wrap gap-2">
-          <Link href="/chat">
+          <Link href="/agentes">
             <SButton variant="primary" size="md" Icon={Pen}>
               Gerar scripts
             </SButton>

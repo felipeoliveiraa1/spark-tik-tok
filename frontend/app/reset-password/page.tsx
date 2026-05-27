@@ -72,7 +72,7 @@ function ResetForm() {
     }
     setDone(true);
     // Aguarda 1.5s pro user ver a mensagem, depois manda pro chat (já logado).
-    setTimeout(() => router.push("/chat"), 1500);
+    setTimeout(() => router.push("/agentes"), 1500);
   }
 
   if (hasSession === false) {

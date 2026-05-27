@@ -335,7 +335,7 @@ function ViralBody({ id, desktop = false }: { id: string; desktop?: boolean }) {
             )}
 
             <div className="mt-7 flex flex-wrap gap-2">
-              <Link href="/chat">
+              <Link href="/agentes">
                 <SButton variant="ghost" size="md">
                   Gerar scripts inspirados
                 </SButton>

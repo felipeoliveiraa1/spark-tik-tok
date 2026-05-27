@@ -24,7 +24,7 @@ type Item = { id: SidebarActive; label: string; href: string; emoji: string };
 
 const items: Item[] = [
   { id: "home", label: "Início", href: "/", emoji: "🏠" },
-  { id: "chat", label: "Chat", href: "/chat", emoji: "💬" },
+  { id: "chat", label: "Agentes", href: "/agentes", emoji: "✨" },
   { id: "produtos", label: "Produtos", href: "/produtos", emoji: "📦" },
   { id: "scripts", label: "Scripts", href: "/scripts", emoji: "✍️" },
   { id: "ao-vivo", label: "Ao vivo", href: "/ao-vivo", emoji: "🔴" },

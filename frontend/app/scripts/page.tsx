@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Pen, Sparkle } from "lucide-react";
+import { Pen, Sparkles, Plus } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { MobileHeader } from "@/components/layout/mobile-header";
 import { BottomNav } from "@/components/layout/bottom-nav";
@@ -80,8 +80,18 @@ function ScriptsBody({ desktop = false }: { desktop?: boolean }) {
           </>
         )}
         <p className={`text-[13.5px] text-spark-ink-50 max-w-[520px] ${desktop ? "mt-1.5" : ""}`}>
-          Cada conjunto de roteiros gerado pela Scripts — gancho, desenvolvimento, benefício e CTA prontos pra gravar. 💕
+          Seus conjuntos de roteiros — gancho, desenvolvimento, benefício e CTA prontos pra gravar. Cadastra os que você gerou no agente Scripts do seu nicho. 💕
         </p>
+
+        <div className="mt-4">
+          <Link
+            href="/scripts/novo"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-brand-grad text-white text-[13px] font-extrabold shadow-[0_6px_18px_-8px_oklch(0.55_0.24_340/0.5)] active:scale-95 transition-transform"
+          >
+            <Plus size={14} strokeWidth={2.5} />
+            Adicionar roteiros
+          </Link>
+        </div>
       </div>
 
       <div className={`mt-6 ${desktop ? "" : "px-4"}`}>
@@ -130,12 +140,20 @@ function EmptyScripts() {
       </div>
       <div className="mt-3 text-[16px] font-extrabold">Sem roteiros ainda 💖</div>
       <p className="text-[13px] text-spark-ink-50 mt-1.5 leading-snug">
-        Abre o chat com a Scripts, menciona seu produto com @ e ela gera 5 roteiros completos no estilo da Yara — gancho, desenvolvimento, benefício e CTA. ✨
+        1. Vai em <strong>Agentes ✨</strong> e escolhe o agente <strong>Scripts</strong> do seu
+        nicho.<br />
+        2. Gera os 5 roteiros lá no Gemini/ChatGPT.<br />
+        3. Volta aqui e cadastra eles em <strong>Adicionar roteiros</strong> 💕
       </p>
-      <div className="mt-4">
-        <Link href="/chat">
-          <SButton variant="primary" size="md" IconRight={Sparkle}>
-            Gerar roteiros
+      <div className="mt-4 flex flex-col sm:flex-row gap-2 justify-center">
+        <Link href="/agentes">
+          <SButton variant="ghost" size="md" IconRight={Sparkles}>
+            Ver agentes
+          </SButton>
+        </Link>
+        <Link href="/scripts/novo">
+          <SButton variant="primary" size="md" IconRight={Plus}>
+            Cadastrar agora
           </SButton>
         </Link>
       </div>
