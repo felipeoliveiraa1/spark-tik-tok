@@ -163,7 +163,7 @@ function ScriptBody({ id, desktop = false }: { id: string; desktop?: boolean }) 
               {script.title}
             </h1>
             <div className="mt-1.5 text-[12px] text-spark-ink-50 font-mono">
-              {script.hooks.length} {script.hooks.some(isFullScript) ? "roteiros" : "hooks"} · {script.model ?? "Gemini"} · {new Date(script.created_at).toLocaleDateString("pt-BR")}
+              {script.hooks.length} {script.hooks.some(isFullScript) ? "roteiros" : "hooks"} · {new Date(script.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
             </div>
           </div>
         </div>

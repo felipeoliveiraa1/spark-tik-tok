@@ -7,7 +7,6 @@ import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { MobileHeader } from "@/components/layout/mobile-header";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { SButton } from "@/components/atoms/s-button";
-import { SBadge } from "@/components/atoms/s-badge";
 import { LoadingSplash } from "@/components/atoms/loading-splash";
 
 type ScriptItem = {
@@ -31,12 +30,18 @@ function hasFullScripts(items: ScriptItem[]): boolean {
   return items.some((i) => Boolean(i.development));
 }
 
-function timeAgo(iso: string): string {
-  const ms = Date.now() - new Date(iso).getTime();
-  const days = Math.round(ms / 86_400_000);
-  if (days < 1) return "hoje";
-  if (days === 1) return "ontem";
-  return `${days}d`;
+function formatDateTime(iso: string): string {
+  try {
+    return new Date(iso).toLocaleString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return "";
+  }
 }
 
 function useScripts() {
@@ -99,7 +104,7 @@ function ScriptsBody({ desktop = false }: { desktop?: boolean }) {
                   <div className="flex-1 min-w-0">
                     <div className="text-[14px] font-bold">{s.title}</div>
                     <div className="text-[11.5px] text-spark-ink-50 mt-0.5">
-                      {s.hooks.length} {hasFullScripts(s.hooks) ? "roteiros" : "hooks"} · {timeAgo(s.created_at)}
+                      {s.hooks.length} {hasFullScripts(s.hooks) ? "roteiros" : "hooks"} · {formatDateTime(s.created_at)}
                     </div>
                   </div>
                 </div>
@@ -108,9 +113,6 @@ function ScriptsBody({ desktop = false }: { desktop?: boolean }) {
                     &ldquo;{s.hooks[0].hook}&rdquo;
                   </div>
                 )}
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {s.model && <SBadge>{s.model}</SBadge>}
-                </div>
               </Link>
             ))}
           </div>
