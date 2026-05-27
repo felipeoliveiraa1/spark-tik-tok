@@ -102,17 +102,38 @@ function ChatStream({
           </div>
         </div>
       )}
-      {messages.map((m) =>
-        m.role === "user" ? (
-          <UserBubble key={m.id} attachments={m.attachments}>
-            {m.content}
-          </UserBubble>
-        ) : (
-          <AgentBubble key={m.id} agent={agent}>
+      {messages.map((m, i) => {
+        if (m.role === "user") {
+          return (
+            <UserBubble key={m.id} attachments={m.attachments}>
+              {m.content}
+            </UserBubble>
+          );
+        }
+        // Pega a última foto anexada pela aluna ANTES dessa msg do agente.
+        // Permite o botão "Salvar produto" mandar a image_url junto.
+        let lastUserImageUrl: string | undefined;
+        for (let j = i - 1; j >= 0; j--) {
+          const prev = messages[j];
+          if (prev.role !== "user") continue;
+          const img = prev.attachments?.find((a) =>
+            (a.mime ?? "").startsWith("image/") || /\.(png|jpe?g|webp|heic|heif)$/i.test(a.url),
+          );
+          if (img) {
+            lastUserImageUrl = img.url;
+            break;
+          }
+        }
+        return (
+          <AgentBubble
+            key={m.id}
+            agent={agent}
+            lastUserImageUrl={lastUserImageUrl}
+          >
             {m.content || (streaming ? <TypingStatus agent={agent} /> : "")}
           </AgentBubble>
-        ),
-      )}
+        );
+      })}
     </>
   );
 }

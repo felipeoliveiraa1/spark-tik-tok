@@ -10,6 +10,10 @@ type Props = {
   agent: AgentId;
   children: React.ReactNode;
   className?: string;
+  /** URL da última foto anexada pela aluna ANTES dessa mensagem. Quando
+   *  for ficha de produto da Info, vai junto pro endpoint de save pra
+   *  preencher image_url do produto. */
+  lastUserImageUrl?: string;
 };
 
 /**
@@ -39,7 +43,7 @@ function looksLikeProductFicha(text: string): boolean {
   return false;
 }
 
-export function AgentBubble({ agent, children, className }: Props) {
+export function AgentBubble({ agent, children, className, lastUserImageUrl }: Props) {
   const isString = typeof children === "string";
   const text = isString ? (children as string) : "";
 
@@ -66,7 +70,9 @@ export function AgentBubble({ agent, children, className }: Props) {
         </div>
       )}
       {showSaveScripts && <SaveScriptsButton text={text} />}
-      {showSaveProduct && <SaveProductButton text={text} />}
+      {showSaveProduct && (
+        <SaveProductButton text={text} imageUrl={lastUserImageUrl} />
+      )}
     </div>
   );
 }

@@ -58,9 +58,9 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  let body: { text?: string };
+  let body: { text?: string; imageUrl?: string };
   try {
-    body = (await request.json()) as { text?: string };
+    body = (await request.json()) as { text?: string; imageUrl?: string };
   } catch {
     return NextResponse.json({ error: "invalid_json" }, { status: 400 });
   }
@@ -72,6 +72,10 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+
+  // image_url só aceita https URLs (anexo já subiu pro Supabase Storage)
+  const imageUrl =
+    body.imageUrl && /^https?:\/\//.test(body.imageUrl) ? body.imageUrl : null;
 
   // Usa Gemini Flash com generateObject (schema Zod estrito). Esse path NÃO
   // depende de tool calling — o SDK força o modelo a retornar JSON que valida
@@ -106,6 +110,21 @@ export async function POST(request: Request) {
     .ilike("name", nameTrim)
     .maybeSingle();
   if (existing) {
+    // Se a aluna mandou foto agora e o produto antigo não tinha, completa.
+    if (imageUrl) {
+      const { data: full } = await supabase
+        .from("products")
+        .select("image_url")
+        .eq("id", existing.id)
+        .maybeSingle();
+      if (full && !full.image_url) {
+        await supabase
+          .from("products")
+          .update({ image_url: imageUrl, updated_at: new Date().toISOString() })
+          .eq("id", existing.id)
+          .eq("user_id", user.id);
+      }
+    }
     return NextResponse.json({
       ok: true,
       id: existing.id,
@@ -120,6 +139,7 @@ export async function POST(request: Request) {
     .insert({
       user_id: user.id,
       name: nameTrim,
+      image_url: imageUrl,
       category: extracted.category,
       target_audience: extracted.target_audience,
       pain_points: extracted.pain_points,

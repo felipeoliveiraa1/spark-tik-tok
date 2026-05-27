@@ -7,6 +7,8 @@ import { useToast } from "@/components/molecules/dialog-provider";
 
 type Props = {
   text: string;
+  /** Foto anexada pela aluna no chat antes dessa ficha — vai junto pro save. */
+  imageUrl?: string;
 };
 
 /**
@@ -16,7 +18,7 @@ type Props = {
  *
  * Independe de tool calling do modelo no chat. Funciona sempre.
  */
-export function SaveProductButton({ text }: Props) {
+export function SaveProductButton({ text, imageUrl }: Props) {
   const toast = useToast();
   const [state, setState] = React.useState<
     | { kind: "idle" }
@@ -53,7 +55,7 @@ export function SaveProductButton({ text }: Props) {
       const res = await fetch("/api/products/save-from-text", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, imageUrl }),
       });
       const data = (await res.json().catch(() => null)) as
         | {
