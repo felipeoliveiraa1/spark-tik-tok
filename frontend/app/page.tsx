@@ -2,15 +2,10 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { ArrowRight, Package, Radio } from "lucide-react";
+import { ArrowRight, Package, Radio, Sparkles, Plus } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
-import { MobileHeader } from "@/components/layout/mobile-header";
 import { SparkWordmark } from "@/components/atoms/spark-wordmark";
 import { BottomNav } from "@/components/layout/bottom-nav";
-import { AgentCharacter } from "@/components/molecules/agent-character";
-import { VISIBLE_AGENTS, AGENTS, type AgentId } from "@/lib/agents";
-import { useConversationStore } from "@/lib/conversation-store";
 import { getLiveStatus, formatCountdown, minutesUntil } from "@/lib/live-status";
 
 // =================================================================
@@ -125,10 +120,7 @@ function greeting(hour: number): { emoji: string; text: string } {
 // =================================================================
 
 function HomeBody({ desktop = false }: { desktop?: boolean }) {
-  const router = useRouter();
-  const store = useConversationStore();
   const data = useDashboardData();
-  const [creating, setCreating] = React.useState<AgentId | null>(null);
 
   const firstName = (data.profile?.name?.trim() || data.profile?.email?.split("@")[0] || "criadora").split(/\s+/)[0];
   const hi = greeting(new Date().getHours());
@@ -165,8 +157,8 @@ function HomeBody({ desktop = false }: { desktop?: boolean }) {
         id: "scripts-missing",
         emoji: "✍️",
         title: `${productsWithoutScripts.length} ${productsWithoutScripts.length === 1 ? "produto sem script" : "produtos sem scripts"}`,
-        href: "/chat",
-        cta: "Bora gerar hooks",
+        href: "/scripts/novo",
+        cta: "Cadastrar roteiros",
       });
     }
 
@@ -176,8 +168,8 @@ function HomeBody({ desktop = false }: { desktop?: boolean }) {
         id: "no-products",
         emoji: "📦",
         title: "Comece adicionando seu primeiro produto",
-        href: "/chat",
-        cta: "Analisar agora",
+        href: "/produtos/novo",
+        cta: "Cadastrar agora",
       });
     }
 
@@ -195,37 +187,6 @@ function HomeBody({ desktop = false }: { desktop?: boolean }) {
 
     return list.slice(0, 3);
   }, [data, eduCompleted]);
-
-  const start = async (agent: AgentId) => {
-    if (creating) return;
-    setCreating(agent);
-    try {
-      // Fetch direto: store local pode estar vazio em race com o fetch
-      // inicial. Sem isso, clique rápido caía em "criar nova" sempre.
-      const res = await fetch("/api/conversations", { cache: "no-store" }).catch(
-        () => null,
-      );
-      if (res?.ok) {
-        const data = (await res.json()) as {
-          conversations: Array<{ id: string; agent: AgentId; updated_at: string }>;
-        };
-        const existing = data.conversations
-          .filter((c) => c.agent === agent)
-          .sort((a, b) => +new Date(b.updated_at) - +new Date(a.updated_at))[0];
-        if (existing) {
-          router.push(`/chat/${existing.id}`);
-          return;
-        }
-      }
-      const id = await store.createConversation({
-        agent,
-        title: `Conversa com ${AGENTS[agent].label}`,
-      });
-      router.push(`/chat/${id}`);
-    } finally {
-      setCreating(null);
-    }
-  };
 
   const pad = desktop ? "" : "px-4";
   const maxW = desktop ? "max-w-[1080px]" : "";
@@ -321,15 +282,31 @@ function HomeBody({ desktop = false }: { desktop?: boolean }) {
           </div>
         )}
 
-        {/* Atalhos */}
+        {/* Atalhos rápidos */}
         <div className={`mt-6 ${pad}`}>
           <div className="text-[12px] font-bold text-spark-ink-50 tracking-[0.08em] uppercase mb-3">
-            Conversar com 💕
+            Atalhos rápidos ✨
           </div>
           <div className={`grid gap-2.5 ${desktop ? "grid-cols-3" : "grid-cols-1"}`}>
-            {VISIBLE_AGENTS.map((a) => (
-              <ShortcutCard key={a.id} agent={a.id} onStart={start} />
-            ))}
+            <QuickAction
+              href="/agentes"
+              emoji="✨"
+              title="Conversar com agentes"
+              hint="Info, Scripts por nicho e Suporte no ChatGPT ou Gemini"
+              accent="brand"
+            />
+            <QuickAction
+              href="/produtos/novo"
+              emoji="📦"
+              title="Adicionar produto"
+              hint="Cadastra a ficha que você gerou no agente Info"
+            />
+            <QuickAction
+              href="/scripts/novo"
+              emoji="✍️"
+              title="Adicionar roteiros"
+              hint="Cola os 5 roteiros que você gerou no Scripts"
+            />
           </div>
         </div>
 
@@ -373,7 +350,7 @@ function HomeBody({ desktop = false }: { desktop?: boolean }) {
             title="Seus produtos 📦"
             href="/produtos"
             empty={data.products.length === 0}
-            emptyHint="Manda uma foto pro chat com a Informação pra criar a primeira ficha. 💄"
+            emptyHint="Vai em Agentes ✨, gera a ficha no Info e cadastra aqui em 'Adicionar produto'. 💄"
           >
             <div className="flex flex-col gap-2 mt-3">
               {data.products.slice(0, 4).map((p) => (
@@ -500,35 +477,52 @@ function DefaultCtaBanner({ desktop }: { desktop: boolean }) {
       className={`block rounded-[22px] relative overflow-hidden text-white bg-brand-grad-hero shadow-[0_20px_40px_-20px_oklch(0.55_0.24_340/0.45)] ${desktop ? "p-7" : "p-[18px]"}`}
     >
       <div className="flex items-center gap-1.5 opacity-90 text-[11px] font-bold uppercase tracking-[0.08em]">
-        ✨ Nova conversa
+        ✨ Agentes Yara
       </div>
       <div
         className={`mt-2.5 font-bold tracking-[-0.015em] leading-[1.25] ${desktop ? "text-[24px]" : "text-[19px]"}`}
       >
-        &ldquo;Sobe a foto do produto, eu cuido do resto. 💅&rdquo;
+        &ldquo;Cada nicho tem uma especialista. Escolhe a sua e bora criar. 💅&rdquo;
       </div>
       <div className="mt-3.5 inline-flex items-center gap-1.5 text-[13px] font-bold">
-        Abrir chat <ArrowRight size={14} strokeWidth={1.7} />
+        Ver agentes <ArrowRight size={14} strokeWidth={1.7} />
       </div>
     </Link>
   );
 }
 
-function ShortcutCard({ agent, onStart }: { agent: AgentId; onStart: (a: AgentId) => void }) {
-  const a = AGENTS[agent];
+function QuickAction({
+  href,
+  emoji,
+  title,
+  hint,
+  accent,
+}: {
+  href: string;
+  emoji: string;
+  title: string;
+  hint: string;
+  accent?: "brand";
+}) {
   return (
-    <button
-      onClick={() => onStart(agent)}
-      className="text-left p-4 rounded-3xl bg-spark-surface border border-spark-hairline flex items-start gap-3.5 hover:border-spark-brand/40 active:scale-[0.99] transition-all shadow-[0_2px_10px_-6px_rgba(20,20,40,0.08)]"
+    <Link
+      href={href}
+      className={`p-4 rounded-3xl border flex items-start gap-3.5 transition-all shadow-[0_2px_10px_-6px_rgba(20,20,40,0.08)] active:scale-[0.99] ${
+        accent === "brand"
+          ? "bg-brand-grad-soft/60 border-spark-brand/30 hover:border-spark-brand/60"
+          : "bg-spark-surface border-spark-hairline hover:border-spark-brand/40"
+      }`}
     >
-      <AgentCharacter agent={agent} size={56} />
-      <div className="flex-1 min-w-0 pt-1">
-        <div className="text-[15px] font-extrabold tracking-tight">{a.label}</div>
-        <div className="text-[12px] text-spark-ink-50 mt-0.5 leading-snug line-clamp-2">
-          {a.description}
+      <div className="w-11 h-11 rounded-2xl bg-white flex items-center justify-center text-[22px] shrink-0">
+        {emoji}
+      </div>
+      <div className="flex-1 min-w-0 pt-0.5">
+        <div className="text-[14.5px] font-extrabold tracking-tight">{title}</div>
+        <div className="text-[12px] text-spark-ink-70 mt-0.5 leading-snug line-clamp-2">
+          {hint}
         </div>
       </div>
-    </button>
+    </Link>
   );
 }
 
