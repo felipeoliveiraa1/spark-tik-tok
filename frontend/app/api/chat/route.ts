@@ -1583,6 +1583,125 @@ export async function POST(request: Request) {
     }
   }
 
+  // AUTO-INJECT da ficha do produto pra Scripts. Faz match heurístico no
+  // texto da última mensagem da aluna contra os produtos salvos dela. Se
+  // encontrar match claro, injeta a ficha completa como se fosse @produto.
+  // Resolve o caso onde a aluna escreve "scripts pro body suplex" sem @.
+  // Não depende do modelo chamar list_my_products / get_product.
+  if (agent === "script" && mentions.length === 0) {
+    const { data: ownedProducts } = await supabase
+      .from("products")
+      .select(
+        "id, name, category, target_audience, pain_points, strengths, price_range, competitors, differentiators, objections, emotional_triggers, usage_moments, content_angles, hook_ideas, seasonality, image_url",
+      )
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (ownedProducts && ownedProducts.length > 0) {
+      const normalize = (s: string) =>
+        s
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/\p{Diacritic}/gu, "")
+          .replace(/[^\w\s]/g, " ");
+      const STOPWORDS = new Set([
+        "de",
+        "da",
+        "do",
+        "das",
+        "dos",
+        "para",
+        "pra",
+        "com",
+        "sem",
+        "ou",
+        "que",
+        "o",
+        "a",
+        "os",
+        "as",
+        "um",
+        "uma",
+        "e",
+        "no",
+        "na",
+        "em",
+        "meu",
+        "minha",
+        "esse",
+        "essa",
+        "aquele",
+        "aquela",
+      ]);
+      const msgTokens = new Set(
+        normalize(lastUserText)
+          .split(/\s+/)
+          .filter((t) => t.length >= 3 && !STOPWORDS.has(t)),
+      );
+
+      // Score: quantos tokens DISTINTOS do nome do produto aparecem na msg
+      let best: { product: (typeof ownedProducts)[number]; score: number } | null = null;
+      for (const p of ownedProducts) {
+        const nameTokens = normalize(p.name)
+          .split(/\s+/)
+          .filter((t) => t.length >= 3 && !STOPWORDS.has(t));
+        if (nameTokens.length === 0) continue;
+        let hits = 0;
+        for (const t of nameTokens) if (msgTokens.has(t)) hits++;
+        if (hits >= 2 || (nameTokens.length === 1 && hits === 1)) {
+          // Match forte: 2+ tokens OU nome de 1 token batendo
+          if (!best || hits > best.score) best = { product: p, score: hits };
+        }
+      }
+
+      if (best) {
+        // Injeta ficha completa como se fosse mention. Reusa o formatter
+        // da função existente (expandMentionsContext) pra manter padrão.
+        const ctx = await expandMentionsContext(supabase, [
+          { kind: "product", id: best.product.id, label: best.product.name },
+        ]).catch(() => null);
+        if (ctx) {
+          const intro = `\n[detecção automática] Identifiquei que a aluna está falando de "${best.product.name}". Use os dados abaixo. Se for outro produto, ela vai te corrigir.\n\n`;
+          const last = finalMessages[finalMessages.length - 1];
+          finalMessages = [
+            ...finalMessages.slice(0, -1),
+            { role: "system", content: intro + ctx },
+            last,
+          ];
+          // Marca como mention sintética pra que o markdown parser saiba
+          // o productId no fim (4ª camada de save).
+          mentions.push({
+            kind: "product",
+            id: best.product.id,
+            label: best.product.name,
+          });
+        }
+      } else {
+        // Sem match — passa só a lista resumida pra o modelo se virar.
+        const lines = ownedProducts.map((p) => {
+          const parts = [p.name];
+          if (p.category) parts.push(`(${p.category})`);
+          if (p.price_range) parts.push(`— ${p.price_range}`);
+          return `• ID=${p.id} · ${parts.join(" ")}`;
+        });
+        const productsCtx = [
+          "CATÁLOGO DA ALUNA — produtos que ela já tem salvos:",
+          "",
+          ...lines,
+          "",
+          "Se a aluna mencionar um produto em texto, identifica qual é dessa lista e pergunta uma confirmação curta ('é esse aqui, né? 💕') antes de chamar get_product e gerar.",
+        ].join("\n");
+        const last = finalMessages[finalMessages.length - 1];
+        finalMessages = [
+          ...finalMessages.slice(0, -1),
+          { role: "system", content: productsCtx },
+          last,
+        ];
+      }
+    }
+  }
+
   // Captura o erro real do streamText (vem via callback).
   let capturedError: string | null = null;
   const toolEvents: { name: string; ok?: boolean; error?: string }[] = [];
