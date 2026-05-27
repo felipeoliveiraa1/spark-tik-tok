@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase-server";
 
@@ -115,6 +116,32 @@ export async function POST(request: Request) {
     body.title?.trim() ||
     `${parsed.length} roteiros${productName ? ` · ${productName}` : ""}`;
 
+  // Dedup por hash do conteúdo. Se a aluna clicar 2x no mesmo botão de
+  // "Salvar roteiros", retorna o registro já criado em vez de duplicar.
+  // Hash leva em conta os roteiros parseados (canonicalizados) — pequenas
+  // variações de markdown no input não geram nova entrada.
+  const hash = createHash("sha1")
+    .update(JSON.stringify(parsed))
+    .digest("hex")
+    .slice(0, 16);
+
+  const { data: existing } = await supabase
+    .from("generated_scripts")
+    .select("id, title")
+    .eq("user_id", user.id)
+    .eq("model", `manual-save:${hash}`)
+    .maybeSingle();
+  if (existing) {
+    return NextResponse.json({
+      ok: true,
+      id: existing.id,
+      title: existing.title,
+      url: `/scripts/${existing.id}`,
+      count: parsed.length,
+      already_existed: true,
+    });
+  }
+
   const { data: saved, error } = await supabase
     .from("generated_scripts")
     .insert({
@@ -122,7 +149,9 @@ export async function POST(request: Request) {
       product_id: productId,
       title,
       hooks: parsed,
-      model: "manual-save",
+      // Inclui o hash no model pra usar como índice de dedup. Não muda
+      // schema — model é text livre.
+      model: `manual-save:${hash}`,
     })
     .select("id, title")
     .single();

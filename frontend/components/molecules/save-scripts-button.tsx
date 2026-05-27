@@ -21,7 +21,7 @@ export function SaveScriptsButton({ text, productId }: Props) {
   const [state, setState] = React.useState<
     | { kind: "idle" }
     | { kind: "saving" }
-    | { kind: "saved"; url: string; title: string }
+    | { kind: "saved"; url: string; title: string; alreadyExisted?: boolean }
     | { kind: "error"; message: string }
   >({ kind: "idle" });
 
@@ -38,7 +38,9 @@ export function SaveScriptsButton({ text, productId }: Props) {
           <Check size={14} strokeWidth={2.5} />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[13px] font-bold text-spark-ink">Salvos! 💕</div>
+          <div className="text-[13px] font-bold text-spark-ink">
+            {state.alreadyExisted ? "Já estavam salvos 💕" : "Salvos! 💕"}
+          </div>
           <div className="text-[11.5px] text-spark-ink-50 truncate">{state.title}</div>
         </div>
         <Link
@@ -60,7 +62,15 @@ export function SaveScriptsButton({ text, productId }: Props) {
         body: JSON.stringify({ text, productId }),
       });
       const data = (await res.json().catch(() => null)) as
-        | { ok?: boolean; id?: string; title?: string; url?: string; error?: string; detail?: string }
+        | {
+            ok?: boolean;
+            id?: string;
+            title?: string;
+            url?: string;
+            already_existed?: boolean;
+            error?: string;
+            detail?: string;
+          }
         | null;
       if (!res.ok || !data?.ok || !data.url || !data.title) {
         const msg = data?.detail ?? data?.error ?? "Não consegui salvar agora.";
@@ -68,8 +78,13 @@ export function SaveScriptsButton({ text, productId }: Props) {
         toast.error(msg);
         return;
       }
-      setState({ kind: "saved", url: data.url, title: data.title });
-      toast.success("Roteiros salvos 💕");
+      setState({
+        kind: "saved",
+        url: data.url,
+        title: data.title,
+        alreadyExisted: data.already_existed,
+      });
+      toast.success(data.already_existed ? "Roteiros já estavam salvos 💕" : "Roteiros salvos 💕");
     } catch {
       const msg = "Não consegui salvar agora.";
       setState({ kind: "error", message: msg });
