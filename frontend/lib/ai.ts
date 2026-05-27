@@ -11,14 +11,14 @@ import { google } from "@ai-sdk/google";
  * Decisão por agente:
  * - Info: Flash (vision OK, schema rico funciona com Flash, economia grande)
  * - Scripts: Pro (criatividade dos roteiros é o produto — output é o que vende)
- * - Help: Flash-Lite (Q&A direto, sem reasoning pesado)
+ * - Help: Flash (suporte real exige seguir prompt longo + tools — Flash-Lite
+ *   alucinava em dúvidas complexas e ignorava o knowledge base)
  *
  * Pra reverter algum: troca a const no models{} abaixo.
  */
 
 const PRO = "gemini-2.5-pro";
 const FLASH = "gemini-flash-latest";
-const FLASH_LITE = "gemini-flash-lite-latest";
 
 export const models = {
   default: google(FLASH),
@@ -34,8 +34,9 @@ export const models = {
    *  framework Yara) é o produto que a aluna paga, vale o custo extra. */
   script: google(PRO),
 
-  /** Tira-dúvidas: Q&A direto sobre TikTok Shop. Flash-Lite suficiente. */
-  help: google(FLASH_LITE),
+  /** Tira-dúvidas: precisa seguir prompt longo + chamar tools de leitura
+   *  (lista produtos/scripts/virais/conta). Flash-Lite alucinava — Flash. */
+  help: google(FLASH),
 };
 
 export type SparkModel = keyof typeof models;

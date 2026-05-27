@@ -1015,7 +1015,83 @@ function buildScriptTools(supabase: SupabaseClient, userId: string): ToolSet {
 }
 
 function buildHelpTools(supabase: SupabaseClient, userId: string): ToolSet {
-  return buildProductTools(supabase, userId);
+  return {
+    ...buildProductTools(supabase, userId),
+    list_my_scripts: tool({
+      description:
+        "Lista os ROTEIROS que a aluna já salvou em /scripts (id, título, produto associado, quantidade de roteiros, data). Use quando ela perguntar 'quantos scripts eu já fiz?', 'meus roteiros', 'onde vejo o que gerei?'.",
+      inputSchema: z.object({}),
+      execute: async () => {
+        const { data, error } = await supabase
+          .from("generated_scripts")
+          .select("id, title, product_id, hooks, created_at")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(20);
+        if (error) return { ok: false, error: error.message };
+        const scripts = (data ?? []).map((s) => ({
+          id: s.id,
+          title: s.title,
+          product_id: s.product_id,
+          count: Array.isArray(s.hooks) ? s.hooks.length : 0,
+          created_at: s.created_at,
+          url_path: `/scripts/${s.id}`,
+        }));
+        return { ok: true, count: scripts.length, scripts };
+      },
+    }),
+    list_my_saved_virais: tool({
+      description:
+        "Lista os VIRAIS salvos na biblioteca da aluna (id, criador, hook, nicho, produto). Use quando ela perguntar 'meus virais', 'biblioteca de virais', 'o que salvei'.",
+      inputSchema: z.object({}),
+      execute: async () => {
+        const { data, error } = await supabase
+          .from("saved_virals")
+          .select("id, creator, niche, hook, product_name, saved_at")
+          .eq("user_id", userId)
+          .order("saved_at", { ascending: false })
+          .limit(20);
+        if (error) return { ok: false, error: error.message };
+        return {
+          ok: true,
+          count: data?.length ?? 0,
+          virais: (data ?? []).map((v) => ({ ...v, url_path: `/virais/${v.id}` })),
+        };
+      },
+    }),
+    get_my_account_status: tool({
+      description:
+        "Mostra status do plano da aluna: ativo/trial/cancelado, data de expiração, dias restantes, link Kiwify pra reativar. Use quando ela perguntar 'quantos dias me faltam?', 'meu plano tá ativo?', 'como assino?', 'como renovo?'.",
+      inputSchema: z.object({}),
+      execute: async () => {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("plan_active, plan_status, plan_expires_at, created_at")
+          .eq("id", userId)
+          .maybeSingle();
+        if (error) return { ok: false, error: error.message };
+        const profile = data;
+        const kiwifyUrl =
+          process.env.NEXT_PUBLIC_KIWIFY_CHECKOUT_URL ?? "https://pay.kiwify.com.br/YOR83Pu";
+        let daysRemaining: number | null = null;
+        if (profile?.plan_expires_at) {
+          const ms = new Date(profile.plan_expires_at).getTime() - Date.now();
+          daysRemaining = ms > 0 ? Math.ceil(ms / 86_400_000) : 0;
+        }
+        return {
+          ok: true,
+          plan_status: profile?.plan_status ?? "inactive",
+          plan_active: !!profile?.plan_active,
+          plan_expires_at: profile?.plan_expires_at ?? null,
+          days_remaining: daysRemaining,
+          member_since: profile?.created_at ?? null,
+          kiwify_checkout_url: kiwifyUrl,
+          account_page_url: "/conta",
+          plan_inactive_url: "/plano-inativo",
+        };
+      },
+    }),
+  };
 }
 
 // =================================================================
