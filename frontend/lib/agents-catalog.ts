@@ -21,9 +21,11 @@ export type AgentCatalogItem = {
   slug: string;
   /** Nome que aparece no card */
   name: string;
+  /** Etiqueta curta usada no chip (ex: "Suplementos", "Skincare"). Default usa o emoji+nome. */
+  chip?: string;
   /** Categoria (controla agrupamento na UI) */
   category: AgentCategory;
-  /** Emoji que vira o ícone visual */
+  /** Emoji que vira o ícone visual (fallback quando não tem imagem) */
   emoji: string;
   /** Descrição curta (1 linha) — vai pro card */
   shortDescription: string;
@@ -33,7 +35,9 @@ export type AgentCatalogItem = {
   chatgptUrl: string | null;
   /** Link público pro Gem no Gemini (null se ainda não criado) */
   geminiUrl: string | null;
-  /** Cor do gradient do card (Tailwind classes) */
+  /** URL da imagem hero do card (480x300 recomendado). Null usa o gradient como fallback. */
+  imageUrl: string | null;
+  /** Cor do gradient do card (Tailwind classes) — usado como fundo/overlay */
   accent: string;
 };
 
@@ -41,6 +45,7 @@ export const AGENTS_CATALOG: AgentCatalogItem[] = [
   // ─── INFO (geral, 1 agente) ───────────────────────────────────────
   {
     slug: "info",
+    chip: "Info",
     name: "Info — Análise de Produto",
     category: "info",
     emoji: "📊",
@@ -49,12 +54,14 @@ export const AGENTS_CATALOG: AgentCatalogItem[] = [
       "Manda foto, nome ou link do produto. Ela devolve uma ficha rica com público-alvo, dores, pontos fortes, concorrentes, gatilhos emocionais, ângulos de conteúdo e 5 hooks prontos. Você cola aqui no app pra salvar no seu catálogo.",
     chatgptUrl: null,
     geminiUrl: null,
+    imageUrl: null,
     accent: "from-pink-500 to-rose-400",
   },
 
   // ─── SCRIPTS POR NICHO (na ordem definida pela Yara) ─────────────
   {
     slug: "scripts-suplementos",
+    chip: "Suplementos",
     name: "Scripts Suplementos",
     category: "scripts",
     emoji: "💪",
@@ -63,10 +70,12 @@ export const AGENTS_CATALOG: AgentCatalogItem[] = [
       "Especialista em nutrição clínica + método Yara. Gera 5 roteiros completos respeitando as regras de não-promessa-de-cura, com analogias simples explicando o mecanismo do produto.",
     chatgptUrl: null,
     geminiUrl: null,
+    imageUrl: null,
     accent: "from-orange-400 to-amber-300",
   },
   {
     slug: "scripts-skincare",
+    chip: "Skincare",
     name: "Scripts Skincare",
     category: "scripts",
     emoji: "🧴",
@@ -75,10 +84,12 @@ export const AGENTS_CATALOG: AgentCatalogItem[] = [
       "Especialista em skincare + método Yara. Gera 5 roteiros completos (gancho 3s + desenvolvimento + benefício + CTA) seguindo regras dermatológicas — sem promessa milagrosa, sem termo médico proibido.",
     chatgptUrl: null,
     geminiUrl: null,
+    imageUrl: null,
     accent: "from-rose-400 to-pink-300",
   },
   {
     slug: "scripts-cabelo",
+    chip: "Cabelo",
     name: "Scripts Cabelo",
     category: "scripts",
     emoji: "💇‍♀️",
@@ -87,10 +98,12 @@ export const AGENTS_CATALOG: AgentCatalogItem[] = [
       "Especialista em tricologia + método Yara. Gera 5 roteiros com tom emocional, identificação com a dor do cabelo, rotina de uso visível.",
     chatgptUrl: null,
     geminiUrl: null,
+    imageUrl: null,
     accent: "from-amber-500 to-yellow-400",
   },
   {
     slug: "scripts-perfumes",
+    chip: "Perfumes",
     name: "Scripts Perfumes & Body Splash",
     category: "scripts",
     emoji: "🌸",
@@ -99,10 +112,12 @@ export const AGENTS_CATALOG: AgentCatalogItem[] = [
       "Especialista em fragrâncias + método Yara. Gera 5 roteiros sensoriais — storytelling, comparação com perfumes caros, ocasiões de uso (encontro, viagem, dia a dia).",
     chatgptUrl: null,
     geminiUrl: null,
+    imageUrl: null,
     accent: "from-pink-400 to-purple-300",
   },
   {
     slug: "scripts-casa-organizacao",
+    chip: "Casa & Org.",
     name: "Scripts Casa e Organização",
     category: "scripts",
     emoji: "🏠",
@@ -111,10 +126,12 @@ export const AGENTS_CATALOG: AgentCatalogItem[] = [
       "Especialista em organização e funcionalidade da casa + método Yara. Gera 5 roteiros satisfatórios, antes/depois, solução de problema do dia a dia.",
     chatgptUrl: null,
     geminiUrl: null,
+    imageUrl: null,
     accent: "from-emerald-500 to-teal-400",
   },
   {
     slug: "scripts-moda",
+    chip: "Moda",
     name: "Scripts Moda",
     category: "scripts",
     emoji: "👗",
@@ -123,10 +140,12 @@ export const AGENTS_CATALOG: AgentCatalogItem[] = [
       "Stylist + método Yara. Gera 5 roteiros focados em look do dia, transformação, versatilidade (1 peça 3 looks), tendência.",
     chatgptUrl: null,
     geminiUrl: null,
+    imageUrl: null,
     accent: "from-indigo-500 to-violet-400",
   },
   {
     slug: "scripts-eletronicos",
+    chip: "Eletrônicos",
     name: "Scripts Eletrônicos",
     category: "scripts",
     emoji: "📱",
@@ -135,12 +154,14 @@ export const AGENTS_CATALOG: AgentCatalogItem[] = [
       "Especialista em tecnologia + método Yara. Gera 5 roteiros demonstrativos — 'você não sabia que precisava disso', teste prático, hack do dia a dia, comparação.",
     chatgptUrl: null,
     geminiUrl: null,
+    imageUrl: null,
     accent: "from-sky-500 to-cyan-400",
   },
 
   // ─── SUPORTE (geral, 1 agente) ───────────────────────────────────
   {
     slug: "suporte",
+    chip: "Suporte",
     name: "Suporte Yara",
     category: "suporte",
     emoji: "💬",
@@ -149,6 +170,7 @@ export const AGENTS_CATALOG: AgentCatalogItem[] = [
       "Sua central de ajuda. Tira dúvida sobre como cadastrar produto no TikTok Shop, comissão, frete, regras de conteúdo proibido, boas práticas, e como usar o app/método Yara.",
     chatgptUrl: null,
     geminiUrl: null,
+    imageUrl: null,
     accent: "from-sky-500 to-blue-400",
   },
 ];
