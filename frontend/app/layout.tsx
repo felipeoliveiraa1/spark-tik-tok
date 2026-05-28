@@ -1,15 +1,33 @@
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
+import localFont from "next/font/local";
+import { JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { VideoModalProvider } from "@/components/molecules/video-modal";
 import { DialogProvider } from "@/components/molecules/dialog-provider";
 import { PlanAlert } from "@/components/molecules/plan-alert";
 
-const jakarta = Plus_Jakarta_Sans({
+/**
+ * Cabinet Grotesk Variable — sans-serif moderno usado em body/UI.
+ * Single file variable (200-800), ~41KB. Substitui Plus Jakarta Sans.
+ */
+const cabinet = localFont({
+  src: "../public/fonts/CabinetGrotesk-Variable.woff2",
   variable: "--font-sans",
-  subsets: ["latin"],
   display: "swap",
-  weight: ["400", "500", "600", "700", "800"],
+  weight: "200 800",
+  style: "normal",
+});
+
+/**
+ * Tanker Regular — display font condensado/expandido pra hero/headlines.
+ * Usado em FluidHeading com a variante "display". Lowercase by design.
+ */
+const tanker = localFont({
+  src: "../public/fonts/Tanker-Regular.woff2",
+  variable: "--font-display",
+  display: "swap",
+  weight: "400",
+  style: "normal",
 });
 
 const jetbrains = JetBrains_Mono({
@@ -72,7 +90,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" className={`${jakarta.variable} ${jetbrains.variable} h-full antialiased`}>
+    <html lang="pt-BR" className={`${cabinet.variable} ${tanker.variable} ${jetbrains.variable} h-full antialiased`}>
       <body className="min-h-full bg-spark-bg text-spark-ink font-sans">
         <DialogProvider>
           <PlanAlert />
