@@ -759,7 +759,12 @@ function RotinaHojeBody({ desktop = false }: { desktop?: boolean }) {
 function RotinaHojeMobile() {
   return (
     <>
-      <MobileHeader title="Check-in de Hoje 🌷" back={{ href: "/" }} />
+      <MobileHeader
+        variant="editorial"
+        eyebrow="🌷 CHECK-IN DE HOJE"
+        title="Como foi seu dia?"
+        back={{ href: "/" }}
+      />
       <RotinaHojeBody />
       <BottomNav active="rotina" />
     </>

@@ -67,26 +67,26 @@ function useScripts() {
 function ScriptsBody({ desktop = false }: { desktop?: boolean }) {
   const { scripts, loading } = useScripts();
   return (
-    <div className={`flex-1 overflow-auto ${desktop ? "py-8 px-12" : "pb-10"}`}>
-      <div className={desktop ? "" : "px-4 pt-4"}>
+    <div className={`flex-1 overflow-auto ${desktop ? "py-12 px-12" : "pb-10"}`}>
+      <div className={desktop ? "" : "pt-2"}>
         {desktop && (
           <>
-            <div className="text-[12px] font-bold text-spark-brand tracking-[0.06em] uppercase">
+            <div className="text-eyebrow text-spark-brand">
               ✨ Roteiros prontos
             </div>
-            <h1 className="mt-1 font-extrabold tracking-tight leading-[1.1] text-[36px]">
+            <h1 className="mt-3 text-fluid-headline font-extrabold tracking-tight leading-[1.02]">
               Seus scripts ✍️
             </h1>
           </>
         )}
-        <p className={`text-[13.5px] text-spark-ink-50 max-w-[520px] ${desktop ? "mt-1.5" : ""}`}>
+        <p className={`text-fluid-body text-spark-ink-50 max-w-[520px] ${desktop ? "mt-3" : "px-4 mt-2"}`}>
           Seus conjuntos de roteiros — gancho, desenvolvimento, benefício e CTA prontos pra gravar. Cadastra os que você gerou no agente Scripts do seu nicho. 💕
         </p>
 
-        <div className="mt-4">
+        <div className={`mt-5 ${desktop ? "" : "px-4"}`}>
           <Link
             href="/scripts/novo"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-brand-grad text-white text-[13px] font-extrabold shadow-[0_6px_18px_-8px_oklch(0.55_0.24_340/0.5)] active:scale-95 transition-transform"
+            className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-brand-grad text-white text-[13px] font-extrabold shadow-lift-brand active:scale-95 transition-transform duration-300 ease-premium"
           >
             <Plus size={14} strokeWidth={2.5} />
             Adicionar roteiros
@@ -94,18 +94,18 @@ function ScriptsBody({ desktop = false }: { desktop?: boolean }) {
         </div>
       </div>
 
-      <div className={`mt-6 ${desktop ? "" : "px-4"}`}>
+      <div className={`mt-8 ${desktop ? "" : "px-4"}`}>
         {loading ? (
           <LoadingSplash message="Buscando seus scripts" />
         ) : scripts.length === 0 ? (
           <EmptyScripts />
         ) : (
-          <div className={`grid gap-2.5 ${desktop ? "grid-cols-2 max-w-[920px]" : "grid-cols-1"}`}>
+          <div className={`grid gap-3 ${desktop ? "grid-cols-2 max-w-[920px]" : "grid-cols-1"}`}>
             {scripts.map((s) => (
               <Link
                 key={s.id}
                 href={`/scripts/${s.id}`}
-                className="rounded-2xl bg-spark-surface border border-spark-hairline p-4 hover:border-spark-ink/30 transition-colors"
+                className="rounded-spark-2xl bg-spark-surface border border-spark-hairline p-4 hover:border-spark-brand/30 hover-lift shadow-rest"
               >
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 rounded-xl bg-spark-brand-soft text-spark-brand-deep flex items-center justify-center">
@@ -164,7 +164,12 @@ function EmptyScripts() {
 function ScriptsMobile() {
   return (
     <>
-      <MobileHeader title="Scripts ✍️" back={{ href: "/" }} />
+      <MobileHeader
+        variant="editorial"
+        eyebrow="✨ ROTEIROS"
+        title="Seus scripts"
+        back={{ href: "/" }}
+      />
       <ScriptsBody />
       <BottomNav active="scripts" />
     </>

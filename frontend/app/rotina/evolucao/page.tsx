@@ -7,6 +7,7 @@ import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { MobileHeader } from "@/components/layout/mobile-header";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { LoadingSplash } from "@/components/atoms/loading-splash";
+import { CountUp } from "@/components/atoms/count-up";
 import { cn } from "@/lib/cn";
 import {
   type CheckinRow,
@@ -222,29 +223,26 @@ function KpiCard({
   const pct = prev > 0 ? Math.round((delta / prev) * 100) : null;
   const up = delta > 0;
   const down = delta < 0;
-  const display =
-    format === "money"
-      ? new Intl.NumberFormat("pt-BR", {
-          style: "currency",
-          currency: "BRL",
-          maximumFractionDigits: 0,
-        }).format(value)
-      : new Intl.NumberFormat("pt-BR").format(Math.round(value));
+  const isMoney = format === "money";
   return (
     <div
       className={cn(
-        "rounded-2xl border p-3.5",
+        "rounded-spark-2xl border p-4 hover-lift shadow-rest",
         tone === "brand"
           ? "bg-spark-brand-soft/40 border-spark-brand/20"
           : "bg-spark-surface border-spark-hairline",
       )}
     >
-      <div className="flex items-center gap-1.5 text-[11px] font-bold text-spark-ink-50 uppercase tracking-wider">
+      <div className="text-eyebrow text-spark-ink-50 flex items-center gap-1.5">
         <span>{emoji}</span>
         <span className="truncate">{label}</span>
       </div>
-      <div className="mt-1.5 text-[22px] font-extrabold text-spark-ink leading-none tracking-tight">
-        {display}
+      <div className="mt-2 text-[24px] font-extrabold text-spark-ink leading-none tracking-tight">
+        <CountUp
+          value={Math.round(value)}
+          prefix={isMoney ? "R$ " : ""}
+          durationMs={1000}
+        />
       </div>
       {pct !== null && (
         <div
@@ -512,21 +510,29 @@ function EvolucaoBody({ desktop = false }: { desktop?: boolean }) {
   const streak = useStreak();
 
   return (
-    <div className={`flex-1 overflow-auto ${desktop ? "py-8 px-12" : "pb-10"}`}>
-      <div className={desktop ? "max-w-[920px]" : "px-4 pt-4"}>
+    <div className={`flex-1 overflow-auto ${desktop ? "py-12 px-12" : "pb-10"}`}>
+      <div className={desktop ? "max-w-[920px]" : "pt-2"}>
         {desktop && (
           <>
-            <div className="text-[12px] font-bold text-spark-brand tracking-[0.06em] uppercase">
+            <div className="text-eyebrow text-spark-brand">
               📈 Sua Evolução
             </div>
-            <h1 className="mt-1 font-extrabold tracking-tight leading-[1.1] text-[36px]">
+            <h1 className="mt-3 text-fluid-headline font-extrabold tracking-tight leading-[1.02]">
               Você tá indo longe ✨
             </h1>
-            <p className="text-[13.5px] text-spark-ink-50 max-w-[520px] mt-1.5 mb-7">
+            <p className="text-fluid-body text-spark-ink-50 max-w-[520px] mt-3 mb-8">
               Sequência, aderência à rotina TTS e os números que importam.
             </p>
           </>
         )}
+        {!desktop && (
+          <div className="px-4 mb-2">
+            <p className="text-fluid-body text-spark-ink-50">
+              Sequência, aderência à rotina TTS e os números que importam.
+            </p>
+          </div>
+        )}
+        <div className={desktop ? "" : "px-4"}>
 
         <StreakHero streak={streak} />
 
@@ -574,6 +580,7 @@ function EvolucaoBody({ desktop = false }: { desktop?: boolean }) {
             <CheckinsTable rows={data.rows} />
           </>
         )}
+        </div>
       </div>
     </div>
   );
@@ -582,7 +589,12 @@ function EvolucaoBody({ desktop = false }: { desktop?: boolean }) {
 function EvolucaoMobile() {
   return (
     <>
-      <MobileHeader title="Evolução 📈" back={{ href: "/rotina/hoje" }} />
+      <MobileHeader
+        variant="editorial"
+        eyebrow="📈 SUA EVOLUÇÃO"
+        title="Você tá indo longe"
+        back={{ href: "/rotina/hoje" }}
+      />
       <EvolucaoBody />
       <BottomNav active="rotina" />
     </>

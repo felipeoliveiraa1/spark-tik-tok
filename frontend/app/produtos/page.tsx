@@ -52,26 +52,26 @@ function useProducts() {
 function ProductsBody({ desktop = false }: { desktop?: boolean }) {
   const { products, loading } = useProducts();
   return (
-    <div className={`flex-1 overflow-auto ${desktop ? "py-8 px-12" : "pb-10"}`}>
-      <div className={desktop ? "" : "px-4 pt-4"}>
+    <div className={`flex-1 overflow-auto ${desktop ? "py-12 px-12" : "pb-10"}`}>
+      <div className={desktop ? "" : "pt-2"}>
         {desktop && (
           <>
-            <div className="text-[12px] font-bold text-spark-brand tracking-[0.06em] uppercase">
+            <div className="text-eyebrow text-spark-brand">
               💄 Catálogo
             </div>
-            <h1 className="mt-1 font-extrabold tracking-tight leading-[1.1] text-[36px]">
+            <h1 className="mt-3 text-fluid-headline font-extrabold tracking-tight leading-[1.02]">
               Seus produtos 📦
             </h1>
           </>
         )}
-        <p className={`text-[13.5px] text-spark-ink-50 max-w-[520px] ${desktop ? "mt-1.5" : ""}`}>
+        <p className={`text-fluid-body text-spark-ink-50 max-w-[520px] ${desktop ? "mt-3" : "px-4 mt-2"}`}>
           Seu catálogo. Cadastra a ficha que você gerou no agente Info pra ter tudo organizado. ✨
         </p>
 
-        <div className={`mt-4 ${desktop ? "" : ""}`}>
+        <div className={`mt-5 ${desktop ? "" : "px-4"}`}>
           <Link
             href="/produtos/novo"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-brand-grad text-white text-[13px] font-extrabold shadow-[0_6px_18px_-8px_oklch(0.55_0.24_340/0.5)] active:scale-95 transition-transform"
+            className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-brand-grad text-white text-[13px] font-extrabold shadow-lift-brand active:scale-95 transition-transform duration-300 ease-premium"
           >
             <Plus size={14} strokeWidth={2.5} />
             Adicionar produto
@@ -79,18 +79,18 @@ function ProductsBody({ desktop = false }: { desktop?: boolean }) {
         </div>
       </div>
 
-      <div className={`mt-6 ${desktop ? "" : "px-4"}`}>
+      <div className={`mt-8 ${desktop ? "" : "px-4"}`}>
         {loading ? (
           <LoadingSplash message="Carregando produtos" />
         ) : products.length === 0 ? (
           <EmptyProducts />
         ) : (
-          <div className={`grid gap-2.5 ${desktop ? "grid-cols-3 max-w-[920px]" : "grid-cols-1"}`}>
+          <div className={`grid gap-3 ${desktop ? "grid-cols-3 max-w-[920px]" : "grid-cols-1"}`}>
             {products.map((p) => (
               <Link
                 key={p.id}
                 href={`/produtos/${p.id}`}
-                className="rounded-2xl bg-spark-surface border border-spark-hairline p-3.5 hover:border-spark-ink/30 transition-colors"
+                className="rounded-spark-2xl bg-spark-surface border border-spark-hairline p-4 hover:border-spark-brand/30 hover-lift shadow-rest"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-xl bg-spark-surface-sunken flex items-center justify-center text-spark-ink-70 overflow-hidden">
@@ -156,7 +156,12 @@ function EmptyProducts() {
 function ProductsMobile() {
   return (
     <>
-      <MobileHeader title="Produtos 📦" back={{ href: "/" }} />
+      <MobileHeader
+        variant="editorial"
+        eyebrow="💄 CATÁLOGO"
+        title="Seus produtos"
+        back={{ href: "/" }}
+      />
       <ProductsBody />
       <BottomNav active="produtos" />
     </>

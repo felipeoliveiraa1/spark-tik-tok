@@ -322,7 +322,12 @@ export default async function ContaPage({ searchParams }: ContaPageProps) {
     <ResponsiveShell
       mobile={
         <>
-          <MobileHeader title="Minha conta 💖" back={{ href: "/" }} />
+          <MobileHeader
+            variant="editorial"
+            eyebrow="💖 MEU PERFIL"
+            title="Minha conta"
+            back={{ href: "/" }}
+          />
           <div className="flex-1 overflow-auto px-4 pt-2 pb-6">
             <ContaBody
               email={profile.email}

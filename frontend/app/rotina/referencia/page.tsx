@@ -308,7 +308,12 @@ function ReferenciaBody({ desktop = false }: { desktop?: boolean }) {
 function ReferenciaMobile() {
   return (
     <>
-      <MobileHeader title="Rotina TTS 📖" back={{ href: "/rotina/hoje" }} />
+      <MobileHeader
+        variant="editorial"
+        eyebrow="📖 REFERÊNCIA"
+        title="A rotina ideal"
+        back={{ href: "/rotina/hoje" }}
+      />
       <ReferenciaBody />
       <BottomNav active="rotina" />
     </>
