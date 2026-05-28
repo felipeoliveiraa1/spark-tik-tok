@@ -5,6 +5,7 @@ import { ExternalLink, Sparkles, ChevronDown } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { MobileHeader } from "@/components/layout/mobile-header";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { cn } from "@/lib/cn";
 import {
   AGENTS_CATALOG,
   CATEGORY_LABELS,
@@ -15,22 +16,172 @@ import {
 /**
  * Página /agentes — portal central dos GPTs/Gems externos.
  *
- * Visual: cada agente é um card "magazine" — hero com imagem (ou gradient
- * de fallback) + chip flutuante, corpo com texto e dois CTAs grandes.
- * Quando o link ainda não existir, mostra estado "Em breve".
- *
- * Detalhes "Como funciona" do agente abrem em expansão (accordion) pra
- * não poluir visualmente o grid.
+ * UX:
+ *   - 2 abas no topo: ChatGPT | Gemini. Aluna escolhe a plataforma
+ *     que ela tem conta e cada card mostra só o botão dela. Preferência
+ *     salva em localStorage pra não precisar reclicar.
+ *   - Box "Como funciona" explica o fluxo do método em 4 passos.
+ *   - Cada agente é um card "magazine" com hero (imagem ou gradient +
+ *     emoji), chip flutuante, descrição e accordion "Como funciona".
+ *   - Quando o agente não tem link na plataforma escolhida, mostra
+ *     "Em breve nessa plataforma" + atalho pra outra (se tiver).
  */
 
-function AgentCard({ agent }: { agent: AgentCatalogItem }) {
+type Platform = "chatgpt" | "gemini";
+
+const PLATFORM_STORAGE_KEY = "tts:agentes:platform";
+
+/**
+ * Observa quando um elemento entra no viewport.
+ * Retorna {ref, isVisible}. Visibilidade é "one-way" — uma vez visível,
+ * marca como tal e não volta pra escondido (evita flash quando aluna
+ * rola pra cima/pra baixo).
+ */
+function useInView<T extends HTMLElement>(options?: IntersectionObserverInit) {
+  const ref = React.useRef<T | null>(null);
+  const [isVisible, setIsVisible] = React.useState(false);
+
+  React.useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    // Se navegador não suporta IO ou usuário pediu reduce-motion, já mostra
+    if (
+      typeof window === "undefined" ||
+      !("IntersectionObserver" in window) ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      setIsVisible(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "0px 0px -50px 0px", threshold: 0.1, ...options },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [options]);
+
+  return { ref, isVisible };
+}
+
+function usePersistedPlatform(): [Platform, (p: Platform) => void] {
+  const [platform, setPlatform] = React.useState<Platform>("chatgpt");
+  // Hidrata do localStorage só no client (SSR seguro)
+  React.useEffect(() => {
+    try {
+      const saved = localStorage.getItem(PLATFORM_STORAGE_KEY);
+      if (saved === "chatgpt" || saved === "gemini") setPlatform(saved);
+    } catch {
+      // ignora — modo privado etc.
+    }
+  }, []);
+  const update = React.useCallback((p: Platform) => {
+    setPlatform(p);
+    try {
+      localStorage.setItem(PLATFORM_STORAGE_KEY, p);
+    } catch {
+      // ignora
+    }
+  }, []);
+  return [platform, update];
+}
+
+function PlatformTabs({
+  platform,
+  onChange,
+}: {
+  platform: Platform;
+  onChange: (p: Platform) => void;
+}) {
+  return (
+    <div className="rounded-2xl bg-spark-surface border border-spark-hairline p-1 flex gap-1 mb-6">
+      <TabButton
+        active={platform === "chatgpt"}
+        onClick={() => onChange("chatgpt")}
+        ariaLabel="Selecionar ChatGPT"
+      >
+        <span className="text-[14px]">💬</span>
+        <span>ChatGPT</span>
+      </TabButton>
+      <TabButton
+        active={platform === "gemini"}
+        onClick={() => onChange("gemini")}
+        ariaLabel="Selecionar Gemini"
+      >
+        <span className="text-[14px]">✨</span>
+        <span>Gemini</span>
+      </TabButton>
+    </div>
+  );
+}
+
+function TabButton({
+  active,
+  children,
+  onClick,
+  ariaLabel,
+}: {
+  active: boolean;
+  children: React.ReactNode;
+  onClick: () => void;
+  ariaLabel: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={ariaLabel}
+      aria-pressed={active}
+      className={cn(
+        "flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-extrabold transition-all",
+        active
+          ? "bg-brand-grad text-white shadow-[0_4px_14px_-6px_oklch(0.55_0.24_340/0.5)]"
+          : "text-spark-ink-50 hover:text-spark-ink hover:bg-spark-surface-sunken/60",
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+function AgentCard({
+  agent,
+  platform,
+  index,
+}: {
+  agent: AgentCatalogItem;
+  platform: Platform;
+  /** Posição dentro do grid pra escalonar o delay da entrada. */
+  index: number;
+}) {
   const [expanded, setExpanded] = React.useState(false);
-  const hasChatgpt = !!agent.chatgptUrl;
-  const hasGemini = !!agent.geminiUrl;
-  const hasAnyLink = hasChatgpt || hasGemini;
+  const { ref, isVisible } = useInView<HTMLElement>();
+  const url = platform === "chatgpt" ? agent.chatgptUrl : agent.geminiUrl;
+  const otherUrl = platform === "chatgpt" ? agent.geminiUrl : agent.chatgptUrl;
+  const otherLabel = platform === "chatgpt" ? "Gemini" : "ChatGPT";
+  const hasLinkAtAll = !!agent.chatgptUrl || !!agent.geminiUrl;
+
+  // Stagger: cada card entra 80ms depois do anterior, capped em 320ms
+  // pra não atrasar demais quando tem muitos.
+  const delay = Math.min(index * 80, 320);
 
   return (
-    <article className="group rounded-3xl bg-spark-surface border border-spark-hairline overflow-hidden shadow-[0_2px_10px_-6px_rgba(20,20,40,0.06)] hover:shadow-[0_12px_32px_-12px_rgba(20,20,40,0.18)] hover:border-spark-brand/30 transition-all duration-300 flex flex-col">
+    <article
+      ref={ref}
+      style={{ transitionDelay: isVisible ? `${delay}ms` : "0ms" }}
+      className={cn(
+        "group rounded-3xl bg-spark-surface border border-spark-hairline overflow-hidden shadow-[0_2px_10px_-6px_rgba(20,20,40,0.06)] hover:shadow-[0_12px_32px_-12px_rgba(20,20,40,0.18)] hover:border-spark-brand/30 flex flex-col",
+        "transition-all duration-700 ease-out will-change-transform",
+        isVisible
+          ? "opacity-100 translate-y-0"
+          : "opacity-0 translate-y-6",
+      )}
+    >
       {/* HERO — imagem ou gradient com emoji grande */}
       <div className={`relative h-44 sm:h-48 overflow-hidden bg-gradient-to-br ${agent.accent}`}>
         {agent.imageUrl ? (
@@ -42,7 +193,6 @@ function AgentCard({ agent }: { agent: AgentCatalogItem }) {
           />
         ) : (
           <>
-            {/* Pattern decorativo no gradient */}
             <div
               className="absolute inset-0 opacity-30 mix-blend-overlay"
               style={{
@@ -50,7 +200,6 @@ function AgentCard({ agent }: { agent: AgentCatalogItem }) {
                   "radial-gradient(circle at 20% 30%, rgba(255,255,255,0.4) 0%, transparent 35%), radial-gradient(circle at 80% 70%, rgba(255,255,255,0.3) 0%, transparent 35%)",
               }}
             />
-            {/* Emoji grande centralizado */}
             <div className="absolute inset-0 flex items-center justify-center">
               <span className="text-[80px] sm:text-[96px] drop-shadow-[0_4px_20px_rgba(0,0,0,0.18)] group-hover:scale-110 transition-transform duration-500">
                 {agent.emoji}
@@ -66,8 +215,8 @@ function AgentCard({ agent }: { agent: AgentCatalogItem }) {
           </span>
         </div>
 
-        {/* Status "Em breve" se sem links */}
-        {!hasAnyLink && (
+        {/* Status "Em breve" se nenhum link existe ainda */}
+        {!hasLinkAtAll && (
           <div className="absolute top-3 right-3">
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-spark-ink/80 backdrop-blur-sm text-[10px] font-bold text-white uppercase tracking-wider">
               Em breve
@@ -90,13 +239,13 @@ function AgentCard({ agent }: { agent: AgentCatalogItem }) {
           type="button"
           onClick={() => setExpanded((v) => !v)}
           aria-expanded={expanded}
-          className="mt-3 -mx-1 px-1 inline-flex items-center gap-1.5 text-[11.5px] font-bold text-spark-brand hover:text-spark-brand-deep transition-colors"
+          className="mt-3 -mx-1 px-1 inline-flex items-center gap-1.5 text-[11.5px] font-bold text-spark-brand hover:text-spark-brand-deep transition-colors w-fit"
         >
           {expanded ? "Esconder" : "Como funciona"}
           <ChevronDown
             size={12}
             strokeWidth={2.5}
-            className={`transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+            className={cn("transition-transform duration-200", expanded && "rotate-180")}
           />
         </button>
         {expanded && (
@@ -105,35 +254,32 @@ function AgentCard({ agent }: { agent: AgentCatalogItem }) {
           </div>
         )}
 
-        {/* CTAs */}
+        {/* CTA — só botão da plataforma selecionada */}
         <div className="mt-auto pt-4">
-          {hasAnyLink ? (
-            <div className="flex flex-col sm:flex-row gap-2">
-              {hasChatgpt && (
-                <a
-                  href={agent.chatgptUrl!}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-[#10a37f] text-white text-[12.5px] font-extrabold active:scale-95 transition-transform"
-                >
-                  ChatGPT
-                  <ExternalLink size={11} strokeWidth={2.5} />
-                </a>
+          {url ? (
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(
+                "w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-white text-[13px] font-extrabold active:scale-95 transition-transform",
+                platform === "chatgpt"
+                  ? "bg-[#10a37f]"
+                  : "bg-gradient-to-r from-blue-500 to-purple-500",
               )}
-              {hasGemini && (
-                <a
-                  href={agent.geminiUrl!}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 text-white text-[12.5px] font-extrabold active:scale-95 transition-transform"
-                >
-                  Gemini
-                  <ExternalLink size={11} strokeWidth={2.5} />
-                </a>
-              )}
+            >
+              Abrir no {platform === "chatgpt" ? "ChatGPT" : "Gemini"}
+              <ExternalLink size={12} strokeWidth={2.5} />
+            </a>
+          ) : otherUrl ? (
+            <div className="rounded-xl bg-spark-surface-sunken/60 px-3 py-3 text-center">
+              <div className="text-[11.5px] text-spark-ink-50 leading-snug">
+                Ainda não tem no {platform === "chatgpt" ? "ChatGPT" : "Gemini"}, mas tá rolando no{" "}
+                <strong>{otherLabel}</strong> 💕
+              </div>
             </div>
           ) : (
-            <div className="text-center text-[11.5px] text-spark-ink-50 py-2.5 rounded-xl bg-spark-surface-sunken/60">
+            <div className="text-center text-[11.5px] text-spark-ink-50 py-3 rounded-xl bg-spark-surface-sunken/60">
               Liberamos nas próximas semanas 💕
             </div>
           )}
@@ -144,9 +290,16 @@ function AgentCard({ agent }: { agent: AgentCatalogItem }) {
 }
 
 function HowItWorksBox() {
+  const { ref, isVisible } = useInView<HTMLDivElement>();
   return (
-    <div className="relative rounded-3xl bg-brand-grad-hero text-white p-5 mb-7 overflow-hidden shadow-[0_12px_32px_-16px_oklch(0.55_0.24_340/0.45)]">
-      {/* Glow decorativo */}
+    <div
+      ref={ref}
+      className={cn(
+        "relative rounded-3xl bg-brand-grad-hero text-white p-5 mb-5 overflow-hidden shadow-[0_12px_32px_-16px_oklch(0.55_0.24_340/0.45)]",
+        "transition-all duration-700 ease-out",
+        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4",
+      )}
+    >
       <div
         aria-hidden
         className="absolute -top-12 -right-8 w-48 h-48 rounded-full bg-white/20 blur-3xl pointer-events-none"
@@ -155,7 +308,6 @@ function HowItWorksBox() {
         aria-hidden
         className="absolute -bottom-10 -left-6 w-40 h-40 rounded-full bg-white/10 blur-3xl pointer-events-none"
       />
-
       <div className="relative flex items-start gap-3">
         <div className="w-10 h-10 rounded-2xl bg-white/25 backdrop-blur-sm flex items-center justify-center shrink-0">
           <Sparkles size={17} strokeWidth={2.2} className="text-white" />
@@ -165,11 +317,11 @@ function HowItWorksBox() {
           <ol className="space-y-1.5 text-[12.5px] text-white/95 leading-relaxed">
             <li className="flex gap-2">
               <span className="font-extrabold opacity-80 shrink-0">1.</span>
-              <span>Escolhe o agente do seu nicho e clica em ChatGPT ou Gemini.</span>
+              <span>Escolhe a plataforma que você usa (ChatGPT ou Gemini) na aba acima.</span>
             </li>
             <li className="flex gap-2">
               <span className="font-extrabold opacity-80 shrink-0">2.</span>
-              <span>Conversa direto na plataforma — manda foto/nome do produto.</span>
+              <span>Clica no agente do seu nicho — abre na plataforma e você conversa com ela.</span>
             </li>
             <li className="flex gap-2">
               <span className="font-extrabold opacity-80 shrink-0">3.</span>
@@ -190,8 +342,21 @@ function HowItWorksBox() {
 }
 
 function AgentesBody({ desktop = false }: { desktop?: boolean }) {
+  const [platform, setPlatform] = usePersistedPlatform();
   const groups = React.useMemo(() => groupByCategory(AGENTS_CATALOG), []);
   const order: Array<keyof typeof groups> = ["info", "scripts", "suporte"];
+
+  // Conta quantos têm link em cada plataforma pra mostrar no chip da tab
+  const counts = React.useMemo(() => {
+    return AGENTS_CATALOG.reduce(
+      (acc, a) => {
+        if (a.chatgptUrl) acc.chatgpt += 1;
+        if (a.geminiUrl) acc.gemini += 1;
+        return acc;
+      },
+      { chatgpt: 0, gemini: 0 },
+    );
+  }, []);
 
   return (
     <div className={`flex-1 overflow-auto ${desktop ? "py-8 px-12" : "pb-10"}`}>
@@ -214,6 +379,16 @@ function AgentesBody({ desktop = false }: { desktop?: boolean }) {
         </p>
 
         <HowItWorksBox />
+
+        <PlatformTabs platform={platform} onChange={setPlatform} />
+
+        <div className="mb-6 text-[11.5px] text-spark-ink-50 px-1">
+          Mostrando agentes do{" "}
+          <strong className="text-spark-ink">
+            {platform === "chatgpt" ? "ChatGPT" : "Gemini"}
+          </strong>{" "}
+          ({counts[platform]} de {AGENTS_CATALOG.length} disponíveis).
+        </div>
 
         <div className="space-y-8">
           {order.map((cat) => {
@@ -244,8 +419,13 @@ function AgentesBody({ desktop = false }: { desktop?: boolean }) {
                     desktop ? "grid-cols-3" : "grid-cols-1 sm:grid-cols-2"
                   }`}
                 >
-                  {items.map((agent) => (
-                    <AgentCard key={agent.slug} agent={agent} />
+                  {items.map((agent, idx) => (
+                    <AgentCard
+                      key={agent.slug}
+                      agent={agent}
+                      platform={platform}
+                      index={idx}
+                    />
                   ))}
                 </div>
               </section>
