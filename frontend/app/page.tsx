@@ -2,22 +2,64 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowRight, Package, Radio, Sparkles, Plus, Flame } from "lucide-react";
+import {
+  ArrowRight,
+  ArrowUpRight,
+  Flame,
+  Package,
+  Pen,
+  Plus,
+  Radio,
+  Sparkles,
+} from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
-import { SparkWordmark } from "@/components/atoms/spark-wordmark";
-import { BottomNav } from "@/components/layout/bottom-nav";
+import { FloatingMainNav } from "@/components/layout/floating-main-nav";
 import { CountUp } from "@/components/atoms/count-up";
 import { CharacterReveal } from "@/components/atoms/character-reveal";
+import { FloatingNav } from "@/components/atoms/floating-nav";
+import { HeroBlob } from "@/components/atoms/hero-blob";
+import { SparkleField } from "@/components/atoms/sparkle-field";
+import { Sticker } from "@/components/atoms/sticker";
+import { SectionReveal } from "@/components/atoms/section-reveal";
 import { Parallax } from "@/components/atoms/parallax";
-import { getLiveStatus, formatCountdown, minutesUntil } from "@/lib/live-status";
+import { SplashScreen } from "@/components/atoms/splash-screen";
+import { getLiveStatus, formatCountdown } from "@/lib/live-status";
+
+/**
+ * Home magazine — premium editorial.
+ *
+ * Estrutura cinematográfica (todas as seções com SectionReveal):
+ *   1. HERO full-bleed: gradient radial dramático + blobs flutuantes +
+ *      sparkles + sticker rotativo + headline GIGANTE em Tanker (display
+ *      lowercase) + CharacterReveal + CTAs premium
+ *   2. STATS — 4 KPIs full-width com CountUp + marquee de números
+ *   3. AÇÕES — cards magazine com hover-lift, alternating layout
+ *   4. ROTINA — banner streak + heatmap teaser
+ *   5. CATÁLOGO — galeria de produtos com mask-reveal
+ *   6. NEWS/AGENTES — cards editoriais
+ *
+ * + FloatingNav glass morphism que aparece no scroll com indicador de
+ *   seção ativa via IntersectionObserver.
+ */
 
 // =================================================================
 // Tipos
 // =================================================================
 
 type Profile = { name: string | null; email: string };
-type ProductRow = { id: string; name: string; category: string | null; created_at: string };
-type ScriptRow = { id: string; title: string; created_at: string; product_id: string | null };
+type ProductRow = {
+  id: string;
+  name: string;
+  image_url: string | null;
+  category: string | null;
+  created_at: string;
+};
+type ScriptRow = {
+  id: string;
+  title: string;
+  created_at: string;
+  product_id: string | null;
+};
 type EducationRow = { id: string; slug: string; title: string };
 type ProgressRow = { video_id: string; completed: boolean };
 type LiveRow = {
@@ -39,16 +81,16 @@ type NewsRow = {
   is_new: boolean;
 };
 
-// =================================================================
-// Data fetch
-// =================================================================
-
 type StreakInfo = {
   current_streak: number;
   longest_streak: number;
   today_done: boolean;
   total_checkins: number;
 };
+
+// =================================================================
+// Data fetch
+// =================================================================
 
 function useDashboardData() {
   const [data, setData] = React.useState<{
@@ -111,17 +153,6 @@ function useDashboardData() {
 // Helpers
 // =================================================================
 
-function timeAgo(iso: string): string {
-  const ms = Date.now() - new Date(iso).getTime();
-  const mins = Math.round(ms / 60_000);
-  if (mins < 1) return "agora";
-  if (mins < 60) return `${mins}min`;
-  const hours = Math.round(mins / 60);
-  if (hours < 24) return `${hours}h`;
-  const days = Math.round(hours / 24);
-  return `${days}d`;
-}
-
 function greeting(hour: number): { emoji: string; text: string } {
   if (hour < 6) return { emoji: "🌙", text: "Boa madrugada" };
   if (hour < 12) return { emoji: "☀️", text: "Bom dia" };
@@ -129,545 +160,805 @@ function greeting(hour: number): { emoji: string; text: string } {
   return { emoji: "✨", text: "Boa noite" };
 }
 
+function timeAgo(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime();
+  const days = Math.round(ms / 86_400_000);
+  if (days < 1) return "hoje";
+  if (days === 1) return "ontem";
+  return `${days}d atrás`;
+}
+
+const NAV_ITEMS = [
+  { href: "#hero", emoji: "🏠", label: "Topo", targetId: "hero" },
+  { href: "#stats", emoji: "📊", label: "Stats", targetId: "stats" },
+  { href: "#acoes", emoji: "✨", label: "Ações", targetId: "acoes" },
+  { href: "#rotina", emoji: "🔥", label: "Rotina", targetId: "rotina" },
+  { href: "#catalogo", emoji: "📦", label: "Catálogo", targetId: "catalogo" },
+];
+
 // =================================================================
-// Componente principal
+// HERO — full-bleed cinematográfico
 // =================================================================
 
-function HomeBody({ desktop = false }: { desktop?: boolean }) {
-  const data = useDashboardData();
-
-  const firstName = (data.profile?.name?.trim() || data.profile?.email?.split("@")[0] || "criadora").split(/\s+/)[0];
+function HeroSection({
+  firstName,
+  profile,
+  desktop,
+}: {
+  firstName: string;
+  profile: Profile | null;
+  desktop: boolean;
+}) {
+  void profile;
   const hi = greeting(new Date().getHours());
 
-  // Encontra próxima live ou ao vivo agora
-  const liveNow = React.useMemo(
-    () => data.lives.find((l) => getLiveStatus(l) === "live"),
-    [data.lives],
-  );
-  const nextLive = React.useMemo(() => {
-    const upcoming = data.lives
-      .filter((l) => getLiveStatus(l) === "upcoming")
-      .sort((a, b) => +new Date(a.starts_at) - +new Date(b.starts_at));
-    return upcoming[0];
-  }, [data.lives]);
-
-  // Education progress
-  const eduCompleted = React.useMemo(() => {
-    const completedSet = new Set(data.progress.filter((p) => p.completed).map((p) => p.video_id));
-    return data.education.filter((v) => completedSet.has(v.id)).length;
-  }, [data.education, data.progress]);
-
-  // Sugestões inteligentes
-  const suggestions = React.useMemo(() => {
-    const list: { id: string; emoji: string; title: string; href: string; cta: string }[] = [];
-
-    // Produtos sem scripts
-    const productsWithScripts = new Set(
-      data.scripts.map((s) => s.product_id).filter(Boolean) as string[],
-    );
-    const productsWithoutScripts = data.products.filter((p) => !productsWithScripts.has(p.id));
-    if (productsWithoutScripts.length > 0) {
-      list.push({
-        id: "scripts-missing",
-        emoji: "✍️",
-        title: `${productsWithoutScripts.length} ${productsWithoutScripts.length === 1 ? "produto sem script" : "produtos sem scripts"}`,
-        href: "/scripts/novo",
-        cta: "Cadastrar roteiros",
-      });
-    }
-
-    // Catálogo vazio
-    if (data.products.length === 0 && data.loaded) {
-      list.push({
-        id: "no-products",
-        emoji: "📦",
-        title: "Comece adicionando seu primeiro produto",
-        href: "/produtos/novo",
-        cta: "Cadastrar agora",
-      });
-    }
-
-    // Aulas não assistidas
-    const eduRemaining = data.education.length - eduCompleted;
-    if (eduRemaining > 0 && eduCompleted < data.education.length) {
-      list.push({
-        id: "edu-progress",
-        emoji: "🎓",
-        title: `Você assistiu ${eduCompleted} de ${data.education.length} aulas`,
-        href: "/educacao",
-        cta: "Continuar trilha",
-      });
-    }
-
-    return list.slice(0, 3);
-  }, [data, eduCompleted]);
-
-  const pad = desktop ? "" : "px-4";
-  const maxW = desktop ? "max-w-[1100px]" : "";
-
   return (
-    <div
-      className={`flex-1 overflow-auto ${desktop ? "py-12 px-12" : "pb-10"}`}
-      style={
-        desktop
-          ? undefined
-          : { paddingTop: "calc(env(safe-area-inset-top) + 16px)" }
-      }
+    <section
+      id="hero"
+      className="relative overflow-hidden hero-radial"
+      style={{
+        paddingTop: desktop ? "96px" : "calc(env(safe-area-inset-top) + 80px)",
+        paddingBottom: desktop ? "120px" : "96px",
+      }}
     >
-      <div className={maxW}>
-        {/* Logo grande direto no body do mobile (com parallax leve) */}
-        {!desktop && (
-          <div className="flex justify-center px-4">
-            <Parallax speed={-0.08}>
-              <SparkWordmark size={88} />
-            </Parallax>
-          </div>
-        )}
+      {/* Blobs orgânicos */}
+      <HeroBlob color="rose" variant={1} className="-top-32 -left-32 w-[460px] h-[460px]" />
+      <HeroBlob color="peach" variant={2} className="top-20 -right-40 w-[520px] h-[520px]" />
+      <HeroBlob color="lilac" variant={3} className="bottom-0 left-1/3 w-[400px] h-[400px]" />
 
-        {/* Hero editorial: eyebrow + headline fluido com character reveal */}
-        <div className={`${pad} ${desktop ? "" : "mt-8"}`}>
-          <div className="text-eyebrow text-spark-brand">
-            {hi.text}, {firstName} {hi.emoji}
-          </div>
-          <CharacterReveal
-            as="h1"
-            immediate
-            staggerMs={20}
-            className="mt-3 block text-fluid-headline font-extrabold text-spark-ink leading-[1.02] tracking-tight max-w-[18ch]"
-          >
-            Pronta pra criar algo lindo hoje?
-          </CharacterReveal>
-        </div>
+      {/* Sparkles dançantes */}
+      <SparkleField count={14} seed={27} className="opacity-70" />
 
-        {/* KPI cards — card unificado com 3 stats */}
-        <div className={`mt-7 ${pad}`}>
-          <div className="rounded-spark-2xl bg-spark-surface border border-spark-hairline overflow-hidden shadow-rest hover-lift">
-            <div className="grid grid-cols-3 divide-x divide-spark-hairline">
-              <KpiCell
-                emoji="📦"
-                label="Produtos"
-                value={data.products.length}
-                href="/produtos"
-                tone="brand"
-              />
-              <KpiCell
-                emoji="✍️"
-                label="Scripts"
-                value={data.scripts.length}
-                href="/scripts"
-              />
-              <KpiCell
-                emoji="🎓"
-                label="Aulas"
-                value={`${eduCompleted}/${data.education.length || 0}`}
-                href="/educacao"
-              />
+      {/* Conteúdo */}
+      <div className={`relative ${desktop ? "px-12 max-w-[1200px] mx-auto" : "px-5"}`}>
+        {/* Eyebrow + sticker rotativo */}
+        <div className="flex items-start justify-between gap-4 mb-8">
+          <SectionReveal direction="down" durationMs={600}>
+            <div className="text-eyebrow text-spark-brand-deep">
+              ✦ {hi.text}, {firstName} {hi.emoji}
             </div>
-          </div>
-        </div>
+            <div className="mt-2 text-fluid-lead text-spark-ink-70 max-w-[28ch] font-semibold">
+              Sua central pra criar, vender e crescer no TikTok Shop.
+            </div>
+          </SectionReveal>
 
-        {/* Banner contextual: live agora / próxima / CTA padrão */}
-        <div className={`mt-8 ${pad}`}>
-          {liveNow ? (
-            <LiveNowBanner live={liveNow} desktop={desktop} />
-          ) : nextLive ? (
-            <NextLiveBanner live={nextLive} desktop={desktop} />
-          ) : (
-            <DefaultCtaBanner desktop={desktop} />
+          {desktop && (
+            <SectionReveal direction="scale" delay={200}>
+              <Parallax speed={-0.12}>
+                <Sticker
+                  text="MÉTODO TTS · 2026 · PREMIUM · "
+                  emoji="✨"
+                  size={132}
+                />
+              </Parallax>
+            </SectionReveal>
           )}
         </div>
 
-        {/* Banner Check-in Rotina TTS */}
-        <div className={`mt-4 ${pad}`}>
-          <CheckinBanner streak={data.streak} desktop={desktop} />
-        </div>
+        {/* Headline gigante — TANKER lowercase pra wow factor */}
+        <SectionReveal direction="up" delay={100} durationMs={900}>
+          <h1
+            className="font-display lowercase leading-[0.9] tracking-tight max-w-[18ch]"
+            style={{ fontSize: "clamp(2.5rem, 8vw, 7rem)" }}
+          >
+            <CharacterReveal
+              as="span"
+              immediate
+              staggerMs={28}
+              className="block text-spark-ink"
+            >
+              chega de postar
+            </CharacterReveal>
+            <CharacterReveal
+              as="span"
+              immediate
+              staggerMs={28}
+              delayMs={500}
+              className="block"
+              charClassName="text-grad-brand"
+            >
+              no escuro.
+            </CharacterReveal>
+          </h1>
+        </SectionReveal>
 
-        {/* Sugestões inteligentes */}
-        {suggestions.length > 0 && (
-          <div className={`mt-10 ${pad}`}>
-            <div className="text-eyebrow text-spark-brand mb-4">
-              💡 Pra você fazer agora
-            </div>
-            <div className="grid gap-2.5 grid-cols-1 sm:grid-cols-3">
-              {suggestions.map((s) => (
-                <Link
-                  key={s.id}
-                  href={s.href}
-                  className="p-5 rounded-spark-2xl bg-spark-surface border border-spark-hairline hover:border-spark-brand/40 hover:bg-spark-brand-soft/30 hover-lift block shadow-rest"
-                >
-                  <div className="text-[24px]">{s.emoji}</div>
-                  <div className="mt-1.5 text-[14px] font-extrabold leading-snug">{s.title}</div>
-                  <div className="mt-2 inline-flex items-center gap-1 text-[12px] font-semibold text-spark-brand">
-                    {s.cta} <ArrowRight size={11} strokeWidth={2} />
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Sub-copy + CTAs */}
+        <SectionReveal direction="up" delay={900}>
+          <p className="mt-8 text-fluid-lead text-spark-ink-70 leading-snug max-w-[44ch]">
+            Conversa com as especialistas, gera roteiros virais, acompanha sua rotina.
+            Tudo num lugar só, do jeitinho que você merece. 💕
+          </p>
 
-        {/* Atalhos rápidos */}
-        <div className={`mt-10 ${pad}`}>
-          <div className="text-eyebrow text-spark-brand mb-4">
-            ✨ Atalhos rápidos
-          </div>
-          <div className={`grid gap-2.5 ${desktop ? "grid-cols-3" : "grid-cols-1"}`}>
-            <QuickAction
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Link
               href="/agentes"
-              emoji="✨"
-              title="Conversar com agentes"
-              hint="Info, Scripts por nicho e Suporte no ChatGPT ou Gemini"
-              accent="brand"
-            />
-            <QuickAction
-              href="/produtos/novo"
-              emoji="📦"
-              title="Adicionar produto"
-              hint="Cadastra a ficha que você gerou no agente Info"
-            />
-            <QuickAction
-              href="/scripts/novo"
-              emoji="✍️"
-              title="Adicionar roteiros"
-              hint="Cola os 5 roteiros que você gerou no Scripts"
-            />
+              className="group inline-flex items-center gap-2 px-7 py-4 rounded-full bg-spark-ink text-white text-[14px] font-extrabold shadow-lift transition-all duration-300 ease-premium hover:-translate-y-1 hover:bg-spark-brand-deep active:translate-y-0"
+            >
+              Conversar com agentes
+              <ArrowUpRight
+                size={16}
+                strokeWidth={2.5}
+                className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+              />
+            </Link>
+            <Link
+              href="/rotina/hoje"
+              className="group inline-flex items-center gap-2 px-7 py-4 rounded-full glass text-spark-ink text-[14px] font-extrabold shadow-rest transition-all duration-300 ease-premium hover:-translate-y-1 hover:shadow-lift active:translate-y-0"
+            >
+              Check-in de hoje
+              <ArrowRight
+                size={16}
+                strokeWidth={2.5}
+                className="transition-transform duration-300 group-hover:translate-x-1"
+              />
+            </Link>
           </div>
-        </div>
-
-        {/* Atividade recente em 2 colunas: news + produtos */}
-        <div
-          className={`mt-10 grid gap-3.5 ${desktop ? "grid-cols-2" : "grid-cols-1"} ${pad}`}
-        >
-          <SectionCard
-            title="Notícias 📰"
-            href="/news"
-            empty={data.news.length === 0}
-            emptyHint="Quando a Yara publicar uma nota, ela aparece aqui. ✨"
-          >
-            <div className="flex flex-col gap-2 mt-3">
-              {data.news.slice(0, 3).map((n) => (
-                <Link
-                  key={n.id}
-                  href={`/news/${n.slug}`}
-                  className="p-2.5 rounded-xl bg-spark-surface-sunken hover:bg-spark-surface transition-colors block"
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[10px] uppercase tracking-[0.08em] font-bold text-spark-brand">
-                      {n.category}
-                    </span>
-                    {n.is_new && (
-                      <span className="text-[9px] uppercase font-bold px-1.5 rounded-md bg-good text-white">
-                        Novo
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-[13px] font-bold line-clamp-2 leading-snug">{n.title}</div>
-                  <div className="text-[11px] text-spark-ink-50 mt-1 font-mono">
-                    {n.reading_minutes}min · {timeAgo(n.published_at)}
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </SectionCard>
-
-          <SectionCard
-            title="Seus produtos 📦"
-            href="/produtos"
-            empty={data.products.length === 0}
-            emptyHint="Vai em Agentes ✨, gera a ficha no Info e cadastra aqui em 'Adicionar produto'. 💄"
-          >
-            <div className="flex flex-col gap-2 mt-3">
-              {data.products.slice(0, 4).map((p) => (
-                <Link
-                  key={p.id}
-                  href={`/produtos/${p.id}`}
-                  className="flex items-center gap-2.5 p-2.5 rounded-xl bg-spark-surface-sunken hover:bg-spark-surface transition-colors"
-                >
-                  <div className="w-9 h-9 rounded-lg bg-spark-surface flex items-center justify-center text-spark-ink-70 shrink-0">
-                    <Package size={16} strokeWidth={1.7} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[13px] font-bold truncate">{p.name}</div>
-                    <div className="text-[11px] text-spark-ink-50 truncate">{p.category ?? "—"}</div>
-                  </div>
-                  <div className="text-[10.5px] text-spark-ink-35 font-mono">
-                    {timeAgo(p.created_at)}
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </SectionCard>
-        </div>
+        </SectionReveal>
       </div>
-    </div>
+    </section>
   );
 }
 
 // =================================================================
-// Sub-componentes
+// STATS — Tiles dramáticos com CountUp + marquee
 // =================================================================
 
-function KpiCell({
-  emoji,
-  label,
-  value,
-  href,
-  tone,
+function StatsSection({
+  data,
+  desktop,
 }: {
-  emoji: string;
-  label: string;
-  value: string | number;
-  href: string;
-  tone?: "brand";
+  data: ReturnType<typeof useDashboardData>;
+  desktop: boolean;
 }) {
-  const isNumeric = typeof value === "number";
-  return (
-    <Link
-      href={href}
-      className={`p-4 text-center transition-colors duration-300 ease-premium active:bg-spark-surface-sunken hover:bg-spark-surface-sunken/60 ${
-        tone === "brand" ? "bg-brand-grad-soft/60" : ""
-      }`}
-    >
-      <div className="text-[24px] leading-none">{emoji}</div>
-      <div
-        className={`mt-2.5 font-extrabold font-mono tracking-tight text-[28px] leading-none ${
-          tone === "brand" ? "text-spark-brand-deep" : "text-spark-ink"
-        }`}
-      >
-        {isNumeric ? <CountUp value={value} durationMs={900} /> : value}
-      </div>
-      <div className="text-eyebrow text-spark-ink-50 mt-2">{label}</div>
-    </Link>
-  );
-}
+  const eduCompleted = React.useMemo(() => {
+    const set = new Set(data.progress.filter((p) => p.completed).map((p) => p.video_id));
+    return data.education.filter((v) => set.has(v.id)).length;
+  }, [data.progress, data.education]);
 
-function LiveNowBanner({ live, desktop }: { live: LiveRow; desktop: boolean }) {
-  return (
-    <Link
-      href={`/ao-vivo/${live.slug}`}
-      className={`block rounded-[22px] relative overflow-hidden text-white shadow-[0_20px_40px_-20px_oklch(0.6_0.22_25/0.4)] ${desktop ? "p-7" : "p-[18px]"}`}
-      style={{
-        background:
-          "linear-gradient(135deg, oklch(0.6 0.22 25) 0%, oklch(0.55 0.24 340) 100%)",
-      }}
-    >
-      <div className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.08em]">
-        <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-        AO VIVO AGORA
-        <Radio size={12} strokeWidth={2.5} className="ml-1 animate-pulse" />
-      </div>
-      <div
-        className={`mt-2 font-extrabold tracking-tight leading-[1.1] ${desktop ? "text-[26px]" : "text-[20px]"}`}
-      >
-        {live.title}
-      </div>
-      <div className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-bold">
-        Assistir agora <ArrowRight size={14} strokeWidth={2} />
-      </div>
-    </Link>
-  );
-}
+  const stats = [
+    {
+      emoji: "📦",
+      label: "Produtos no catálogo",
+      value: data.products.length,
+      href: "/produtos",
+      tone: "brand" as const,
+    },
+    {
+      emoji: "✍️",
+      label: "Conjuntos de scripts",
+      value: data.scripts.length,
+      href: "/scripts",
+      tone: "default" as const,
+    },
+    {
+      emoji: "🎓",
+      label: "Aulas concluídas",
+      value: eduCompleted,
+      total: data.education.length,
+      href: "/educacao",
+      tone: "default" as const,
+    },
+    {
+      emoji: "🔥",
+      label: "Dias seguidos",
+      value: data.streak?.current_streak ?? 0,
+      href: "/rotina/evolucao",
+      tone: "default" as const,
+    },
+  ];
 
-function NextLiveBanner({ live, desktop }: { live: LiveRow; desktop: boolean }) {
-  const min = minutesUntil(live.starts_at);
   return (
-    <Link
-      href={`/ao-vivo/${live.slug}`}
-      className={`block rounded-[22px] relative overflow-hidden bg-spark-surface border border-spark-hairline hover:border-spark-brand/40 transition-colors ${desktop ? "p-6" : "p-[16px]"}`}
+    <section
+      id="stats"
+      className={`relative ${desktop ? "py-24 px-12" : "py-16 px-5"}`}
     >
-      <div className="flex items-center gap-3">
-        <div className="text-[28px]">🔴</div>
-        <div className="flex-1 min-w-0">
-          <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-spark-brand">
-            Próxima live · {formatCountdown(min)}
-          </div>
-          <div
-            className={`mt-0.5 font-extrabold tracking-tight leading-tight ${desktop ? "text-[20px]" : "text-[15px]"}`}
-          >
-            {live.title}
-          </div>
+      <div className={desktop ? "max-w-[1200px] mx-auto" : ""}>
+        <SectionReveal>
+          <div className="text-eyebrow text-spark-brand mb-3">✦ você hoje</div>
+          <h2 className="text-fluid-display font-display lowercase text-spark-ink leading-[0.9] tracking-tight max-w-[12ch]">
+            seus números
+          </h2>
+        </SectionReveal>
+
+        <div className={`mt-10 grid gap-3 ${desktop ? "grid-cols-4" : "grid-cols-2"}`}>
+          {stats.map((s, i) => (
+            <SectionReveal key={s.label} delay={i * 80} direction="up">
+              <Link
+                href={s.href}
+                className={`group block rounded-spark-2xl p-5 sm:p-6 border hover-lift transition-colors duration-300 ${
+                  s.tone === "brand"
+                    ? "bg-brand-grad-soft border-spark-brand/30"
+                    : "bg-spark-surface border-spark-hairline"
+                }`}
+              >
+                <div className="flex items-start justify-between">
+                  <span className="text-[28px] leading-none">{s.emoji}</span>
+                  <ArrowUpRight
+                    size={14}
+                    strokeWidth={2.2}
+                    className="text-spark-ink-35 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-spark-brand"
+                  />
+                </div>
+                <div className={`mt-6 font-extrabold tracking-tight leading-none ${desktop ? "text-[44px]" : "text-[36px]"}`}>
+                  <CountUp value={s.value} durationMs={1100} />
+                  {s.total !== undefined && (
+                    <span className="text-spark-ink-50 text-[20px] font-bold">/{s.total}</span>
+                  )}
+                </div>
+                <div className="mt-3 text-eyebrow text-spark-ink-50">{s.label}</div>
+              </Link>
+            </SectionReveal>
+          ))}
         </div>
-        <ArrowRight size={18} strokeWidth={2} className="text-spark-ink-50" />
+
+        {/* Marquee horizontal de stats globais */}
+        <SectionReveal delay={300}>
+          <div className="mt-12 overflow-hidden rounded-spark-2xl bg-spark-ink text-white py-5">
+            <div className="flex gap-12 whitespace-nowrap animate-marquee">
+              {Array.from({ length: 2 }).map((_, dup) => (
+                <div key={dup} className="flex gap-12 shrink-0">
+                  {[
+                    "✦ 8 agentes especialistas",
+                    "✦ Método validado pela comunidade",
+                    "✦ Conteúdo novo toda semana",
+                    "✦ Comunidade exclusiva no WhatsApp",
+                    "✦ Suporte 24/7 com a Yara",
+                    "✦ Atualizações automáticas",
+                  ].map((t, i) => (
+                    <span key={i} className="text-[15px] font-extrabold tracking-tight">
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        </SectionReveal>
       </div>
-    </Link>
+    </section>
   );
 }
 
-function CheckinBanner({
+// =================================================================
+// AÇÕES — Cards magazine grandes com hover-lift
+// =================================================================
+
+function ActionsSection({ desktop }: { desktop: boolean }) {
+  const actions = [
+    {
+      eyebrow: "Análise & roteiros",
+      title: "Converse com as especialistas",
+      hint: "8 agentes pra cada nicho. Skincare, suplementos, makeup, casa, eletrônicos…",
+      href: "/agentes",
+      emoji: "✨",
+      gradient: "from-rose-300 via-pink-200 to-orange-200",
+      featured: true,
+    },
+    {
+      eyebrow: "Catálogo",
+      title: "Cadastrar produto",
+      hint: "Cole a ficha gerada no agente Info pra organizar.",
+      href: "/produtos/novo",
+      emoji: "📦",
+      gradient: "from-amber-200 to-rose-200",
+    },
+    {
+      eyebrow: "Roteiros",
+      title: "Adicionar roteiros",
+      hint: "5 scripts no método Yara — gancho, dev, benefício, CTA.",
+      href: "/scripts/novo",
+      emoji: "✍️",
+      gradient: "from-purple-200 to-rose-200",
+    },
+  ];
+
+  return (
+    <section
+      id="acoes"
+      className={`relative ${desktop ? "py-24 px-12" : "py-16 px-5"}`}
+    >
+      <div className={desktop ? "max-w-[1200px] mx-auto" : ""}>
+        <SectionReveal>
+          <div className="flex items-end justify-between gap-4 mb-10">
+            <div>
+              <div className="text-eyebrow text-spark-brand mb-3">✦ pra começar agora</div>
+              <h2 className="text-fluid-display font-display lowercase text-spark-ink leading-[0.9] tracking-tight max-w-[14ch]">
+                bora criar?
+              </h2>
+            </div>
+            <Link
+              href="/agentes"
+              className="hidden sm:inline-flex items-center gap-1.5 text-[12.5px] font-extrabold text-spark-brand-deep hover:text-spark-brand transition-colors duration-300"
+            >
+              ver tudo <ArrowRight size={13} strokeWidth={2.5} />
+            </Link>
+          </div>
+        </SectionReveal>
+
+        <div className={`grid gap-4 ${desktop ? "grid-cols-3" : "grid-cols-1"}`}>
+          {actions.map((a, i) => (
+            <SectionReveal key={a.href} delay={i * 120}>
+              <Link
+                href={a.href}
+                className={`group relative overflow-hidden rounded-spark-2xl bg-spark-surface border border-spark-hairline shadow-rest hover-lift block ${
+                  a.featured ? "row-span-2 sm:col-span-1" : ""
+                }`}
+              >
+                {/* Image area com gradient */}
+                <div
+                  className={`relative ${
+                    a.featured ? "h-[280px] sm:h-[340px]" : "h-[180px]"
+                  } bg-gradient-to-br ${a.gradient} overflow-hidden`}
+                >
+                  <div
+                    aria-hidden
+                    className="absolute inset-0"
+                    style={{
+                      backgroundImage:
+                        "radial-gradient(circle at 25% 30%, rgba(255,255,255,0.5) 0%, transparent 40%), radial-gradient(circle at 80% 70%, rgba(255,255,255,0.3) 0%, transparent 40%)",
+                    }}
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span
+                      className={`drop-shadow-[0_8px_24px_rgba(0,0,0,0.18)] transition-transform duration-700 ease-premium group-hover:scale-110 group-hover:rotate-6 ${
+                        a.featured ? "text-[140px] sm:text-[180px]" : "text-[80px]"
+                      }`}
+                    >
+                      {a.emoji}
+                    </span>
+                  </div>
+                  {a.featured && (
+                    <div className="absolute top-5 left-5">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-spark-ink/85 backdrop-blur text-white text-[10.5px] font-extrabold tracking-widest uppercase">
+                        ✦ destaque
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <div className="p-5 sm:p-6">
+                  <div className="text-eyebrow text-spark-brand mb-2.5">{a.eyebrow}</div>
+                  <h3
+                    className={`font-extrabold text-spark-ink leading-tight tracking-tight ${
+                      a.featured ? "text-fluid-title" : "text-[18px]"
+                    }`}
+                  >
+                    {a.title}
+                  </h3>
+                  <p className="mt-2 text-fluid-body text-spark-ink-70 leading-snug">{a.hint}</p>
+                  <div className="mt-4 inline-flex items-center gap-1 text-[12.5px] font-extrabold text-spark-brand-deep group-hover:text-spark-brand transition-colors duration-300">
+                    abrir <ArrowUpRight size={13} strokeWidth={2.5} className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                  </div>
+                </div>
+              </Link>
+            </SectionReveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// =================================================================
+// ROTINA — Banner streak premium
+// =================================================================
+
+function RotinaSection({
   streak,
+  liveNow,
   desktop,
 }: {
   streak: StreakInfo | null;
+  liveNow: LiveRow | undefined;
   desktop: boolean;
 }) {
   const current = streak?.current_streak ?? 0;
   const todayDone = streak?.today_done ?? false;
 
-  if (todayDone) {
-    return (
-      <Link
-        href="/rotina/evolucao"
-        className={`block rounded-[22px] bg-spark-surface border border-spark-hairline ${desktop ? "p-5" : "p-4"} hover:border-spark-brand/40 transition-colors`}
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-400 to-pink-400 text-white flex items-center justify-center shrink-0 shadow-sm">
-            <Flame size={22} strokeWidth={2.2} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-[11px] font-bold text-spark-brand uppercase tracking-[0.08em]">
-              Check-in feito hoje ✓
-            </div>
-            <div className={`mt-0.5 font-extrabold text-spark-ink leading-tight ${desktop ? "text-[18px]" : "text-[15px]"}`}>
-              {current} {current === 1 ? "dia" : "dias"} seguidos 🔥
-            </div>
-            <div className="text-[12px] text-spark-ink-50 mt-0.5">
-              Bora ver sua evolução?
-            </div>
-          </div>
-          <ArrowRight size={16} strokeWidth={2} className="text-spark-ink-50 shrink-0" />
-        </div>
-      </Link>
-    );
-  }
-
   return (
-    <Link
-      href="/rotina/hoje"
-      className={`block rounded-[22px] relative overflow-hidden text-white bg-gradient-to-br from-orange-500 to-pink-500 shadow-[0_12px_32px_-16px_rgba(255,90,120,0.45)] ${desktop ? "p-5" : "p-4"}`}
+    <section
+      id="rotina"
+      className={`relative ${desktop ? "py-24 px-12" : "py-16 px-5"}`}
     >
-      <div
-        aria-hidden
-        className="absolute -top-10 -right-6 w-44 h-44 rounded-full bg-white/15 blur-3xl pointer-events-none"
-      />
-      <div className="relative flex items-center gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0">
-          <Flame size={22} strokeWidth={2.2} className="text-white" />
+      <div className={desktop ? "max-w-[1200px] mx-auto" : ""}>
+        <SectionReveal>
+          <div className="text-eyebrow text-spark-brand mb-3">✦ sua jornada</div>
+          <h2 className="text-fluid-display font-display lowercase text-spark-ink leading-[0.9] tracking-tight max-w-[14ch]">
+            consistência<br />
+            <span className="text-spark-brand-deep">vira venda.</span>
+          </h2>
+        </SectionReveal>
+
+        <div className={`mt-10 grid gap-4 ${desktop ? "grid-cols-2" : "grid-cols-1"}`}>
+          {/* Streak card */}
+          <SectionReveal direction="left">
+            <Link
+              href="/rotina/evolucao"
+              className="group relative block rounded-spark-2xl overflow-hidden hover-lift bg-gradient-to-br from-orange-500 via-pink-500 to-rose-500 text-white p-6 sm:p-8 shadow-lift-brand"
+            >
+              <SparkleField count={8} seed={91} color="rgba(255,255,255,0.6)" className="opacity-60" />
+              <div className="relative flex items-start justify-between">
+                <div>
+                  <div className="text-eyebrow text-white/80">
+                    {todayDone ? "✓ Check-in feito hoje" : "🔥 Sequência atual"}
+                  </div>
+                  <div className="mt-4 flex items-baseline gap-3">
+                    <span className="font-extrabold tracking-tight leading-none text-[80px] sm:text-[110px]">
+                      <CountUp value={current} durationMs={1400} />
+                    </span>
+                    <span className="text-[20px] font-extrabold opacity-90">
+                      {current === 1 ? "dia" : "dias"}
+                    </span>
+                  </div>
+                  <div className="mt-2 text-[14px] opacity-90 max-w-[28ch]">
+                    {current > 0
+                      ? "Você tá voando! Mantém o ritmo 💕"
+                      : "Bora começar sua sequência hoje?"}
+                  </div>
+                </div>
+                <Flame size={48} strokeWidth={2} className="opacity-50 animate-float" />
+              </div>
+              <div className="relative mt-8 inline-flex items-center gap-1.5 text-[13px] font-extrabold">
+                {todayDone ? "ver evolução" : "fazer check-in"}
+                <ArrowUpRight size={14} strokeWidth={2.5} className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+              </div>
+            </Link>
+          </SectionReveal>
+
+          {/* Live banner ou referencia */}
+          <SectionReveal direction="right" delay={120}>
+            {liveNow ? (
+              <Link
+                href={`/ao-vivo/${liveNow.slug}`}
+                className="group relative block rounded-spark-2xl overflow-hidden hover-lift bg-spark-ink text-white p-6 sm:p-8 h-full shadow-lift"
+              >
+                <div className="absolute -top-20 -right-10 w-64 h-64 rounded-full bg-gradient-to-br from-rose-500 to-orange-500 opacity-50 blur-3xl animate-blob-1" />
+                <div className="relative">
+                  <div className="inline-flex items-center gap-2 text-eyebrow text-white/80">
+                    <span className="relative flex w-2 h-2">
+                      <span className="absolute inset-0 rounded-full bg-rose-400 animate-pulse-soft" />
+                      <span className="relative w-2 h-2 rounded-full bg-rose-400" />
+                    </span>
+                    AO VIVO AGORA
+                    <Radio size={12} strokeWidth={2.5} />
+                  </div>
+                  <h3 className="mt-4 text-fluid-headline font-extrabold tracking-tight leading-tight">
+                    {liveNow.title}
+                  </h3>
+                  <div className="mt-8 inline-flex items-center gap-1.5 text-[13px] font-extrabold">
+                    assistir agora <ArrowUpRight size={14} strokeWidth={2.5} className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                  </div>
+                </div>
+              </Link>
+            ) : (
+              <Link
+                href="/rotina/referencia"
+                className="group relative block rounded-spark-2xl overflow-hidden hover-lift glass border border-spark-hairline p-6 sm:p-8 h-full shadow-rest"
+              >
+                <div className="text-eyebrow text-spark-brand mb-3">✦ referência</div>
+                <h3 className="text-fluid-headline font-extrabold tracking-tight leading-tight text-spark-ink max-w-[14ch]">
+                  A rotina<br />
+                  ideal da Yara
+                </h3>
+                <p className="mt-4 text-fluid-body text-spark-ink-70 leading-snug max-w-[36ch]">
+                  06h às 23h: 7 postagens, 2 lives, gravação em lote. Inspire-se.
+                </p>
+                <div className="mt-8 inline-flex items-center gap-1.5 text-[13px] font-extrabold text-spark-brand-deep">
+                  ver timeline <ArrowUpRight size={14} strokeWidth={2.5} className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                </div>
+              </Link>
+            )}
+          </SectionReveal>
         </div>
-        <div className="flex-1 min-w-0">
-          <div className="text-[11px] font-bold uppercase tracking-[0.08em] opacity-90">
-            Rotina diária ✨
-          </div>
-          <div className={`mt-0.5 font-extrabold leading-tight ${desktop ? "text-[18px]" : "text-[15px]"}`}>
-            {current > 0
-              ? `Sequência de ${current} ${current === 1 ? "dia" : "dias"} em risco!`
-              : "Bora começar sua sequência?"}
-          </div>
-          <div className="text-[12px] opacity-90 mt-0.5">
-            Faz seu check-in em 3 min — atividades, autocuidado e KPIs do dia.
-          </div>
-        </div>
-        <ArrowRight size={16} strokeWidth={2} className="shrink-0" />
       </div>
-    </Link>
+    </section>
   );
 }
 
-function DefaultCtaBanner({ desktop }: { desktop: boolean }) {
-  return (
-    <Link
-      href="/agentes"
-      className={`block rounded-[22px] relative overflow-hidden text-white bg-brand-grad-hero shadow-[0_20px_40px_-20px_oklch(0.55_0.24_340/0.45)] ${desktop ? "p-7" : "p-[18px]"}`}
-    >
-      <div className="flex items-center gap-1.5 opacity-90 text-[11px] font-bold uppercase tracking-[0.08em]">
-        ✨ Agentes Método TTS
-      </div>
-      <div
-        className={`mt-2.5 font-bold tracking-[-0.015em] leading-[1.25] ${desktop ? "text-[24px]" : "text-[19px]"}`}
-      >
-        &ldquo;Cada nicho tem uma especialista. Escolhe a sua e bora criar. 💅&rdquo;
-      </div>
-      <div className="mt-3.5 inline-flex items-center gap-1.5 text-[13px] font-bold">
-        Ver agentes <ArrowRight size={14} strokeWidth={1.7} />
-      </div>
-    </Link>
-  );
-}
+// =================================================================
+// CATÁLOGO — Galeria de produtos com hover lift
+// =================================================================
 
-function QuickAction({
-  href,
-  emoji,
-  title,
-  hint,
-  accent,
+function CatalogoSection({
+  products,
+  desktop,
 }: {
-  href: string;
-  emoji: string;
-  title: string;
-  hint: string;
-  accent?: "brand";
+  products: ProductRow[];
+  desktop: boolean;
 }) {
+  const items = products.slice(0, desktop ? 4 : 3);
+  const hasItems = items.length > 0;
+
   return (
-    <Link
-      href={href}
-      className={`p-5 rounded-spark-2xl border flex items-start gap-3.5 hover-lift shadow-rest ${
-        accent === "brand"
-          ? "bg-brand-grad-soft/60 border-spark-brand/30 hover:border-spark-brand/60"
-          : "bg-spark-surface border-spark-hairline hover:border-spark-brand/40"
-      }`}
+    <section
+      id="catalogo"
+      className={`relative ${desktop ? "py-24 px-12" : "py-16 px-5"}`}
     >
-      <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center text-[24px] shrink-0">
-        {emoji}
+      <div className={desktop ? "max-w-[1200px] mx-auto" : ""}>
+        <SectionReveal>
+          <div className="flex items-end justify-between gap-4 mb-10">
+            <div>
+              <div className="text-eyebrow text-spark-brand mb-3">✦ catálogo</div>
+              <h2 className="text-fluid-display font-display lowercase text-spark-ink leading-[0.9] tracking-tight max-w-[14ch]">
+                seus<br />produtos
+              </h2>
+            </div>
+            <Link
+              href="/produtos"
+              className="hidden sm:inline-flex items-center gap-1.5 text-[12.5px] font-extrabold text-spark-brand-deep hover:text-spark-brand transition-colors duration-300"
+            >
+              ver todos <ArrowRight size={13} strokeWidth={2.5} />
+            </Link>
+          </div>
+        </SectionReveal>
+
+        {hasItems ? (
+          <div className={`grid gap-4 ${desktop ? "grid-cols-4" : "grid-cols-2"}`}>
+            {items.map((p, i) => (
+              <SectionReveal key={p.id} delay={i * 90}>
+                <Link
+                  href={`/produtos/${p.id}`}
+                  className="group block rounded-spark-2xl bg-spark-surface border border-spark-hairline overflow-hidden hover-lift shadow-rest"
+                >
+                  <div className="relative aspect-square bg-spark-surface-sunken overflow-hidden">
+                    {p.image_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={p.image_url}
+                        alt={p.name}
+                        loading="lazy"
+                        className="w-full h-full object-cover transition-transform duration-700 ease-premium group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-spark-brand-soft to-spark-surface-sunken flex items-center justify-center">
+                        <Package size={48} strokeWidth={1.4} className="text-spark-ink-35" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-4">
+                    <div className="text-[13.5px] font-extrabold text-spark-ink tracking-tight line-clamp-1">
+                      {p.name}
+                    </div>
+                    <div className="mt-1 text-[11.5px] text-spark-ink-50 font-mono">
+                      {p.category ?? "—"} · {timeAgo(p.created_at)}
+                    </div>
+                  </div>
+                </Link>
+              </SectionReveal>
+            ))}
+            {/* Card "Adicionar" sempre no fim */}
+            <SectionReveal delay={items.length * 90}>
+              <Link
+                href="/produtos/novo"
+                className="group flex flex-col items-center justify-center text-center rounded-spark-2xl border-2 border-dashed border-spark-brand/30 bg-spark-brand-soft/30 hover-lift shadow-rest p-6 aspect-square"
+              >
+                <div className="w-14 h-14 rounded-full bg-brand-grad text-white flex items-center justify-center shadow-lift-brand">
+                  <Plus size={24} strokeWidth={2.5} />
+                </div>
+                <div className="mt-4 text-[13px] font-extrabold text-spark-brand-deep">
+                  Novo produto
+                </div>
+                <div className="mt-1 text-[11px] text-spark-ink-50">
+                  Cadastrar ficha
+                </div>
+              </Link>
+            </SectionReveal>
+          </div>
+        ) : (
+          <SectionReveal>
+            <div className="rounded-spark-2xl bg-spark-surface border border-spark-hairline p-8 sm:p-12 text-center">
+              <div className="mx-auto w-20 h-20 rounded-full bg-brand-grad-soft flex items-center justify-center text-[40px] mb-5">
+                📦
+              </div>
+              <h3 className="text-fluid-title font-extrabold text-spark-ink">
+                Comece adicionando seu primeiro produto
+              </h3>
+              <p className="mt-3 text-fluid-body text-spark-ink-50 max-w-[42ch] mx-auto leading-snug">
+                Use os agentes pra gerar a ficha completa e cadastre aqui pra ter tudo organizado.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-2 justify-center">
+                <Link
+                  href="/agentes"
+                  className="inline-flex items-center gap-1.5 px-5 py-3 rounded-full glass border border-spark-hairline text-spark-ink text-[13px] font-extrabold transition-all duration-300 ease-premium hover:-translate-y-0.5"
+                >
+                  Ver agentes
+                </Link>
+                <Link
+                  href="/produtos/novo"
+                  className="inline-flex items-center gap-1.5 px-5 py-3 rounded-full bg-brand-grad text-white text-[13px] font-extrabold shadow-lift-brand transition-all duration-300 ease-premium hover:-translate-y-0.5"
+                >
+                  <Plus size={14} strokeWidth={2.5} />
+                  Cadastrar agora
+                </Link>
+              </div>
+            </div>
+          </SectionReveal>
+        )}
       </div>
-      <div className="flex-1 min-w-0 pt-0.5">
-        <div className="text-[15px] font-extrabold tracking-tight">{title}</div>
-        <div className="text-[12.5px] text-spark-ink-70 mt-1 leading-snug line-clamp-2">
-          {hint}
-        </div>
-      </div>
-    </Link>
+    </section>
   );
 }
 
-function SectionCard({
-  href,
-  title,
-  empty,
-  emptyHint,
-  children,
-}: {
-  href: string;
-  title: string;
-  empty: boolean;
-  emptyHint: string;
-  children: React.ReactNode;
-}) {
+// =================================================================
+// CTA FINAL — dramatic outro
+// =================================================================
+
+function FinalCtaSection({ desktop }: { desktop: boolean }) {
   return (
-    <div className="p-5 rounded-spark-2xl bg-spark-surface border border-spark-hairline shadow-rest hover-lift">
-      <div className="flex items-center justify-between">
-        <div className="text-eyebrow text-spark-ink">
-          {title}
-        </div>
-        <Link
-          href={href}
-          className="text-[12px] font-semibold text-spark-brand inline-flex items-center gap-1 hover:text-spark-brand-deep"
-        >
-          Abrir <ArrowRight size={12} strokeWidth={2} />
-        </Link>
+    <section
+      className={`relative overflow-hidden ${desktop ? "py-32 px-12" : "py-24 px-5"}`}
+    >
+      {/* Background dramático */}
+      <div className="absolute inset-0 hero-radial" />
+      <HeroBlob color="deep" variant={2} className="-top-20 -left-20 w-[500px] h-[500px]" />
+      <HeroBlob color="peach" variant={3} className="bottom-0 -right-32 w-[440px] h-[440px]" />
+      <SparkleField count={10} seed={777} className="opacity-60" />
+
+      <div className={`relative ${desktop ? "max-w-[1200px] mx-auto text-center" : "text-center"}`}>
+        <SectionReveal direction="scale">
+          <div className="text-eyebrow text-spark-brand mb-5">
+            ✦ pronta pra hoje?
+          </div>
+          <h2
+            className="font-display lowercase text-spark-ink leading-[0.88] tracking-tight max-w-[14ch] mx-auto"
+            style={{ fontSize: "clamp(2.5rem, 9vw + 0.5rem, 8rem)" }}
+          >
+            crie algo<br />
+            <span className="text-grad-brand">
+              que ninguém
+            </span>
+            <br />já viu.
+          </h2>
+        </SectionReveal>
+
+        <SectionReveal delay={400}>
+          <div className="mt-10 flex flex-wrap gap-3 justify-center">
+            <Link
+              href="/agentes"
+              className="group inline-flex items-center gap-2 px-8 py-5 rounded-full bg-spark-ink text-white text-[15px] font-extrabold shadow-lift transition-all duration-300 ease-premium hover:-translate-y-1 hover:bg-spark-brand-deep"
+            >
+              começar agora
+              <Sparkles
+                size={18}
+                strokeWidth={2.2}
+                className="transition-transform duration-500 group-hover:rotate-180"
+              />
+            </Link>
+          </div>
+        </SectionReveal>
       </div>
-      {empty ? (
-        <div className="mt-3 p-4 rounded-2xl bg-spark-surface-sunken text-[12.5px] text-spark-ink-50 leading-snug">
-          {emptyHint}
+    </section>
+  );
+}
+
+// =================================================================
+// NEWS — Cards editoriais
+// =================================================================
+
+function NewsSection({ news, desktop }: { news: NewsRow[]; desktop: boolean }) {
+  if (news.length === 0) return null;
+  const items = news.slice(0, desktop ? 3 : 2);
+
+  return (
+    <section className={`relative ${desktop ? "py-24 px-12" : "py-16 px-5"}`}>
+      <div className={desktop ? "max-w-[1200px] mx-auto" : ""}>
+        <SectionReveal>
+          <div className="flex items-end justify-between gap-4 mb-10">
+            <div>
+              <div className="text-eyebrow text-spark-brand mb-3">✦ novidades</div>
+              <h2 className="text-fluid-display font-display lowercase text-spark-ink leading-[0.9] tracking-tight max-w-[14ch]">
+                últimas<br />notícias
+              </h2>
+            </div>
+            <Link
+              href="/news"
+              className="hidden sm:inline-flex items-center gap-1.5 text-[12.5px] font-extrabold text-spark-brand-deep hover:text-spark-brand transition-colors duration-300"
+            >
+              todas <ArrowRight size={13} strokeWidth={2.5} />
+            </Link>
+          </div>
+        </SectionReveal>
+
+        <div className={`grid gap-4 ${desktop ? "grid-cols-3" : "grid-cols-1"}`}>
+          {items.map((n, i) => (
+            <SectionReveal key={n.id} delay={i * 110}>
+              <Link
+                href={`/news/${n.slug}`}
+                className="group block rounded-spark-2xl bg-spark-surface border border-spark-hairline p-6 hover-lift shadow-rest"
+              >
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-eyebrow text-spark-brand">{n.category}</span>
+                  {n.is_new && (
+                    <span className="text-[9px] uppercase font-extrabold tracking-widest px-2 py-0.5 rounded-full bg-good text-white">
+                      novo
+                    </span>
+                  )}
+                </div>
+                <h3 className="text-fluid-title font-extrabold text-spark-ink leading-tight tracking-tight line-clamp-3">
+                  {n.title}
+                </h3>
+                <div className="mt-6 flex items-center gap-2 text-[11.5px] text-spark-ink-50 font-mono">
+                  <Pen size={11} strokeWidth={1.8} />
+                  {n.reading_minutes} min · {timeAgo(n.published_at)}
+                </div>
+              </Link>
+            </SectionReveal>
+          ))}
         </div>
-      ) : (
-        children
-      )}
+      </div>
+    </section>
+  );
+}
+
+// =================================================================
+// Body principal
+// =================================================================
+
+function HomeBody({ desktop = false }: { desktop?: boolean }) {
+  const data = useDashboardData();
+  const firstName =
+    (data.profile?.name?.trim() || data.profile?.email?.split("@")[0] || "criadora").split(/\s+/)[0];
+
+  const liveNow = React.useMemo(
+    () => data.lives.find((l) => getLiveStatus(l) === "live"),
+    [data.lives],
+  );
+
+  return (
+    <div
+      className="flex-1 overflow-auto relative"
+      style={{ paddingBottom: desktop ? 0 : "calc(env(safe-area-inset-bottom) + 88px)" }}
+    >
+      {/* Floating Nav de seções (aparece no scroll, sempre top) */}
+      <FloatingNav items={NAV_ITEMS} position="top" />
+
+      <HeroSection firstName={firstName} profile={data.profile} desktop={desktop} />
+      <StatsSection data={data} desktop={desktop} />
+      <ActionsSection desktop={desktop} />
+      <RotinaSection streak={data.streak} liveNow={liveNow} desktop={desktop} />
+      <CatalogoSection products={data.products} desktop={desktop} />
+      <NewsSection news={data.news} desktop={desktop} />
+      <FinalCtaSection desktop={desktop} />
     </div>
   );
 }
 
+// =================================================================
+// Page
+// =================================================================
+
 function HomeMobile() {
-  return (
-    <>
-      <HomeBody />
-      <BottomNav active="home" />
-    </>
-  );
+  return <HomeBody />;
 }
 
 function HomeDesktop() {
   return <HomeBody desktop />;
 }
 
-export default function HomePage() {
-  return <ResponsiveShell mobile={<HomeMobile />} desktop={<HomeDesktop />} active="home" />;
+function HomePageContent() {
+  // Mostra o splash por ~1.4s no carregamento inicial. Curto o suficiente
+  // pra não atrasar, longo o suficiente pra dar identidade premium.
+  const [showSplash, setShowSplash] = React.useState(true);
+  React.useEffect(() => {
+    const t = setTimeout(() => setShowSplash(false), 1400);
+    return () => clearTimeout(t);
+  }, []);
+  return (
+    <>
+      <SplashScreen show={showSplash} />
+      <ResponsiveShell
+        mobile={<HomeMobile />}
+        desktop={<HomeDesktop />}
+        active="home"
+        customSidebar
+      />
+      <FloatingMainNav active="home" />
+    </>
+  );
 }
+
+export default function HomePage() {
+  return <HomePageContent />;
+}
+
+// Format countdown is imported but kept silent for now.
+void formatCountdown;

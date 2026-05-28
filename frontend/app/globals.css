@@ -261,6 +261,136 @@ html, body {
   box-shadow: 0 24px 40px -20px rgba(20, 20, 40, 0.18);
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   PREMIUM — efeitos cinematográficos para a Home magazine
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Blobs decorativos drifting em backgrounds hero */
+@keyframes blob-drift-1 {
+  0%   { transform: translate(0, 0) scale(1); }
+  33%  { transform: translate(30px, -40px) scale(1.08); }
+  66%  { transform: translate(-25px, 30px) scale(0.95); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+@keyframes blob-drift-2 {
+  0%   { transform: translate(0, 0) scale(1); }
+  33%  { transform: translate(-40px, 30px) scale(0.92); }
+  66%  { transform: translate(35px, -20px) scale(1.06); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+@keyframes blob-drift-3 {
+  0%   { transform: translate(0, 0) scale(1); }
+  50%  { transform: translate(20px, 40px) scale(1.1); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+.animate-blob-1 { animation: blob-drift-1 16s ease-in-out infinite; }
+.animate-blob-2 { animation: blob-drift-2 20s ease-in-out infinite; }
+.animate-blob-3 { animation: blob-drift-3 24s ease-in-out infinite; }
+
+/* Sparkles que brilham pulsando */
+@keyframes sparkle-twinkle {
+  0%, 100% { opacity: 0; transform: scale(0.4) rotate(0deg); }
+  50%      { opacity: 1; transform: scale(1) rotate(180deg); }
+}
+.animate-sparkle { animation: sparkle-twinkle 3s ease-in-out infinite; }
+
+/* Marquee horizontal (faixa rolante de stats/badges) */
+@keyframes marquee-x {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.animate-marquee { animation: marquee-x 40s linear infinite; }
+
+/* Mask reveal — imagem entra pela máscara crescendo */
+@keyframes mask-reveal {
+  from { clip-path: inset(0 100% 0 0); }
+  to   { clip-path: inset(0 0 0 0); }
+}
+.animate-mask-reveal {
+  animation: mask-reveal 1.2s var(--ease-premium) both;
+}
+
+/* Float gentle — pra stickers, badges flutuantes */
+@keyframes float-gentle {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-8px); }
+}
+.animate-float { animation: float-gentle 4s ease-in-out infinite; }
+
+/* Pulse soft pra dot indicators */
+@keyframes pulse-soft {
+  0%, 100% { box-shadow: 0 0 0 0 oklch(0.65 0.22 350 / 0.6); }
+  50%      { box-shadow: 0 0 0 12px oklch(0.65 0.22 350 / 0); }
+}
+.animate-pulse-soft { animation: pulse-soft 2.4s ease-in-out infinite; }
+
+/* Smooth scroll global pra ancoras */
+html { scroll-behavior: smooth; }
+
+/* Text gradient — bg-clip-text + transparent text. NÃO USE bg-brand-grad-hero
+   junto com bg-clip-text porque o `background:` shorthand reseta o clip. */
+@utility text-grad-brand {
+  background-image: linear-gradient(
+    160deg,
+    oklch(0.68 0.22 350) 0%,
+    oklch(0.72 0.18 25) 60%,
+    oklch(0.60 0.20 340) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+@utility text-grad-brand-soft {
+  background-image: linear-gradient(135deg, oklch(0.70 0.22 350), oklch(0.78 0.16 30));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Glass morphism — pra FloatingNav, modals premium */
+.glass {
+  background: oklch(1 0 0 / 0.65);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid oklch(1 0 0 / 0.5);
+}
+.glass-dark {
+  background: oklch(0.2 0.02 345 / 0.75);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  border: 1px solid oklch(1 0 0 / 0.1);
+}
+
+/* Hero gradient radial dramático — usado no fundo da Home */
+@utility hero-radial {
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 20%, oklch(0.85 0.15 350 / 0.55), transparent 60%),
+    radial-gradient(ellipse 70% 50% at 80% 30%, oklch(0.82 0.18 20 / 0.45), transparent 60%),
+    radial-gradient(ellipse 60% 60% at 50% 90%, oklch(0.78 0.20 340 / 0.5), transparent 65%),
+    oklch(0.985 0.005 350);
+}
+@utility hero-radial-dark {
+  background:
+    radial-gradient(ellipse 70% 50% at 20% 20%, oklch(0.55 0.22 350 / 0.65), transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 80%, oklch(0.50 0.22 25 / 0.55), transparent 60%),
+    oklch(0.16 0.04 345);
+}
+
+/* prefers-reduced-motion expandido */
+@media (prefers-reduced-motion: reduce) {
+  .animate-blob-1,
+  .animate-blob-2,
+  .animate-blob-3,
+  .animate-sparkle,
+  .animate-marquee,
+  .animate-mask-reveal,
+  .animate-float,
+  .animate-pulse-soft {
+    animation: none !important;
+  }
+  html { scroll-behavior: auto; }
+}
+
 /* prefers-reduced-motion: desliga tudo */
 @media (prefers-reduced-motion: reduce) {
   .animate-character,

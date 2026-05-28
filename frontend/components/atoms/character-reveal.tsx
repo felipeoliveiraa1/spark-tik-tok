@@ -31,6 +31,9 @@ type Props = {
   delayMs?: number;
   /** Se true, anima ao montar. Default false (usa IntersectionObserver). */
   immediate?: boolean;
+  /** Class aplicada em CADA char span. Útil pra text-gradient (cada char
+   *  precisa do background-image pra clip-text funcionar nos filhos). */
+  charClassName?: string;
   className?: string;
 };
 
@@ -40,6 +43,7 @@ export function CharacterReveal({
   staggerMs = 25,
   delayMs = 0,
   immediate = false,
+  charClassName,
   className,
 }: Props) {
   const Tag = as as React.ElementType;
@@ -96,6 +100,7 @@ export function CharacterReveal({
                   aria-hidden
                   className={cn(
                     "inline-block",
+                    charClassName,
                     visible ? "animate-character" : "opacity-0",
                   )}
                   style={
