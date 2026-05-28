@@ -82,7 +82,8 @@ export const AGENTS_CATALOG: AgentCatalogItem[] = [
     shortDescription: "Roteiros pra cremes, séruns, hidratantes, protetor solar.",
     howItWorks:
       "Especialista em skincare + método Yara. Gera 5 roteiros completos (gancho 3s + desenvolvimento + benefício + CTA) seguindo regras dermatológicas — sem promessa milagrosa, sem termo médico proibido.",
-    chatgptUrl: null,
+    chatgptUrl:
+      "https://chatgpt.com/g/g-6a1879be030481919755309f117e7929-agente-skincare-metodo-tts",
     geminiUrl: null,
     imageUrl: "/skincare.png",
     accent: "from-rose-400 to-pink-300",
