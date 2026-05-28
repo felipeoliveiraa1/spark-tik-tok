@@ -1,188 +1,213 @@
-# Prompts pras imagens dos Agentes Yara
+# Prompts pras imagens dos Agentes Yara — Bonequinhas por nicho 💕
 
 Tamanho ideal: **1200×750 px** (relação ~16:10).
 Quando exportar, salvar como `.webp` (mais leve) ou `.jpg` qualidade 85.
 
 ## Onde gerar
 
-- **Gemini Imagen 3 / 4** — gratuito via `gemini.google.com` → "Criar imagem"
-- **Midjourney** — Discord, mais artístico
+- **Gemini Imagen 3 / 4** — gratuito via `gemini.google.com` → "Criar imagem". Recomendado.
+- **Midjourney** — Discord, mais artístico, paga
 - **DALL·E 3** — via ChatGPT Plus
 - **Ideogram / Flux** — ideogram.ai (free tier)
 
-Recomendo **Gemini Imagen** pra começar — grátis e tem ótima qualidade pra esse caso.
+## 🎨 Decisão de marca — escolha 1 das 2 abordagens
 
-## Estilo geral (cole junto com qualquer prompt)
+### Abordagem A — **MESMA Yara em 9 vibes** (recomendado)
+Uma única mascote (a "Yara"), mesma cara, mesmo corpo, com **roupa e contexto diferentes** por nicho. Cria identidade de marca mais forte. Aluna lembra "essa é a Yara de Skincare".
+
+### Abordagem B — **9 amigas diferentes**
+Cada agente é uma personagem diferente, representando a diversidade das alunas. Mais inclusivo, menos cohesion de marca.
+
+> **Sugestão**: vai de **A** se quer marca forte. Vai de **B** se quer representação ampla.
+
+Os prompts abaixo são pra **Abordagem A** (mesma Yara). Pra mudar pra B, troca "the same character" por "a different young Brazilian woman".
+
+---
+
+## 🎨 STYLE GUIDE — cola no início de CADA prompt
 
 ```
-Style: soft modern editorial illustration, pastel palette, gentle gradient
-background, subtle 3D depth, clean composition, no text, no logos,
-no watermarks, Instagram aesthetic, brand-friendly, professional but
-friendly, light feminine touch. Aspect ratio 16:10.
+Style: cute 3D cartoon character illustration, Pixar/Disney-inspired, soft
+smooth shading, big expressive friendly eyes, warm welcoming smile, soft
+pastel color palette, gentle studio lighting, chest-up portrait, character
+centered and facing viewer, clean background, professional but friendly,
+modern Instagram aesthetic. NO text, NO logos, NO watermarks, NO brand
+marks. Aspect ratio 16:10.
+
+The character is the SAME young Brazilian woman across all images: around
+25 years old, light brown skin, long wavy chestnut-brown hair with caramel
+highlights, expressive brown eyes, soft natural makeup, friendly genuine
+smile. She is the "Yara" mascot — same face every time, only outfit and
+context change per niche.
 ```
 
 ---
 
 ## 📊 1. Info — Análise de Produto
 
-**Slug:** `info` · **Cor base:** rosa/coral
-**Arquivo:** `info.webp`
+**Arquivo:** `info.webp` · **Fundo:** rosa-coral
 
 ```
-A flat-lay overhead view of a clean desk with a smartphone displaying a
-product analysis dashboard, surrounded by a magnifying glass, a small pink
-notebook, a delicate fresh pink rose, and a coral-pink gradient background.
-Minimalist, editorial photography style, soft natural lighting, pastel pink
-and cream tones. No text, no logos. Aspect ratio 16:10.
+Yara wearing a cute pastel pink blazer over a white top, holding a small
+clipboard with charts and a magnifying glass, soft cat-eye glasses on her
+face, confident and curious expression. She represents data analysis and
+strategy. Background: warm coral-to-pink gradient with subtle floating
+chart icons and sparkles. Friendly, smart, approachable.
 ```
 
 ---
 
 ## 💪 2. Suplementos
 
-**Slug:** `scripts-suplementos` · **Cor base:** laranja/âmbar
-**Arquivo:** `suplementos.webp`
+**Arquivo:** `suplementos.webp` · **Fundo:** laranja/âmbar
 
 ```
-A bright modern still life with a clear glass shaker containing protein
-powder, a small pile of golden capsules, fresh tropical fruits like orange
-and passionfruit, and a soft warm orange-to-amber gradient background.
-Editorial wellness photography, soft natural light, premium aesthetic, no
-text or logos. Aspect ratio 16:10.
+Yara in a cute fitted athletic top in coral, hair tied in a high ponytail
+with a scrunchie, holding a clear shaker bottle with protein, fresh
+orange slice tucked behind her ear, healthy glow on her skin, energetic
+playful expression. Background: warm orange-to-amber gradient with subtle
+floating fruit and dumbbell icons. Wellness vibe, sporty but feminine.
 ```
 
 ---
 
 ## 🧴 3. Skincare
 
-**Slug:** `scripts-skincare` · **Cor base:** rosa pálido
-**Arquivo:** `skincare.webp`
+**Arquivo:** `skincare.webp` · **Fundo:** rosa pálido
 
 ```
-A minimal beauty flat-lay with elegant unbranded skincare bottles in soft
-pink and cream tones, a single droplet of clear serum, fresh rose petals,
-and a powder-pink gradient background. Editorial skincare photography,
-diffused lighting, dreamy aesthetic, no text or labels. Aspect ratio 16:10.
+Yara in a soft silk pink robe, hair pulled back with a fluffy pink
+headband, holding a small unbranded clear serum dropper near her face,
+dewy glass-skin glow, fresh single rose petal floating nearby, gentle
+self-care expression. Background: powdery soft pink gradient with subtle
+floating water droplets and sparkles. Spa aesthetic, calming and luxurious.
 ```
 
 ---
 
 ## 💇‍♀️ 4. Cabelo
 
-**Slug:** `scripts-cabelo` · **Cor base:** âmbar/dourado
-**Arquivo:** `cabelo.webp`
+**Arquivo:** `cabelo.webp` · **Fundo:** âmbar/dourado
 
 ```
-A soft golden-hour still life with a sleek unbranded amber glass shampoo
-bottle, a wooden hairbrush, strands of glossy healthy hair flowing, and a
-warm amber-to-honey gradient background. Editorial hair care aesthetic,
-glow lighting, premium and feminine, no text or labels. Aspect ratio 16:10.
+Yara with her long wavy chestnut hair flowing beautifully, glossy and
+shiny, wearing a soft cream silk slip dress, holding a wooden hairbrush
+delicately, hair catching golden light, confident hair-flip moment.
+Background: warm amber-to-honey gradient with subtle floating hair
+strands and gold sparkles. Hair commercial aesthetic, premium and feminine.
 ```
 
 ---
 
 ## 🌸 5. Perfumes & Body Splash
 
-**Slug:** `scripts-perfumes` · **Cor base:** rosa/violeta
-**Arquivo:** `perfumes.webp`
+**Arquivo:** `perfumes.webp` · **Fundo:** rosa/lavanda
 
 ```
-An elegant beauty still life with a faceted clear perfume bottle catching
-light, soft pink peony petals scattered around, a delicate cloud of mist,
-and a pink-to-lavender gradient background. Editorial fragrance photography,
-dreamy soft lighting, feminine and sensorial, no text or logos. Aspect
-ratio 16:10.
+Yara in an elegant pastel lavender silk slip dress, hair styled in soft
+waves, holding a small faceted crystal perfume bottle near her collarbone,
+delicate mist of perfume floating around her, soft pink peony petals in
+the air, dreamy mysterious expression. Background: pink-to-lavender
+gradient with subtle floating petals and mist. Sensorial fragrance vibe,
+elegant and feminine.
 ```
 
 ---
 
 ## 🏠 6. Casa e Organização
 
-**Slug:** `scripts-casa-organizacao` · **Cor base:** verde menta/teal
-**Arquivo:** `casa-organizacao.webp`
+**Arquivo:** `casa-organizacao.webp` · **Fundo:** verde menta/teal
 
 ```
-A clean overhead flat-lay of perfectly organized home essentials — neatly
-folded white towels, small bamboo storage boxes, a tiny green plant in a
-terracotta pot, on a soft mint-to-teal gradient background. Editorial home
-organization aesthetic, bright natural light, calm and satisfying, no text
-or labels. Aspect ratio 16:10.
+Yara in a cozy oversized cream knit sweater, hair in a messy bun with
+loose strands, holding a small bamboo storage basket with folded white
+towels inside, a tiny green plant in a terracotta pot beside her,
+satisfied cheerful expression. Background: soft mint-to-teal gradient
+with subtle floating leaves and home icons. Cozy organized home vibe,
+warm and practical.
 ```
 
 ---
 
 ## 👗 7. Moda
 
-**Slug:** `scripts-moda` · **Cor base:** índigo/violeta
-**Arquivo:** `moda.webp`
+**Arquivo:** `moda.webp` · **Fundo:** índigo/violeta
 
 ```
-A stylish flat-lay of curated outfit pieces — a folded oversized white
-shirt, gold delicate jewelry, soft beige fabric draped, on an indigo-to-
-violet gradient background. Editorial fashion magazine aesthetic, soft
-side lighting, elevated and minimal, no text or labels. Aspect ratio 16:10.
+Yara in a chic oversized white blazer over a cream silk camisole, layered
+delicate gold necklaces, hair styled in soft 90s blowout, holding a
+phone scrolling fashion inspo, trendy confident pose. Background: indigo-
+to-violet gradient with subtle floating fashion sketches and hangers.
+Editorial fashion magazine vibe, stylish and elevated.
 ```
 
 ---
 
 ## 📱 8. Eletrônicos
 
-**Slug:** `scripts-eletronicos` · **Cor base:** azul céu/ciano
-**Arquivo:** `eletronicos.webp`
+**Arquivo:** `eletronicos.webp` · **Fundo:** azul-céu/ciano
 
 ```
-A modern tech flat-lay with sleek unbranded white wireless earbuds in their
-case, a thin smartwatch face up, a small portable charger, and a clean
-soft sky-blue-to-cyan gradient background. Editorial tech aesthetic, crisp
-soft lighting, premium and minimal, no text, no logos, no brand marks.
-Aspect ratio 16:10.
+Yara in a modern minimalist outfit — fitted white tee and oversized
+denim jacket on her shoulders, hair in a sleek low ponytail, white
+wireless earbuds in her ears, holding a sleek smartphone, cool tech-savvy
+expression. Background: sky-blue-to-cyan gradient with subtle floating
+tech icons (waveforms, wifi, circuits). Modern tech vibe, cool and minimal.
 ```
 
 ---
 
 ## 💬 9. Suporte Yara
 
-**Slug:** `suporte` · **Cor base:** azul/céu
-**Arquivo:** `suporte.webp`
+**Arquivo:** `suporte.webp` · **Fundo:** azul/céu
 
 ```
-A friendly cozy desk scene with a smartphone showing a chat conversation
-bubble, a warm cup of tea or coffee, a small notebook with a pen, soft
-focus pink flowers in the background, on a sky-blue gradient background.
-Editorial lifestyle photography, warm soft lighting, welcoming and
-supportive, no text or logos. Aspect ratio 16:10.
+Yara in a cozy soft blue cardigan over a white top, hair in a relaxed
+half-up style, friendly headset around her neck, holding a steaming
+white mug of coffee with both hands, warm welcoming expression like
+she's about to help you. Background: sky-blue gradient with subtle
+floating chat bubble icons and small flowers. Friendly support vibe,
+warm and approachable.
 ```
 
 ---
 
-## Como subir as imagens
+## 🚨 Dicas pra manter consistência
 
-1. **Gera as 9 imagens** (Gemini Imagen / Midjourney / DALL·E).
-2. **Sobe num CDN público** — opções:
-   - **Supabase Storage** (já temos, bucket `agentes-images` precisa ser criado público)
-   - **Cloudinary** free tier
-   - **Vercel Blob** (já vem com Vercel Pro)
-   - **GitHub** (commita as imagens em `/public/agentes/*.webp` e referencia como `/agentes/skincare.webp`)
-3. **Cola a URL** em `lib/agents-catalog.ts` no campo `imageUrl: "..."` do agente correspondente.
+1. **Gera o "Info" primeiro** — usa como referência da cara da Yara.
+2. **No Gemini Imagen**: depois de gerar a primeira, abre o chat e fala "use a mesma personagem da imagem anterior" antes de mandar o próximo prompt. Funciona bem.
+3. **No Midjourney**: usa `--cref <url-da-imagem-info>` nos próximos pra forçar mesma cara (character reference).
+4. **Se sair muito diferente entre gerações**: regenera só a que destoou ou abre num app de retoque (Photopea grátis) e ajusta cor de pele/cabelo pra bater com as outras.
+5. **Sempre exporta em 1200×750**. Se vier quadrado, recorta no Photopea.
 
-### Opção mais simples: pasta `public/agentes/`
+---
+
+## 📤 Como subir as imagens
+
+### Mais simples — pasta `public/agentes/`
 
 Salva as 9 imagens como:
 ```
-public/agentes/info.webp
-public/agentes/suplementos.webp
-public/agentes/skincare.webp
-public/agentes/cabelo.webp
-public/agentes/perfumes.webp
-public/agentes/casa-organizacao.webp
-public/agentes/moda.webp
-public/agentes/eletronicos.webp
-public/agentes/suporte.webp
+frontend/public/agentes/info.webp
+frontend/public/agentes/suplementos.webp
+frontend/public/agentes/skincare.webp
+frontend/public/agentes/cabelo.webp
+frontend/public/agentes/perfumes.webp
+frontend/public/agentes/casa-organizacao.webp
+frontend/public/agentes/moda.webp
+frontend/public/agentes/eletronicos.webp
+frontend/public/agentes/suporte.webp
 ```
 
-E preenche o catálogo:
+E preenche o catálogo em [lib/agents-catalog.ts](../frontend/lib/agents-catalog.ts):
 ```ts
 imageUrl: "/agentes/skincare.webp"
 ```
 
-Pronto — Vercel serve direto, sem precisar de CDN externo.
+Vercel serve direto, sem precisar de CDN externo. ✨
+
+### Alternativas
+
+- **Supabase Storage**: cria bucket público `agentes-images` e usa a URL pública.
+- **Cloudinary** free tier.
+- **Vercel Blob** (Vercel Pro).
