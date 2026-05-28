@@ -26,20 +26,43 @@ Os prompts abaixo são pra **Abordagem A** (mesma Yara). Pra mudar pra B, troca 
 
 ## 🎨 STYLE GUIDE — cola no início de CADA prompt
 
-```
-Style: cute 3D cartoon character illustration, Pixar/Disney-inspired, soft
-smooth shading, big expressive friendly eyes, warm welcoming smile, soft
-pastel color palette, gentle studio lighting, chest-up portrait, character
-centered and facing viewer, clean background, professional but friendly,
-modern Instagram aesthetic. NO text, NO logos, NO watermarks, NO brand
-marks. Aspect ratio 16:10.
+> ⚠️ **IMPORTANTE**: o Gemini Imagen tende a gerar FOTOGRAFIA por padrão.
+> Pra forçar cartoon você precisa **liderar com** "3D cartoon character" e
+> usar palavras tipo "NOT photorealistic", "stylized", "rendered".
 
-The character is the SAME young Brazilian woman across all images: around
-25 years old, light brown skin, long wavy chestnut-brown hair with caramel
-highlights, expressive brown eyes, soft natural makeup, friendly genuine
-smile. She is the "Yara" mascot — same face every time, only outfit and
-context change per niche.
 ```
+A 3D animated cartoon character illustration — NOT a photograph, NOT
+photorealistic, NOT a real person. Style: Pixar Disney Dreamworks
+animation, stylized cel-shaded 3D render, like a character from
+Encanto/Coco/Moana. Cute exaggerated cartoon features: oversized
+expressive shiny eyes (big anime-Pixar eyes), small button nose, soft
+round cheeks, friendly smile. Toy-like character proportions. Smooth
+matte 3D shading, NO realistic skin texture, NO realistic pores.
+
+The character is the SAME Yara mascot across all images: a stylized 3D
+cartoon young woman, light brown skin, long wavy chestnut hair with
+soft caramel highlights tied or styled differently per scene, big
+expressive cartoon eyes with long lashes, soft pink blush on cheeks,
+friendly genuine smile. Like an animated movie character — not a real
+human, not a model.
+
+Chest-up portrait, character centered and facing the viewer, clean soft
+gradient background. Soft studio lighting. NO text, NO logos, NO
+watermarks. Aspect ratio 16:10.
+```
+
+### Palavras que ATIVAM foto realista (EVITE)
+- "Photo of...", "professional photography", "editorial photography"
+- "Glowing skin", "dewy", "luminous skin"
+- "Beauty model", "fashion model"
+- "Soft lighting" sem outro contexto
+
+### Palavras que FORÇAM cartoon (USE)
+- "3D animated character", "cartoon illustration", "stylized 3D render"
+- "Pixar/Disney/Dreamworks style", "Encanto-style", "animated movie"
+- "Big expressive cartoon eyes", "exaggerated cute features"
+- "NOT photorealistic", "NOT a real person"
+- "Cel-shaded", "toy-like proportions"
 
 ---
 
@@ -76,11 +99,14 @@ floating fruit and dumbbell icons. Wellness vibe, sporty but feminine.
 **Arquivo:** `skincare.webp` · **Fundo:** rosa pálido
 
 ```
-Yara in a soft silk pink robe, hair pulled back with a fluffy pink
-headband, holding a small unbranded clear serum dropper near her face,
-dewy glass-skin glow, fresh single rose petal floating nearby, gentle
-self-care expression. Background: powdery soft pink gradient with subtle
-floating water droplets and sparkles. Spa aesthetic, calming and luxurious.
+3D animated cartoon character (Pixar/Disney style, NOT photo, NOT
+realistic): Yara the mascot wearing a soft silk pink robe, hair pulled
+back with a fluffy oversized pink headband, holding a tiny cartoon clear
+serum dropper near her cheek with one cartoon rose petal floating beside
+her face. Big sparkly Pixar eyes, soft round cartoon cheeks, gentle
+cartoon smile. Background: powdery soft pink gradient with subtle
+floating cartoon water droplets and sparkles. Spa aesthetic but stylized
+cartoon, calming and cute. Chest-up portrait, 16:10.
 ```
 
 ---
