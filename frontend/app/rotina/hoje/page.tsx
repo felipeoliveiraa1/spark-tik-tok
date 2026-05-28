@@ -22,8 +22,8 @@ import {
   type CheckinRow,
   type Mood,
   MOOD_OPTIONS,
-  YARA_GOALS,
-  calcYaraAdherence,
+  TTS_GOALS,
+  calcAdherence,
   emptyCheckin,
   todayBrazil,
 } from "@/lib/checkin-config";
@@ -38,7 +38,7 @@ import {
  *   🌷 Reflexão       — mood + energia + nota
  *
  * Carrega o check-in de hoje (se existir) e faz UPSERT no save.
- * Mostra % aderência Yara em tempo real no header.
+ * Mostra % aderência TTS em tempo real no header.
  */
 
 function useTodayCheckin(): {
@@ -139,7 +139,7 @@ function Stepper({
         <div className="flex-1 min-w-0">
           <div className="text-[13px] font-extrabold text-spark-ink">{label}</div>
           <div className="text-[11px] text-spark-ink-50">
-            Meta Yara: <strong>{goal}</strong>
+            Meta TTS: <strong>{goal}</strong>
           </div>
         </div>
         {reached && (
@@ -392,7 +392,7 @@ function RotinaHojeBody({ desktop = false }: { desktop?: boolean }) {
   );
 
   const adherence = React.useMemo(
-    () => (checkin ? calcYaraAdherence(checkin) : 0),
+    () => (checkin ? calcAdherence(checkin) : 0),
     [checkin],
   );
 
@@ -400,8 +400,8 @@ function RotinaHojeBody({ desktop = false }: { desktop?: boolean }) {
   const completedCount = React.useMemo(() => {
     if (!checkin) return 0;
     let n = 0;
-    if (checkin.videos_posted >= YARA_GOALS.videos_posted) n += 1;
-    if (checkin.videos_recorded >= YARA_GOALS.videos_recorded) n += 1;
+    if (checkin.videos_posted >= TTS_GOALS.videos_posted) n += 1;
+    if (checkin.videos_recorded >= TTS_GOALS.videos_recorded) n += 1;
     if (checkin.live_chat_done) n += 1;
     if (checkin.live_shop_done) n += 1;
     if (checkin.analytics_done) n += 1;
@@ -433,8 +433,8 @@ function RotinaHojeBody({ desktop = false }: { desktop?: boolean }) {
         return;
       }
       if (data.checkin) setCheckin(data.checkin);
-      const adh = data.checkin ? calcYaraAdherence(data.checkin) : 0;
-      toast.success(`Check-in salvo! ${adh}% da rotina Yara hoje 💕`);
+      const adh = data.checkin ? calcAdherence(data.checkin) : 0;
+      toast.success(`Check-in salvo! ${adh}% da rotina TTS hoje 💕`);
     } catch {
       toast.error("Não consegui salvar agora.");
     } finally {
@@ -495,7 +495,7 @@ function RotinaHojeBody({ desktop = false }: { desktop?: boolean }) {
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-[11px] font-bold uppercase tracking-[0.08em] opacity-90">
-                Rotina Yara hoje
+                Rotina TTS hoje
               </div>
               <div className="mt-1 text-[16px] font-extrabold leading-tight">
                 {adherence >= 80
@@ -537,7 +537,7 @@ function RotinaHojeBody({ desktop = false }: { desktop?: boolean }) {
               <BookOpen size={16} strokeWidth={2} />
             </div>
             <div className="text-[12px] font-extrabold leading-tight">
-              Rotina Yara
+              Rotina TTS
               <div className="text-[10.5px] font-semibold text-spark-ink-50 mt-0.5">
                 Dia ideal completo
               </div>
@@ -562,14 +562,14 @@ function RotinaHojeBody({ desktop = false }: { desktop?: boolean }) {
                   label="Vídeos postados"
                   emoji="📱"
                   value={checkin.videos_posted}
-                  goal={YARA_GOALS.videos_posted}
+                  goal={TTS_GOALS.videos_posted}
                   onChange={(v) => update("videos_posted", v)}
                 />
                 <Stepper
                   label="Vídeos gravados (lote)"
                   emoji="🎬"
                   value={checkin.videos_recorded}
-                  goal={YARA_GOALS.videos_recorded}
+                  goal={TTS_GOALS.videos_recorded}
                   onChange={(v) => update("videos_recorded", v)}
                 />
                 <ToggleCard

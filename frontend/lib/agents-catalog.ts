@@ -1,5 +1,5 @@
 /**
- * Catálogo dos Agentes Yara — versão externa (ChatGPT GPTs + Gemini Gems).
+ * Catálogo dos Agentes do Método TTS — versão externa (ChatGPT GPTs + Gemini Gems).
  *
  * Estratégia: a IA NÃO roda mais dentro do app. A aluna usa os agentes
  * direto nas plataformas externas. O app mantém só o catálogo (/produtos,
@@ -67,7 +67,7 @@ export const AGENTS_CATALOG: AgentCatalogItem[] = [
     emoji: "💪",
     shortDescription: "Pra creatina, whey, colágeno, vitaminas, magnésio.",
     howItWorks:
-      "Especialista em nutrição clínica + método Yara. Gera 5 roteiros completos respeitando as regras de não-promessa-de-cura, com analogias simples explicando o mecanismo do produto.",
+      "Especialista em nutrição clínica + Método TTS. Gera 5 roteiros completos respeitando as regras de não-promessa-de-cura, com analogias simples explicando o mecanismo do produto.",
     chatgptUrl: null,
     geminiUrl: null,
     imageUrl: "/suplemento.png",
@@ -81,12 +81,26 @@ export const AGENTS_CATALOG: AgentCatalogItem[] = [
     emoji: "🧴",
     shortDescription: "Roteiros pra cremes, séruns, hidratantes, protetor solar.",
     howItWorks:
-      "Especialista em skincare + método Yara. Gera 5 roteiros completos (gancho 3s + desenvolvimento + benefício + CTA) seguindo regras dermatológicas — sem promessa milagrosa, sem termo médico proibido.",
+      "Especialista em skincare + Método TTS. Gera 5 roteiros completos (gancho 3s + desenvolvimento + benefício + CTA) seguindo regras dermatológicas — sem promessa milagrosa, sem termo médico proibido.",
     chatgptUrl:
       "https://chatgpt.com/g/g-6a1879be030481919755309f117e7929-agente-skincare-metodo-tts",
     geminiUrl: null,
     imageUrl: "/skincare.png",
     accent: "from-rose-400 to-pink-300",
+  },
+  {
+    slug: "scripts-makeup",
+    chip: "Makeup",
+    name: "Scripts Makeup",
+    category: "scripts",
+    emoji: "💄",
+    shortDescription: "Pra base, batom, sombra, blush, contorno, gloss.",
+    howItWorks:
+      "Maquiadora profissional + Método TTS. Gera 5 roteiros com forte apelo visual — tutorial rápido, erro comum, transformação, antes/depois. Foco em demonstração que prende nos primeiros 3 segundos.",
+    chatgptUrl: null,
+    geminiUrl: null,
+    imageUrl: "/makeup.png",
+    accent: "from-purple-500 to-fuchsia-400",
   },
   {
     slug: "scripts-cabelo",
@@ -96,7 +110,7 @@ export const AGENTS_CATALOG: AgentCatalogItem[] = [
     emoji: "💇‍♀️",
     shortDescription: "Pra shampoo, condicionador, máscara, óleos.",
     howItWorks:
-      "Especialista em tricologia + método Yara. Gera 5 roteiros com tom emocional, identificação com a dor do cabelo, rotina de uso visível.",
+      "Especialista em tricologia + Método TTS. Gera 5 roteiros com tom emocional, identificação com a dor do cabelo, rotina de uso visível.",
     chatgptUrl: null,
     geminiUrl: null,
     imageUrl: "/cabelo.png",
@@ -110,7 +124,7 @@ export const AGENTS_CATALOG: AgentCatalogItem[] = [
     emoji: "🌸",
     shortDescription: "Pra perfumes, body splash, brumas, hidratantes perfumados.",
     howItWorks:
-      "Especialista em fragrâncias + método Yara. Gera 5 roteiros sensoriais — storytelling, comparação com perfumes caros, ocasiões de uso (encontro, viagem, dia a dia).",
+      "Especialista em fragrâncias + Método TTS. Gera 5 roteiros sensoriais — storytelling, comparação com perfumes caros, ocasiões de uso (encontro, viagem, dia a dia).",
     chatgptUrl: null,
     geminiUrl: null,
     imageUrl: "/perfume.png",
@@ -124,7 +138,7 @@ export const AGENTS_CATALOG: AgentCatalogItem[] = [
     emoji: "🏠",
     shortDescription: "Pra organizadores, gadgets de cozinha, utilidades do lar.",
     howItWorks:
-      "Especialista em organização e funcionalidade da casa + método Yara. Gera 5 roteiros satisfatórios, antes/depois, solução de problema do dia a dia.",
+      "Especialista em organização e funcionalidade da casa + Método TTS. Gera 5 roteiros satisfatórios, antes/depois, solução de problema do dia a dia.",
     chatgptUrl: null,
     geminiUrl: null,
     imageUrl: "/casa.png",
@@ -138,7 +152,7 @@ export const AGENTS_CATALOG: AgentCatalogItem[] = [
     emoji: "👗",
     shortDescription: "Pra roupas, looks, peças virais, acessórios de moda.",
     howItWorks:
-      "Stylist + método Yara. Gera 5 roteiros focados em look do dia, transformação, versatilidade (1 peça 3 looks), tendência.",
+      "Stylist + Método TTS. Gera 5 roteiros focados em look do dia, transformação, versatilidade (1 peça 3 looks), tendência.",
     chatgptUrl: null,
     geminiUrl: null,
     imageUrl: "/moda.png",
@@ -152,7 +166,7 @@ export const AGENTS_CATALOG: AgentCatalogItem[] = [
     emoji: "📱",
     shortDescription: "Pra gadgets, acessórios tech, fones, carregadores.",
     howItWorks:
-      "Especialista em tecnologia + método Yara. Gera 5 roteiros demonstrativos — 'você não sabia que precisava disso', teste prático, hack do dia a dia, comparação.",
+      "Especialista em tecnologia + Método TTS. Gera 5 roteiros demonstrativos — 'você não sabia que precisava disso', teste prático, hack do dia a dia, comparação.",
     chatgptUrl: null,
     geminiUrl: null,
     imageUrl: "/eletronicos.png",
@@ -168,7 +182,7 @@ export const AGENTS_CATALOG: AgentCatalogItem[] = [
     emoji: "💬",
     shortDescription: "Dúvidas sobre TikTok Shop, método, comissão.",
     howItWorks:
-      "Sua central de ajuda. Tira dúvida sobre como cadastrar produto no TikTok Shop, comissão, frete, regras de conteúdo proibido, boas práticas, e como usar o app/método Yara.",
+      "Sua central de ajuda. Tira dúvida sobre como cadastrar produto no TikTok Shop, comissão, frete, regras de conteúdo proibido, boas práticas, e como usar o app/Método TTS.",
     chatgptUrl: null,
     geminiUrl: null,
     imageUrl: "/suporte.png",

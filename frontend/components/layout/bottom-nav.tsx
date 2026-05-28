@@ -24,6 +24,7 @@ const items: Item[] = [
   { id: "chat", label: "Agentes", href: "/agentes", emoji: "✨" },
   { id: "produtos", label: "Produtos", href: "/produtos", emoji: "📦" },
   { id: "scripts", label: "Scripts", href: "/scripts", emoji: "✍️" },
+  { id: "rotina", label: "Rotina", href: "/rotina/hoje", emoji: "📊" },
   { id: "educacao", label: "Aulas", href: "/educacao", emoji: "🎓" },
   { id: "conta", label: "Conta", href: "/conta", emoji: "👤" },
 ];
@@ -49,7 +50,7 @@ export function BottomNav({ active = "home", className }: Props) {
             key={it.id}
             href={it.href}
             className={cn(
-              "relative flex flex-col items-center gap-[3px] px-2 py-1.5 transition-all min-w-[44px]",
+              "relative flex flex-col items-center gap-[3px] px-1 py-1.5 transition-all min-w-[40px]",
               isActive ? "text-spark-ink" : "text-spark-ink-50",
             )}
           >
@@ -65,7 +66,7 @@ export function BottomNav({ active = "home", className }: Props) {
             </span>
             <span
               className={cn(
-                "text-[10px] tracking-tight",
+                "text-[9.5px] tracking-tight leading-none",
                 isActive ? "font-extrabold" : "font-semibold",
               )}
             >

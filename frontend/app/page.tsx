@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowRight, Package, Radio, Sparkles, Plus } from "lucide-react";
+import { ArrowRight, Package, Radio, Sparkles, Plus, Flame } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { SparkWordmark } from "@/components/atoms/spark-wordmark";
 import { BottomNav } from "@/components/layout/bottom-nav";
@@ -40,6 +40,13 @@ type NewsRow = {
 // Data fetch
 // =================================================================
 
+type StreakInfo = {
+  current_streak: number;
+  longest_streak: number;
+  today_done: boolean;
+  total_checkins: number;
+};
+
 function useDashboardData() {
   const [data, setData] = React.useState<{
     profile: Profile | null;
@@ -49,6 +56,7 @@ function useDashboardData() {
     progress: ProgressRow[];
     lives: LiveRow[];
     news: NewsRow[];
+    streak: StreakInfo | null;
     loaded: boolean;
   }>({
     profile: null,
@@ -58,13 +66,14 @@ function useDashboardData() {
     progress: [],
     lives: [],
     news: [],
+    streak: null,
     loaded: false,
   });
 
   React.useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [me, prod, scripts, edu, prog, lives, news] = await Promise.all([
+      const [me, prod, scripts, edu, prog, lives, news, streak] = await Promise.all([
         fetch("/api/me", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)),
         fetch("/api/products", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)),
         fetch("/api/scripts", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)),
@@ -72,6 +81,7 @@ function useDashboardData() {
         fetch("/api/educacao/progress", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)),
         fetch("/api/ao-vivo", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)),
         fetch("/api/news", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)),
+        fetch("/api/checkins/streak", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)),
       ]);
       if (cancelled) return;
       setData({
@@ -82,6 +92,7 @@ function useDashboardData() {
         progress: prog?.progress ?? [],
         lives: lives?.events ?? [],
         news: news?.news ?? [],
+        streak: streak ?? null,
         loaded: true,
       });
     })().catch(() => setData((d) => ({ ...d, loaded: true })));
@@ -256,6 +267,11 @@ function HomeBody({ desktop = false }: { desktop?: boolean }) {
           ) : (
             <DefaultCtaBanner desktop={desktop} />
           )}
+        </div>
+
+        {/* Banner Check-in Rotina TTS */}
+        <div className={`mt-4 ${pad}`}>
+          <CheckinBanner streak={data.streak} desktop={desktop} />
         </div>
 
         {/* Sugestões inteligentes */}
@@ -470,6 +486,75 @@ function NextLiveBanner({ live, desktop }: { live: LiveRow; desktop: boolean }) 
   );
 }
 
+function CheckinBanner({
+  streak,
+  desktop,
+}: {
+  streak: StreakInfo | null;
+  desktop: boolean;
+}) {
+  const current = streak?.current_streak ?? 0;
+  const todayDone = streak?.today_done ?? false;
+
+  if (todayDone) {
+    return (
+      <Link
+        href="/rotina/evolucao"
+        className={`block rounded-[22px] bg-spark-surface border border-spark-hairline ${desktop ? "p-5" : "p-4"} hover:border-spark-brand/40 transition-colors`}
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-400 to-pink-400 text-white flex items-center justify-center shrink-0 shadow-sm">
+            <Flame size={22} strokeWidth={2.2} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[11px] font-bold text-spark-brand uppercase tracking-[0.08em]">
+              Check-in feito hoje ✓
+            </div>
+            <div className={`mt-0.5 font-extrabold text-spark-ink leading-tight ${desktop ? "text-[18px]" : "text-[15px]"}`}>
+              {current} {current === 1 ? "dia" : "dias"} seguidos 🔥
+            </div>
+            <div className="text-[12px] text-spark-ink-50 mt-0.5">
+              Bora ver sua evolução?
+            </div>
+          </div>
+          <ArrowRight size={16} strokeWidth={2} className="text-spark-ink-50 shrink-0" />
+        </div>
+      </Link>
+    );
+  }
+
+  return (
+    <Link
+      href="/rotina/hoje"
+      className={`block rounded-[22px] relative overflow-hidden text-white bg-gradient-to-br from-orange-500 to-pink-500 shadow-[0_12px_32px_-16px_rgba(255,90,120,0.45)] ${desktop ? "p-5" : "p-4"}`}
+    >
+      <div
+        aria-hidden
+        className="absolute -top-10 -right-6 w-44 h-44 rounded-full bg-white/15 blur-3xl pointer-events-none"
+      />
+      <div className="relative flex items-center gap-3">
+        <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0">
+          <Flame size={22} strokeWidth={2.2} className="text-white" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-[11px] font-bold uppercase tracking-[0.08em] opacity-90">
+            Rotina diária ✨
+          </div>
+          <div className={`mt-0.5 font-extrabold leading-tight ${desktop ? "text-[18px]" : "text-[15px]"}`}>
+            {current > 0
+              ? `Sequência de ${current} ${current === 1 ? "dia" : "dias"} em risco!`
+              : "Bora começar sua sequência?"}
+          </div>
+          <div className="text-[12px] opacity-90 mt-0.5">
+            Faz seu check-in em 3 min — atividades, autocuidado e KPIs do dia.
+          </div>
+        </div>
+        <ArrowRight size={16} strokeWidth={2} className="shrink-0" />
+      </div>
+    </Link>
+  );
+}
+
 function DefaultCtaBanner({ desktop }: { desktop: boolean }) {
   return (
     <Link
@@ -477,7 +562,7 @@ function DefaultCtaBanner({ desktop }: { desktop: boolean }) {
       className={`block rounded-[22px] relative overflow-hidden text-white bg-brand-grad-hero shadow-[0_20px_40px_-20px_oklch(0.55_0.24_340/0.45)] ${desktop ? "p-7" : "p-[18px]"}`}
     >
       <div className="flex items-center gap-1.5 opacity-90 text-[11px] font-bold uppercase tracking-[0.08em]">
-        ✨ Agentes Yara
+        ✨ Agentes Método TTS
       </div>
       <div
         className={`mt-2.5 font-bold tracking-[-0.015em] leading-[1.25] ${desktop ? "text-[24px]" : "text-[19px]"}`}

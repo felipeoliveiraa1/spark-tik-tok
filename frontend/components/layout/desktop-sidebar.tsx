@@ -28,6 +28,7 @@ const items: Item[] = [
   { id: "chat", label: "Agentes", href: "/agentes", emoji: "✨" },
   { id: "produtos", label: "Produtos", href: "/produtos", emoji: "📦" },
   { id: "scripts", label: "Scripts", href: "/scripts", emoji: "✍️" },
+  { id: "rotina", label: "Rotina", href: "/rotina/hoje", emoji: "📊" },
   { id: "ao-vivo", label: "Ao vivo", href: "/ao-vivo", emoji: "🔴" },
   { id: "educacao", label: "Educação", href: "/educacao", emoji: "🎓" },
   { id: "news", label: "News", href: "/news", emoji: "📰" },

@@ -15,7 +15,7 @@ import {
 } from "@/lib/checkin-config";
 
 /**
- * /rotina/evolucao — Dashboard de evolução da Rotina Yara.
+ * /rotina/evolucao — Dashboard de evolução da Rotina TTS.
  *
  * Filtros: 7d | 30d | mês
  * Conteúdo:
@@ -385,7 +385,7 @@ function AdherenceBarChart({ rows, range }: { rows: SummaryResponse["rows"]; ran
           Sua evolução
         </div>
         <div className="text-[14px] font-extrabold text-spark-ink mt-0.5">
-          % Rotina Yara por dia
+          % Rotina TTS por dia
         </div>
       </div>
       <div className="overflow-x-auto no-scrollbar">
@@ -523,7 +523,7 @@ function EvolucaoBody({ desktop = false }: { desktop?: boolean }) {
               Você tá indo longe ✨
             </h1>
             <p className="text-[13.5px] text-spark-ink-50 max-w-[520px] mt-1.5 mb-7">
-              Sequência, aderência à rotina Yara e os números que importam.
+              Sequência, aderência à rotina TTS e os números que importam.
             </p>
           </>
         )}

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase-server";
 import {
-  calcYaraAdherence,
+  calcAdherence,
   isActiveCheckin,
   type CheckinRow,
 } from "@/lib/checkin-config";
@@ -102,7 +102,7 @@ function aggregate(rows: CheckinRow[]) {
     totals.commission_brl += Number(r.commission_brl ?? 0);
     totals.total_views += r.total_views ?? 0;
 
-    adherenceSum += calcYaraAdherence(r);
+    adherenceSum += calcAdherence(r);
 
     if (r.energy_level != null) {
       energyCount += 1;
@@ -155,7 +155,7 @@ export async function GET(request: Request) {
     previous: aggregate(previous),
     rows: current.filter(isActiveCheckin).map((r) => ({
       date: r.date,
-      adherence: calcYaraAdherence(r),
+      adherence: calcAdherence(r),
       videos_posted: r.videos_posted,
       sales_brl: r.sales_brl,
       commission_brl: r.commission_brl,

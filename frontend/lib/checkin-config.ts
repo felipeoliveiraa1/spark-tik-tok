@@ -1,5 +1,5 @@
 /**
- * Configuração da Rotina Yara e helpers de cálculo de aderência.
+ * Configuração da Rotina TTS e helpers de cálculo de aderência.
  *
  * Single source of truth pros 11 itens da rotina + as metas. Usado por:
  *   - Form de check-in (/rotina/hoje)
@@ -51,13 +51,13 @@ export const MOOD_OPTIONS: Array<{ value: Mood; emoji: string; label: string }> 
   { value: "rough", emoji: "😫", label: "Péssimo" },
 ];
 
-/** Metas diárias da rotina Yara — usadas pra calcular % aderência. */
-export const YARA_GOALS = {
+/** Metas diárias da rotina TTS — usadas pra calcular % aderência. */
+export const TTS_GOALS = {
   videos_posted: 7,
   videos_recorded: 10,
 } as const;
 
-/** Itens BOOLEANOS da rotina Yara (cada um vale 1 ponto). */
+/** Itens BOOLEANOS da rotina TTS (cada um vale 1 ponto). */
 export const BOOLEAN_ITEMS = [
   "live_chat_done",
   "live_shop_done",
@@ -71,24 +71,24 @@ export const BOOLEAN_ITEMS = [
 ] as const satisfies ReadonlyArray<keyof CheckinRow>;
 
 /** Total de pontos máximos: 2 contadores (proporcionais) + 9 booleanos = 11 */
-export const TOTAL_YARA_POINTS = 2 + BOOLEAN_ITEMS.length;
+export const TOTAL_ADHERENCE_POINTS = 2 + BOOLEAN_ITEMS.length;
 
 /**
- * Calcula % aderência à rotina Yara (0-100).
+ * Calcula % aderência à rotina TTS (0-100).
  *
  * Cada um dos 11 itens contribui até 1 ponto:
  *   - videos_posted/7  → min(ratio, 1) — proporcional
  *   - videos_recorded/10 → min(ratio, 1) — proporcional
  *   - 9 booleanos → 1 cada se true
  */
-export function calcYaraAdherence(row: Partial<CheckinRow>): number {
+export function calcAdherence(row: Partial<CheckinRow>): number {
   let points = 0;
-  points += Math.min((row.videos_posted ?? 0) / YARA_GOALS.videos_posted, 1);
-  points += Math.min((row.videos_recorded ?? 0) / YARA_GOALS.videos_recorded, 1);
+  points += Math.min((row.videos_posted ?? 0) / TTS_GOALS.videos_posted, 1);
+  points += Math.min((row.videos_recorded ?? 0) / TTS_GOALS.videos_recorded, 1);
   for (const key of BOOLEAN_ITEMS) {
     if (row[key]) points += 1;
   }
-  return Math.round((points / TOTAL_YARA_POINTS) * 100);
+  return Math.round((points / TOTAL_ADHERENCE_POINTS) * 100);
 }
 
 /** Detecta se um check-in tem alguma atividade marcada (pra contar pro streak). */
