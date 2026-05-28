@@ -6,6 +6,8 @@ import { ArrowRight, Package, Radio, Sparkles, Plus, Flame } from "lucide-react"
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { SparkWordmark } from "@/components/atoms/spark-wordmark";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { CountUp } from "@/components/atoms/count-up";
+import { CharacterReveal } from "@/components/atoms/character-reveal";
 import { getLiveStatus, formatCountdown, minutesUntil } from "@/lib/live-status";
 
 // =================================================================
@@ -200,11 +202,11 @@ function HomeBody({ desktop = false }: { desktop?: boolean }) {
   }, [data, eduCompleted]);
 
   const pad = desktop ? "" : "px-4";
-  const maxW = desktop ? "max-w-[1080px]" : "";
+  const maxW = desktop ? "max-w-[1100px]" : "";
 
   return (
     <div
-      className={`flex-1 overflow-auto ${desktop ? "py-8 px-12" : "pb-10"}`}
+      className={`flex-1 overflow-auto ${desktop ? "py-12 px-12" : "pb-10"}`}
       style={
         desktop
           ? undefined
@@ -219,21 +221,24 @@ function HomeBody({ desktop = false }: { desktop?: boolean }) {
           </div>
         )}
 
-        {/* Saudação */}
-        <div className={`${pad} ${desktop ? "" : "mt-6"}`}>
-          <div className="text-[13px] font-bold text-spark-brand tracking-[0.06em] uppercase">
+        {/* Hero editorial: eyebrow + headline fluido com character reveal */}
+        <div className={`${pad} ${desktop ? "" : "mt-8"}`}>
+          <div className="text-eyebrow text-spark-brand">
             {hi.text}, {firstName} {hi.emoji}
           </div>
-          <h1
-            className={`mt-1.5 font-extrabold tracking-tight leading-[1.1] ${desktop ? "text-[36px]" : "text-[26px]"}`}
+          <CharacterReveal
+            as="h1"
+            immediate
+            staggerMs={20}
+            className="mt-3 block text-fluid-headline font-extrabold text-spark-ink leading-[1.02] tracking-tight max-w-[18ch]"
           >
-            Pronta pra criar algo lindo hoje? ✨
-          </h1>
+            Pronta pra criar algo lindo hoje?
+          </CharacterReveal>
         </div>
 
         {/* KPI cards — card unificado com 3 stats */}
-        <div className={`mt-4 ${pad}`}>
-          <div className="rounded-3xl bg-spark-surface border border-spark-hairline overflow-hidden shadow-[0_4px_16px_-8px_rgba(20,20,40,0.08)]">
+        <div className={`mt-7 ${pad}`}>
+          <div className="rounded-spark-2xl bg-spark-surface border border-spark-hairline overflow-hidden shadow-rest hover-lift">
             <div className="grid grid-cols-3 divide-x divide-spark-hairline">
               <KpiCell
                 emoji="📦"
@@ -259,7 +264,7 @@ function HomeBody({ desktop = false }: { desktop?: boolean }) {
         </div>
 
         {/* Banner contextual: live agora / próxima / CTA padrão */}
-        <div className={`mt-5 ${pad}`}>
+        <div className={`mt-8 ${pad}`}>
           {liveNow ? (
             <LiveNowBanner live={liveNow} desktop={desktop} />
           ) : nextLive ? (
@@ -276,16 +281,16 @@ function HomeBody({ desktop = false }: { desktop?: boolean }) {
 
         {/* Sugestões inteligentes */}
         {suggestions.length > 0 && (
-          <div className={`mt-6 ${pad}`}>
-            <div className="text-[12px] font-bold text-spark-ink-50 tracking-[0.08em] uppercase mb-3">
-              Pra você fazer agora 💡
+          <div className={`mt-10 ${pad}`}>
+            <div className="text-eyebrow text-spark-brand mb-4">
+              💡 Pra você fazer agora
             </div>
             <div className="grid gap-2.5 grid-cols-1 sm:grid-cols-3">
               {suggestions.map((s) => (
                 <Link
                   key={s.id}
                   href={s.href}
-                  className="p-4 rounded-3xl bg-spark-surface border border-spark-hairline hover:border-spark-brand/40 hover:bg-spark-brand-soft/30 active:scale-[0.99] transition-all block shadow-[0_2px_10px_-6px_rgba(20,20,40,0.08)]"
+                  className="p-5 rounded-spark-2xl bg-spark-surface border border-spark-hairline hover:border-spark-brand/40 hover:bg-spark-brand-soft/30 hover-lift block shadow-rest"
                 >
                   <div className="text-[24px]">{s.emoji}</div>
                   <div className="mt-1.5 text-[14px] font-extrabold leading-snug">{s.title}</div>
@@ -299,9 +304,9 @@ function HomeBody({ desktop = false }: { desktop?: boolean }) {
         )}
 
         {/* Atalhos rápidos */}
-        <div className={`mt-6 ${pad}`}>
-          <div className="text-[12px] font-bold text-spark-ink-50 tracking-[0.08em] uppercase mb-3">
-            Atalhos rápidos ✨
+        <div className={`mt-10 ${pad}`}>
+          <div className="text-eyebrow text-spark-brand mb-4">
+            ✨ Atalhos rápidos
           </div>
           <div className={`grid gap-2.5 ${desktop ? "grid-cols-3" : "grid-cols-1"}`}>
             <QuickAction
@@ -328,7 +333,7 @@ function HomeBody({ desktop = false }: { desktop?: boolean }) {
 
         {/* Atividade recente em 2 colunas: news + produtos */}
         <div
-          className={`mt-6 grid gap-3.5 ${desktop ? "grid-cols-2" : "grid-cols-1"} ${pad}`}
+          className={`mt-10 grid gap-3.5 ${desktop ? "grid-cols-2" : "grid-cols-1"} ${pad}`}
         >
           <SectionCard
             title="Notícias 📰"
@@ -412,24 +417,23 @@ function KpiCell({
   href: string;
   tone?: "brand";
 }) {
+  const isNumeric = typeof value === "number";
   return (
     <Link
       href={href}
-      className={`p-3.5 text-center transition-colors active:bg-spark-surface-sunken hover:bg-spark-surface-sunken/60 ${
+      className={`p-4 text-center transition-colors duration-300 ease-premium active:bg-spark-surface-sunken hover:bg-spark-surface-sunken/60 ${
         tone === "brand" ? "bg-brand-grad-soft/60" : ""
       }`}
     >
-      <div className="text-[22px] leading-none">{emoji}</div>
+      <div className="text-[24px] leading-none">{emoji}</div>
       <div
-        className={`mt-2 font-extrabold font-mono tracking-tight text-[24px] leading-none ${
+        className={`mt-2.5 font-extrabold font-mono tracking-tight text-[28px] leading-none ${
           tone === "brand" ? "text-spark-brand-deep" : "text-spark-ink"
         }`}
       >
-        {value}
+        {isNumeric ? <CountUp value={value} durationMs={900} /> : value}
       </div>
-      <div className="text-[10.5px] text-spark-ink-50 font-semibold mt-1 uppercase tracking-[0.04em]">
-        {label}
-      </div>
+      <div className="text-eyebrow text-spark-ink-50 mt-2">{label}</div>
     </Link>
   );
 }
@@ -592,18 +596,18 @@ function QuickAction({
   return (
     <Link
       href={href}
-      className={`p-4 rounded-3xl border flex items-start gap-3.5 transition-all shadow-[0_2px_10px_-6px_rgba(20,20,40,0.08)] active:scale-[0.99] ${
+      className={`p-5 rounded-spark-2xl border flex items-start gap-3.5 hover-lift shadow-rest ${
         accent === "brand"
           ? "bg-brand-grad-soft/60 border-spark-brand/30 hover:border-spark-brand/60"
           : "bg-spark-surface border-spark-hairline hover:border-spark-brand/40"
       }`}
     >
-      <div className="w-11 h-11 rounded-2xl bg-white flex items-center justify-center text-[22px] shrink-0">
+      <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center text-[24px] shrink-0">
         {emoji}
       </div>
       <div className="flex-1 min-w-0 pt-0.5">
-        <div className="text-[14.5px] font-extrabold tracking-tight">{title}</div>
-        <div className="text-[12px] text-spark-ink-70 mt-0.5 leading-snug line-clamp-2">
+        <div className="text-[15px] font-extrabold tracking-tight">{title}</div>
+        <div className="text-[12.5px] text-spark-ink-70 mt-1 leading-snug line-clamp-2">
           {hint}
         </div>
       </div>
@@ -625,9 +629,9 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="p-4 rounded-3xl bg-spark-surface border border-spark-hairline shadow-[0_2px_10px_-6px_rgba(20,20,40,0.08)]">
+    <div className="p-5 rounded-spark-2xl bg-spark-surface border border-spark-hairline shadow-rest hover-lift">
       <div className="flex items-center justify-between">
-        <div className="text-[12px] font-bold text-spark-ink tracking-[0.04em] uppercase">
+        <div className="text-eyebrow text-spark-ink">
           {title}
         </div>
         <Link
