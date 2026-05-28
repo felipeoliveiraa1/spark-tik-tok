@@ -14,6 +14,7 @@ export type SidebarActive =
   | "produtos"
   | "virais"
   | "scripts"
+  | "rotina"
   | "ao-vivo"
   | "educacao"
   | "news"

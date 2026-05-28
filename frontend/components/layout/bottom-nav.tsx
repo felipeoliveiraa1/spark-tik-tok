@@ -6,6 +6,7 @@ export type NavId =
   | "chat"
   | "produtos"
   | "scripts"
+  | "rotina"
   | "ao-vivo"
   | "educacao"
   | "news"
