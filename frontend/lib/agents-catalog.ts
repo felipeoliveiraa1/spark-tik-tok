@@ -52,19 +52,7 @@ export const AGENTS_CATALOG: AgentCatalogItem[] = [
     accent: "from-pink-500 to-rose-400",
   },
 
-  // ─── SCRIPTS POR NICHO ──────────────────────────────────────────
-  {
-    slug: "scripts-skincare",
-    name: "Scripts Skincare",
-    category: "scripts",
-    emoji: "🧴",
-    shortDescription: "Roteiros pra cremes, séruns, hidratantes, protetor solar.",
-    howItWorks:
-      "Especialista em skincare + método Yara. Gera 5 roteiros completos (gancho 3s + desenvolvimento + benefício + CTA) seguindo regras dermatológicas — sem promessa milagrosa, sem termo médico proibido.",
-    chatgptUrl: null,
-    geminiUrl: null,
-    accent: "from-rose-400 to-pink-300",
-  },
+  // ─── SCRIPTS POR NICHO (na ordem definida pela Yara) ─────────────
   {
     slug: "scripts-suplementos",
     name: "Scripts Suplementos",
@@ -78,16 +66,16 @@ export const AGENTS_CATALOG: AgentCatalogItem[] = [
     accent: "from-orange-400 to-amber-300",
   },
   {
-    slug: "scripts-makeup",
-    name: "Scripts Makeup",
+    slug: "scripts-skincare",
+    name: "Scripts Skincare",
     category: "scripts",
-    emoji: "💄",
-    shortDescription: "Pra base, batom, sombra, blush, contorno.",
+    emoji: "🧴",
+    shortDescription: "Roteiros pra cremes, séruns, hidratantes, protetor solar.",
     howItWorks:
-      "Especialista em maquiagem profissional + método Yara. Gera 5 roteiros com forte apelo visual — tutorial rápido, erro comum, transformação, antes/depois.",
+      "Especialista em skincare + método Yara. Gera 5 roteiros completos (gancho 3s + desenvolvimento + benefício + CTA) seguindo regras dermatológicas — sem promessa milagrosa, sem termo médico proibido.",
     chatgptUrl: null,
     geminiUrl: null,
-    accent: "from-purple-500 to-fuchsia-400",
+    accent: "from-rose-400 to-pink-300",
   },
   {
     slug: "scripts-cabelo",
@@ -102,11 +90,35 @@ export const AGENTS_CATALOG: AgentCatalogItem[] = [
     accent: "from-amber-500 to-yellow-400",
   },
   {
+    slug: "scripts-perfumes",
+    name: "Scripts Perfumes & Body Splash",
+    category: "scripts",
+    emoji: "🌸",
+    shortDescription: "Pra perfumes, body splash, brumas, hidratantes perfumados.",
+    howItWorks:
+      "Especialista em fragrâncias + método Yara. Gera 5 roteiros sensoriais — storytelling, comparação com perfumes caros, ocasiões de uso (encontro, viagem, dia a dia).",
+    chatgptUrl: null,
+    geminiUrl: null,
+    accent: "from-pink-400 to-purple-300",
+  },
+  {
+    slug: "scripts-casa-organizacao",
+    name: "Scripts Casa e Organização",
+    category: "scripts",
+    emoji: "🏠",
+    shortDescription: "Pra organizadores, gadgets de cozinha, utilidades do lar.",
+    howItWorks:
+      "Especialista em organização e funcionalidade da casa + método Yara. Gera 5 roteiros satisfatórios, antes/depois, solução de problema do dia a dia.",
+    chatgptUrl: null,
+    geminiUrl: null,
+    accent: "from-emerald-500 to-teal-400",
+  },
+  {
     slug: "scripts-moda",
     name: "Scripts Moda",
     category: "scripts",
     emoji: "👗",
-    shortDescription: "Pra roupas, looks, peças virais.",
+    shortDescription: "Pra roupas, looks, peças virais, acessórios de moda.",
     howItWorks:
       "Stylist + método Yara. Gera 5 roteiros focados em look do dia, transformação, versatilidade (1 peça 3 looks), tendência.",
     chatgptUrl: null,
@@ -114,40 +126,16 @@ export const AGENTS_CATALOG: AgentCatalogItem[] = [
     accent: "from-indigo-500 to-violet-400",
   },
   {
-    slug: "scripts-perfumaria",
-    name: "Scripts Perfumaria",
+    slug: "scripts-eletronicos",
+    name: "Scripts Eletrônicos",
     category: "scripts",
-    emoji: "🌸",
-    shortDescription: "Pra perfumes, body splash, brumas.",
+    emoji: "📱",
+    shortDescription: "Pra gadgets, acessórios tech, fones, carregadores.",
     howItWorks:
-      "Especialista em fragrâncias + método Yara. Gera 5 roteiros sensoriais — storytelling, comparação com perfumes caros, ocasiões de uso (encontro, viagem).",
+      "Especialista em tecnologia + método Yara. Gera 5 roteiros demonstrativos — 'você não sabia que precisava disso', teste prático, hack do dia a dia, comparação.",
     chatgptUrl: null,
     geminiUrl: null,
-    accent: "from-pink-400 to-purple-300",
-  },
-  {
-    slug: "scripts-casa",
-    name: "Scripts Casa & Decoração",
-    category: "scripts",
-    emoji: "🏠",
-    shortDescription: "Pra gadget de cozinha, organizadores, decor.",
-    howItWorks:
-      "Especialista em organização e decoração + método Yara. Gera 5 roteiros satisfatórios, antes/depois, solução de problema do dia a dia.",
-    chatgptUrl: null,
-    geminiUrl: null,
-    accent: "from-emerald-500 to-teal-400",
-  },
-  {
-    slug: "scripts-pet",
-    name: "Scripts Pet",
-    category: "scripts",
-    emoji: "🐶",
-    shortDescription: "Pra ração, brinquedo, acessório de pet.",
-    howItWorks:
-      "Especialista em cuidados com pets + método Yara. Gera 5 roteiros com tom fofo + emocional, demonstração com o animal, reação genuína.",
-    chatgptUrl: null,
-    geminiUrl: null,
-    accent: "from-amber-400 to-orange-300",
+    accent: "from-sky-500 to-cyan-400",
   },
 
   // ─── SUPORTE (geral, 1 agente) ───────────────────────────────────
