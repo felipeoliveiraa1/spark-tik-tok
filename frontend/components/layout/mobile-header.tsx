@@ -6,20 +6,21 @@ import { ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 /**
- * Header mobile com 3 variantes:
+ * Header mobile com 4 variantes:
  *  - `solid`: fundo branco com border-bottom. Texto escuro.
  *  - `gradient` (default): fundo gradient rose-pink + curve. Texto branco.
- *    Usado nas listagens e páginas detalhe.
  *  - `soft`: fundo blush claro com glow rose + curve. Texto escuro.
- *    Usado APENAS na home pra destacar (logo colorida em destaque sem
- *    competir com o gradient rose das outras telas).
+ *  - `editorial`: NOVO — header limpo com eyebrow + título fluido grande
+ *    em vez do gradient pesado. Pra páginas-cara (home, agentes, rotina).
  *
  * Padding top é aditivo: env(safe-area-inset-top) + base.
  *
  * Uso:
- *   <MobileHeader title="Produtos 📦" />               // gradient (default)
- *   <MobileHeader center={<Logo />} variant="soft" />  // home
- *   <MobileHeader title="Login" variant="solid" />     // tela sem identidade
+ *   <MobileHeader title="Produtos 📦" />                          // gradient
+ *   <MobileHeader title="Sua evolução" variant="editorial"
+ *                 eyebrow="✨ ROTINA TTS" />                       // editorial
+ *   <MobileHeader center={<Logo />} variant="soft" />             // home
+ *   <MobileHeader title="Login" variant="solid" />                // sem identidade
  */
 
 type BackProp = {
@@ -30,11 +31,13 @@ type BackProp = {
   ariaLabel?: string;
 };
 
-type Variant = "solid" | "gradient" | "soft";
+type Variant = "solid" | "gradient" | "soft" | "editorial";
 
 type Props = {
   title?: string | null;
   subtitle?: string | null;
+  /** Eyebrow uppercase pequeno acima do título (variante editorial). */
+  eyebrow?: string | null;
   back?: BackProp;
   trailing?: React.ReactNode;
   /** Conteúdo central custom (ex: logo). Quando passado, ignora title/subtitle. */
@@ -48,6 +51,7 @@ const HIT_BASE = "w-10 h-10 rounded-full flex items-center justify-center active
 export function MobileHeader({
   title,
   subtitle,
+  eyebrow,
   back,
   trailing,
   center,
@@ -57,8 +61,9 @@ export function MobileHeader({
   const hasCenter = Boolean(center);
   const isGradient = variant === "gradient";
   const isSoft = variant === "soft";
-  const basePt = hasCenter ? 60 : 52;
-  const basePb = hasCenter ? 24 : 22;
+  const isEditorial = variant === "editorial";
+  const basePt = hasCenter ? 60 : isEditorial ? 60 : 52;
+  const basePb = hasCenter ? 24 : isEditorial ? 28 : 22;
 
   // Text colors: branco no gradient (contraste alto), escuro nos demais.
   const textCls = isGradient ? "text-white" : "text-spark-ink";
@@ -76,6 +81,62 @@ export function MobileHeader({
     bgClass = "bg-brand-grad shadow-[0_12px_30px_-18px_oklch(0.55_0.24_340/0.55)]";
   } else if (isSoft) {
     bgClass = "shadow-[0_12px_30px_-18px_oklch(0.55_0.24_340/0.25)]";
+  } else if (isEditorial) {
+    // Editorial — branco limpo, sem curva forte. Border bottom hairline sutil.
+    bgClass = "bg-spark-bg";
+  }
+
+  // Variante editorial usa layout vertical: linha pequena com back/trailing,
+  // depois eyebrow + título fluido grande embaixo.
+  if (isEditorial) {
+    return (
+      <div
+        className={cn("relative px-4", bgClass, className)}
+        style={{
+          paddingTop: `calc(env(safe-area-inset-top) + 16px)`,
+          paddingBottom: `28px`,
+        }}
+      >
+        {/* Linha de controle: back + trailing */}
+        <div className="flex items-center gap-1.5 h-10 -mx-2">
+          {back ? (
+            <Link
+              href={back.href}
+              aria-label={back.ariaLabel ?? "Voltar"}
+              className={cn(hitCls, back.label && "w-auto px-2.5 gap-1.5")}
+            >
+              <ArrowLeft size={22} strokeWidth={2.2} />
+              {back.label && (
+                <span className="text-[13px] font-semibold text-spark-ink-70">
+                  {back.label}
+                </span>
+              )}
+            </Link>
+          ) : (
+            <div className="w-2" />
+          )}
+          <div className="flex-1" />
+          {trailing ?? <div className="w-2" />}
+        </div>
+
+        {/* Bloco editorial: eyebrow + título fluido */}
+        <div className="mt-5">
+          {eyebrow && (
+            <div className="text-eyebrow text-spark-brand mb-2.5">{eyebrow}</div>
+          )}
+          {title && (
+            <h1 className="text-fluid-headline font-extrabold text-spark-ink leading-[1.05]">
+              {title}
+            </h1>
+          )}
+          {subtitle && (
+            <p className="mt-2 text-fluid-body text-spark-ink-50 leading-snug max-w-[520px]">
+              {subtitle}
+            </p>
+          )}
+        </div>
+      </div>
+    );
   }
 
   return (

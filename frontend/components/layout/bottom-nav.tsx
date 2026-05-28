@@ -50,7 +50,8 @@ export function BottomNav({ active = "home", className }: Props) {
             key={it.id}
             href={it.href}
             className={cn(
-              "relative flex flex-col items-center gap-[3px] px-1 py-1.5 transition-all min-w-[40px]",
+              "relative flex flex-col items-center gap-[3px] px-1 py-1.5 min-w-[40px]",
+              "transition-all duration-300 ease-premium",
               isActive ? "text-spark-ink" : "text-spark-ink-50",
             )}
           >
