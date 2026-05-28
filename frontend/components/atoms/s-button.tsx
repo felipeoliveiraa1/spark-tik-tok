@@ -48,8 +48,10 @@ export function SButton({
   onClick,
 }: Props) {
   const classes = cn(
-    "inline-flex items-center justify-center rounded-full font-semibold tracking-[-0.01em] cursor-pointer transition-opacity",
-    "disabled:opacity-50 disabled:cursor-not-allowed",
+    "inline-flex items-center justify-center rounded-full font-semibold tracking-[-0.01em] cursor-pointer",
+    "transition-all duration-300 ease-premium",
+    "hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]",
+    "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0",
     sizeClasses[size],
     variantClasses[variant],
     full && "w-full",

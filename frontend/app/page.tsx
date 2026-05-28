@@ -8,6 +8,7 @@ import { SparkWordmark } from "@/components/atoms/spark-wordmark";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { CountUp } from "@/components/atoms/count-up";
 import { CharacterReveal } from "@/components/atoms/character-reveal";
+import { Parallax } from "@/components/atoms/parallax";
 import { getLiveStatus, formatCountdown, minutesUntil } from "@/lib/live-status";
 
 // =================================================================
@@ -214,10 +215,12 @@ function HomeBody({ desktop = false }: { desktop?: boolean }) {
       }
     >
       <div className={maxW}>
-        {/* Logo grande direto no body do mobile */}
+        {/* Logo grande direto no body do mobile (com parallax leve) */}
         {!desktop && (
           <div className="flex justify-center px-4">
-            <SparkWordmark size={88} />
+            <Parallax speed={-0.08}>
+              <SparkWordmark size={88} />
+            </Parallax>
           </div>
         )}
 
