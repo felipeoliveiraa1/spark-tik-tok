@@ -296,15 +296,7 @@ export default function LandingPage() {
                   <br />
                   mil roteiros.
                   <br />
-                  <span
-                    className="text-transparent bg-clip-text"
-                    style={{
-                      backgroundImage:
-                        "linear-gradient(135deg, oklch(0.48 0.26 350) 0%, oklch(0.52 0.26 20) 100%)",
-                    }}
-                  >
-                    um método.
-                  </span>
+                  <span className="text-grad-brand">um método.</span>
                 </h1>
               </SectionReveal>
 
