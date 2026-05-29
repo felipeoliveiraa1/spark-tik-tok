@@ -10,6 +10,7 @@ import {
   Pen,
   Plus,
   Radio,
+  Shield,
   Sparkles,
 } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
@@ -46,7 +47,7 @@ import { getLiveStatus, formatCountdown } from "@/lib/live-status";
 // Tipos
 // =================================================================
 
-type Profile = { name: string | null; email: string };
+type Profile = { name: string | null; email: string; role?: string | null };
 type ProductRow = {
   id: string;
   name: string;
@@ -189,8 +190,8 @@ function HeroSection({
   profile: Profile | null;
   desktop: boolean;
 }) {
-  void profile;
   const hi = greeting(new Date().getHours());
+  const isAdmin = profile?.role === "admin";
 
   return (
     <section
@@ -208,6 +209,28 @@ function HeroSection({
 
       {/* Sparkles dançantes */}
       <SparkleField count={14} seed={27} className="opacity-70" />
+
+      {/* Pílula Admin (só admins veem) */}
+      {isAdmin && (
+        <Link
+          href="/admin"
+          className="group absolute z-10 top-4 right-4 lg:top-6 lg:right-12 inline-flex items-center gap-2 px-4 py-2 rounded-full glass border border-spark-brand/25 text-spark-brand-deep text-[11.5px] font-extrabold uppercase tracking-widest shadow-lift-brand hover:bg-spark-brand-soft hover:-translate-y-0.5 transition-all duration-300 ease-premium"
+          style={{ top: desktop ? "24px" : "calc(env(safe-area-inset-top) + 12px)" }}
+          aria-label="Abrir painel admin"
+        >
+          <Shield
+            size={13}
+            strokeWidth={2.5}
+            className="transition-transform duration-300 group-hover:scale-110"
+          />
+          Painel admin
+          <ArrowUpRight
+            size={12}
+            strokeWidth={2.5}
+            className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+          />
+        </Link>
+      )}
 
       {/* Conteúdo */}
       <div className={`relative ${desktop ? "px-12 max-w-[1200px] mx-auto" : "px-5"}`}>
