@@ -224,8 +224,10 @@ export const AGENTS_CATALOG: AgentCatalogItem[] = [
     shortDescription: "Dúvidas sobre TikTok Shop, método, comissão.",
     howItWorks:
       "Sua central de ajuda. Tira dúvida sobre como cadastrar produto no TikTok Shop, comissão, frete, regras de conteúdo proibido, boas práticas, e como usar o app/Método TTS.",
-    chatgptUrl: null,
-    geminiUrl: null,
+    chatgptUrl:
+      "https://chatgpt.com/g/g-6a19ce6286a881919876ffd9e2e4b581-suporte-metodo-tts",
+    geminiUrl:
+      "https://gemini.google.com/gem/1-1UmfNxrIXWHfGmhJV_jQ4eBegKYwdeX?usp=sharing",
     imageUrl: "/suporte.png",
     accent: "from-sky-500 to-blue-400",
   },
