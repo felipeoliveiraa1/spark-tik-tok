@@ -26,7 +26,7 @@ export async function loginAction(formData: FormData): Promise<AuthError | void>
   if (!profile?.name || !profile?.niche) {
     redirect("/welcome");
   }
-  redirect("/chat");
+  redirect("/");
 }
 
 export async function completeOnboardingAction(formData: FormData): Promise<AuthError | void> {
@@ -56,7 +56,7 @@ export async function completeOnboardingAction(formData: FormData): Promise<Auth
     return { error: error.message };
   }
 
-  redirect("/chat");
+  redirect("/");
 }
 
 export async function resetPasswordAction(formData: FormData): Promise<AuthError | void> {
@@ -81,12 +81,12 @@ export async function resetPasswordAction(formData: FormData): Promise<AuthError
     .update({ must_reset_password: false })
     .eq("id", userData.user!.id);
 
-  redirect("/chat");
+  redirect("/");
 }
 
 /**
  * Alteração de senha pra aluna que JÁ está logada e quer trocar (a partir da
- * /conta). Diferente do resetPasswordAction que redireciona pra /chat (caso
+ * /conta). Diferente do resetPasswordAction que redireciona pra home (caso
  * de senha temporária), aqui retorna ok e o front mostra toast — sem sair
  * da tela.
  */
