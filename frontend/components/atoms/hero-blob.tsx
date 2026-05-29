@@ -18,12 +18,16 @@ import { cn } from "@/lib/cn";
 type Color = "rose" | "peach" | "lilac" | "deep" | "cream";
 type Variant = 1 | 2 | 3;
 
+// Opacidade reduzida globalmente (era 0.45-0.60) pra nao lavar o fundo
+// das paginas com hero-radial — tava prejudicando o contraste do
+// text-grad-brand especialmente no mobile, onde blobs cobrem mais % do
+// viewport. Lightness um pouco subida pra compensar a saturacao menor.
 const COLOR_MAP: Record<Color, string> = {
-  rose: "oklch(0.72 0.20 350 / 0.55)",
-  peach: "oklch(0.80 0.16 30 / 0.50)",
-  lilac: "oklch(0.78 0.14 310 / 0.45)",
-  deep: "oklch(0.55 0.24 340 / 0.60)",
-  cream: "oklch(0.95 0.04 50 / 0.60)",
+  rose: "oklch(0.78 0.18 350 / 0.30)",
+  peach: "oklch(0.84 0.15 30 / 0.26)",
+  lilac: "oklch(0.82 0.13 310 / 0.24)",
+  deep: "oklch(0.60 0.22 340 / 0.35)",
+  cream: "oklch(0.96 0.04 50 / 0.40)",
 };
 
 const VARIANT_ANIM: Record<Variant, string> = {
