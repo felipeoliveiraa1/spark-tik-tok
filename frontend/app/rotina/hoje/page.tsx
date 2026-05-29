@@ -348,10 +348,44 @@ function RoutineView({
     return Array.from(byCat.entries());
   }, [habits]);
 
+  const ctaButton = (
+    <button
+      type="button"
+      onClick={onComplete}
+      disabled={done === 0}
+      className={cn(
+        "group w-full inline-flex items-center justify-center gap-2 px-6 py-4 rounded-full text-[14px] font-extrabold shadow-hero transition-all duration-300 ease-premium hover:-translate-y-0.5 active:translate-y-0",
+        done === 0
+          ? "bg-spark-surface text-spark-ink-50 border border-spark-hairline cursor-not-allowed"
+          : "bg-brand-grad text-white",
+      )}
+    >
+      <CheckCircle2
+        size={16}
+        strokeWidth={2.5}
+        className="transition-transform duration-300 group-hover:scale-110"
+      />
+      {done === 0
+        ? "Marque pelo menos 1 hábito"
+        : `Concluir dia · ${done} de ${total} feitos`}
+      {done > 0 && (
+        <ArrowRight
+          size={14}
+          strokeWidth={2.5}
+          className="transition-transform duration-300 group-hover:translate-x-0.5"
+        />
+      )}
+    </button>
+  );
+
   return (
     <div
       className="flex-1 overflow-auto relative"
-      style={{ paddingBottom: desktop ? 32 : "calc(env(safe-area-inset-bottom) + 180px)" }}
+      style={{
+        // Mobile precisa de room pra: floating nav (~80px) + sticky button (~80px) + folga
+        // Desktop o botao virou inline, entao basta um padding pequeno.
+        paddingBottom: desktop ? 48 : "calc(env(safe-area-inset-bottom) + 210px)",
+      }}
     >
       {/* Hero */}
       <section
@@ -477,42 +511,32 @@ function RoutineView({
         </div>
       </section>
 
-      {/* Sticky concluir dia */}
-      {habits.length > 0 && (
+      {/* CTA inline no flow — desktop (sob a lista, sem overlap) */}
+      {habits.length > 0 && desktop && (
+        <section className="relative px-12 pb-12">
+          <div className="max-w-[720px] mx-auto">
+            <SectionReveal direction="up">{ctaButton}</SectionReveal>
+          </div>
+        </section>
+      )}
+
+      {/* CTA sticky bottom — mobile (acima da floating nav) */}
+      {habits.length > 0 && !desktop && (
         <div
-          className={cn(
-            "fixed left-1/2 -translate-x-1/2 z-30 px-5 transition-all duration-500 ease-premium w-full max-w-[520px]",
-            "lg:relative lg:left-auto lg:translate-x-0 lg:px-12 lg:max-w-[720px] lg:mx-auto lg:mt-2 lg:mb-12",
-          )}
-          style={{ bottom: "calc(env(safe-area-inset-bottom) + 86px)" }}
+          className="lg:hidden fixed left-1/2 -translate-x-1/2 z-30 w-full max-w-[520px] px-5"
+          style={{ bottom: "calc(env(safe-area-inset-bottom) + 92px)" }}
         >
-          <button
-            type="button"
-            onClick={onComplete}
-            disabled={done === 0}
-            className={cn(
-              "group w-full inline-flex items-center justify-center gap-2 px-6 py-4 rounded-full text-[14px] font-extrabold shadow-hero transition-all duration-300 ease-premium hover:-translate-y-0.5 active:translate-y-0",
-              done === 0
-                ? "bg-spark-surface text-spark-ink-50 border border-spark-hairline cursor-not-allowed"
-                : "bg-brand-grad text-white",
-            )}
-          >
-            <CheckCircle2
-              size={16}
-              strokeWidth={2.5}
-              className="transition-transform duration-300 group-hover:scale-110"
-            />
-            {done === 0
-              ? "Marque pelo menos 1 hábito"
-              : `Concluir dia · ${done} de ${total} feitos`}
-            {done > 0 && (
-              <ArrowRight
-                size={14}
-                strokeWidth={2.5}
-                className="transition-transform duration-300 group-hover:translate-x-0.5"
-              />
-            )}
-          </button>
+          {/* Fade gradient atrás pra disfarcar conteudo scrollando atras */}
+          <div
+            aria-hidden
+            className="absolute -inset-x-3 -bottom-6 -top-3 -z-10 pointer-events-none"
+            style={{
+              background:
+                "linear-gradient(180deg, transparent 0%, oklch(0.98 0.005 320 / 0.6) 35%, oklch(0.98 0.005 320 / 0.92) 65%)",
+              filter: "blur(8px)",
+            }}
+          />
+          {ctaButton}
         </div>
       )}
     </div>
