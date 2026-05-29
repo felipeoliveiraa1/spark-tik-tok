@@ -309,10 +309,10 @@ export default function LiveDetailPage() {
       <ResponsiveShell
         mobile={<LiveMobile idOrSlug={idOrSlug} />}
         desktop={<LiveBody idOrSlug={idOrSlug} desktop />}
-        active="ao-vivo"
+        active="educacao"
         customSidebar
       />
-      <FloatingMainNav active="ao-vivo" />
+      <FloatingMainNav active="educacao" />
     </>
   );
 }

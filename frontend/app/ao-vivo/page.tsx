@@ -97,11 +97,11 @@ function HeroSection({ liveCount, totalCount, desktop }: { liveCount: number; to
       <div className={`relative ${desktop ? "px-12 max-w-[1100px] mx-auto" : "px-5"}`}>
         <SectionReveal direction="down" durationMs={500}>
           <Link
-            href="/"
+            href="/educacao"
             className="inline-flex items-center gap-1.5 px-3 py-2 -ml-3 rounded-full text-spark-ink-70 hover:text-spark-ink hover:bg-spark-surface-sunken/60 text-[12.5px] font-extrabold transition-colors duration-300"
           >
             <ArrowLeft size={14} strokeWidth={2.5} />
-            Voltar pra home
+            Voltar pra Educação
           </Link>
         </SectionReveal>
 
@@ -410,10 +410,10 @@ export default function AoVivoPage() {
       <ResponsiveShell
         mobile={<AoVivoMobile />}
         desktop={<AoVivoDesktop />}
-        active="ao-vivo"
+        active="educacao"
         customSidebar
       />
-      <FloatingMainNav active="ao-vivo" />
+      <FloatingMainNav active="educacao" />
     </>
   );
 }

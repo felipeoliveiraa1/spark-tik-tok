@@ -9,7 +9,6 @@ import {
   Package,
   PenLine,
   Activity,
-  Radio,
   GraduationCap,
   Newspaper,
   User,
@@ -56,8 +55,7 @@ const ITEMS: Item[] = [
   { id: "produtos", label: "Produtos", href: "/produtos", Icon: Package },
   { id: "scripts", label: "Scripts", href: "/scripts", Icon: PenLine },
   { id: "rotina", label: "Rotina", href: "/rotina/hoje", Icon: Activity },
-  { id: "ao-vivo", label: "Ao vivo", href: "/ao-vivo", Icon: Radio },
-  { id: "educacao", label: "Aulas", href: "/educacao", Icon: GraduationCap },
+  { id: "educacao", label: "Educação", href: "/educacao", Icon: GraduationCap },
   { id: "news", label: "News", href: "/news", Icon: Newspaper },
   { id: "conta", label: "Conta", href: "/conta", Icon: User },
 ];
@@ -69,8 +67,8 @@ function deriveActive(pathname: string | null): NavId | undefined {
   if (pathname.startsWith("/produtos")) return "produtos";
   if (pathname.startsWith("/scripts")) return "scripts";
   if (pathname.startsWith("/rotina")) return "rotina";
-  if (pathname.startsWith("/ao-vivo")) return "ao-vivo";
-  if (pathname.startsWith("/educacao")) return "educacao";
+  // /ao-vivo agora vive sob o guarda-chuva "Educação" no menu
+  if (pathname.startsWith("/educacao") || pathname.startsWith("/ao-vivo")) return "educacao";
   if (pathname.startsWith("/news")) return "news";
   if (pathname.startsWith("/conta")) return "conta";
   return undefined;
