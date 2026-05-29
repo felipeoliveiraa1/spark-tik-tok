@@ -50,13 +50,30 @@ export function extractYoutubeId(raw: string | null | undefined): string | null 
   return fallback?.[1] && YOUTUBE_ID_RE.test(fallback[1]) ? fallback[1] : null;
 }
 
-export function youtubeEmbedUrl(id: string, opts?: { autoplay?: boolean }): string {
+export function youtubeEmbedUrl(
+  id: string,
+  opts?: { autoplay?: boolean; minimal?: boolean },
+): string {
+  // youtube-nocookie + flags pra minimizar branding YT no player:
+  // - rel=0           → não mostra sugestões de outros canais no fim
+  // - modestbranding=1 → diminui logo do YouTube no canto
+  // - iv_load_policy=3 → desliga anotações antigas
+  // - playsinline=1   → tocador inline no iOS (não force fullscreen)
+  // - cc_load_policy=0 → não força legenda
+  // - color=white     → barra de progresso branca (mais neutra)
+  // - disablekb=0     → mantém atalho de teclado (acessibilidade)
   const params = new URLSearchParams({
     rel: "0",
     modestbranding: "1",
+    iv_load_policy: "3",
+    playsinline: "1",
+    cc_load_policy: "0",
+    color: "white",
   });
   if (opts?.autoplay) params.set("autoplay", "1");
-  return `https://www.youtube.com/embed/${id}?${params.toString()}`;
+  // Domínio nocookie melhora privacidade e tira o "Watch on YouTube"
+  // overlay em alguns cenários.
+  return `https://www.youtube-nocookie.com/embed/${id}?${params.toString()}`;
 }
 
 export function youtubeThumbUrl(id: string, quality: "hq" | "mq" | "sd" | "max" = "hq"): string {

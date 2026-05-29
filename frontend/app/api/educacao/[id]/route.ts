@@ -27,11 +27,42 @@ export async function GET(_request: Request, { params }: Params) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!data) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
+  // Carrega modulo + irmãos (lições do mesmo modulo, ordenadas) pra navegação
+  let mod = null;
+  let siblings: Array<{
+    id: string;
+    slug: string;
+    title: string;
+    kind: string;
+    order_index: number;
+  }> = [];
+  if (data.module_id) {
+    const [modRes, sibsRes] = await Promise.all([
+      supabase
+        .from("education_modules")
+        .select("id, slug, title, subtitle, accent, order_index")
+        .eq("id", data.module_id)
+        .maybeSingle(),
+      supabase
+        .from("education_videos")
+        .select("id, slug, title, kind, order_index")
+        .eq("module_id", data.module_id)
+        .eq("is_published", true)
+        .order("order_index", { ascending: true }),
+    ]);
+    mod = modRes.data;
+    siblings = sibsRes.data ?? [];
+  }
+
   return NextResponse.json({
     video: {
       ...data,
-      cover_url: data.cover_url || (data.youtube_id ? youtubeThumbUrl(data.youtube_id, "hq") : null),
+      cover_url:
+        data.cover_url ||
+        (data.kind === "video" && data.youtube_id ? youtubeThumbUrl(data.youtube_id, "hq") : null),
     },
+    module: mod,
+    siblings,
   });
 }
 
@@ -39,10 +70,14 @@ const EDITABLE_FIELDS = [
   "title",
   "description",
   "category",
+  "kind",
+  "body_md",
+  "checklist_items",
   "cover_url",
   "duration_seconds",
   "order_index",
   "is_published",
+  "module_id",
 ] as const;
 
 export async function PATCH(request: Request, { params }: Params) {

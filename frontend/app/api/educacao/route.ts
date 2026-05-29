@@ -6,6 +6,36 @@ import { extractYoutubeId, youtubeThumbUrl } from "@/lib/youtube";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+type LessonRow = {
+  id: string;
+  slug: string;
+  title: string;
+  description: string | null;
+  category: string | null;
+  kind: "video" | "rich" | "checklist";
+  youtube_id: string | null;
+  body_md: string | null;
+  checklist_items: unknown;
+  cover_url: string | null;
+  duration_seconds: number | null;
+  order_index: number;
+  is_published: boolean;
+  module_id: string | null;
+  created_at: string;
+};
+
+type ModuleRow = {
+  id: string;
+  slug: string;
+  title: string;
+  subtitle: string | null;
+  description: string | null;
+  cover_url: string | null;
+  accent: string | null;
+  order_index: number;
+  is_published: boolean;
+};
+
 export async function GET(request: Request) {
   const supabase = await getSupabaseServer();
   const {
@@ -23,28 +53,71 @@ export async function GET(request: Request) {
     .maybeSingle();
   const isAdmin = profile?.role === "admin";
 
-  let query = supabase
-    .from("education_videos")
-    .select(
-      "id, slug, title, description, category, youtube_id, cover_url, duration_seconds, order_index, is_published, created_at",
-    )
-    .order("category", { ascending: true, nullsFirst: false })
-    .order("order_index", { ascending: true })
-    .order("created_at", { ascending: false });
-
+  // Modulos
+  let modQuery = supabase
+    .from("education_modules")
+    .select("id, slug, title, subtitle, description, cover_url, accent, order_index, is_published")
+    .order("order_index", { ascending: true });
   if (!(includeUnpublished && isAdmin)) {
-    query = query.eq("is_published", true);
+    modQuery = modQuery.eq("is_published", true);
   }
 
-  const { data, error } = await query;
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  // Aulas
+  let lessonQuery = supabase
+    .from("education_videos")
+    .select(
+      "id, slug, title, description, category, kind, youtube_id, body_md, checklist_items, cover_url, duration_seconds, order_index, is_published, module_id, created_at",
+    )
+    .order("order_index", { ascending: true })
+    .order("created_at", { ascending: false });
+  if (!(includeUnpublished && isAdmin)) {
+    lessonQuery = lessonQuery.eq("is_published", true);
+  }
+
+  const [modsRes, lessonsRes] = await Promise.all([modQuery, lessonQuery]);
+  if (modsRes.error) {
+    return NextResponse.json({ error: modsRes.error.message }, { status: 500 });
+  }
+  if (lessonsRes.error) {
+    return NextResponse.json({ error: lessonsRes.error.message }, { status: 500 });
+  }
+
+  const modules = (modsRes.data ?? []) as ModuleRow[];
+  const lessons = (lessonsRes.data ?? []) as LessonRow[];
+
+  // Enriquecer cover dos videos com thumb do YouTube quando faltar
+  const enrichedLessons = lessons.map((l) => ({
+    ...l,
+    cover_url:
+      l.cover_url ||
+      (l.kind === "video" && l.youtube_id ? youtubeThumbUrl(l.youtube_id, "hq") : null),
+  }));
+
+  // Aulas agrupadas por modulo
+  const lessonsByModule = new Map<string, LessonRow[]>();
+  const orphans: LessonRow[] = [];
+  for (const l of enrichedLessons) {
+    if (l.module_id) {
+      const arr = lessonsByModule.get(l.module_id) ?? [];
+      arr.push(l);
+      lessonsByModule.set(l.module_id, arr);
+    } else {
+      orphans.push(l);
+    }
+  }
+
+  const modulesWithLessons = modules.map((m) => ({
+    ...m,
+    lessons: (lessonsByModule.get(m.id) ?? []).sort(
+      (a, b) => a.order_index - b.order_index,
+    ),
+  }));
 
   return NextResponse.json({
-    videos:
-      data?.map((v) => ({
-        ...v,
-        cover_url: v.cover_url || (v.youtube_id ? youtubeThumbUrl(v.youtube_id, "hq") : null),
-      })) ?? [],
+    modules: modulesWithLessons,
+    // Backwards compat — /admin/educacao ainda consome lista flat
+    videos: enrichedLessons,
+    orphan_lessons: orphans,
   });
 }
 
@@ -66,13 +139,25 @@ export async function POST(request: Request) {
     }
   }
 
-  const youtubeRaw = typeof body.youtube_url === "string" ? body.youtube_url : body.youtube_id;
-  const youtubeId = extractYoutubeId(typeof youtubeRaw === "string" ? youtubeRaw : null);
-  if (!youtubeId) {
-    return NextResponse.json(
-      { error: "invalid_youtube", message: "youtube_url ou youtube_id válido é obrigatório" },
-      { status: 400 },
-    );
+  const kind = (typeof body.kind === "string" ? body.kind : "video") as
+    | "video"
+    | "rich"
+    | "checklist";
+  if (!["video", "rich", "checklist"].includes(kind)) {
+    return NextResponse.json({ error: "invalid_kind" }, { status: 400 });
+  }
+
+  let youtubeId: string | null = null;
+  if (kind === "video") {
+    const youtubeRaw =
+      typeof body.youtube_url === "string" ? body.youtube_url : body.youtube_id;
+    youtubeId = extractYoutubeId(typeof youtubeRaw === "string" ? youtubeRaw : null);
+    if (!youtubeId) {
+      return NextResponse.json(
+        { error: "invalid_youtube", message: "youtube_url ou youtube_id válido é obrigatório pra aula video" },
+        { status: 400 },
+      );
+    }
   }
 
   const payload = {
@@ -80,11 +165,15 @@ export async function POST(request: Request) {
     title: String(body.title).trim(),
     description: typeof body.description === "string" ? body.description.trim() : null,
     category: typeof body.category === "string" ? body.category.trim() : null,
+    kind,
     youtube_id: youtubeId,
+    body_md: typeof body.body_md === "string" ? body.body_md : null,
+    checklist_items: Array.isArray(body.checklist_items) ? body.checklist_items : null,
     cover_url: typeof body.cover_url === "string" ? body.cover_url : null,
     duration_seconds: typeof body.duration_seconds === "number" ? body.duration_seconds : null,
     order_index: typeof body.order_index === "number" ? body.order_index : 0,
     is_published: typeof body.is_published === "boolean" ? body.is_published : true,
+    module_id: typeof body.module_id === "string" ? body.module_id : null,
     created_by: user.id,
   };
 
