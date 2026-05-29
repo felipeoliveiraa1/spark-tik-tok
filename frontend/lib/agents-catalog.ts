@@ -68,7 +68,8 @@ export const AGENTS_CATALOG: AgentCatalogItem[] = [
     shortDescription: "Pra creatina, whey, colágeno, vitaminas, magnésio.",
     howItWorks:
       "Especialista em nutrição clínica + Método TTS. Gera 5 roteiros completos respeitando as regras de não-promessa-de-cura, com analogias simples explicando o mecanismo do produto.",
-    chatgptUrl: null,
+    chatgptUrl:
+      "https://chatgpt.com/g/g-6a18b2dc9bec8191b3b93c2abed04e3f-suplementos-metodo-tts",
     geminiUrl: null,
     imageUrl: "/suplemento.png",
     accent: "from-orange-400 to-amber-300",
@@ -97,7 +98,8 @@ export const AGENTS_CATALOG: AgentCatalogItem[] = [
     shortDescription: "Pra base, batom, sombra, blush, contorno, gloss.",
     howItWorks:
       "Maquiadora profissional + Método TTS. Gera 5 roteiros com forte apelo visual — tutorial rápido, erro comum, transformação, antes/depois. Foco em demonstração que prende nos primeiros 3 segundos.",
-    chatgptUrl: null,
+    chatgptUrl:
+      "https://chatgpt.com/g/g-6a18b00aff58819185bf9b03fdf3f456-make-up-metodo-tts",
     geminiUrl: null,
     imageUrl: "/makeup.png",
     accent: "from-purple-500 to-fuchsia-400",
@@ -111,7 +113,8 @@ export const AGENTS_CATALOG: AgentCatalogItem[] = [
     shortDescription: "Pra shampoo, condicionador, máscara, óleos.",
     howItWorks:
       "Especialista em tricologia + Método TTS. Gera 5 roteiros com tom emocional, identificação com a dor do cabelo, rotina de uso visível.",
-    chatgptUrl: null,
+    chatgptUrl:
+      "https://chatgpt.com/g/g-6a18b34f167c81918c72f267b2457c8f-cabelos-metodo-tts",
     geminiUrl: null,
     imageUrl: "/cabelo.png",
     accent: "from-amber-500 to-yellow-400",
@@ -125,7 +128,8 @@ export const AGENTS_CATALOG: AgentCatalogItem[] = [
     shortDescription: "Pra perfumes, body splash, brumas, hidratantes perfumados.",
     howItWorks:
       "Especialista em fragrâncias + Método TTS. Gera 5 roteiros sensoriais — storytelling, comparação com perfumes caros, ocasiões de uso (encontro, viagem, dia a dia).",
-    chatgptUrl: null,
+    chatgptUrl:
+      "https://chatgpt.com/g/g-6a18b3ee96808191b713e71d04e09e07-perfumes-metodo-tts",
     geminiUrl: null,
     imageUrl: "/perfume.png",
     accent: "from-pink-400 to-purple-300",
@@ -139,7 +143,8 @@ export const AGENTS_CATALOG: AgentCatalogItem[] = [
     shortDescription: "Pra organizadores, gadgets de cozinha, utilidades do lar.",
     howItWorks:
       "Especialista em organização e funcionalidade da casa + Método TTS. Gera 5 roteiros satisfatórios, antes/depois, solução de problema do dia a dia.",
-    chatgptUrl: null,
+    chatgptUrl:
+      "https://chatgpt.com/g/g-6a18b43578f0819191c5dbfc1cc60d7c-casa-e-decoracao-metodo-tts",
     geminiUrl: null,
     imageUrl: "/casa.png",
     accent: "from-emerald-500 to-teal-400",
@@ -153,7 +158,8 @@ export const AGENTS_CATALOG: AgentCatalogItem[] = [
     shortDescription: "Pra roupas, looks, peças virais, acessórios de moda.",
     howItWorks:
       "Stylist + Método TTS. Gera 5 roteiros focados em look do dia, transformação, versatilidade (1 peça 3 looks), tendência.",
-    chatgptUrl: null,
+    chatgptUrl:
+      "https://chatgpt.com/g/g-6a18b56fb5148191b88f5051a451a663-modas-metodo-tts",
     geminiUrl: null,
     imageUrl: "/moda.png",
     accent: "from-indigo-500 to-violet-400",
@@ -168,7 +174,8 @@ export const AGENTS_CATALOG: AgentCatalogItem[] = [
       "Pra fraldas, mamadeira, papinha, brinquedos, roupinhas, cuidados do bebê.",
     howItWorks:
       "Especialista em maternidade + Método TTS. Gera 5 roteiros com tom emocional real da rotina de mãe — sem julgamento, com humor leve do dia a dia, identificação imediata com quem tá no caos da maternidade.",
-    chatgptUrl: null,
+    chatgptUrl:
+      "https://chatgpt.com/g/g-6a18b5c4dc408191ad818efd1971a098-maternidade-metodo-tts",
     geminiUrl: null,
     imageUrl: "/maternidade.png",
     accent: "from-rose-300 to-pink-200",
@@ -182,7 +189,8 @@ export const AGENTS_CATALOG: AgentCatalogItem[] = [
     shortDescription: "Pra gadgets, acessórios tech, fones, carregadores.",
     howItWorks:
       "Especialista em tecnologia + Método TTS. Gera 5 roteiros demonstrativos — 'você não sabia que precisava disso', teste prático, hack do dia a dia, comparação.",
-    chatgptUrl: null,
+    chatgptUrl:
+      "https://chatgpt.com/g/g-6a18b71c8f3c8191b480ceb149c127cd-eletronicos-metodo-tts",
     geminiUrl: null,
     imageUrl: "/eletronicos.png",
     accent: "from-sky-500 to-cyan-400",
