@@ -70,15 +70,9 @@ values
    'Configurando o segundo cérebro digital — sistema de prompts, templates e fluxos pra produzir conteúdo em escala usando os agentes do Método TTS.',
    'rose',
    6,
-   true),
-
-  ('lives-arquivo',
-   '7 · Lives · Encontros com a Yara',
-   'O acervo dos encontros ao vivo.',
-   'Replays das lives da Yara organizados por data. Estratégias validadas, análises de perfil em tempo real, novidades da plataforma.',
-   'peach',
-   7,
    true)
+-- Nota: Modulo 7 ("Lives") removido na migration 0015 — lives reais vivem em
+-- live_events (tabela ja existente) pra aparecerem como replays no hub.
 on conflict (slug) do nothing;
 
 -- ============================================================================
@@ -342,40 +336,7 @@ from (values
 on conflict (slug) do nothing;
 
 -- ============================================================================
--- 9) AULAS — MÓDULO 7: LIVES ARQUIVO
+-- 9) MÓDULO 7 (LIVES) — REMOVIDO
 -- ============================================================================
-
-insert into public.education_videos
-  (slug, title, description, category, kind, youtube_id, body_md, checklist_items, module_id, order_index, is_published)
-select
-  v.slug, v.title, v.description, v.category, v.kind, v.youtube_id, v.body_md, v.checklist_items::jsonb,
-  (select id from public.education_modules where slug = 'lives-arquivo'),
-  v.order_index, true
-from (values
-  (
-    'lives-vitrine-magnetica-17-04',
-    'Live · Vitrine Magnética · 17/04',
-    'Encontro ao vivo sobre como deixar sua vitrine pronta pra escalar — replay disponível em breve.',
-    'Lives',
-    'rich',
-    null,
-    E'## Replay em preparação\n\nA gravação dessa live tá sendo organizada e logo aparece aqui. Enquanto isso, segue um resumo do que rolou:\n\n## Tópicos abordados\n\n- Como organizar a vitrine do TikTok Shop pra parecer profissional\n- Foto de capa: o que fotografar e como\n- Descrição que vende sem soar comercial\n- Truques de SEO interno do TikTok Shop\n- Como precificar pra não perder margem\n\n## Próximos passos\n\nEnquanto o replay não tá disponível, aplica o que aprender em [Diretrizes + Vitrine](../diretrizes-vitrine) — tem um resumo escrito que cobre os mesmos pontos.\n\n> A Yara grava todas as lives e organiza aqui pra você consultar quando precisar.',
-    null,
-    0
-  ),
-  ('lives-estrategias-validadas-29-04', 'Live · Estratégias Validadas + Análise de Perfil · 29/04', 'Replay da live com análises ao vivo de perfis das alunas e as estratégias que mais funcionaram.', 'Lives', 'video', 'H0O8mWIsEfY', null, null, 1),
-  ('lives-2mil-seguidores-06-05', 'Live · Como ter 2 mil seguidores · 06/05', 'Replay da live com o passo a passo pra crescer de 0 a 2k em ritmo consistente.', 'Lives', 'video', 'DKcUtQkOSl0', null, null, 2),
-  (
-    'lives-desafio-7-dias-10-05',
-    'Live · Desafio 7 Dias + Funil de Vendas · 10/05',
-    'Live com o desafio prático de 7 dias e como estruturar o funil de vendas. Replay em preparação.',
-    'Lives',
-    'rich',
-    null,
-    E'## Replay em preparação\n\nA gravação tá sendo organizada. Resumo do encontro:\n\n## O desafio de 7 dias\n\nUma estrutura pra você sair do papel em 1 semana:\n\n- **Dia 1:** cadastra 3 produtos no app\n- **Dia 2:** roda análise (Info) em todos\n- **Dia 3:** gera 5 scripts por produto (Scripts)\n- **Dia 4:** grava 5 vídeos em bloco\n- **Dia 5:** posta o primeiro\n- **Dia 6:** posta o segundo + responde comentário do primeiro\n- **Dia 7:** análise dos 2 vídeos + ajuste de hook pros próximos\n\n## Funil de vendas\n\n- **Topo:** vídeos de descoberta (hook)\n- **Meio:** vídeos de educação (autoridade)\n- **Fundo:** vídeos de venda (CTA forte)\n- **Pós-venda:** depoimento + UGC reposted\n\nEnquanto o replay não estiver disponível, aplica o desafio.',
-    null,
-    3
-  ),
-  ('lives-como-criar-conexao-13-05', 'Live · Como Criar Conexão · 13/05', 'Live focada em conexão emocional com a audiência — o que toda criadora de sucesso faz e ninguém percebe.', 'Lives', 'video', 'J7hwa6h8uIo', null, null, 4)
-) as v(slug, title, description, category, kind, youtube_id, body_md, checklist_items, order_index)
-on conflict (slug) do nothing;
+-- As lives nao vivem mais em education_videos. Foram movidas pra live_events
+-- na migration 0015 onde aparecem como replays no hub /educacao.
