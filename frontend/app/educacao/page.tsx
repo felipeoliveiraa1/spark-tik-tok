@@ -123,17 +123,22 @@ function useHubData() {
     };
   }, []);
 
+  // Prioridade: live agora → próximas (sorted) → replays (mais recentes primeiro).
+  // Mostra até 3 cards combinados — quando só tem replay, eles preenchem a vitrine.
   const featuredLives = React.useMemo(() => {
     const now = new Date();
     const live: LiveEvent[] = [];
     const upcoming: LiveEvent[] = [];
+    const replays: LiveEvent[] = [];
     for (const e of lives) {
       const status = getLiveStatus(e, now);
       if (status === "live") live.push(e);
       else if (status === "upcoming") upcoming.push(e);
+      else replays.push(e);
     }
     upcoming.sort((a, b) => +new Date(a.starts_at) - +new Date(b.starts_at));
-    return [...live, ...upcoming].slice(0, 3);
+    replays.sort((a, b) => +new Date(b.starts_at) - +new Date(a.starts_at));
+    return [...live, ...upcoming, ...replays].slice(0, 3);
   }, [lives]);
 
   const replaysCount = React.useMemo(() => {
@@ -425,10 +430,13 @@ function LivesHubSection({
   replaysCount: number;
   desktop: boolean;
 }) {
-  if (featured.length === 0 && replaysCount === 0) return null;
+  if (featured.length === 0) return null;
 
   const now = new Date();
   const hasLiveNow = featured.some((e) => getLiveStatus(e, now) === "live");
+  const hasUpcoming = featured.some((e) => getLiveStatus(e, now) === "upcoming");
+  const onlyReplays = !hasLiveNow && !hasUpcoming;
+  const moreReplays = Math.max(0, replaysCount - featured.length);
 
   return (
     <SectionReveal>
@@ -453,7 +461,12 @@ function LivesHubSection({
                     <span className="relative w-2 h-2 rounded-full bg-bad" />
                   </span>
                 )}
-                ✦ {hasLiveNow ? "rolando agora" : "próximos encontros"}
+                ✦{" "}
+                {hasLiveNow
+                  ? "rolando agora"
+                  : hasUpcoming
+                    ? "próximos encontros"
+                    : "encontros com a yara"}
               </div>
               <h2
                 className="mt-2 font-display lowercase tracking-tight text-spark-ink leading-[0.95]"
@@ -463,13 +476,13 @@ function LivesHubSection({
                   <>
                     a yara <span className="text-grad-brand">tá no ar.</span>
                   </>
-                ) : featured.length > 0 ? (
+                ) : hasUpcoming ? (
                   <>
                     próxima live <span className="text-grad-brand">com a yara.</span>
                   </>
                 ) : (
                   <>
-                    sem live agora — <span className="text-grad-brand">tem replay.</span>
+                    reveja as <span className="text-grad-brand">lives.</span>
                   </>
                 )}
               </h2>
@@ -484,48 +497,37 @@ function LivesHubSection({
             </Link>
           </div>
 
-          {featured.length > 0 ? (
-            <div
-              className={cn(
-                "grid gap-4",
-                featured.length === 1
-                  ? "grid-cols-1"
-                  : featured.length === 2
-                    ? "grid-cols-1 sm:grid-cols-2"
-                    : desktop
-                      ? "grid-cols-3"
-                      : "grid-cols-1 sm:grid-cols-2",
-              )}
-            >
-              {featured.map((e, i) => {
-                const status = getLiveStatus(e, new Date());
-                if (status !== "live" && status !== "upcoming") return null;
-                return <LiveHubCard key={e.id} event={e} status={status} index={i} />;
-              })}
-            </div>
-          ) : (
+          <div
+            className={cn(
+              "grid gap-4",
+              featured.length === 1
+                ? "grid-cols-1"
+                : featured.length === 2
+                  ? "grid-cols-1 sm:grid-cols-2"
+                  : desktop
+                    ? "grid-cols-3"
+                    : "grid-cols-1 sm:grid-cols-2",
+            )}
+          >
+            {featured.map((e, i) => {
+              const status = getLiveStatus(e, new Date());
+              return <LiveHubCard key={e.id} event={e} status={status} index={i} />;
+            })}
+          </div>
+
+          {onlyReplays && moreReplays > 0 && (
             <Link
               href="/ao-vivo"
-              className="group block p-5 rounded-spark-2xl bg-spark-surface-sunken/40 border border-spark-hairline hover:border-spark-brand/30 transition-all duration-300 ease-premium"
+              className="group mt-4 flex items-center justify-between gap-3 p-4 rounded-spark-2xl bg-spark-surface-sunken/40 border border-spark-hairline hover:border-spark-brand/30 transition-all duration-300 ease-premium"
             >
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-spark-surface text-spark-ink flex items-center justify-center shadow-rest">
-                  <PlayCircle size={20} strokeWidth={2.2} />
-                </div>
-                <div className="flex-1">
-                  <div className="text-[14px] font-extrabold text-spark-ink">
-                    {replaysCount} {replaysCount === 1 ? "replay disponível" : "replays disponíveis"}
-                  </div>
-                  <div className="text-[12.5px] text-spark-ink-50 mt-0.5">
-                    Reveja os encontros anteriores da Yara
-                  </div>
-                </div>
-                <ArrowUpRight
-                  size={16}
-                  strokeWidth={2.5}
-                  className="text-spark-ink-50 group-hover:text-spark-brand-deep group-hover:translate-x-0.5 transition-all duration-300"
-                />
+              <div className="text-[13px] text-spark-ink-70 font-extrabold">
+                + {moreReplays} {moreReplays === 1 ? "outro replay" : "outros replays"} no acervo
               </div>
+              <ArrowUpRight
+                size={14}
+                strokeWidth={2.5}
+                className="text-spark-ink-50 group-hover:text-spark-brand-deep group-hover:translate-x-0.5 transition-all duration-300"
+              />
             </Link>
           )}
         </div>
@@ -540,7 +542,7 @@ function LiveHubCard({
   index,
 }: {
   event: LiveEvent;
-  status: "live" | "upcoming";
+  status: "live" | "upcoming" | "replay";
   index: number;
 }) {
   const countdown =
@@ -592,6 +594,11 @@ function LiveHubCard({
             {status === "upcoming" && (
               <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-brand-grad text-white text-[10.5px] font-extrabold uppercase tracking-widest shadow-lift-brand">
                 {countdown}
+              </span>
+            )}
+            {status === "replay" && (
+              <span className="inline-flex items-center px-3 py-1.5 rounded-full glass text-spark-ink text-[10.5px] font-extrabold uppercase tracking-widest shadow-rest">
+                ◉ replay
               </span>
             )}
           </div>
