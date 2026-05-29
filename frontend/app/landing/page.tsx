@@ -216,7 +216,7 @@ export default function LandingPage() {
     <div className="min-h-dvh w-full bg-spark-bg overflow-x-hidden">
       {/* ============== HEADER ============== */}
       <header className="sticky top-0 z-30 backdrop-blur-md bg-spark-bg/85 border-b border-spark-hairline">
-        <div className="max-w-[1200px] mx-auto px-4 sm:px-5 lg:px-10 py-3.5 lg:py-4 flex items-center gap-2 sm:gap-3">
+        <div className="max-w-[1200px] mx-auto px-4 sm:px-5 lg:px-10 py-1.5 lg:py-2 flex items-center gap-2 sm:gap-3">
           {/* Logo responsiva: maior no desktop, media no mobile */}
           <div className="lg:hidden">
             <SparkWordmark size={52} />
