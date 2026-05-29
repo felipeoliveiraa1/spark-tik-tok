@@ -2,12 +2,23 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Flame, TrendingUp, TrendingDown, ChevronRight, Plus } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowUpRight,
+  Flame,
+  TrendingUp,
+  TrendingDown,
+  ChevronRight,
+  Plus,
+} from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
-import { MobileHeader } from "@/components/layout/mobile-header";
-import { BottomNav } from "@/components/layout/bottom-nav";
-import { LoadingSplash } from "@/components/atoms/loading-splash";
+import { FloatingMainNav } from "@/components/layout/floating-main-nav";
+import { HeroBlob } from "@/components/atoms/hero-blob";
+import { SparkleField } from "@/components/atoms/sparkle-field";
+import { Sticker } from "@/components/atoms/sticker";
+import { SectionReveal } from "@/components/atoms/section-reveal";
 import { CountUp } from "@/components/atoms/count-up";
+import { LoadingSplash } from "@/components/atoms/loading-splash";
 import { cn } from "@/lib/cn";
 import {
   type CheckinRow,
@@ -16,14 +27,17 @@ import {
 } from "@/lib/checkin-config";
 
 /**
- * /rotina/evolucao — Dashboard de evolução da Rotina TTS.
+ * /rotina/evolucao — dashboard editorial premium da Rotina TTS.
  *
- * Filtros: 7d | 30d | mês
- * Conteúdo:
- *   1. Streak hero (atual + recorde)
- *   2. KPIs principais (4 cards: vídeos, vendas R$, comissão R$, aderência média)
- *   3. Heatmap de consistência (estilo GitHub)
- *   4. Tabela com os check-ins do período
+ * Estrutura:
+ *   • Hero radial: back + sticker + Tanker "você tá / indo longe."
+ *   • Streak hero card (gradient orange→pink) com CountUp gigante +
+ *     dots no bottom + recorde/total em pills glass
+ *   • Period chips (7d / 30d / mês) glass pill
+ *   • 4 KPI cards com CountUp + delta vs anterior
+ *   • AdherenceBarChart SVG com cards rounded
+ *   • Heatmap GitHub-style premium
+ *   • Tabela histórico com hover
  */
 
 type Period = "7d" | "30d" | "month";
@@ -109,7 +123,164 @@ function useStreak() {
 }
 
 // =================================================================
-// Componentes
+// HERO
+// =================================================================
+
+function HeroSection({ desktop }: { desktop: boolean }) {
+  return (
+    <section
+      className="relative overflow-hidden hero-radial"
+      style={{
+        paddingTop: desktop ? "96px" : "calc(env(safe-area-inset-top) + 80px)",
+        paddingBottom: desktop ? "72px" : "48px",
+      }}
+    >
+      <HeroBlob color="rose" variant={1} className="-top-32 -left-32 w-[460px] h-[460px]" />
+      <HeroBlob color="peach" variant={2} className="top-20 -right-40 w-[520px] h-[520px]" />
+      <SparkleField count={12} seed={618} className="opacity-60" />
+
+      <div className={`relative ${desktop ? "px-12 max-w-[1100px] mx-auto" : "px-5"}`}>
+        <SectionReveal direction="down" durationMs={500}>
+          <Link
+            href="/rotina/hoje"
+            className="inline-flex items-center gap-1.5 px-3 py-2 -ml-3 rounded-full text-spark-ink-70 hover:text-spark-ink hover:bg-spark-surface-sunken/60 text-[12.5px] font-extrabold transition-colors duration-300"
+          >
+            <ArrowLeft size={14} strokeWidth={2.5} />
+            Voltar pro check-in
+          </Link>
+        </SectionReveal>
+
+        <div className="flex items-start justify-between gap-4 mt-6">
+          <SectionReveal direction="down" delay={100} durationMs={600}>
+            <div className="text-eyebrow text-spark-brand-deep">
+              ✦ sua evolução
+            </div>
+            <div className="mt-3 text-fluid-lead text-spark-ink-70 max-w-[34ch] font-semibold">
+              Sequência, aderência à rotina TTS e os números que importam.
+            </div>
+          </SectionReveal>
+
+          {desktop && (
+            <SectionReveal direction="scale" delay={250}>
+              <Sticker text="EVOLUÇÃO · 2026 · " emoji="📈" size={128} />
+            </SectionReveal>
+          )}
+        </div>
+
+        <SectionReveal direction="up" delay={150} durationMs={900}>
+          <h1
+            className="mt-6 font-display lowercase leading-[0.9] tracking-tight max-w-[14ch]"
+            style={{ fontSize: "clamp(2.5rem, 8vw, 7rem)" }}
+          >
+            <span className="block text-spark-ink">você tá</span>
+            <span className="block text-grad-brand">indo longe.</span>
+          </h1>
+        </SectionReveal>
+      </div>
+    </section>
+  );
+}
+
+// =================================================================
+// STREAK HERO
+// =================================================================
+
+function StreakHero({ streak }: { streak: StreakResponse | null }) {
+  const current = streak?.current_streak ?? 0;
+  const longest = streak?.longest_streak ?? 0;
+  const total = streak?.total_checkins ?? 0;
+  const dotCount = Math.min(current, 14); // visual: até 14 dots no bottom
+
+  return (
+    <SectionReveal direction="up">
+      <div className="relative rounded-spark-3xl bg-gradient-to-br from-orange-500 via-pink-500 to-rose-500 text-white p-6 sm:p-8 overflow-hidden shadow-hero">
+        <SparkleField count={10} seed={888} color="rgba(255,255,255,0.6)" className="opacity-70" />
+        <div
+          aria-hidden
+          className="absolute -top-20 -right-10 w-72 h-72 rounded-full bg-white/15 blur-3xl animate-blob-1"
+        />
+
+        <div className="relative flex items-center gap-5">
+          {/* Ícone flame com animação float */}
+          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0 shadow-lift">
+            <Flame size={44} strokeWidth={2.2} className="text-white animate-float" />
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="text-eyebrow text-white/80">
+              ✦ sua sequência
+            </div>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="font-extrabold tracking-tight leading-none text-[56px] sm:text-[72px]">
+                <CountUp value={current} durationMs={1100} />
+              </span>
+              <span className="text-[16px] sm:text-[20px] font-extrabold opacity-90">
+                {current === 1 ? "dia" : "dias"}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Dots visuais */}
+        {dotCount > 0 && (
+          <div className="relative mt-5 flex items-center gap-1.5">
+            {Array.from({ length: 14 }).map((_, i) => (
+              <span
+                key={i}
+                className={cn(
+                  "h-2 flex-1 rounded-full transition-all duration-500 ease-premium",
+                  i < dotCount ? "bg-white" : "bg-white/20",
+                )}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Recorde + total */}
+        <div className="relative mt-6 grid grid-cols-2 gap-3 text-white/95">
+          <div className="rounded-2xl bg-white/15 backdrop-blur-sm p-4">
+            <div className="text-eyebrow text-white/70 mb-1">recorde</div>
+            <div className="text-[22px] font-extrabold tracking-tight leading-none">
+              <CountUp value={longest} durationMs={1000} />
+              <span className="text-[14px] font-bold opacity-80 ml-1.5">
+                {longest === 1 ? "dia" : "dias"}
+              </span>
+            </div>
+          </div>
+          <div className="rounded-2xl bg-white/15 backdrop-blur-sm p-4">
+            <div className="text-eyebrow text-white/70 mb-1">check-ins</div>
+            <div className="text-[22px] font-extrabold tracking-tight leading-none">
+              <CountUp value={total} durationMs={1000} />
+            </div>
+          </div>
+        </div>
+
+        {/* CTA se hoje não foi feito */}
+        {!streak?.today_done && (
+          <Link
+            href="/rotina/hoje"
+            className="group relative mt-6 inline-flex items-center justify-center gap-2 w-full px-5 py-3.5 rounded-full bg-white text-spark-brand-deep text-[13.5px] font-extrabold shadow-lift transition-all duration-300 ease-premium hover:-translate-y-0.5"
+          >
+            <Plus
+              size={15}
+              strokeWidth={2.5}
+              className="transition-transform duration-300 group-hover:rotate-90"
+            />
+            Fazer check-in de hoje
+            <ArrowUpRight
+              size={14}
+              strokeWidth={2.5}
+              className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+            />
+          </Link>
+        )}
+      </div>
+    </SectionReveal>
+  );
+}
+
+// =================================================================
+// PERIOD CHIPS
 // =================================================================
 
 function PeriodChips({
@@ -125,84 +296,35 @@ function PeriodChips({
     { value: "month", label: "Esse mês" },
   ];
   return (
-    <div className="flex gap-2 mb-5 overflow-x-auto -mx-1 px-1 no-scrollbar">
-      {options.map((opt) => {
-        const active = period === opt.value;
-        return (
-          <button
-            key={opt.value}
-            type="button"
-            onClick={() => onChange(opt.value)}
-            aria-pressed={active}
-            className={cn(
-              "px-4 py-2 rounded-full text-[12.5px] font-extrabold whitespace-nowrap transition-all active:scale-95",
-              active
-                ? "bg-spark-ink text-white"
-                : "bg-spark-surface border border-spark-hairline text-spark-ink-70 hover:border-spark-brand/30",
-            )}
-          >
-            {opt.label}
-          </button>
-        );
-      })}
-    </div>
+    <SectionReveal>
+      <div className="inline-flex items-center gap-1 p-1.5 rounded-full glass shadow-rest">
+        {options.map((opt) => {
+          const active = period === opt.value;
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => onChange(opt.value)}
+              aria-pressed={active}
+              className={cn(
+                "px-5 py-2.5 rounded-full text-[12.5px] font-extrabold whitespace-nowrap transition-all duration-300 ease-premium active:scale-95",
+                active
+                  ? "bg-spark-ink text-white shadow-lift"
+                  : "text-spark-ink-70 hover:text-spark-ink hover:bg-spark-surface-sunken/60",
+              )}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+    </SectionReveal>
   );
 }
 
-function StreakHero({ streak }: { streak: StreakResponse | null }) {
-  const current = streak?.current_streak ?? 0;
-  const longest = streak?.longest_streak ?? 0;
-  const total = streak?.total_checkins ?? 0;
-  return (
-    <div className="rounded-3xl bg-gradient-to-br from-orange-500 to-pink-500 text-white p-5 mb-5 overflow-hidden relative shadow-[0_12px_32px_-16px_rgba(255,90,120,0.45)]">
-      <div
-        aria-hidden
-        className="absolute -top-10 -right-6 w-44 h-44 rounded-full bg-white/15 blur-3xl pointer-events-none"
-      />
-      <div className="relative flex items-center gap-4">
-        <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0">
-          <Flame size={32} strokeWidth={2.2} className="text-white" />
-        </div>
-        <div className="flex-1">
-          <div className="text-[11px] font-bold uppercase tracking-[0.08em] opacity-90">
-            Sua sequência
-          </div>
-          <div className="mt-0.5 text-[36px] font-extrabold leading-none">
-            {current}
-            <span className="text-[16px] font-bold opacity-80 ml-1.5">
-              {current === 1 ? "dia" : "dias"}
-            </span>
-          </div>
-        </div>
-      </div>
-      <div className="relative mt-4 grid grid-cols-2 gap-3 text-white/95">
-        <div className="rounded-2xl bg-white/15 backdrop-blur-sm p-3">
-          <div className="text-[10.5px] font-bold uppercase tracking-wider opacity-80">
-            Recorde
-          </div>
-          <div className="text-[18px] font-extrabold mt-0.5">
-            {longest} {longest === 1 ? "dia" : "dias"}
-          </div>
-        </div>
-        <div className="rounded-2xl bg-white/15 backdrop-blur-sm p-3">
-          <div className="text-[10.5px] font-bold uppercase tracking-wider opacity-80">
-            Check-ins
-          </div>
-          <div className="text-[18px] font-extrabold mt-0.5">{total}</div>
-        </div>
-      </div>
-      {!streak?.today_done && (
-        <Link
-          href="/rotina/hoje"
-          className="relative mt-4 w-full inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-2xl bg-white text-spark-brand-deep text-[13px] font-extrabold shadow-sm active:scale-95 transition-transform"
-        >
-          <Plus size={14} strokeWidth={2.5} />
-          Fazer check-in de hoje
-        </Link>
-      )}
-    </div>
-  );
-}
+// =================================================================
+// KPI CARD
+// =================================================================
 
 function KpiCard({
   emoji,
@@ -211,6 +333,7 @@ function KpiCard({
   prev,
   format,
   tone,
+  delay,
 }: {
   emoji: string;
   label: string;
@@ -218,6 +341,7 @@ function KpiCard({
   prev: number;
   format?: "money" | "int";
   tone?: "brand";
+  delay: number;
 }) {
   const delta = value - prev;
   const pct = prev > 0 ? Math.round((delta / prev) * 100) : null;
@@ -225,51 +349,62 @@ function KpiCard({
   const down = delta < 0;
   const isMoney = format === "money";
   return (
-    <div
-      className={cn(
-        "rounded-spark-2xl border p-4 hover-lift shadow-rest",
-        tone === "brand"
-          ? "bg-spark-brand-soft/40 border-spark-brand/20"
-          : "bg-spark-surface border-spark-hairline",
-      )}
-    >
-      <div className="text-eyebrow text-spark-ink-50 flex items-center gap-1.5">
-        <span>{emoji}</span>
-        <span className="truncate">{label}</span>
-      </div>
-      <div className="mt-2 text-[24px] font-extrabold text-spark-ink leading-none tracking-tight">
-        <CountUp
-          value={Math.round(value)}
-          prefix={isMoney ? "R$ " : ""}
-          durationMs={1000}
-        />
-      </div>
-      {pct !== null && (
-        <div
-          className={cn(
-            "mt-1.5 flex items-center gap-1 text-[11px] font-bold",
-            up && "text-good",
-            down && "text-bad",
-            !up && !down && "text-spark-ink-50",
-          )}
-        >
-          {up && <TrendingUp size={11} strokeWidth={2.5} />}
-          {down && <TrendingDown size={11} strokeWidth={2.5} />}
-          <span>
-            {up ? "+" : ""}
-            {pct}%
-          </span>
-          <span className="text-spark-ink-50 font-semibold">vs período anterior</span>
+    <SectionReveal direction="up" delay={delay}>
+      <div
+        className={cn(
+          "rounded-spark-2xl border p-5 hover-lift shadow-rest transition-colors duration-300 ease-premium",
+          tone === "brand"
+            ? "bg-spark-brand-soft/40 border-spark-brand/20"
+            : "bg-spark-surface border-spark-hairline",
+        )}
+      >
+        <div className="text-eyebrow text-spark-ink-50 flex items-center gap-1.5">
+          <span>{emoji}</span>
+          <span className="truncate">{label}</span>
         </div>
-      )}
-    </div>
+        <div className="mt-3 text-[28px] font-extrabold text-spark-ink leading-none tracking-tight">
+          <CountUp
+            value={Math.round(value)}
+            prefix={isMoney ? "R$ " : ""}
+            durationMs={1000}
+          />
+        </div>
+        {pct !== null && (
+          <div
+            className={cn(
+              "mt-2 flex items-center gap-1.5 text-[11px] font-extrabold",
+              up && "text-good",
+              down && "text-bad",
+              !up && !down && "text-spark-ink-50",
+            )}
+          >
+            <span
+              className={cn(
+                "inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full",
+                up && "bg-good/15",
+                down && "bg-bad/15",
+                !up && !down && "bg-spark-surface-sunken",
+              )}
+            >
+              {up && <TrendingUp size={10} strokeWidth={2.5} />}
+              {down && <TrendingDown size={10} strokeWidth={2.5} />}
+              {up ? "+" : ""}
+              {pct}%
+            </span>
+            <span className="text-spark-ink-50 font-semibold normal-case">
+              vs período anterior
+            </span>
+          </div>
+        )}
+      </div>
+    </SectionReveal>
   );
 }
 
-/**
- * Heatmap simples 7×N — cada quadradinho é 1 dia. Cor varia com % aderência.
- * Não usa biblioteca, SVG puro.
- */
+// =================================================================
+// HEATMAP GITHUB-STYLE
+// =================================================================
+
 function ConsistencyHeatmap({
   rows,
   range,
@@ -277,11 +412,9 @@ function ConsistencyHeatmap({
   rows: SummaryResponse["rows"];
   range: { from: string; to: string };
 }) {
-  // Constrói grid: cada dia do range, marcando os que têm check-in
   const days = React.useMemo(() => {
     const adherenceByDate = new Map<string, number>();
     for (const r of rows) adherenceByDate.set(r.date, r.adherence);
-
     const from = new Date(range.from + "T00:00:00Z");
     const to = new Date(range.to + "T00:00:00Z");
     const list: Array<{ date: string; adherence: number | null }> = [];
@@ -294,7 +427,6 @@ function ConsistencyHeatmap({
     return list;
   }, [rows, range]);
 
-  // Agrupa em colunas de 7 (semanas). Domingos primeiro? Vamos só ir em sequência.
   const weeks: Array<Array<{ date: string; adherence: number | null }>> = [];
   for (let i = 0; i < days.length; i += 7) {
     weeks.push(days.slice(i, i + 7));
@@ -310,52 +442,59 @@ function ConsistencyHeatmap({
   };
 
   return (
-    <div className="rounded-3xl bg-spark-surface border border-spark-hairline p-4 mb-5">
-      <div className="flex items-center justify-between mb-3">
-        <div>
-          <div className="text-[12px] font-bold text-spark-ink-50 uppercase tracking-wider">
-            Consistência
+    <SectionReveal direction="up">
+      <div className="rounded-spark-2xl bg-spark-surface border border-spark-hairline p-5 shadow-rest">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+          <div>
+            <div className="text-eyebrow text-spark-brand mb-1">✦ consistência</div>
+            <div className="text-fluid-title font-extrabold text-spark-ink tracking-tight">
+              Aderência por dia
+            </div>
           </div>
-          <div className="text-[14px] font-extrabold text-spark-ink mt-0.5">
-            Aderência por dia
+          <div className="flex items-center gap-1.5 text-[10.5px] text-spark-ink-50 font-extrabold uppercase tracking-wider">
+            <span>pouco</span>
+            <span className="inline-block w-3 h-3 rounded bg-spark-surface-sunken" />
+            <span className="inline-block w-3 h-3 rounded bg-spark-brand/25" />
+            <span className="inline-block w-3 h-3 rounded bg-spark-brand/50" />
+            <span className="inline-block w-3 h-3 rounded bg-spark-brand/70" />
+            <span className="inline-block w-3 h-3 rounded bg-spark-brand" />
+            <span>tudo</span>
           </div>
         </div>
-        <div className="flex items-center gap-1 text-[10.5px] text-spark-ink-50">
-          <span>Pouco</span>
-          <span className="inline-block w-2.5 h-2.5 rounded-sm bg-spark-surface-sunken" />
-          <span className="inline-block w-2.5 h-2.5 rounded-sm bg-spark-brand/25" />
-          <span className="inline-block w-2.5 h-2.5 rounded-sm bg-spark-brand/50" />
-          <span className="inline-block w-2.5 h-2.5 rounded-sm bg-spark-brand/70" />
-          <span className="inline-block w-2.5 h-2.5 rounded-sm bg-spark-brand" />
-          <span>Tudo</span>
+        <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
+          {weeks.map((week, wi) => (
+            <div key={wi} className="flex flex-col gap-1.5 shrink-0">
+              {week.map((day) => (
+                <div
+                  key={day.date}
+                  title={`${day.date}: ${
+                    day.adherence === null ? "sem check-in" : `${day.adherence}%`
+                  }`}
+                  className={cn(
+                    "w-4 h-4 rounded-[5px] transition-all duration-300 ease-premium hover:scale-125 hover:ring-2 hover:ring-spark-brand/30",
+                    colorFor(day.adherence),
+                  )}
+                />
+              ))}
+            </div>
+          ))}
         </div>
       </div>
-      <div className="flex gap-1 overflow-x-auto no-scrollbar">
-        {weeks.map((week, wi) => (
-          <div key={wi} className="flex flex-col gap-1 shrink-0">
-            {week.map((day) => (
-              <div
-                key={day.date}
-                title={`${day.date}: ${
-                  day.adherence === null ? "sem check-in" : `${day.adherence}%`
-                }`}
-                className={cn(
-                  "w-4 h-4 rounded-sm transition-colors",
-                  colorFor(day.adherence),
-                )}
-              />
-            ))}
-          </div>
-        ))}
-      </div>
-    </div>
+    </SectionReveal>
   );
 }
 
-/**
- * Mini bar chart SVG — uma barra por dia mostrando aderência (0-100).
- */
-function AdherenceBarChart({ rows, range }: { rows: SummaryResponse["rows"]; range: { from: string; to: string } }) {
+// =================================================================
+// BAR CHART
+// =================================================================
+
+function AdherenceBarChart({
+  rows,
+  range,
+}: {
+  rows: SummaryResponse["rows"];
+  range: { from: string; to: string };
+}) {
   const days = React.useMemo(() => {
     const map = new Map<string, number>();
     for (const r of rows) map.set(r.date, r.adherence);
@@ -372,136 +511,168 @@ function AdherenceBarChart({ rows, range }: { rows: SummaryResponse["rows"]; ran
   }, [rows, range]);
 
   if (days.length === 0) return null;
-  const width = Math.max(280, days.length * 24);
+  const width = Math.max(280, days.length * 28);
   const barWidth = (width - days.length * 4) / days.length;
-  const height = 120;
+  const height = 140;
 
   return (
-    <div className="rounded-3xl bg-spark-surface border border-spark-hairline p-4 mb-5 overflow-hidden">
-      <div className="mb-3">
-        <div className="text-[12px] font-bold text-spark-ink-50 uppercase tracking-wider">
-          Sua evolução
-        </div>
-        <div className="text-[14px] font-extrabold text-spark-ink mt-0.5">
-          % Rotina TTS por dia
-        </div>
-      </div>
-      <div className="overflow-x-auto no-scrollbar">
-        <svg width={width} height={height + 24} className="block">
-          {days.map((day, i) => {
-            const barHeight = (day.adherence / 100) * height;
-            const x = i * (barWidth + 4);
-            const y = height - barHeight;
-            const tone =
-              day.adherence >= 80
-                ? "var(--color-good, #16a34a)"
-                : day.adherence >= 50
-                  ? "oklch(0.55 0.24 340)"
-                  : "oklch(0.85 0.10 340)";
-            return (
-              <g key={day.date}>
-                <rect
-                  x={x}
-                  y={y}
-                  width={barWidth}
-                  height={barHeight}
-                  rx={3}
-                  fill={tone}
-                />
-              </g>
-            );
-          })}
-        </svg>
-      </div>
-    </div>
-  );
-}
-
-function CheckinsTable({
-  rows,
-}: {
-  rows: SummaryResponse["rows"];
-}) {
-  if (rows.length === 0) {
-    return (
-      <div className="rounded-3xl bg-spark-surface border border-spark-hairline p-7 text-center">
-        <div className="text-[28px] mb-2">🌱</div>
-        <div className="text-[14px] font-extrabold text-spark-ink">
-          Sem check-ins nesse período
-        </div>
-        <p className="text-[12.5px] text-spark-ink-50 mt-1.5 leading-snug">
-          Bora começar com o de hoje? Leva 3 min e fica registradinho aqui 💕
-        </p>
-        <Link
-          href="/rotina/hoje"
-          className="mt-4 inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-brand-grad text-white text-[12.5px] font-extrabold active:scale-95 transition-transform"
-        >
-          <Plus size={13} strokeWidth={2.5} />
-          Fazer check-in agora
-        </Link>
-      </div>
-    );
-  }
-  const moodEmoji = (m: CheckinRow["mood"]) =>
-    MOOD_OPTIONS.find((o) => o.value === m)?.emoji ?? "—";
-  const sorted = [...rows].sort((a, b) => (a.date < b.date ? 1 : -1));
-  return (
-    <div className="rounded-3xl bg-spark-surface border border-spark-hairline overflow-hidden">
-      <div className="px-4 py-3 border-b border-spark-hairline">
-        <div className="text-[12px] font-bold text-spark-ink-50 uppercase tracking-wider">
-          Histórico
-        </div>
-        <div className="text-[14px] font-extrabold text-spark-ink mt-0.5">
-          {rows.length} {rows.length === 1 ? "dia" : "dias"} no período
-        </div>
-      </div>
-      <div className="divide-y divide-spark-hairline">
-        {sorted.map((r) => (
-          <div
-            key={r.date}
-            className="px-4 py-3 flex items-center gap-3 hover:bg-spark-surface-sunken/40 transition-colors"
-          >
-            <div className="text-[20px] shrink-0">{moodEmoji(r.mood)}</div>
-            <div className="flex-1 min-w-0">
-              <div className="text-[13px] font-extrabold text-spark-ink">
-                {smartDateLabel(r.date)}
-              </div>
-              <div className="text-[11.5px] text-spark-ink-50 mt-0.5">
-                {r.videos_posted} vídeos
-                {r.sales_brl && r.sales_brl > 0
-                  ? ` · R$ ${r.sales_brl.toFixed(0)}`
-                  : ""}
-              </div>
-            </div>
-            <div className="text-right">
-              <div
-                className={cn(
-                  "text-[13px] font-extrabold",
-                  r.adherence >= 80
-                    ? "text-good"
-                    : r.adherence >= 50
-                      ? "text-spark-brand"
-                      : "text-spark-ink-70",
-                )}
-              >
-                {r.adherence}%
-              </div>
-              <div className="text-[10px] text-spark-ink-50 font-semibold">aderência</div>
-            </div>
-            <ChevronRight
-              size={14}
-              strokeWidth={1.8}
-              className="text-spark-ink-35 shrink-0"
-            />
+    <SectionReveal direction="up">
+      <div className="rounded-spark-2xl bg-spark-surface border border-spark-hairline p-5 shadow-rest overflow-hidden">
+        <div className="mb-4">
+          <div className="text-eyebrow text-spark-brand mb-1">✦ por dia</div>
+          <div className="text-fluid-title font-extrabold text-spark-ink tracking-tight">
+            % Rotina TTS
           </div>
-        ))}
+        </div>
+        <div className="overflow-x-auto no-scrollbar">
+          <svg width={width} height={height + 12} className="block">
+            <defs>
+              <linearGradient id="barGradGood" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="oklch(0.68 0.16 150)" />
+                <stop offset="100%" stopColor="oklch(0.55 0.16 150)" />
+              </linearGradient>
+              <linearGradient id="barGradMid" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="oklch(0.65 0.22 350)" />
+                <stop offset="100%" stopColor="oklch(0.50 0.22 345)" />
+              </linearGradient>
+              <linearGradient id="barGradLow" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="oklch(0.88 0.10 340)" />
+                <stop offset="100%" stopColor="oklch(0.80 0.10 340)" />
+              </linearGradient>
+            </defs>
+            {days.map((day, i) => {
+              const barHeight = Math.max(2, (day.adherence / 100) * height);
+              const x = i * (barWidth + 4);
+              const y = height - barHeight;
+              const fill =
+                day.adherence >= 80
+                  ? "url(#barGradGood)"
+                  : day.adherence >= 50
+                    ? "url(#barGradMid)"
+                    : "url(#barGradLow)";
+              return (
+                <g key={day.date}>
+                  <rect
+                    x={x}
+                    y={y}
+                    width={barWidth}
+                    height={barHeight}
+                    rx={4}
+                    fill={fill}
+                    className="transition-all duration-700 ease-premium"
+                  />
+                </g>
+              );
+            })}
+          </svg>
+        </div>
       </div>
-    </div>
+    </SectionReveal>
   );
 }
 
 // =================================================================
-// Body
+// CHECKINS TABLE
+// =================================================================
+
+function CheckinsTable({ rows }: { rows: SummaryResponse["rows"] }) {
+  if (rows.length === 0) {
+    return (
+      <SectionReveal>
+        <div className="relative overflow-hidden rounded-spark-2xl bg-spark-surface border border-spark-hairline p-8 text-center shadow-rest">
+          <SparkleField count={6} seed={777} className="opacity-40" />
+          <div className="relative">
+            <div className="text-[40px] mb-3">🌱</div>
+            <h3 className="font-display lowercase text-fluid-title text-spark-ink leading-tight">
+              sem check-ins<br />
+              <span className="text-grad-brand">nesse período.</span>
+            </h3>
+            <p className="text-[13px] text-spark-ink-50 mt-3 leading-snug max-w-[36ch] mx-auto">
+              Bora começar com o de hoje? Leva 3 min e fica registradinho aqui 💕
+            </p>
+            <Link
+              href="/rotina/hoje"
+              className="group mt-6 inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-spark-ink text-white text-[13px] font-extrabold shadow-lift transition-all duration-300 ease-premium hover:-translate-y-0.5 hover:bg-spark-brand-deep"
+            >
+              <Plus
+                size={14}
+                strokeWidth={2.5}
+                className="transition-transform duration-300 group-hover:rotate-90"
+              />
+              Fazer check-in agora
+            </Link>
+          </div>
+        </div>
+      </SectionReveal>
+    );
+  }
+
+  const moodEmoji = (m: CheckinRow["mood"]) =>
+    MOOD_OPTIONS.find((o) => o.value === m)?.emoji ?? "—";
+  const sorted = [...rows].sort((a, b) => (a.date < b.date ? 1 : -1));
+
+  return (
+    <SectionReveal direction="up">
+      <div className="rounded-spark-2xl bg-spark-surface border border-spark-hairline overflow-hidden shadow-rest">
+        <div className="px-5 py-4 border-b border-spark-hairline">
+          <div className="text-eyebrow text-spark-brand mb-1">✦ histórico</div>
+          <div className="text-fluid-title font-extrabold text-spark-ink tracking-tight">
+            {rows.length} {rows.length === 1 ? "dia registrado" : "dias registrados"}
+          </div>
+        </div>
+        <div className="divide-y divide-spark-hairline">
+          {sorted.map((r) => (
+            <Link
+              key={r.date}
+              href="/rotina/hoje"
+              className="group px-5 py-4 flex items-center gap-4 hover:bg-spark-surface-sunken/40 transition-colors duration-300"
+            >
+              <div className="w-11 h-11 rounded-2xl bg-spark-brand-soft flex items-center justify-center text-[22px] shrink-0">
+                {moodEmoji(r.mood)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[14px] font-extrabold text-spark-ink tracking-tight">
+                  {smartDateLabel(r.date)}
+                </div>
+                <div className="text-[11.5px] text-spark-ink-50 mt-0.5 font-mono">
+                  {r.videos_posted} vídeos
+                  {r.sales_brl && r.sales_brl > 0
+                    ? ` · R$ ${r.sales_brl.toFixed(0)}`
+                    : ""}
+                </div>
+              </div>
+              <div className="text-right">
+                <div
+                  className={cn(
+                    "text-[18px] font-extrabold tracking-tight leading-none",
+                    r.adherence >= 80
+                      ? "text-good"
+                      : r.adherence >= 50
+                        ? "text-spark-brand-deep"
+                        : "text-spark-ink-70",
+                  )}
+                >
+                  {r.adherence}%
+                </div>
+                <div className="text-[9.5px] text-spark-ink-50 font-extrabold uppercase tracking-wider mt-0.5">
+                  aderência
+                </div>
+              </div>
+              <ChevronRight
+                size={14}
+                strokeWidth={2}
+                className="text-spark-ink-35 shrink-0 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:text-spark-brand"
+              />
+            </Link>
+          ))}
+        </div>
+      </div>
+    </SectionReveal>
+  );
+}
+
+// =================================================================
+// BODY
 // =================================================================
 
 function EvolucaoBody({ desktop = false }: { desktop?: boolean }) {
@@ -510,95 +681,83 @@ function EvolucaoBody({ desktop = false }: { desktop?: boolean }) {
   const streak = useStreak();
 
   return (
-    <div className={`flex-1 overflow-auto ${desktop ? "py-12 px-12" : "pb-10"}`}>
-      <div className={desktop ? "max-w-[920px]" : "pt-2"}>
-        {desktop && (
-          <>
-            <div className="text-eyebrow text-spark-brand">
-              📈 Sua Evolução
-            </div>
-            <h1 className="mt-3 text-fluid-headline font-extrabold tracking-tight leading-[1.02]">
-              Você tá indo longe ✨
-            </h1>
-            <p className="text-fluid-body text-spark-ink-50 max-w-[520px] mt-3 mb-8">
-              Sequência, aderência à rotina TTS e os números que importam.
-            </p>
-          </>
-        )}
-        {!desktop && (
-          <div className="px-4 mb-2">
-            <p className="text-fluid-body text-spark-ink-50">
-              Sequência, aderência à rotina TTS e os números que importam.
-            </p>
+    <div
+      className="flex-1 overflow-auto relative"
+      style={{ paddingBottom: desktop ? 32 : "calc(env(safe-area-inset-bottom) + 100px)" }}
+    >
+      <HeroSection desktop={desktop} />
+
+      <section className={`relative ${desktop ? "px-12 pb-12" : "px-5 pb-8"}`}>
+        <div className={desktop ? "max-w-[1100px] mx-auto" : ""}>
+          <StreakHero streak={streak} />
+
+          <div className="mt-7">
+            <PeriodChips period={period} onChange={setPeriod} />
           </div>
-        )}
-        <div className={desktop ? "" : "px-4"}>
 
-        <StreakHero streak={streak} />
+          <div className="mt-6">
+            {loading || !data ? (
+              <div className="py-16 flex justify-center">
+                <LoadingSplash message="Carregando sua evolução" />
+              </div>
+            ) : (
+              <>
+                {/* KPIs */}
+                <div className={`grid gap-3 mb-6 ${desktop ? "grid-cols-4" : "grid-cols-2"}`}>
+                  <KpiCard
+                    emoji="🎯"
+                    label="aderência média"
+                    value={data.current.avg_adherence}
+                    prev={data.previous.avg_adherence}
+                    tone="brand"
+                    delay={0}
+                  />
+                  <KpiCard
+                    emoji="📱"
+                    label="vídeos postados"
+                    value={data.current.videos_posted}
+                    prev={data.previous.videos_posted}
+                    format="int"
+                    delay={80}
+                  />
+                  <KpiCard
+                    emoji="💰"
+                    label="vendas total"
+                    value={data.current.sales_brl}
+                    prev={data.previous.sales_brl}
+                    format="money"
+                    delay={160}
+                  />
+                  <KpiCard
+                    emoji="💵"
+                    label="comissão total"
+                    value={data.current.commission_brl}
+                    prev={data.previous.commission_brl}
+                    format="money"
+                    delay={240}
+                  />
+                </div>
 
-        <PeriodChips period={period} onChange={setPeriod} />
-
-        {loading || !data ? (
-          <LoadingSplash message="Carregando sua evolução" />
-        ) : (
-          <>
-            {/* KPIs */}
-            <div className={`grid gap-2.5 mb-5 ${desktop ? "grid-cols-4" : "grid-cols-2"}`}>
-              <KpiCard
-                emoji="🎯"
-                label="Aderência média"
-                value={data.current.avg_adherence}
-                prev={data.previous.avg_adherence}
-                tone="brand"
-              />
-              <KpiCard
-                emoji="📱"
-                label="Vídeos postados"
-                value={data.current.videos_posted}
-                prev={data.previous.videos_posted}
-                format="int"
-              />
-              <KpiCard
-                emoji="💰"
-                label="Vendas total"
-                value={data.current.sales_brl}
-                prev={data.previous.sales_brl}
-                format="money"
-              />
-              <KpiCard
-                emoji="💵"
-                label="Comissão total"
-                value={data.current.commission_brl}
-                prev={data.previous.commission_brl}
-                format="money"
-              />
-            </div>
-
-            <AdherenceBarChart rows={data.rows} range={data.range} />
-            <ConsistencyHeatmap rows={data.rows} range={data.range} />
-
-            <CheckinsTable rows={data.rows} />
-          </>
-        )}
+                <div className="space-y-4">
+                  <AdherenceBarChart rows={data.rows} range={data.range} />
+                  <ConsistencyHeatmap rows={data.rows} range={data.range} />
+                  <CheckinsTable rows={data.rows} />
+                </div>
+              </>
+            )}
+          </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }
 
+// =================================================================
+// PAGE
+// =================================================================
+
 function EvolucaoMobile() {
-  return (
-    <>
-      <MobileHeader
-        variant="editorial"
-        eyebrow="📈 SUA EVOLUÇÃO"
-        title="Você tá indo longe"
-        back={{ href: "/rotina/hoje" }}
-      />
-      <EvolucaoBody />
-      <BottomNav active="rotina" />
-    </>
-  );
+  return <EvolucaoBody />;
 }
 
 function EvolucaoDesktop() {
@@ -607,6 +766,14 @@ function EvolucaoDesktop() {
 
 export default function EvolucaoPage() {
   return (
-    <ResponsiveShell mobile={<EvolucaoMobile />} desktop={<EvolucaoDesktop />} active="rotina" />
+    <>
+      <ResponsiveShell
+        mobile={<EvolucaoMobile />}
+        desktop={<EvolucaoDesktop />}
+        active="rotina"
+        customSidebar
+      />
+      <FloatingMainNav active="rotina" />
+    </>
   );
 }

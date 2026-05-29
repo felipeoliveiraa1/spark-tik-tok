@@ -93,18 +93,16 @@ export function ProfileEditor({ initialName, initialNiche }: Props) {
 
   if (!editing) {
     return (
-      <div className="mt-6 bg-spark-surface rounded-[18px] border border-spark-hairline p-4">
+      <div className="bg-spark-surface rounded-spark-2xl border border-spark-hairline p-5 shadow-rest">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
-            <div className="text-[10.5px] uppercase tracking-[0.08em] font-bold text-spark-ink-50">
-              Seus dados
-            </div>
-            <div className="mt-2 space-y-2.5">
-              <Row label="Nome" value={name || "—"} icon={<User size={14} strokeWidth={1.7} />} />
+            <div className="text-eyebrow text-spark-brand mb-3">✦ seus dados</div>
+            <div className="space-y-3">
+              <Row label="Nome" value={name || "—"} icon={<User size={14} strokeWidth={2.2} />} />
               <Row
                 label={niches.length > 1 ? "Nichos" : "Nicho"}
                 value={niches.length > 0 ? niches.join(" · ") : "—"}
-                icon={<Tag size={14} strokeWidth={1.7} />}
+                icon={<Tag size={14} strokeWidth={2.2} />}
               />
             </div>
           </div>
@@ -112,9 +110,9 @@ export function ProfileEditor({ initialName, initialNiche }: Props) {
             type="button"
             onClick={() => setEditing(true)}
             aria-label="Editar perfil"
-            className="w-9 h-9 rounded-full bg-spark-surface-sunken text-spark-ink-70 hover:text-spark-ink active:scale-95 transition-transform flex items-center justify-center shrink-0"
+            className="w-10 h-10 rounded-full bg-spark-surface-sunken text-spark-ink-70 hover:text-spark-brand-deep hover:bg-spark-brand-soft active:scale-95 transition-all duration-300 ease-premium flex items-center justify-center shrink-0"
           >
-            <Pencil size={14} strokeWidth={1.7} />
+            <Pencil size={14} strokeWidth={2.2} />
           </button>
         </div>
       </div>
@@ -122,10 +120,8 @@ export function ProfileEditor({ initialName, initialNiche }: Props) {
   }
 
   return (
-    <div className="mt-6 bg-spark-surface rounded-[18px] border border-spark-brand/30 p-4">
-      <div className="text-[10.5px] uppercase tracking-[0.08em] font-bold text-spark-brand-deep mb-3">
-        Editando perfil ✏️
-      </div>
+    <div className="bg-spark-surface rounded-spark-2xl border border-spark-brand/30 p-5 shadow-lift-brand">
+      <div className="text-eyebrow text-spark-brand mb-4">✦ editando perfil</div>
 
       {/* Nome */}
       <div>
@@ -263,15 +259,15 @@ export function ProfileEditor({ initialName, initialNiche }: Props) {
 
 function Row({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-2.5">
-      <div className="w-7 h-7 rounded-lg bg-spark-surface-sunken text-spark-ink-70 flex items-center justify-center shrink-0">
+    <div className="flex items-center gap-3">
+      <div className="w-9 h-9 rounded-spark-xl bg-spark-surface-sunken text-spark-ink-70 flex items-center justify-center shrink-0">
         {icon}
       </div>
       <div className="flex-1 min-w-0">
-        <div className="text-[10.5px] uppercase tracking-[0.08em] font-bold text-spark-ink-50">
+        <div className="text-[10.5px] uppercase tracking-wider font-extrabold text-spark-ink-50">
           {label}
         </div>
-        <div className="text-[14px] font-semibold text-spark-ink truncate">{value}</div>
+        <div className="text-[13.5px] font-extrabold text-spark-ink truncate">{value}</div>
       </div>
     </div>
   );

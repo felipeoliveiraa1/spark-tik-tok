@@ -10,8 +10,10 @@ import {
   CreditCard,
 } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
-import { MobileHeader } from "@/components/layout/mobile-header";
-import { BottomNav } from "@/components/layout/bottom-nav";
+import { FloatingMainNav } from "@/components/layout/floating-main-nav";
+import { HeroBlob } from "@/components/atoms/hero-blob";
+import { SparkleField } from "@/components/atoms/sparkle-field";
+import { SectionReveal } from "@/components/atoms/section-reveal";
 import { SBadge } from "@/components/atoms/s-badge";
 import { getCurrentProfile, getSupabaseServer } from "@/lib/supabase-server";
 import { logoutAction } from "@/lib/auth";
@@ -113,149 +115,237 @@ function ContaBody({
     plan_expires_at: planExpiresAt,
   });
   const { label: statusBadgeLabel, tone: statusTone } = statusLabel(status);
-  // SBadge não tem variante "bad" — mapeamos bad → warn (visual amarelo) ou
-  // criamos pílula manual mais à frente. Por ora bad vira warn.
   const badgeTone: "good" | "warn" | "neutral" =
     statusTone === "good" ? "good" : statusTone === "neutral" ? "neutral" : "warn";
+
   return (
-    <div className={desktop ? "max-w-[640px]" : ""}>
-      {/* Avatar + nome + email + plan */}
-      <div className="flex items-center gap-3.5">
-        <div
-          className={`${desktop ? "w-20 h-20 text-3xl" : "w-16 h-16 text-2xl"} rounded-full text-white flex items-center justify-center font-extrabold bg-brand-grad shrink-0 shadow-[0_8px_22px_-10px_oklch(0.55_0.24_340/0.5)]`}
-        >
-          {getInitial(name, email)}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className={`font-extrabold ${desktop ? "text-[24px]" : "text-[20px]"} truncate`}>
-            {name || "Criadora"}
-          </div>
-          <div className="text-[13px] text-spark-ink-50 font-mono truncate">{email}</div>
-          <div className="mt-1.5 flex flex-wrap gap-1.5">
-            <SBadge tone={badgeTone}>{statusBadgeLabel}</SBadge>
-            {niche &&
-              niche
-                .split(",")
-                .map((n) => n.trim())
-                .filter(Boolean)
-                .map((n) => <SBadge key={n}>{n}</SBadge>)}
-          </div>
-        </div>
-      </div>
+    <div
+      className="flex-1 overflow-auto relative"
+      style={{ paddingBottom: desktop ? 32 : "calc(env(safe-area-inset-bottom) + 100px)" }}
+    >
+      {/* Hero */}
+      <section
+        className="relative overflow-hidden hero-radial"
+        style={{
+          paddingTop: desktop ? "72px" : "calc(env(safe-area-inset-top) + 64px)",
+          paddingBottom: desktop ? "40px" : "24px",
+        }}
+      >
+        <HeroBlob color="rose" variant={1} className="-top-24 -left-24 w-[460px] h-[460px]" />
+        <HeroBlob color="peach" variant={2} className="top-10 -right-32 w-[460px] h-[460px]" />
+        <SparkleField count={12} seed={232} className="opacity-50" />
 
-      {/* Stats em grid */}
-      <div className="mt-6 grid grid-cols-3 gap-2">
-        <StatCard emoji="📦" Icon={Package} value={stats.products} label="Produtos" />
-        <StatCard emoji="✍️" Icon={Pen} value={stats.scripts} label="Scripts" />
-        <StatCard emoji="🎓" Icon={GraduationCap} value={stats.aulasVistas} label="Aulas" />
-      </div>
+        <div className={`relative ${desktop ? "px-12 max-w-[720px] mx-auto" : "px-5"}`}>
+          <SectionReveal direction="down" durationMs={500}>
+            <div className="text-eyebrow text-spark-brand">✦ meu perfil</div>
+          </SectionReveal>
 
-      {/* Conta info */}
-      <div className="mt-4 bg-spark-surface rounded-[18px] border border-spark-hairline p-4">
-        <div className="text-[10.5px] uppercase tracking-[0.08em] font-bold text-spark-ink-50">
-          Sua conta
-        </div>
-        <div className="mt-2.5 space-y-2.5">
-          <InfoRow
-            Icon={Calendar}
-            label="Membro desde"
-            value={`${formatDate(createdAt)} (${daysSince(createdAt)} dias)`}
-          />
-          {planRenewedAt && (
-            <InfoRow Icon={Calendar} label="Última renovação" value={formatDate(planRenewedAt)} />
-          )}
-        </div>
-      </div>
+          <SectionReveal direction="up" delay={100} durationMs={800}>
+            <h1
+              className="mt-3 font-display lowercase tracking-tight text-spark-ink leading-[0.95]"
+              style={{
+                fontSize: desktop ? "clamp(2.5rem, 5vw, 4rem)" : "clamp(2rem, 8vw, 3rem)",
+              }}
+            >
+              minha <span className="text-grad-brand">conta.</span>
+            </h1>
+          </SectionReveal>
 
-      {/* Plano detalhado */}
-      <div className="mt-4 bg-spark-surface rounded-[18px] border border-spark-hairline p-4">
-        <div className="flex items-center justify-between">
-          <div className="text-[10.5px] uppercase tracking-[0.08em] font-bold text-spark-ink-50">
-            Plano
-          </div>
-          <SBadge tone={badgeTone}>{statusBadgeLabel}</SBadge>
-        </div>
-        <div className="mt-2.5 space-y-2.5">
-          {status === "active" && planNextPayment && (
-            <InfoRow
-              Icon={CreditCard}
-              label="Próxima cobrança"
-              value={formatDate(planNextPayment)}
-            />
-          )}
-          {status === "late" && (
-            <div className="p-3 rounded-xl bg-warn/10 border border-warn/20 text-[13px] text-warn leading-snug">
-              ⚠️ A última cobrança ficou pendente. Atualize seu cartão pelo Kiwify pra não perder acesso.
+          {/* Avatar + nome card */}
+          <SectionReveal direction="up" delay={250}>
+            <div className="mt-7 flex items-center gap-4 p-5 rounded-spark-2xl glass border border-spark-hairline shadow-rest">
+              <div
+                className={`${desktop ? "w-20 h-20 text-3xl" : "w-16 h-16 text-2xl"} rounded-full text-white flex items-center justify-center font-display bg-brand-grad shrink-0 shadow-lift-brand`}
+              >
+                {getInitial(name, email)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div
+                  className={`font-extrabold ${desktop ? "text-[22px]" : "text-[18px]"} truncate text-spark-ink`}
+                >
+                  {name || "Criadora"}
+                </div>
+                <div className="text-[12.5px] text-spark-ink-50 font-mono truncate">
+                  {email}
+                </div>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  <SBadge tone={badgeTone}>{statusBadgeLabel}</SBadge>
+                  {niche &&
+                    niche
+                      .split(",")
+                      .map((n) => n.trim())
+                      .filter(Boolean)
+                      .map((n) => <SBadge key={n}>{n}</SBadge>)}
+                </div>
+              </div>
             </div>
-          )}
-          {status === "canceled" && planExpiresAt && (
-            <>
-              <InfoRow
-                Icon={Calendar}
-                label="Acesso até"
-                value={formatDate(planExpiresAt)}
+          </SectionReveal>
+        </div>
+      </section>
+
+      {/* Conteúdo */}
+      <section className={`relative ${desktop ? "px-12" : "px-5"} pt-2 space-y-5`}>
+        <div className={desktop ? "max-w-[720px] mx-auto space-y-5" : "space-y-5"}>
+          {/* Stats em grid */}
+          <SectionReveal direction="up">
+            <div className="grid grid-cols-3 gap-3">
+              <StatCard emoji="📦" Icon={Package} value={stats.products} label="Produtos" />
+              <StatCard emoji="✍️" Icon={Pen} value={stats.scripts} label="Scripts" />
+              <StatCard
+                emoji="🎓"
+                Icon={GraduationCap}
+                value={stats.aulasVistas}
+                label="Aulas"
               />
-              {planCanceledAt && (
+            </div>
+          </SectionReveal>
+
+          {/* Conta info */}
+          <SectionReveal direction="up" delay={100}>
+            <InfoCard label="✦ sua conta">
+              <div className="space-y-3">
                 <InfoRow
                   Icon={Calendar}
-                  label="Cancelado em"
-                  value={formatDate(planCanceledAt)}
+                  label="Membro desde"
+                  value={`${formatDate(createdAt)} (${daysSince(createdAt)} dias)`}
                 />
-              )}
-            </>
-          )}
-        </div>
-        <a
-          href={KIWIFY_PORTAL_URL}
-          target="_blank"
-          rel="noreferrer"
-          className="mt-3 w-full inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-full bg-spark-surface-sunken hover:bg-spark-surface-sunken/80 text-[13px] font-semibold text-spark-ink transition-colors"
-        >
-          Gerenciar pelo Kiwify <ExternalLink size={12} strokeWidth={2} />
-        </a>
-      </div>
+                {planRenewedAt && (
+                  <InfoRow
+                    Icon={Calendar}
+                    label="Última renovação"
+                    value={formatDate(planRenewedAt)}
+                  />
+                )}
+              </div>
+            </InfoCard>
+          </SectionReveal>
 
-      {/* Edição de perfil */}
-      <ProfileEditor initialName={name} initialNiche={niche ?? ""} />
-
-      {/* Reset senha em destaque (apenas se entrou com senha temporária) */}
-      {showReset && (
-        <div className="mt-6 p-4 rounded-[18px] bg-spark-brand-soft border border-spark-brand/20">
-          <div className="flex items-center gap-2 text-[13px] font-bold text-spark-brand-deep">
-            <KeyRound size={16} strokeWidth={1.7} />
-            Defina uma senha sua
-          </div>
-          <p className="text-[12.5px] text-spark-ink-70 mt-1.5">
-            Você entrou com a senha temporária. Cria uma nova agora pra ninguém usar a antiga.
-          </p>
-          <div className="mt-3">
-            <ResetPasswordForm />
-          </div>
-        </div>
-      )}
-
-      {/* Alterar senha — disponível sempre */}
-      {!showReset && <ChangePasswordForm />}
-
-      {/* Logout */}
-      <div className="mt-6 bg-spark-surface rounded-[18px] border border-spark-hairline overflow-hidden">
-        <form action={logoutAction}>
-          <button
-            type="submit"
-            className="w-full px-4 py-3.5 flex items-center gap-3 text-left hover:bg-spark-surface-sunken transition-colors"
-          >
-            <div
-              className="w-9 h-9 rounded-lg flex items-center justify-center"
-              style={{ background: "oklch(0.96 0.05 25)", color: "oklch(0.6 0.22 25)" }}
+          {/* Plano detalhado */}
+          <SectionReveal direction="up" delay={150}>
+            <InfoCard
+              label="✦ plano"
+              trailing={<SBadge tone={badgeTone}>{statusBadgeLabel}</SBadge>}
             >
-              <LogOut size={16} strokeWidth={1.7} />
+              <div className="space-y-3">
+                {status === "active" && planNextPayment && (
+                  <InfoRow
+                    Icon={CreditCard}
+                    label="Próxima cobrança"
+                    value={formatDate(planNextPayment)}
+                  />
+                )}
+                {status === "late" && (
+                  <div className="p-3.5 rounded-spark-xl bg-warn/8 border border-warn/20 text-[13px] text-warn leading-snug font-semibold">
+                    ⚠️ A última cobrança ficou pendente. Atualize seu cartão pelo Kiwify pra
+                    não perder acesso.
+                  </div>
+                )}
+                {status === "canceled" && planExpiresAt && (
+                  <>
+                    <InfoRow
+                      Icon={Calendar}
+                      label="Acesso até"
+                      value={formatDate(planExpiresAt)}
+                    />
+                    {planCanceledAt && (
+                      <InfoRow
+                        Icon={Calendar}
+                        label="Cancelado em"
+                        value={formatDate(planCanceledAt)}
+                      />
+                    )}
+                  </>
+                )}
+              </div>
+              <a
+                href={KIWIFY_PORTAL_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-4 w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-full bg-spark-surface-sunken hover:bg-spark-brand-soft text-[13px] font-extrabold text-spark-ink hover:text-spark-brand-deep transition-all duration-300 ease-premium hover:-translate-y-0.5"
+              >
+                Gerenciar pelo Kiwify
+                <ExternalLink size={12} strokeWidth={2.5} />
+              </a>
+            </InfoCard>
+          </SectionReveal>
+
+          {/* Edição de perfil */}
+          <SectionReveal direction="up" delay={200}>
+            <ProfileEditor initialName={name} initialNiche={niche ?? ""} />
+          </SectionReveal>
+
+          {/* Reset senha em destaque */}
+          {showReset && (
+            <SectionReveal direction="up" delay={250}>
+              <div className="p-6 rounded-spark-2xl bg-brand-grad-soft border border-spark-brand/20 shadow-lift-brand">
+                <div className="flex items-center gap-2 text-[14px] font-extrabold text-spark-brand-deep">
+                  <KeyRound size={16} strokeWidth={2.2} />
+                  Defina uma senha sua
+                </div>
+                <p className="text-[12.5px] text-spark-ink-70 mt-2 leading-relaxed">
+                  Você entrou com a senha temporária. Cria uma nova agora pra ninguém usar a
+                  antiga.
+                </p>
+                <div className="mt-4">
+                  <ResetPasswordForm />
+                </div>
+              </div>
+            </SectionReveal>
+          )}
+
+          {/* Alterar senha */}
+          {!showReset && (
+            <SectionReveal direction="up" delay={250}>
+              <ChangePasswordForm />
+            </SectionReveal>
+          )}
+
+          {/* Logout */}
+          <SectionReveal direction="up" delay={300}>
+            <div className="rounded-spark-2xl bg-spark-surface border border-spark-hairline overflow-hidden shadow-rest">
+              <form action={logoutAction}>
+                <button
+                  type="submit"
+                  className="group w-full px-5 py-4 flex items-center gap-3.5 text-left hover:bg-bad/5 transition-colors duration-300"
+                >
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center transition-transform duration-300 group-hover:scale-105"
+                    style={{ background: "oklch(0.96 0.05 25)", color: "oklch(0.6 0.22 25)" }}
+                  >
+                    <LogOut size={16} strokeWidth={2.2} />
+                  </div>
+                  <div
+                    className="flex-1 text-[14px] font-extrabold"
+                    style={{ color: "oklch(0.6 0.22 25)" }}
+                  >
+                    Sair
+                  </div>
+                </button>
+              </form>
             </div>
-            <div className="flex-1 text-[14px] font-semibold" style={{ color: "oklch(0.6 0.22 25)" }}>
-              Sair
-            </div>
-          </button>
-        </form>
+          </SectionReveal>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function InfoCard({
+  label,
+  trailing,
+  children,
+}: {
+  label: string;
+  trailing?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="p-5 rounded-spark-2xl bg-spark-surface border border-spark-hairline shadow-rest">
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-eyebrow text-spark-brand">{label}</div>
+        {trailing}
       </div>
+      {children}
     </div>
   );
 }
@@ -272,13 +362,16 @@ function StatCard({
   label: string;
 }) {
   return (
-    <div className="p-3 rounded-2xl bg-spark-surface border border-spark-hairline">
-      <div className="text-[18px] leading-none">{emoji}</div>
-      <div className="mt-1.5 font-extrabold font-mono tracking-tight text-[22px] text-spark-ink">
+    <div className="p-4 rounded-spark-2xl bg-spark-surface border border-spark-hairline shadow-rest transition-all duration-300 ease-premium hover:-translate-y-0.5 hover:shadow-lift">
+      <div className="text-[20px] leading-none">{emoji}</div>
+      <div
+        className="mt-2 font-extrabold font-mono tracking-tight text-spark-ink leading-none"
+        style={{ fontSize: "clamp(1.5rem, 5vw, 1.625rem)" }}
+      >
         {value}
       </div>
-      <div className="text-[11px] text-spark-ink-50 font-semibold mt-0.5 inline-flex items-center gap-1">
-        <Icon size={10} strokeWidth={1.7} /> {label}
+      <div className="text-[10.5px] text-spark-ink-50 font-extrabold mt-1.5 inline-flex items-center gap-1 uppercase tracking-wider">
+        <Icon size={10} strokeWidth={2.5} /> {label}
       </div>
     </div>
   );
@@ -294,15 +387,15 @@ function InfoRow({
   value: string;
 }) {
   return (
-    <div className="flex items-center gap-2.5">
-      <div className="w-7 h-7 rounded-lg bg-spark-surface-sunken text-spark-ink-70 flex items-center justify-center shrink-0">
-        <Icon size={14} strokeWidth={1.7} />
+    <div className="flex items-center gap-3">
+      <div className="w-9 h-9 rounded-spark-xl bg-spark-surface-sunken text-spark-ink-70 flex items-center justify-center shrink-0">
+        <Icon size={14} strokeWidth={2.2} />
       </div>
       <div className="flex-1 min-w-0">
-        <div className="text-[10.5px] uppercase tracking-[0.08em] font-bold text-spark-ink-50">
+        <div className="text-[10.5px] uppercase tracking-wider font-extrabold text-spark-ink-50">
           {label}
         </div>
-        <div className="text-[13px] font-semibold text-spark-ink truncate">{value}</div>
+        <div className="text-[13.5px] font-extrabold text-spark-ink truncate">{value}</div>
       </div>
     </div>
   );
@@ -318,59 +411,33 @@ export default async function ContaPage({ searchParams }: ContaPageProps) {
   const showReset = params.reset === "1" || profile.must_reset_password === true;
   const stats = await getStats(profile.id);
 
-  return (
-    <ResponsiveShell
-      mobile={
-        <>
-          <MobileHeader
-            variant="editorial"
-            eyebrow="💖 MEU PERFIL"
-            title="Minha conta"
-            back={{ href: "/" }}
-          />
-          <div className="flex-1 overflow-auto px-4 pt-2 pb-6">
-            <ContaBody
-              email={profile.email}
-              name={profile.name ?? ""}
-              niche={profile.niche}
-              planActive={profile.plan_active}
-              planStatus={profile.plan_status ?? null}
-              planExpiresAt={profile.plan_expires_at ?? null}
-              planNextPayment={profile.plan_next_payment ?? null}
-              planCanceledAt={profile.plan_canceled_at ?? null}
-              showReset={showReset}
-              createdAt={profile.created_at}
-              planRenewedAt={profile.plan_renewed_at}
-              stats={stats}
-            />
-          </div>
-          <BottomNav active="conta" />
-        </>
-      }
-      desktop={
-        <div className="flex-1 overflow-auto py-8 px-12">
-          <div className="text-[13px] font-bold text-spark-ink-50 tracking-[0.06em] uppercase">
-            💖 Conta
-          </div>
-          <h1 className="text-[36px] font-extrabold tracking-[-0.02em] mt-1 mb-7">Minha conta 💖</h1>
-          <ContaBody
-            desktop
-            email={profile.email}
-            name={profile.name ?? ""}
-            niche={profile.niche}
-            planActive={profile.plan_active}
-            planStatus={profile.plan_status ?? null}
-            planExpiresAt={profile.plan_expires_at ?? null}
-            planNextPayment={profile.plan_next_payment ?? null}
-            planCanceledAt={profile.plan_canceled_at ?? null}
-            showReset={showReset}
-            createdAt={profile.created_at}
-            planRenewedAt={profile.plan_renewed_at}
-            stats={stats}
-          />
-        </div>
-      }
-      active="conta"
+  const body = (desktop: boolean) => (
+    <ContaBody
+      desktop={desktop}
+      email={profile.email}
+      name={profile.name ?? ""}
+      niche={profile.niche}
+      planActive={profile.plan_active}
+      planStatus={profile.plan_status ?? null}
+      planExpiresAt={profile.plan_expires_at ?? null}
+      planNextPayment={profile.plan_next_payment ?? null}
+      planCanceledAt={profile.plan_canceled_at ?? null}
+      showReset={showReset}
+      createdAt={profile.created_at}
+      planRenewedAt={profile.plan_renewed_at}
+      stats={stats}
     />
+  );
+
+  return (
+    <>
+      <ResponsiveShell
+        mobile={body(false)}
+        desktop={body(true)}
+        active="conta"
+        customSidebar
+      />
+      <FloatingMainNav active="conta" />
+    </>
   );
 }

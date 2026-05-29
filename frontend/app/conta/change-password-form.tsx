@@ -40,26 +40,28 @@ export function ChangePasswordForm() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="mt-6 w-full bg-spark-surface rounded-[18px] border border-spark-hairline px-4 py-3.5 flex items-center gap-3 text-left hover:bg-spark-surface-sunken transition-colors"
+        className="group w-full bg-spark-surface rounded-spark-2xl border border-spark-hairline px-5 py-4 flex items-center gap-3.5 text-left hover:bg-spark-brand-soft/30 hover:border-spark-brand/30 shadow-rest hover:shadow-lift transition-all duration-300 ease-premium hover:-translate-y-0.5"
       >
-        <div className="w-9 h-9 rounded-lg bg-spark-brand-soft text-spark-brand-deep flex items-center justify-center shrink-0">
-          <KeyRound size={16} strokeWidth={1.7} />
+        <div className="w-10 h-10 rounded-full bg-spark-brand-soft text-spark-brand-deep flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-105">
+          <KeyRound size={16} strokeWidth={2.2} />
         </div>
         <div className="flex-1">
-          <div className="text-[14px] font-semibold text-spark-ink">Alterar senha</div>
-          <div className="text-[11.5px] text-spark-ink-50">Mínimo 8 caracteres</div>
+          <div className="text-[14px] font-extrabold text-spark-ink">Alterar senha</div>
+          <div className="text-[11.5px] text-spark-ink-50 mt-0.5">Mínimo 8 caracteres</div>
         </div>
-        <ChevronDown size={16} strokeWidth={1.7} className="text-spark-ink-50 shrink-0" />
+        <ChevronDown
+          size={16}
+          strokeWidth={2.2}
+          className="text-spark-ink-50 shrink-0 transition-transform duration-300 group-hover:translate-y-0.5"
+        />
       </button>
     );
   }
 
   return (
-    <div className="mt-6 bg-spark-surface rounded-[18px] border border-spark-brand/30 p-4">
-      <div className="flex items-center justify-between mb-3">
-        <div className="text-[10.5px] uppercase tracking-[0.08em] font-bold text-spark-brand-deep">
-          Nova senha 🔒
-        </div>
+    <div className="bg-spark-surface rounded-spark-2xl border border-spark-brand/30 p-5 shadow-lift-brand">
+      <div className="flex items-center justify-between mb-4">
+        <div className="text-eyebrow text-spark-brand">✦ nova senha</div>
         <button
           type="button"
           aria-label="Cancelar"

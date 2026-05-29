@@ -3,13 +3,17 @@
 import * as React from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { MobileHeader } from "@/components/layout/mobile-header";
+import { ArrowLeft, Calendar, Radio } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
-import { BottomNav } from "@/components/layout/bottom-nav";
+import { FloatingMainNav } from "@/components/layout/floating-main-nav";
+import { HeroBlob } from "@/components/atoms/hero-blob";
+import { SparkleField } from "@/components/atoms/sparkle-field";
+import { Sticker } from "@/components/atoms/sticker";
+import { SectionReveal } from "@/components/atoms/section-reveal";
 import { LoadingSplash } from "@/components/atoms/loading-splash";
-import { SBadge } from "@/components/atoms/s-badge";
 import { youtubeEmbedUrl } from "@/lib/youtube";
 import { getLiveStatus, formatCountdown, minutesUntil } from "@/lib/live-status";
+import { cn } from "@/lib/cn";
 
 type LiveEvent = {
   id: string;
@@ -68,95 +72,9 @@ function markAttendance(liveId: string, watchedLive: boolean) {
   }).catch(() => {});
 }
 
-function LiveBody({ idOrSlug, desktop = false }: { idOrSlug: string; desktop?: boolean }) {
-  const { event, loading, error } = useLive(idOrSlug);
-  const [tick, setTick] = React.useState(0);
-
-  // Atualiza status a cada 30s pra mudar upcoming → live automaticamente
-  React.useEffect(() => {
-    const i = setInterval(() => setTick((t) => t + 1), 30_000);
-    return () => clearInterval(i);
-  }, []);
-
-  if (loading) return <LoadingSplash message="Abrindo live" />;
-  if (error || !event) {
-    return (
-      <div className="p-6 text-center text-[13px] text-spark-ink-50">
-        {error ?? "Erro."}
-        <div className="mt-3">
-          <Link href="/ao-vivo" className="text-spark-brand font-semibold">
-            ← Voltar
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  const status = getLiveStatus(event);
-  // ref ao tick pra forçar re-cálculo (eslint reclamava sem usar)
-  void tick;
-
-  return (
-    <div className={`flex-1 overflow-auto ${desktop ? "py-8 px-12" : "pb-10"}`}>
-      <div className={desktop ? "max-w-[1200px]" : "px-4 pt-2"}>
-        <div className="grid lg:grid-cols-[1.4fr_1fr] gap-4">
-          {/* Player / cover */}
-          <div className="aspect-video rounded-2xl overflow-hidden bg-black">
-            {status === "upcoming" ? (
-              <CountdownCover event={event} />
-            ) : (
-              <iframe
-                src={youtubeEmbedUrl(event.youtube_id, { autoplay: status === "live" })}
-                title={event.title}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-                className="w-full h-full"
-                onLoad={() => markAttendance(event.id, status === "live")}
-              />
-            )}
-          </div>
-
-          {/* Chat YouTube (só durante a live) */}
-          {status === "live" && (
-            <div className="hidden lg:block aspect-video rounded-2xl overflow-hidden border border-spark-hairline">
-              <iframe
-                src={`https://www.youtube.com/live_chat?v=${event.youtube_id}&embed_domain=${typeof window !== "undefined" ? window.location.hostname : "localhost"}`}
-                className="w-full h-full"
-                title="Chat ao vivo"
-              />
-            </div>
-          )}
-        </div>
-
-        <div className="mt-5">
-          <div className="flex items-center gap-2 flex-wrap">
-            {status === "live" && (
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-bad text-white text-[11px] font-extrabold uppercase tracking-[0.05em]">
-                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> AO VIVO
-              </span>
-            )}
-            {status === "upcoming" && (
-              <SBadge tone="brand">{formatCountdown(minutesUntil(event.starts_at))}</SBadge>
-            )}
-            {status === "replay" && <SBadge tone="neutral">📼 Replay disponível</SBadge>}
-            <SBadge>{fmtDate(event.starts_at)}</SBadge>
-          </div>
-
-          <h1
-            className={`mt-2 font-extrabold tracking-tight leading-tight ${desktop ? "text-[28px]" : "text-[22px]"}`}
-          >
-            {event.title}
-          </h1>
-          {event.description && (
-            <p className="mt-3 text-[14.5px] text-spark-ink-70 leading-relaxed whitespace-pre-wrap">
-              {event.description}
-            </p>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
+// =================================================================
+// COUNTDOWN COVER (quando upcoming)
+// =================================================================
 
 function CountdownCover({ event }: { event: LiveEvent }) {
   const [min, setMin] = React.useState(() => minutesUntil(event.starts_at));
@@ -166,7 +84,7 @@ function CountdownCover({ event }: { event: LiveEvent }) {
   }, [event.starts_at]);
 
   return (
-    <div className="w-full h-full relative bg-brand-grad-hero text-white flex flex-col items-center justify-center p-8 text-center">
+    <div className="w-full h-full relative bg-gradient-to-br from-rose-500 via-pink-500 to-orange-500 text-white flex flex-col items-center justify-center p-8 text-center overflow-hidden">
       {event.cover_url && (
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -178,14 +96,22 @@ function CountdownCover({ event }: { event: LiveEvent }) {
           <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/40" />
         </>
       )}
+      <SparkleField count={10} seed={808} color="rgba(255,255,255,0.5)" className="opacity-60" />
       <div className="relative">
-        <div className="text-[11px] uppercase font-bold tracking-[0.08em] opacity-90">
-          🔴 Live agendada
+        <div className="text-eyebrow text-white/90 flex items-center justify-center gap-2 mb-3">
+          <span className="relative inline-flex w-2 h-2">
+            <span className="absolute inset-0 rounded-full bg-white animate-pulse-soft" />
+            <span className="relative w-2 h-2 rounded-full bg-white" />
+          </span>
+          live agendada
         </div>
-        <div className="mt-3 text-[44px] sm:text-[64px] font-extrabold leading-none">
-          {formatCountdown(min)}
+        <div
+          className="font-display lowercase leading-none tracking-tight"
+          style={{ fontSize: "clamp(2.5rem, 8vw, 6rem)" }}
+        >
+          {formatCountdown(min).toLowerCase()}
         </div>
-        <div className="mt-2 text-[13px] opacity-90">
+        <div className="mt-4 text-fluid-body opacity-90">
           Volte aqui na hora pra assistir 💕
         </div>
       </div>
@@ -193,24 +119,200 @@ function CountdownCover({ event }: { event: LiveEvent }) {
   );
 }
 
-function LiveMobile({ idOrSlug }: { idOrSlug: string }) {
+// =================================================================
+// BODY
+// =================================================================
+
+function LiveBody({ idOrSlug, desktop = false }: { idOrSlug: string; desktop?: boolean }) {
+  const { event, loading, error } = useLive(idOrSlug);
+  const [tick, setTick] = React.useState(0);
+
+  React.useEffect(() => {
+    const i = setInterval(() => setTick((t) => t + 1), 30_000);
+    return () => clearInterval(i);
+  }, []);
+
+  if (loading) {
+    return (
+      <div
+        className="flex-1 overflow-auto relative hero-radial flex items-center justify-center"
+        style={{ minHeight: "60vh" }}
+      >
+        <LoadingSplash message="Abrindo live" />
+      </div>
+    );
+  }
+
+  if (error || !event) {
+    return (
+      <div className="flex-1 overflow-auto relative hero-radial">
+        <SparkleField count={8} seed={42} className="opacity-50" />
+        <div className="px-6 py-32 text-center max-w-[480px] mx-auto relative">
+          <div className="text-[64px] mb-4">😕</div>
+          <h1 className="font-display lowercase text-fluid-headline text-spark-ink leading-tight">
+            opa, sumiu.
+          </h1>
+          <p className="mt-4 text-[14px] text-spark-ink-70 leading-snug">
+            {error ?? "Erro desconhecido."}
+          </p>
+          <Link
+            href="/ao-vivo"
+            className="mt-8 inline-flex items-center gap-1.5 px-6 py-3 rounded-full bg-spark-ink text-white text-[13px] font-extrabold shadow-lift transition-all duration-300 ease-premium hover:-translate-y-0.5"
+          >
+            <ArrowLeft size={14} strokeWidth={2.5} />
+            Voltar pra lives
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const status = getLiveStatus(event);
+  void tick;
+
   return (
-    <>
-      <MobileHeader title="Live" back={{ href: "/ao-vivo" }} />
-      <LiveBody idOrSlug={idOrSlug} />
-      <BottomNav active="ao-vivo" />
-    </>
+    <div
+      className="flex-1 overflow-auto relative"
+      style={{ paddingBottom: desktop ? 32 : "calc(env(safe-area-inset-bottom) + 100px)" }}
+    >
+      {/* Hero compacto */}
+      <section
+        className="relative overflow-hidden hero-radial"
+        style={{
+          paddingTop: desktop ? "72px" : "calc(env(safe-area-inset-top) + 64px)",
+          paddingBottom: desktop ? "32px" : "24px",
+        }}
+      >
+        <HeroBlob color="rose" variant={1} className="-top-24 -left-24 w-[420px] h-[420px]" />
+        <HeroBlob color="peach" variant={2} className="top-10 -right-32 w-[460px] h-[460px]" />
+        <SparkleField count={10} seed={616} className="opacity-50" />
+
+        <div className={`relative ${desktop ? "px-12 max-w-[1200px] mx-auto" : "px-5"}`}>
+          <SectionReveal direction="down" durationMs={500}>
+            <Link
+              href="/ao-vivo"
+              className="inline-flex items-center gap-1.5 px-3 py-2 -ml-3 rounded-full text-spark-ink-70 hover:text-spark-ink hover:bg-spark-surface-sunken/60 text-[12.5px] font-extrabold transition-colors duration-300"
+            >
+              <ArrowLeft size={14} strokeWidth={2.5} />
+              Voltar pra lives
+            </Link>
+          </SectionReveal>
+        </div>
+      </section>
+
+      {/* Player + chat */}
+      <section className={`relative ${desktop ? "px-12" : "px-5"} pb-12`}>
+        <div className={desktop ? "max-w-[1200px] mx-auto" : ""}>
+          <SectionReveal direction="up">
+            <div className={cn("grid gap-4", desktop && status === "live" ? "lg:grid-cols-[1.4fr_1fr]" : "")}>
+              {/* Player / cover */}
+              <div className="aspect-video rounded-spark-3xl overflow-hidden bg-black shadow-hero">
+                {status === "upcoming" ? (
+                  <CountdownCover event={event} />
+                ) : (
+                  <iframe
+                    src={youtubeEmbedUrl(event.youtube_id, { autoplay: status === "live" })}
+                    title={event.title}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                    className="w-full h-full"
+                    onLoad={() => markAttendance(event.id, status === "live")}
+                  />
+                )}
+              </div>
+
+              {/* Chat YouTube (só durante a live) */}
+              {status === "live" && desktop && (
+                <div className="hidden lg:block aspect-video rounded-spark-3xl overflow-hidden border border-spark-hairline shadow-hero">
+                  <iframe
+                    src={`https://www.youtube.com/live_chat?v=${event.youtube_id}&embed_domain=${typeof window !== "undefined" ? window.location.hostname : "localhost"}`}
+                    className="w-full h-full"
+                    title="Chat ao vivo"
+                  />
+                </div>
+              )}
+            </div>
+          </SectionReveal>
+
+          {/* Metadata */}
+          <SectionReveal direction="up" delay={150}>
+            <div className="mt-8 flex items-center gap-2 flex-wrap">
+              {status === "live" && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-bad text-white text-[11px] font-extrabold uppercase tracking-widest shadow-lift">
+                  <span className="relative inline-flex w-2 h-2">
+                    <span className="absolute inset-0 rounded-full bg-white animate-pulse" />
+                    <span className="relative w-2 h-2 rounded-full bg-white" />
+                  </span>
+                  AO VIVO
+                </span>
+              )}
+              {status === "upcoming" && (
+                <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-brand-grad text-white text-[11px] font-extrabold uppercase tracking-widest shadow-lift-brand">
+                  {formatCountdown(minutesUntil(event.starts_at))}
+                </span>
+              )}
+              {status === "replay" && (
+                <span className="inline-flex items-center px-3 py-1.5 rounded-full glass border border-spark-hairline text-spark-ink text-[11px] font-extrabold uppercase tracking-widest">
+                  ◉ replay disponível
+                </span>
+              )}
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-spark-surface border border-spark-hairline text-[11px] font-extrabold text-spark-ink-70 tracking-tight first-letter:capitalize">
+                <Calendar size={11} strokeWidth={2.5} />
+                {fmtDate(event.starts_at)}
+              </span>
+            </div>
+          </SectionReveal>
+
+          <SectionReveal direction="up" delay={250}>
+            <h1
+              className="mt-6 font-display lowercase tracking-tight text-spark-ink leading-[0.95]"
+              style={{
+                fontSize: desktop ? "clamp(2.25rem, 4vw, 3.75rem)" : "clamp(1.75rem, 7vw, 2.5rem)",
+              }}
+            >
+              {event.title.toLowerCase()}
+            </h1>
+          </SectionReveal>
+
+          {event.description && (
+            <SectionReveal direction="up" delay={400}>
+              <div className="mt-6 rounded-spark-2xl bg-spark-surface border border-spark-hairline p-6 sm:p-8 shadow-rest">
+                <div className="flex items-center gap-2 mb-4">
+                  <Radio size={16} strokeWidth={2.4} className="text-spark-brand-deep" />
+                  <span className="text-eyebrow text-spark-brand">sobre o encontro</span>
+                </div>
+                <p className="text-fluid-body text-spark-ink-70 leading-relaxed whitespace-pre-wrap">
+                  {event.description}
+                </p>
+              </div>
+            </SectionReveal>
+          )}
+        </div>
+      </section>
+    </div>
   );
+}
+
+// =================================================================
+// PAGE
+// =================================================================
+
+function LiveMobile({ idOrSlug }: { idOrSlug: string }) {
+  return <LiveBody idOrSlug={idOrSlug} />;
 }
 
 export default function LiveDetailPage() {
   const params = useParams<{ id: string }>();
   const idOrSlug = params?.id ?? "";
   return (
-    <ResponsiveShell
-      mobile={<LiveMobile idOrSlug={idOrSlug} />}
-      desktop={<LiveBody idOrSlug={idOrSlug} desktop />}
-      active="ao-vivo"
-    />
+    <>
+      <ResponsiveShell
+        mobile={<LiveMobile idOrSlug={idOrSlug} />}
+        desktop={<LiveBody idOrSlug={idOrSlug} desktop />}
+        active="ao-vivo"
+        customSidebar
+      />
+      <FloatingMainNav active="ao-vivo" />
+    </>
   );
 }

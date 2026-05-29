@@ -2,12 +2,33 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Package, ArrowRight, Plus, Sparkles } from "lucide-react";
+import { Package, ArrowUpRight, Plus } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
-import { MobileHeader } from "@/components/layout/mobile-header";
-import { BottomNav } from "@/components/layout/bottom-nav";
-import { SButton } from "@/components/atoms/s-button";
+import { FloatingMainNav } from "@/components/layout/floating-main-nav";
+import { SplashScreen } from "@/components/atoms/splash-screen";
+import { HeroBlob } from "@/components/atoms/hero-blob";
+import { SparkleField } from "@/components/atoms/sparkle-field";
+import { Sticker } from "@/components/atoms/sticker";
+import { SectionReveal } from "@/components/atoms/section-reveal";
+import { CharacterReveal } from "@/components/atoms/character-reveal";
+import { CountUp } from "@/components/atoms/count-up";
 import { LoadingSplash } from "@/components/atoms/loading-splash";
+import { cn } from "@/lib/cn";
+
+/**
+ * /produtos — catálogo magazine premium.
+ *
+ * Estrutura cinematográfica:
+ *   • SplashScreen de entrada (1.2s)
+ *   • Hero radial fullscreen: blobs + sparkles + sticker + Tanker
+ *     gigante "seus produtos / em destaque." + contador animado +
+ *     CTA "+ adicionar produto"
+ *   • Grid magazine de produtos: cards editorial com hero image,
+ *     hover-lift premium, image zoom on hover
+ *   • Card "+ novo" tracejado no fim do grid
+ *   • Empty state premium quando vazio
+ *   • FloatingMainNav lateral
+ */
 
 type ProductRow = {
   id: string;
@@ -49,129 +70,396 @@ function useProducts() {
   return { products, loading };
 }
 
-function ProductsBody({ desktop = false }: { desktop?: boolean }) {
-  const { products, loading } = useProducts();
-  return (
-    <div className={`flex-1 overflow-auto ${desktop ? "py-12 px-12" : "pb-10"}`}>
-      <div className={desktop ? "" : "pt-2"}>
-        {desktop && (
-          <>
-            <div className="text-eyebrow text-spark-brand">
-              💄 Catálogo
-            </div>
-            <h1 className="mt-3 text-fluid-headline font-extrabold tracking-tight leading-[1.02]">
-              Seus produtos 📦
-            </h1>
-          </>
-        )}
-        <p className={`text-fluid-body text-spark-ink-50 max-w-[520px] ${desktop ? "mt-3" : "px-4 mt-2"}`}>
-          Seu catálogo. Cadastra a ficha que você gerou no agente Info pra ter tudo organizado. ✨
-        </p>
+// =================================================================
+// HERO — fullscreen editorial
+// =================================================================
 
-        <div className={`mt-5 ${desktop ? "" : "px-4"}`}>
-          <Link
-            href="/produtos/novo"
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-brand-grad text-white text-[13px] font-extrabold shadow-lift-brand active:scale-95 transition-transform duration-300 ease-premium"
+function HeroSection({
+  count,
+  desktop,
+}: {
+  count: number;
+  desktop: boolean;
+}) {
+  return (
+    <section
+      className="relative overflow-hidden hero-radial"
+      style={{
+        paddingTop: desktop ? "96px" : "calc(env(safe-area-inset-top) + 80px)",
+        paddingBottom: desktop ? "96px" : "72px",
+      }}
+    >
+      {/* Blobs orgânicos */}
+      <HeroBlob color="rose" variant={1} className="-top-32 -left-32 w-[460px] h-[460px]" />
+      <HeroBlob color="peach" variant={2} className="top-20 -right-40 w-[520px] h-[520px]" />
+      <HeroBlob color="lilac" variant={3} className="bottom-0 left-1/3 w-[400px] h-[400px]" />
+
+      {/* Sparkles */}
+      <SparkleField count={14} seed={104} className="opacity-70" />
+
+      {/* Conteúdo */}
+      <div className={`relative ${desktop ? "px-12 max-w-[1200px] mx-auto" : "px-5"}`}>
+        {/* Top: eyebrow + sticker */}
+        <div className="flex items-start justify-between gap-4 mb-8">
+          <SectionReveal direction="down" durationMs={600}>
+            <div className="text-eyebrow text-spark-brand-deep">
+              ✦ catálogo TTS
+            </div>
+            <div className="mt-3 text-fluid-lead text-spark-ink-70 max-w-[30ch] font-semibold">
+              Cada ficha que você cadastra vira fonte pra um roteiro novo.
+            </div>
+          </SectionReveal>
+
+          {desktop && (
+            <SectionReveal direction="scale" delay={200}>
+              <Sticker
+                text="PRODUTOS · 2026 · "
+                emoji="📦"
+                size={132}
+              />
+            </SectionReveal>
+          )}
+        </div>
+
+        {/* Headline gigante TANKER */}
+        <SectionReveal direction="up" delay={150} durationMs={900}>
+          <h1
+            className="font-display lowercase leading-[0.9] tracking-tight max-w-[18ch]"
+            style={{ fontSize: "clamp(2.5rem, 8vw, 7rem)" }}
           >
-            <Plus size={14} strokeWidth={2.5} />
-            Adicionar produto
-          </Link>
+            <CharacterReveal
+              as="span"
+              immediate
+              staggerMs={28}
+              className="block text-spark-ink"
+            >
+              seus produtos
+            </CharacterReveal>
+            <CharacterReveal
+              as="span"
+              immediate
+              staggerMs={28}
+              delayMs={500}
+              className="block"
+              charClassName="text-grad-brand"
+            >
+              em destaque.
+            </CharacterReveal>
+          </h1>
+        </SectionReveal>
+
+        {/* Contador + CTA */}
+        <SectionReveal direction="up" delay={900}>
+          <div className="mt-10 flex items-center gap-5 flex-wrap">
+            <Link
+              href="/produtos/novo"
+              className="group inline-flex items-center gap-2 px-7 py-4 rounded-full bg-spark-ink text-white text-[14px] font-extrabold shadow-lift transition-all duration-300 ease-premium hover:-translate-y-1 hover:bg-spark-brand-deep active:translate-y-0"
+            >
+              <Plus
+                size={16}
+                strokeWidth={2.5}
+                className="transition-transform duration-300 group-hover:rotate-90"
+              />
+              Adicionar produto
+            </Link>
+
+            <div className="inline-flex items-center gap-2 text-[13px] text-spark-ink-70 font-semibold">
+              <span className="font-extrabold text-fluid-title text-spark-ink leading-none">
+                <CountUp value={count} durationMs={1100} />
+              </span>
+              {count === 1 ? "produto cadastrado" : "produtos cadastrados"}
+            </div>
+          </div>
+        </SectionReveal>
+      </div>
+    </section>
+  );
+}
+
+// =================================================================
+// GRID — cards magazine
+// =================================================================
+
+function ProductCard({ p, index }: { p: ProductRow; index: number }) {
+  return (
+    <SectionReveal delay={Math.min(index * 70, 360)}>
+      <Link
+        href={`/produtos/${p.id}`}
+        className="group block rounded-spark-2xl bg-spark-surface border border-spark-hairline overflow-hidden hover-lift shadow-rest"
+      >
+        {/* Hero image */}
+        <div className="relative aspect-[4/3] bg-spark-surface-sunken overflow-hidden">
+          {p.image_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={p.image_url}
+              alt={p.name}
+              loading="lazy"
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-premium group-hover:scale-105"
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-spark-brand-soft via-spark-surface to-amber-100 flex items-center justify-center relative">
+              <span
+                className="text-[80px] drop-shadow-[0_4px_16px_rgba(0,0,0,0.1)] transition-transform duration-700 ease-premium group-hover:scale-110 group-hover:rotate-6"
+                aria-hidden
+              >
+                📦
+              </span>
+              <div
+                aria-hidden
+                className="absolute inset-0"
+                style={{
+                  backgroundImage:
+                    "radial-gradient(circle at 30% 20%, rgba(255,255,255,0.5) 0%, transparent 40%)",
+                }}
+              />
+            </div>
+          )}
+
+          {/* Chip flutuante com categoria */}
+          {p.category && (
+            <div className="absolute top-3 left-3">
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full glass text-[10.5px] font-extrabold text-spark-ink tracking-tight">
+                {p.category}
+              </span>
+            </div>
+          )}
+
+          {/* Arrow on hover */}
+          <div className="absolute top-3 right-3 w-9 h-9 rounded-full glass flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <ArrowUpRight size={14} strokeWidth={2.5} className="text-spark-ink" />
+          </div>
+        </div>
+
+        {/* Body */}
+        <div className="p-5">
+          <h3 className="text-[15px] font-extrabold tracking-tight leading-tight text-spark-ink line-clamp-2">
+            {p.name}
+          </h3>
+          {p.target_audience && (
+            <p className="mt-2 text-[12px] text-spark-ink-70 leading-snug line-clamp-2">
+              {p.target_audience}
+            </p>
+          )}
+          <div className="mt-3 flex items-center justify-between gap-2">
+            <span className="text-[11.5px] text-spark-brand font-extrabold tracking-tight">
+              {p.price_range ?? "preço n/d"}
+            </span>
+            <span className="text-[10.5px] text-spark-ink-50 font-mono">
+              {timeAgo(p.created_at)}
+            </span>
+          </div>
+        </div>
+      </Link>
+    </SectionReveal>
+  );
+}
+
+function AddProductCard({ delay }: { delay: number }) {
+  return (
+    <SectionReveal delay={delay}>
+      <Link
+        href="/produtos/novo"
+        className="group flex flex-col items-center justify-center text-center rounded-spark-2xl border-2 border-dashed border-spark-brand/30 bg-spark-brand-soft/30 hover-lift shadow-rest p-8 min-h-full transition-colors duration-300 hover:border-spark-brand/60 hover:bg-spark-brand-soft/50"
+      >
+        <div className="w-16 h-16 rounded-full bg-brand-grad text-white flex items-center justify-center shadow-lift-brand transition-transform duration-300 ease-premium group-hover:rotate-90">
+          <Plus size={28} strokeWidth={2.5} />
+        </div>
+        <div className="mt-5 text-[14px] font-extrabold text-spark-brand-deep tracking-tight">
+          Adicionar novo
+        </div>
+        <div className="mt-1.5 text-[12px] text-spark-ink-50">
+          Cole a ficha do agente Info
+        </div>
+      </Link>
+    </SectionReveal>
+  );
+}
+
+function ProductsGrid({ products, desktop }: { products: ProductRow[]; desktop: boolean }) {
+  return (
+    <section className={`relative ${desktop ? "py-16 px-12" : "py-12 px-5"}`}>
+      <div className={desktop ? "max-w-[1200px] mx-auto" : ""}>
+        <SectionReveal>
+          <div className="flex items-end justify-between gap-4 mb-10">
+            <div>
+              <div className="text-eyebrow text-spark-brand mb-3">
+                ✦ {products.length} {products.length === 1 ? "item" : "itens"}
+              </div>
+              <h2 className="text-fluid-display font-display lowercase text-spark-ink leading-[0.9] tracking-tight max-w-[14ch]">
+                sua vitrine
+              </h2>
+            </div>
+          </div>
+        </SectionReveal>
+
+        <div className={`grid gap-4 ${desktop ? "grid-cols-3" : "grid-cols-1 sm:grid-cols-2"}`}>
+          {products.map((p, i) => (
+            <ProductCard key={p.id} p={p} index={i} />
+          ))}
+          <AddProductCard delay={Math.min(products.length * 70, 360)} />
         </div>
       </div>
-
-      <div className={`mt-8 ${desktop ? "" : "px-4"}`}>
-        {loading ? (
-          <LoadingSplash message="Carregando produtos" />
-        ) : products.length === 0 ? (
-          <EmptyProducts />
-        ) : (
-          <div className={`grid gap-3 ${desktop ? "grid-cols-3 max-w-[920px]" : "grid-cols-1"}`}>
-            {products.map((p) => (
-              <Link
-                key={p.id}
-                href={`/produtos/${p.id}`}
-                className="rounded-spark-2xl bg-spark-surface border border-spark-hairline p-4 hover:border-spark-brand/30 hover-lift shadow-rest"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-spark-surface-sunken flex items-center justify-center text-spark-ink-70 overflow-hidden">
-                    {p.image_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <Package size={20} strokeWidth={1.7} />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[14px] font-bold truncate">{p.name}</div>
-                    <div className="text-[11.5px] text-spark-ink-50 truncate">
-                      {p.category ?? "—"} · {p.price_range ?? "preço n/d"}
-                    </div>
-                  </div>
-                  <ArrowRight size={14} strokeWidth={1.7} className="text-spark-ink-35" />
-                </div>
-                {p.target_audience && (
-                  <div className="mt-2 text-[12px] text-spark-ink-70 line-clamp-2 leading-snug">
-                    {p.target_audience}
-                  </div>
-                )}
-                <div className="mt-2 text-[10.5px] text-spark-ink-35 font-mono">{timeAgo(p.created_at)}</div>
-              </Link>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
+    </section>
   );
 }
 
-function EmptyProducts() {
+// =================================================================
+// EMPTY STATE — premium
+// =================================================================
+
+function EmptyProducts({ desktop }: { desktop: boolean }) {
   return (
-    <div className="rounded-2xl bg-spark-surface border border-spark-hairline p-7 text-center max-w-[520px] mx-auto">
-      <div className="mx-auto w-14 h-14 rounded-2xl bg-brand-grad-soft flex items-center justify-center text-[28px]">
-        📦
+    <section
+      className={cn(
+        "relative overflow-hidden",
+        desktop ? "py-24 px-12" : "py-16 px-5",
+      )}
+    >
+      <HeroBlob color="peach" variant={2} className="-top-10 -left-20 w-[400px] h-[400px]" />
+      <HeroBlob color="rose" variant={3} className="bottom-0 -right-20 w-[360px] h-[360px]" />
+      <SparkleField count={10} seed={222} className="opacity-50" />
+
+      <div className={cn("relative text-center", desktop ? "max-w-[680px] mx-auto" : "")}>
+        <SectionReveal direction="scale">
+          <div className="mx-auto w-24 h-24 rounded-full bg-brand-grad-soft flex items-center justify-center mb-7 shadow-lift animate-float">
+            <span className="text-[48px]">📦</span>
+          </div>
+        </SectionReveal>
+
+        <SectionReveal direction="up" delay={150}>
+          <h2
+            className="font-display lowercase leading-[0.95] tracking-tight text-spark-ink"
+            style={{ fontSize: "clamp(2rem, 6vw, 4rem)" }}
+          >
+            sem produto<br />
+            <span className="text-grad-brand">por aqui ainda.</span>
+          </h2>
+        </SectionReveal>
+
+        <SectionReveal direction="up" delay={350}>
+          <div className="mt-8 rounded-spark-2xl glass border border-spark-hairline p-6 text-left max-w-[520px] mx-auto">
+            <ol className="space-y-3 text-[14px] text-spark-ink-70 leading-snug">
+              <li className="flex items-start gap-3">
+                <span className="shrink-0 w-7 h-7 rounded-full bg-brand-grad text-white text-[12px] font-extrabold flex items-center justify-center shadow-lift-brand">
+                  1
+                </span>
+                <span>
+                  Abre o agente <strong className="text-spark-ink">Info</strong> em{" "}
+                  <Link href="/agentes" className="text-spark-brand-deep font-extrabold hover:underline">
+                    Agentes ✨
+                  </Link>
+                </span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="shrink-0 w-7 h-7 rounded-full bg-brand-grad text-white text-[12px] font-extrabold flex items-center justify-center shadow-lift-brand">
+                  2
+                </span>
+                <span>
+                  Cola foto, nome ou link do produto. Recebe a ficha completa em segundos.
+                </span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="shrink-0 w-7 h-7 rounded-full bg-brand-grad text-white text-[12px] font-extrabold flex items-center justify-center shadow-lift-brand">
+                  3
+                </span>
+                <span>
+                  Volta aqui e cadastra a ficha em <strong className="text-spark-ink">+ adicionar produto</strong> 💕
+                </span>
+              </li>
+            </ol>
+          </div>
+        </SectionReveal>
+
+        <SectionReveal direction="up" delay={550}>
+          <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
+            <Link
+              href="/agentes"
+              className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-full glass border border-spark-hairline text-spark-ink text-[14px] font-extrabold shadow-rest transition-all duration-300 ease-premium hover:-translate-y-1 hover:shadow-lift"
+            >
+              Ver agentes
+              <ArrowUpRight size={15} strokeWidth={2.5} />
+            </Link>
+            <Link
+              href="/produtos/novo"
+              className="group inline-flex items-center justify-center gap-2 px-7 py-4 rounded-full bg-spark-ink text-white text-[14px] font-extrabold shadow-lift transition-all duration-300 ease-premium hover:-translate-y-1 hover:bg-spark-brand-deep"
+            >
+              <Plus
+                size={16}
+                strokeWidth={2.5}
+                className="transition-transform duration-300 group-hover:rotate-90"
+              />
+              Cadastrar agora
+            </Link>
+          </div>
+        </SectionReveal>
       </div>
-      <div className="mt-3 text-[16px] font-extrabold">Sem produto ainda 💖</div>
-      <p className="text-[13px] text-spark-ink-50 mt-1.5 leading-snug">
-        1. Vai em <strong>Agentes ✨</strong> e abre o agente <strong>Info</strong> no Gemini ou
-        ChatGPT.<br />
-        2. Cola foto/nome do produto, recebe a ficha completa.<br />
-        3. Volta aqui e clica em <strong>Adicionar produto</strong> pra cadastrar 💕
-      </p>
-      <div className="mt-4 flex flex-col sm:flex-row gap-2 justify-center">
-        <Link href="/agentes">
-          <SButton variant="ghost" size="md" IconRight={Sparkles}>
-            Ver agentes
-          </SButton>
-        </Link>
-        <Link href="/produtos/novo">
-          <SButton variant="primary" size="md" IconRight={Plus}>
-            Cadastrar agora
-          </SButton>
-        </Link>
-      </div>
+    </section>
+  );
+}
+
+// =================================================================
+// BODY
+// =================================================================
+
+function ProductsBody({ desktop = false }: { desktop?: boolean }) {
+  const { products, loading } = useProducts();
+
+  return (
+    <div
+      className="flex-1 overflow-auto relative"
+      style={{ paddingBottom: desktop ? 0 : "calc(env(safe-area-inset-bottom) + 88px)" }}
+    >
+      <HeroSection count={products.length} desktop={desktop} />
+
+      {loading ? (
+        <section className="py-24 flex justify-center">
+          <LoadingSplash message="Carregando produtos" />
+        </section>
+      ) : products.length === 0 ? (
+        <EmptyProducts desktop={desktop} />
+      ) : (
+        <ProductsGrid products={products} desktop={desktop} />
+      )}
     </div>
   );
 }
+
+// =================================================================
+// PAGE
+// =================================================================
 
 function ProductsMobile() {
-  return (
-    <>
-      <MobileHeader
-        variant="editorial"
-        eyebrow="💄 CATÁLOGO"
-        title="Seus produtos"
-        back={{ href: "/" }}
-      />
-      <ProductsBody />
-      <BottomNav active="produtos" />
-    </>
-  );
+  return <ProductsBody />;
 }
 
 function ProductsDesktop() {
   return <ProductsBody desktop />;
 }
 
-export default function ProdutosPage() {
-  return <ResponsiveShell mobile={<ProductsMobile />} desktop={<ProductsDesktop />} active="produtos" />;
+function ProductsPageContent() {
+  const [showSplash, setShowSplash] = React.useState(true);
+  React.useEffect(() => {
+    const t = setTimeout(() => setShowSplash(false), 1200);
+    return () => clearTimeout(t);
+  }, []);
+
+  return (
+    <>
+      <SplashScreen show={showSplash} minDurationMs={1000} />
+      <ResponsiveShell
+        mobile={<ProductsMobile />}
+        desktop={<ProductsDesktop />}
+        active="produtos"
+        customSidebar
+      />
+      <FloatingMainNav active="produtos" />
+    </>
+  );
 }
+
+export default function ProdutosPage() {
+  return <ProductsPageContent />;
+}
+
+void Package;

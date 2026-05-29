@@ -109,7 +109,7 @@ export function SplashScreen({
       {/* Conteúdo central */}
       <div className="relative flex flex-col items-center text-center px-6">
         {/* Sticker rotativo */}
-        <div className="mb-10 animate-mask-reveal" style={{ animationDelay: "200ms" }}>
+        <div className="mb-10 animate-character" style={{ animationDelay: "200ms" }}>
           <Sticker
             text="MÉTODO TTS · 2026 · PREMIUM · "
             emoji="✨"

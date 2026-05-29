@@ -7,16 +7,12 @@ import { Lock, ArrowRight, AlertCircle, Check } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { SparkMark } from "@/components/atoms/spark-mark";
 import { SparkWordmark } from "@/components/atoms/spark-wordmark";
+import { HeroBlob } from "@/components/atoms/hero-blob";
+import { SparkleField } from "@/components/atoms/sparkle-field";
+import { SectionReveal } from "@/components/atoms/section-reveal";
 import { SInput } from "@/components/atoms/s-input";
 import { SButton } from "@/components/atoms/s-button";
 import { createBrowserClient } from "@supabase/ssr";
-
-/**
- * Página de finalização do reset de senha. O link do email leva pra cá com
- * o token no hash da URL (#access_token=...). O cliente Supabase lê o hash
- * automaticamente no `onAuthStateChange` event 'PASSWORD_RECOVERY' e cria
- * uma sessão temporária pra autorizar o updateUser.
- */
 
 function getSupabaseBrowser() {
   return createBrowserClient(
@@ -36,14 +32,11 @@ function ResetForm() {
 
   React.useEffect(() => {
     const supabase = getSupabaseBrowser();
-    // Quando o user chega pelo link do email, o Supabase cria sessão
-    // temporária com event PASSWORD_RECOVERY. Se já tinha sessão, ok também.
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY" || (event === "INITIAL_SESSION" && session)) {
         setHasSession(true);
       }
     });
-    // Fallback: tenta pegar sessão direto (pra usuários já com sessão temporária do hash)
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) setHasSession(true);
       else setHasSession((prev) => prev ?? false);
@@ -71,21 +64,20 @@ function ResetForm() {
       return;
     }
     setDone(true);
-    // Aguarda 1.5s pro user ver a mensagem, depois manda pro chat (já logado).
     setTimeout(() => router.push("/agentes"), 1500);
   }
 
   if (hasSession === false) {
     return (
-      <div className="rounded-2xl bg-red-50 border border-red-200 p-5">
-        <div className="flex items-center gap-2 text-[14px] font-bold text-red-700">
-          <AlertCircle size={16} strokeWidth={2} />
+      <div className="rounded-spark-2xl bg-bad/5 border border-bad/20 p-6 shadow-rest">
+        <div className="flex items-center gap-2 text-[14px] font-extrabold text-bad">
+          <AlertCircle size={16} strokeWidth={2.5} />
           Link inválido ou expirado
         </div>
-        <p className="mt-2 text-[13px] text-red-700/80 leading-relaxed">
+        <p className="mt-3 text-[13px] text-spark-ink-70 leading-relaxed">
           Esse link de recuperação não funciona mais. Pede um novo abaixo.
         </p>
-        <div className="mt-4">
+        <div className="mt-5">
           <Link href="/forgot-password" className="block">
             <SButton variant="primary" size="md" full IconRight={ArrowRight}>
               Pedir um novo link
@@ -98,15 +90,15 @@ function ResetForm() {
 
   if (done) {
     return (
-      <div className="rounded-2xl bg-spark-brand-soft border border-spark-brand/20 p-5">
-        <div className="w-10 h-10 rounded-full bg-good text-white flex items-center justify-center">
-          <Check size={20} strokeWidth={2.5} />
+      <div className="rounded-spark-2xl bg-brand-grad-soft border border-spark-brand/20 p-6 shadow-lift-brand">
+        <div className="w-12 h-12 rounded-full bg-good text-white flex items-center justify-center shadow-lift">
+          <Check size={22} strokeWidth={2.5} />
         </div>
-        <div className="mt-3 text-[16px] font-extrabold text-spark-ink">
-          Senha alterada 💕
+        <div className="mt-4 font-display lowercase text-spark-ink leading-tight text-[26px]">
+          senha alterada 💕
         </div>
-        <p className="mt-1.5 text-[13.5px] text-spark-ink-70 leading-relaxed">
-          Sua senha foi atualizada com sucesso. Te levando pro app…
+        <p className="mt-2 text-[13.5px] text-spark-ink-70 leading-relaxed">
+          Sua senha foi atualizada com sucesso. Te levando pro app...
         </p>
       </div>
     );
@@ -114,9 +106,7 @@ function ResetForm() {
 
   return (
     <form onSubmit={onSubmit}>
-      <div className="text-[12px] text-spark-ink-50 font-semibold mb-1.5 tracking-[0.04em] uppercase">
-        Nova senha
-      </div>
+      <div className="text-eyebrow text-spark-ink-50 mb-2">Nova senha</div>
       <SInput
         name="password"
         value={password}
@@ -128,10 +118,8 @@ function ResetForm() {
         required
         minLength={8}
       />
-      <div className="h-2.5" />
-      <div className="text-[12px] text-spark-ink-50 font-semibold mb-1.5 tracking-[0.04em] uppercase">
-        Confirma a nova senha
-      </div>
+      <div className="h-3" />
+      <div className="text-eyebrow text-spark-ink-50 mb-2">Confirma a nova senha</div>
       <SInput
         name="confirm"
         value={confirm}
@@ -144,12 +132,12 @@ function ResetForm() {
         minLength={8}
       />
       {error && (
-        <div className="mt-3 px-3.5 py-2.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-[13px] inline-flex items-center gap-2 w-full">
-          <AlertCircle size={14} strokeWidth={2} />
+        <div className="mt-4 px-4 py-3 rounded-spark-xl bg-bad/5 border border-bad/20 text-bad text-[13px] inline-flex items-center gap-2 w-full font-extrabold">
+          <AlertCircle size={14} strokeWidth={2.5} />
           {error}
         </div>
       )}
-      <div className="h-3" />
+      <div className="h-4" />
       <SButton
         type="submit"
         variant="primary"
@@ -158,7 +146,7 @@ function ResetForm() {
         IconRight={ArrowRight}
         disabled={pending || hasSession === null}
       >
-        {pending ? "Salvando…" : hasSession === null ? "Validando link…" : "Salvar nova senha"}
+        {pending ? "Salvando..." : hasSession === null ? "Validando link..." : "Salvar nova senha"}
       </SButton>
     </form>
   );
@@ -166,29 +154,45 @@ function ResetForm() {
 
 function Mobile() {
   return (
-    <div className="flex flex-col flex-1 px-[22px] justify-between">
-      <div className="pt-[90px]" />
-      <div>
-        <div className="mb-9">
-          <SparkMark size={120} />
-        </div>
-        <h1 className="text-[34px] font-extrabold tracking-tight leading-[1.05] text-spark-ink">
-          Cria sua nova senha 🔒
-        </h1>
-        <p className="mt-3.5 text-[15px] leading-[1.5] text-spark-ink-50 max-w-[300px]">
-          Escolhe uma senha que você lembre fácil — mínimo 8 caracteres.
-        </p>
+    <div className="flex flex-col flex-1 relative overflow-auto hero-radial">
+      <HeroBlob color="rose" variant={1} className="-top-24 -left-32 w-[460px] h-[460px]" />
+      <HeroBlob color="peach" variant={2} className="top-1/3 -right-32 w-[460px] h-[460px]" />
+      <SparkleField count={12} seed={567} className="opacity-50" />
 
-        <div className="mt-8">
-          <ResetForm />
+      <div className="relative flex flex-col flex-1 px-6 justify-between">
+        <div className="pt-[80px]" />
+        <div>
+          <SectionReveal direction="down" durationMs={600}>
+            <SparkMark size={100} />
+          </SectionReveal>
+          <SectionReveal direction="up" delay={150} durationMs={800}>
+            <div className="mt-8 text-eyebrow text-spark-brand">✦ nova senha</div>
+            <h1
+              className="mt-2 font-display lowercase tracking-tight text-spark-ink leading-[0.95]"
+              style={{ fontSize: "clamp(2.25rem, 9vw, 3rem)" }}
+            >
+              cria sua <span className="text-grad-brand">nova senha.</span>
+            </h1>
+          </SectionReveal>
+          <SectionReveal direction="up" delay={300}>
+            <p className="mt-4 text-fluid-lead text-spark-ink-70 max-w-[28ch] leading-snug font-semibold">
+              Escolhe uma senha que você lembre fácil — mínimo 8 caracteres.
+            </p>
+          </SectionReveal>
+
+          <SectionReveal direction="up" delay={450}>
+            <div className="mt-8">
+              <ResetForm />
+            </div>
+          </SectionReveal>
         </div>
-      </div>
-      <div className="pb-10 text-[11px] text-spark-ink-35 text-center flex justify-center gap-3.5">
-        <span>Termos</span>
-        <span>·</span>
-        <span>Privacidade</span>
-        <span>·</span>
-        <span>Suporte</span>
+        <div className="pb-10 pt-8 text-[11px] text-spark-ink-50 text-center flex justify-center gap-3.5 font-extrabold uppercase tracking-wider">
+          <span>Termos</span>
+          <span>·</span>
+          <span>Privacidade</span>
+          <span>·</span>
+          <span>Suporte</span>
+        </div>
       </div>
     </div>
   );
@@ -198,34 +202,62 @@ function Desktop() {
   return (
     <div className="flex-1 min-h-dvh flex w-full">
       <div className="flex-1 p-14 relative overflow-hidden text-white bg-brand-grad-hero flex flex-col justify-between">
-        <SparkWordmark size={36} white />
-        <div>
-          <div className="text-[13px] font-bold opacity-85 uppercase tracking-[0.1em]">
-            🔒 Nova senha
-          </div>
-          <h1 className="text-[52px] font-extrabold tracking-[-0.03em] leading-[1.05] mt-3 max-w-[480px]">
-            Quase lá. 💕
-          </h1>
-          <p className="mt-4 text-[17px] leading-[1.5] opacity-90 max-w-[440px]">
-            Escolhe uma senha forte que você consiga lembrar. Depois você entra direto.
-          </p>
+        <SparkleField count={18} seed={888} color="rgba(255,255,255,0.55)" className="opacity-60" />
+        <div className="relative">
+          <SparkWordmark size={36} white />
         </div>
-        <div className="text-[11px] opacity-55 font-mono">© {new Date().getFullYear()} Método TTS</div>
+        <div className="relative">
+          <SectionReveal direction="up" durationMs={700}>
+            <div className="text-[12px] font-extrabold opacity-90 uppercase tracking-widest">
+              ✦ nova senha
+            </div>
+            <h1
+              className="font-display lowercase tracking-tight leading-[0.92] mt-4 max-w-[600px]"
+              style={{ fontSize: "clamp(3rem, 5vw, 4.5rem)" }}
+            >
+              quase
+              <br />
+              <span className="opacity-95">lá.</span>
+            </h1>
+          </SectionReveal>
+          <SectionReveal direction="up" delay={200}>
+            <p className="mt-6 text-fluid-lead opacity-90 max-w-[460px] leading-snug font-semibold">
+              Escolhe uma senha forte que você consiga lembrar. Depois você entra direto.
+            </p>
+          </SectionReveal>
+        </div>
+        <div className="relative text-[11px] opacity-60 font-mono">
+          © {new Date().getFullYear()} Método TTS
+        </div>
       </div>
 
-      <div className="w-[480px] p-14 bg-spark-bg flex flex-col justify-center">
-        <div className="text-[13px] font-bold text-spark-ink-50 uppercase tracking-[0.06em]">
-          Redefinir senha
-        </div>
-        <h2 className="text-[32px] font-extrabold tracking-[-0.02em] mt-2 leading-[1.15]">
-          Cria sua nova senha 🌹
-        </h2>
-        <p className="text-[14px] text-spark-ink-50 mt-2">
-          Mínimo 8 caracteres. Depois você entra direto no app.
-        </p>
+      <div className="w-[480px] p-14 bg-spark-bg flex flex-col justify-center relative overflow-hidden">
+        <HeroBlob color="rose" variant={1} className="-top-32 -right-32 w-[400px] h-[400px]" />
+        <SparkleField count={8} seed={444} className="opacity-50" />
 
-        <div className="mt-7">
-          <ResetForm />
+        <div className="relative">
+          <SectionReveal direction="down" durationMs={500}>
+            <div className="text-eyebrow text-spark-brand">✦ redefinir senha</div>
+          </SectionReveal>
+          <SectionReveal direction="up" delay={100} durationMs={700}>
+            <h2
+              className="mt-2 font-display lowercase tracking-tight text-spark-ink leading-[0.92]"
+              style={{ fontSize: "clamp(2rem, 3vw, 2.75rem)" }}
+            >
+              cria sua <span className="text-grad-brand">nova senha.</span>
+            </h2>
+          </SectionReveal>
+          <SectionReveal direction="up" delay={250}>
+            <p className="text-[14px] text-spark-ink-70 mt-3 font-semibold leading-snug">
+              Mínimo 8 caracteres. Depois você entra direto no app.
+            </p>
+          </SectionReveal>
+
+          <SectionReveal direction="up" delay={400}>
+            <div className="mt-8">
+              <ResetForm />
+            </div>
+          </SectionReveal>
         </div>
       </div>
     </div>

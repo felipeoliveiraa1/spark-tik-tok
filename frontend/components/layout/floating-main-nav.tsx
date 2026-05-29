@@ -3,8 +3,25 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import {
+  Home,
+  Sparkles,
+  Package,
+  PenLine,
+  Activity,
+  Radio,
+  GraduationCap,
+  Newspaper,
+  User,
+} from "lucide-react";
 import { cn } from "@/lib/cn";
 import type { NavId } from "./bottom-nav";
+
+type IconComp = React.ComponentType<{
+  size?: number;
+  strokeWidth?: number;
+  className?: string;
+}>;
 
 /**
  * FloatingMainNav — navegação principal premium, glass morphism.
@@ -30,17 +47,19 @@ type Item = {
   id: NavId;
   label: string;
   href: string;
-  emoji: string;
+  Icon: IconComp;
 };
 
 const ITEMS: Item[] = [
-  { id: "home", label: "Início", href: "/", emoji: "🏠" },
-  { id: "chat", label: "Agentes", href: "/agentes", emoji: "✨" },
-  { id: "produtos", label: "Produtos", href: "/produtos", emoji: "📦" },
-  { id: "scripts", label: "Scripts", href: "/scripts", emoji: "✍️" },
-  { id: "rotina", label: "Rotina", href: "/rotina/hoje", emoji: "📊" },
-  { id: "educacao", label: "Aulas", href: "/educacao", emoji: "🎓" },
-  { id: "conta", label: "Conta", href: "/conta", emoji: "👤" },
+  { id: "home", label: "Início", href: "/", Icon: Home },
+  { id: "chat", label: "Agentes", href: "/agentes", Icon: Sparkles },
+  { id: "produtos", label: "Produtos", href: "/produtos", Icon: Package },
+  { id: "scripts", label: "Scripts", href: "/scripts", Icon: PenLine },
+  { id: "rotina", label: "Rotina", href: "/rotina/hoje", Icon: Activity },
+  { id: "ao-vivo", label: "Ao vivo", href: "/ao-vivo", Icon: Radio },
+  { id: "educacao", label: "Aulas", href: "/educacao", Icon: GraduationCap },
+  { id: "news", label: "News", href: "/news", Icon: Newspaper },
+  { id: "conta", label: "Conta", href: "/conta", Icon: User },
 ];
 
 function deriveActive(pathname: string | null): NavId | undefined {
@@ -50,7 +69,9 @@ function deriveActive(pathname: string | null): NavId | undefined {
   if (pathname.startsWith("/produtos")) return "produtos";
   if (pathname.startsWith("/scripts")) return "scripts";
   if (pathname.startsWith("/rotina")) return "rotina";
+  if (pathname.startsWith("/ao-vivo")) return "ao-vivo";
   if (pathname.startsWith("/educacao")) return "educacao";
+  if (pathname.startsWith("/news")) return "news";
   if (pathname.startsWith("/conta")) return "conta";
   return undefined;
 }
@@ -116,15 +137,14 @@ function DesktopFloatingNav({ active }: { active?: NavId }) {
               paddingRight: hovered ? 18 : 14,
             }}
           >
-            <span
-              aria-hidden
+            <it.Icon
+              size={20}
+              strokeWidth={isActive ? 2.4 : 2.1}
               className={cn(
-                "text-[20px] leading-none shrink-0 transition-transform duration-300",
+                "shrink-0 transition-transform duration-300",
                 isActive ? "scale-110" : "group-hover:scale-110",
               )}
-            >
-              {it.emoji}
-            </span>
+            />
             <span
               className={cn(
                 "text-[13px] font-extrabold tracking-tight whitespace-nowrap transition-opacity duration-300",
@@ -159,7 +179,7 @@ function MobileFloatingNav({ active }: { active?: NavId }) {
       className={cn(
         "lg:hidden fixed left-1/2 -translate-x-1/2 z-40",
         "px-1.5 py-1.5 rounded-full glass shadow-lift",
-        "flex items-center gap-0.5",
+        "flex items-center gap-0.5 overflow-x-auto no-scrollbar",
       )}
       style={{
         bottom: "calc(env(safe-area-inset-bottom) + 12px)",
@@ -175,22 +195,21 @@ function MobileFloatingNav({ active }: { active?: NavId }) {
             aria-label={it.label}
             aria-current={isActive ? "page" : undefined}
             className={cn(
-              "relative inline-flex flex-col items-center justify-center gap-0.5 rounded-full transition-all duration-300 ease-premium",
-              "min-w-[44px] h-12 px-2",
+              "relative inline-flex flex-col items-center justify-center gap-0.5 rounded-full transition-all duration-300 ease-premium shrink-0",
+              "min-w-[42px] h-12 px-1.5",
               isActive
                 ? "bg-brand-grad text-white shadow-lift-brand"
                 : "text-spark-ink-70 hover:bg-spark-surface-sunken/60 hover:text-spark-ink",
             )}
           >
-            <span
-              aria-hidden
+            <it.Icon
+              size={17}
+              strokeWidth={isActive ? 2.4 : 2.1}
               className={cn(
-                "text-[18px] leading-none transition-transform duration-300",
+                "transition-transform duration-300",
                 isActive ? "scale-110" : "opacity-85",
               )}
-            >
-              {it.emoji}
-            </span>
+            />
             <span
               className={cn(
                 "text-[8.5px] leading-none tracking-tight",

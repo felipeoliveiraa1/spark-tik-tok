@@ -3,18 +3,23 @@
 import * as React from "react";
 import Link from "next/link";
 import {
+  ArrowLeft,
   Save,
   Minus,
   Plus,
   Check,
   ChevronDown,
-  Flame,
   TrendingUp,
   BookOpen,
+  ArrowUpRight,
 } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
-import { MobileHeader } from "@/components/layout/mobile-header";
-import { BottomNav } from "@/components/layout/bottom-nav";
+import { FloatingMainNav } from "@/components/layout/floating-main-nav";
+import { HeroBlob } from "@/components/atoms/hero-blob";
+import { SparkleField } from "@/components/atoms/sparkle-field";
+import { Sticker } from "@/components/atoms/sticker";
+import { SectionReveal } from "@/components/atoms/section-reveal";
+import { CountUp } from "@/components/atoms/count-up";
 import { LoadingSplash } from "@/components/atoms/loading-splash";
 import { useToast } from "@/components/molecules/dialog-provider";
 import { cn } from "@/lib/cn";
@@ -29,16 +34,15 @@ import {
 } from "@/lib/checkin-config";
 
 /**
- * /rotina/hoje — Check-in diário da aluna.
+ * /rotina/hoje — check-in diário editorial premium.
  *
- * Sections em accordion (3 abertas + 2 fechadas por default):
- *   ☀️ Trabalho       — contadores de vídeos + 4 toggles
- *   💕 Autocuidado    — 5 toggles
- *   📊 Resultados     — 3 KPIs numéricos (colapsada)
- *   🌷 Reflexão       — mood + energia + nota
- *
- * Carrega o check-in de hoje (se existir) e faz UPSERT no save.
- * Mostra % aderência TTS em tempo real no header.
+ * Estrutura:
+ *   • Hero radial com Tanker "como foi / seu dia?"
+ *   • Hero card grande com ring SVG de aderência + CountUp + dots indicators
+ *   • Atalhos pra evolução e referência
+ *   • 4 seções accordion com cards premium
+ *   • Save bar flutuante glass
+ *   • FloatingMainNav lateral
  */
 
 function useTodayCheckin(): {
@@ -62,54 +66,293 @@ function useTodayCheckin(): {
 }
 
 // =================================================================
-// Sub-componentes
+// HERO COMPACT
 // =================================================================
 
-function SectionHeader({
+function HeroSection({ desktop }: { desktop: boolean }) {
+  const today = new Date();
+  const dateLabel = today.toLocaleDateString("pt-BR", {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+  });
+
+  return (
+    <section
+      className="relative overflow-hidden hero-radial"
+      style={{
+        paddingTop: desktop ? "72px" : "calc(env(safe-area-inset-top) + 64px)",
+        paddingBottom: desktop ? "56px" : "32px",
+      }}
+    >
+      <HeroBlob color="rose" variant={1} className="-top-24 -left-24 w-[420px] h-[420px]" />
+      <HeroBlob color="peach" variant={2} className="top-10 -right-32 w-[460px] h-[460px]" />
+      <SparkleField count={12} seed={911} className="opacity-60" />
+
+      <div className={`relative ${desktop ? "px-12 max-w-[860px] mx-auto" : "px-5"}`}>
+        <SectionReveal direction="down" durationMs={500}>
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 px-3 py-2 -ml-3 rounded-full text-spark-ink-70 hover:text-spark-ink hover:bg-spark-surface-sunken/60 text-[12.5px] font-extrabold transition-colors duration-300"
+          >
+            <ArrowLeft size={14} strokeWidth={2.5} />
+            Voltar pra home
+          </Link>
+        </SectionReveal>
+
+        <div className="flex items-start justify-between gap-4 mt-6">
+          <SectionReveal direction="down" delay={100} durationMs={600}>
+            <div className="text-eyebrow text-spark-brand-deep">
+              ✦ check-in de hoje
+            </div>
+            <div className="mt-3 text-[12.5px] text-spark-ink-50 font-mono first-letter:capitalize">
+              {dateLabel}
+            </div>
+          </SectionReveal>
+
+          {desktop && (
+            <SectionReveal direction="scale" delay={250}>
+              <Sticker text="ROTINA TTS · 2026 · " emoji="🌷" size={108} />
+            </SectionReveal>
+          )}
+        </div>
+
+        <SectionReveal direction="up" delay={200} durationMs={800}>
+          <h1
+            className="mt-5 font-display lowercase leading-[0.92] tracking-tight"
+            style={{
+              fontSize: desktop ? "clamp(2.5rem, 5vw, 4.5rem)" : "clamp(2rem, 8vw, 3.25rem)",
+            }}
+          >
+            <span className="text-spark-ink">como foi </span>
+            <span className="text-grad-brand">seu dia?</span>
+          </h1>
+        </SectionReveal>
+      </div>
+    </section>
+  );
+}
+
+// =================================================================
+// ADERÊNCIA HERO (ring SVG + CountUp + dots)
+// =================================================================
+
+function AdherenceHero({
+  adherence,
+  completed,
+  total,
+}: {
+  adherence: number;
+  completed: number;
+  total: number;
+}) {
+  const circumference = 2 * Math.PI * 44;
+  const dashOffset = circumference - (adherence / 100) * circumference;
+  const message =
+    adherence >= 80
+      ? "tá voando 🚀"
+      : adherence >= 50
+        ? "tá rolando bem"
+        : adherence > 0
+          ? "bora dar gás"
+          : "marca o que já fez";
+
+  return (
+    <SectionReveal direction="up">
+      <div className="relative rounded-spark-3xl bg-gradient-to-br from-rose-500 via-pink-500 to-orange-500 text-white p-6 sm:p-8 overflow-hidden shadow-hero">
+        <SparkleField count={8} seed={203} color="rgba(255,255,255,0.65)" className="opacity-70" />
+        <div
+          aria-hidden
+          className="absolute -top-20 -right-10 w-72 h-72 rounded-full bg-white/15 blur-3xl animate-blob-1"
+        />
+
+        <div className="relative flex items-center gap-5 sm:gap-6">
+          {/* Ring SVG GIGANTE */}
+          <div className="relative w-28 h-28 sm:w-32 sm:h-32 shrink-0">
+            <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+              <circle
+                cx="50"
+                cy="50"
+                r="44"
+                fill="none"
+                stroke="rgba(255,255,255,0.25)"
+                strokeWidth="10"
+              />
+              <circle
+                cx="50"
+                cy="50"
+                r="44"
+                fill="none"
+                stroke="white"
+                strokeWidth="10"
+                strokeLinecap="round"
+                strokeDasharray={circumference}
+                strokeDashoffset={dashOffset}
+                className="transition-all duration-700 ease-premium drop-shadow-[0_4px_12px_rgba(255,255,255,0.4)]"
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="font-extrabold tracking-tight leading-none text-[28px] sm:text-[34px]">
+                <CountUp value={adherence} suffix="%" durationMs={900} />
+              </span>
+            </div>
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="text-eyebrow text-white/80">
+              ✦ aderência de hoje
+            </div>
+            <div
+              className="mt-2 font-display lowercase leading-tight tracking-tight"
+              style={{ fontSize: "clamp(1.5rem, 4vw, 2.25rem)" }}
+            >
+              {message}
+            </div>
+            <div className="mt-3 text-[13px] opacity-90 font-semibold">
+              <CountUp value={completed} durationMs={700} /> de {total} itens completos
+            </div>
+          </div>
+        </div>
+
+        {/* 11 dots indicators no bottom */}
+        <div className="relative mt-6 flex items-center gap-1.5">
+          {Array.from({ length: total }).map((_, i) => (
+            <span
+              key={i}
+              className={cn(
+                "h-1.5 flex-1 rounded-full transition-all duration-500 ease-premium",
+                i < completed ? "bg-white" : "bg-white/25",
+              )}
+            />
+          ))}
+        </div>
+      </div>
+    </SectionReveal>
+  );
+}
+
+// =================================================================
+// SHORTCUTS
+// =================================================================
+
+function Shortcuts() {
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      <SectionReveal direction="left" delay={150}>
+        <Link
+          href="/rotina/evolucao"
+          className="group block rounded-spark-2xl bg-spark-surface border border-spark-hairline p-4 hover-lift shadow-rest"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 rounded-xl bg-spark-brand-soft text-spark-brand-deep flex items-center justify-center">
+              <TrendingUp size={18} strokeWidth={2.2} />
+            </div>
+            <ArrowUpRight
+              size={14}
+              strokeWidth={2.2}
+              className="text-spark-ink-35 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-spark-brand"
+            />
+          </div>
+          <div className="text-[13.5px] font-extrabold tracking-tight text-spark-ink">
+            Evolução
+          </div>
+          <div className="text-[11.5px] text-spark-ink-50 mt-0.5">
+            Gráficos e KPIs
+          </div>
+        </Link>
+      </SectionReveal>
+
+      <SectionReveal direction="right" delay={200}>
+        <Link
+          href="/rotina/referencia"
+          className="group block rounded-spark-2xl bg-spark-surface border border-spark-hairline p-4 hover-lift shadow-rest"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 rounded-xl bg-spark-brand-soft text-spark-brand-deep flex items-center justify-center">
+              <BookOpen size={18} strokeWidth={2.2} />
+            </div>
+            <ArrowUpRight
+              size={14}
+              strokeWidth={2.2}
+              className="text-spark-ink-35 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-spark-brand"
+            />
+          </div>
+          <div className="text-[13.5px] font-extrabold tracking-tight text-spark-ink">
+            Rotina ideal
+          </div>
+          <div className="text-[11.5px] text-spark-ink-50 mt-0.5">
+            Dia completo Yara
+          </div>
+        </Link>
+      </SectionReveal>
+    </div>
+  );
+}
+
+// =================================================================
+// SECTION ACCORDION (formato magazine premium)
+// =================================================================
+
+function SectionAccordion({
   emoji,
   title,
   hint,
+  badge,
   open,
   onToggle,
-  badge,
+  children,
 }: {
   emoji: string;
   title: string;
   hint?: string;
+  badge?: string;
   open: boolean;
   onToggle: () => void;
-  badge?: string;
+  children: React.ReactNode;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onToggle}
-      aria-expanded={open}
-      className="w-full flex items-center gap-3 px-4 py-3.5 text-left"
-    >
-      <span className="text-[24px] leading-none">{emoji}</span>
-      <div className="flex-1 min-w-0">
-        <div className="text-[14px] font-extrabold text-spark-ink tracking-tight">{title}</div>
-        {hint && (
-          <div className="text-[11.5px] text-spark-ink-50 mt-0.5 leading-snug">{hint}</div>
-        )}
-      </div>
-      {badge && (
-        <span className="text-[11px] font-extrabold px-2 py-0.5 rounded-full bg-spark-brand-soft text-spark-brand-deep">
-          {badge}
-        </span>
-      )}
-      <ChevronDown
-        size={16}
-        strokeWidth={2.2}
-        className={cn(
-          "text-spark-ink-50 transition-transform duration-200 shrink-0",
-          open && "rotate-180",
-        )}
-      />
-    </button>
+    <SectionReveal direction="up">
+      <section className="rounded-spark-2xl bg-spark-surface border border-spark-hairline overflow-hidden shadow-rest">
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={open}
+          className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-spark-surface-sunken/40 transition-colors duration-300"
+        >
+          <div className="w-12 h-12 rounded-full bg-brand-grad-soft flex items-center justify-center text-[22px] shrink-0">
+            {emoji}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[14.5px] font-extrabold text-spark-ink tracking-tight">
+              {title}
+            </div>
+            {hint && (
+              <div className="text-[11.5px] text-spark-ink-50 mt-0.5 leading-snug">{hint}</div>
+            )}
+          </div>
+          {badge && (
+            <span className="text-[10.5px] font-extrabold px-2.5 py-1 rounded-full bg-spark-brand-soft text-spark-brand-deep">
+              {badge}
+            </span>
+          )}
+          <ChevronDown
+            size={16}
+            strokeWidth={2.2}
+            className={cn(
+              "text-spark-ink-50 transition-transform duration-300 shrink-0",
+              open && "rotate-180",
+            )}
+          />
+        </button>
+        {open && <div className="px-5 pb-5 pt-1 space-y-3">{children}</div>}
+      </section>
+    </SectionReveal>
   );
 }
+
+// =================================================================
+// STEPPER PREMIUM
+// =================================================================
 
 function Stepper({
   label,
@@ -128,32 +371,37 @@ function Stepper({
   return (
     <div
       className={cn(
-        "rounded-2xl border p-3.5 transition-colors",
+        "rounded-2xl border p-4 transition-all duration-300 ease-premium",
         reached
-          ? "bg-good/10 border-good/30"
+          ? "bg-good/10 border-good/40 shadow-[0_4px_14px_-6px_oklch(0.62_0.16_150/0.3)]"
           : "bg-spark-surface-sunken/40 border-spark-hairline",
       )}
     >
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-[18px]">{emoji}</span>
+      <div className="flex items-center gap-2.5 mb-3">
+        <span className="text-[20px]" aria-hidden>
+          {emoji}
+        </span>
         <div className="flex-1 min-w-0">
-          <div className="text-[13px] font-extrabold text-spark-ink">{label}</div>
-          <div className="text-[11px] text-spark-ink-50">
-            Meta TTS: <strong>{goal}</strong>
+          <div className="text-[13.5px] font-extrabold text-spark-ink leading-tight">
+            {label}
+          </div>
+          <div className="text-[11px] text-spark-ink-50 mt-0.5">
+            Meta: <strong>{goal}</strong>
           </div>
         </div>
         {reached && (
-          <span className="text-[10.5px] font-extrabold text-good uppercase tracking-wider">
-            ✓ Bateu
+          <span className="inline-flex items-center gap-1 text-[10.5px] font-extrabold text-good uppercase tracking-wider">
+            <Check size={11} strokeWidth={3} />
+            bateu
           </span>
         )}
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         <button
           type="button"
           onClick={() => onChange(Math.max(0, value - 1))}
           aria-label="Diminuir"
-          className="w-11 h-11 rounded-xl bg-white border border-spark-hairline flex items-center justify-center text-spark-ink active:scale-95 transition-transform disabled:opacity-40"
+          className="w-12 h-12 rounded-full bg-white border border-spark-hairline flex items-center justify-center text-spark-ink active:scale-95 hover:border-spark-brand/40 transition-all duration-300 ease-premium disabled:opacity-40 disabled:hover:border-spark-hairline"
           disabled={value <= 0}
         >
           <Minus size={16} strokeWidth={2.5} />
@@ -161,19 +409,20 @@ function Stepper({
         <div className="flex-1 text-center">
           <span
             className={cn(
-              "font-extrabold tracking-tight text-[26px]",
+              "font-extrabold tracking-tight leading-none",
               reached ? "text-good" : "text-spark-ink",
             )}
+            style={{ fontSize: "clamp(1.75rem, 5vw, 2.25rem)" }}
           >
             {value}
           </span>
-          <span className="text-spark-ink-50 text-[15px] font-bold">/{goal}</span>
+          <span className="text-spark-ink-50 text-[16px] font-bold">/{goal}</span>
         </div>
         <button
           type="button"
           onClick={() => onChange(Math.min(99, value + 1))}
           aria-label="Aumentar"
-          className="w-11 h-11 rounded-xl bg-white border border-spark-hairline flex items-center justify-center text-spark-ink active:scale-95 transition-transform"
+          className="w-12 h-12 rounded-full bg-spark-ink text-white flex items-center justify-center active:scale-95 hover:-translate-y-0.5 transition-all duration-300 ease-premium shadow-lift"
         >
           <Plus size={16} strokeWidth={2.5} />
         </button>
@@ -181,6 +430,10 @@ function Stepper({
     </div>
   );
 }
+
+// =================================================================
+// TOGGLE CARD PREMIUM
+// =================================================================
 
 function ToggleCard({
   emoji,
@@ -201,37 +454,46 @@ function ToggleCard({
       onClick={onToggle}
       aria-pressed={checked}
       className={cn(
-        "w-full text-left rounded-2xl border p-3.5 flex items-center gap-3 transition-all active:scale-[0.98]",
+        "w-full text-left rounded-2xl border p-4 flex items-center gap-3 transition-all duration-300 ease-premium active:scale-[0.98]",
         checked
-          ? "bg-good/10 border-good/40"
-          : "bg-spark-surface-sunken/40 border-spark-hairline hover:border-spark-brand/30",
+          ? "bg-good/10 border-good/40 shadow-[0_4px_14px_-6px_oklch(0.62_0.16_150/0.3)]"
+          : "bg-spark-surface-sunken/40 border-spark-hairline hover:border-spark-brand/40 hover:bg-spark-surface",
       )}
     >
-      <span className="text-[22px] shrink-0">{emoji}</span>
+      <span className="text-[22px] shrink-0" aria-hidden>
+        {emoji}
+      </span>
       <div className="flex-1 min-w-0">
-        <div className="text-[13.5px] font-extrabold text-spark-ink leading-tight">{label}</div>
+        <div className="text-[13.5px] font-extrabold text-spark-ink leading-tight tracking-tight">
+          {label}
+        </div>
         {hint && (
-          <div className="text-[11px] text-spark-ink-50 mt-0.5 leading-snug">{hint}</div>
+          <div className="text-[11.5px] text-spark-ink-50 mt-0.5 leading-snug">{hint}</div>
         )}
       </div>
       <div
         className={cn(
-          "w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors",
-          checked ? "bg-good text-white" : "bg-white border border-spark-hairline",
+          "w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ease-premium",
+          checked
+            ? "bg-good text-white scale-110 shadow-[0_4px_12px_-4px_oklch(0.62_0.16_150/0.6)]"
+            : "bg-white border border-spark-hairline",
         )}
       >
-        {checked && <Check size={14} strokeWidth={3} />}
+        {checked && <Check size={16} strokeWidth={3} />}
       </div>
     </button>
   );
 }
+
+// =================================================================
+// NUMBER INPUT PREMIUM
+// =================================================================
 
 function NumberInput({
   label,
   emoji,
   placeholder,
   prefix,
-  suffix,
   value,
   onChange,
 }: {
@@ -239,7 +501,6 @@ function NumberInput({
   emoji: string;
   placeholder: string;
   prefix?: string;
-  suffix?: string;
   value: number | null;
   onChange: (v: number | null) => void;
 }) {
@@ -249,13 +510,13 @@ function NumberInput({
   }, [value]);
   return (
     <div>
-      <label className="flex items-center gap-1.5 text-[12.5px] font-bold text-spark-ink mb-1.5">
-        <span className="text-[15px]">{emoji}</span>
+      <label className="flex items-center gap-1.5 text-eyebrow text-spark-ink mb-2">
+        <span className="text-[14px] leading-none">{emoji}</span>
         {label}
       </label>
       <div className="relative flex items-center">
         {prefix && (
-          <span className="absolute left-3.5 text-[14px] text-spark-ink-50 font-bold pointer-events-none">
+          <span className="absolute left-4 text-[14px] text-spark-ink-50 font-bold pointer-events-none">
             {prefix}
           </span>
         )}
@@ -275,20 +536,19 @@ function NumberInput({
           }}
           placeholder={placeholder}
           className={cn(
-            "w-full py-2.5 rounded-xl border border-spark-hairline bg-white text-[14px] text-spark-ink placeholder:text-spark-ink-35 focus:outline-none focus:border-spark-brand",
-            prefix ? "pl-10" : "pl-3.5",
-            suffix ? "pr-12" : "pr-3.5",
+            "w-full py-3 rounded-2xl border border-spark-hairline bg-white text-[15px] font-bold text-spark-ink placeholder:text-spark-ink-35 placeholder:font-normal focus:outline-none focus:border-spark-brand focus:ring-2 focus:ring-spark-brand/15 transition-all duration-200",
+            prefix ? "pl-11" : "pl-4",
+            "pr-4",
           )}
         />
-        {suffix && (
-          <span className="absolute right-3.5 text-[12px] text-spark-ink-50 font-bold pointer-events-none">
-            {suffix}
-          </span>
-        )}
       </div>
     </div>
   );
 }
+
+// =================================================================
+// MOOD PICKER PREMIUM
+// =================================================================
 
 function MoodPicker({
   value,
@@ -308,22 +568,39 @@ function MoodPicker({
             onClick={() => onChange(active ? null : opt.value)}
             aria-pressed={active}
             className={cn(
-              "rounded-2xl border p-2 flex flex-col items-center gap-1 transition-all active:scale-95",
+              "rounded-2xl border p-3 flex flex-col items-center gap-1.5 transition-all duration-300 ease-premium active:scale-95",
               active
-                ? "bg-spark-brand-soft border-spark-brand shadow-[0_4px_14px_-6px_oklch(0.55_0.24_340/0.4)]"
-                : "bg-spark-surface-sunken/40 border-spark-hairline hover:border-spark-brand/30",
+                ? "bg-spark-brand-soft border-spark-brand shadow-lift-brand"
+                : "bg-spark-surface-sunken/40 border-spark-hairline hover:border-spark-brand/40 hover:bg-spark-surface",
             )}
           >
-            <span className={cn("text-[28px] transition-transform", active && "scale-110")}>
+            <span
+              className={cn(
+                "text-[28px] transition-transform duration-300",
+                active && "scale-110",
+              )}
+              aria-hidden
+            >
               {opt.emoji}
             </span>
-            <span className="text-[10px] font-bold text-spark-ink-70">{opt.label}</span>
+            <span
+              className={cn(
+                "text-[10.5px] font-extrabold tracking-tight",
+                active ? "text-spark-brand-deep" : "text-spark-ink-70",
+              )}
+            >
+              {opt.label}
+            </span>
           </button>
         );
       })}
     </div>
   );
 }
+
+// =================================================================
+// ENERGY SLIDER PREMIUM
+// =================================================================
 
 function EnergySlider({
   value,
@@ -334,8 +611,8 @@ function EnergySlider({
 }) {
   return (
     <div>
-      <label className="block text-[12.5px] font-bold text-spark-ink mb-2">
-        ⚡ Energia do dia
+      <label className="block text-eyebrow text-spark-ink mb-2">
+        ⚡ energia do dia
       </label>
       <div className="grid grid-cols-5 gap-2">
         {[1, 2, 3, 4, 5].map((n) => {
@@ -347,10 +624,10 @@ function EnergySlider({
               onClick={() => onChange(active ? null : n)}
               aria-pressed={active}
               className={cn(
-                "py-2.5 rounded-xl border text-[13px] font-extrabold transition-all active:scale-95",
+                "py-3 rounded-2xl border text-[15px] font-extrabold transition-all duration-300 ease-premium active:scale-95",
                 active
-                  ? "bg-brand-grad text-white border-spark-brand"
-                  : "bg-spark-surface-sunken/40 border-spark-hairline text-spark-ink-50 hover:text-spark-ink",
+                  ? "bg-spark-ink text-white border-spark-ink shadow-lift"
+                  : "bg-spark-surface-sunken/40 border-spark-hairline text-spark-ink-50 hover:text-spark-ink hover:border-spark-brand/40 hover:bg-spark-surface",
               )}
             >
               {n}
@@ -363,7 +640,58 @@ function EnergySlider({
 }
 
 // =================================================================
-// Body principal
+// SAVE BAR
+// =================================================================
+
+function SaveBar({
+  desktop,
+  onSave,
+  saving,
+  adherence,
+}: {
+  desktop: boolean;
+  onSave: () => void;
+  saving: boolean;
+  adherence: number;
+}) {
+  return (
+    <div
+      className="fixed inset-x-0 z-30 px-4 pointer-events-none"
+      style={{ bottom: "calc(env(safe-area-inset-bottom) + 92px)" }}
+    >
+      <div
+        className={cn(
+          "mx-auto pointer-events-auto glass rounded-full shadow-lift flex items-center gap-2 p-2",
+          desktop ? "max-w-[680px]" : "max-w-full",
+        )}
+      >
+        <div className="flex-1 pl-4 text-[12px] text-spark-ink-50 hidden sm:block">
+          {adherence}% da rotina hoje · não precisa fechar tudo 💕
+        </div>
+        <div className="flex-1 sm:hidden pl-3 text-[11px] text-spark-ink-50">
+          {adherence}% da rotina
+        </div>
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={saving}
+          className="group inline-flex items-center gap-2 px-6 py-3 rounded-full bg-spark-ink text-white text-[13px] font-extrabold shadow-lift transition-all duration-300 ease-premium hover:-translate-y-0.5 hover:bg-spark-brand-deep active:translate-y-0 disabled:opacity-60 disabled:hover:translate-y-0"
+        >
+          <Save size={14} strokeWidth={2.5} />
+          {saving ? "Salvando..." : "Salvar check-in"}
+          <ArrowUpRight
+            size={14}
+            strokeWidth={2.5}
+            className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+          />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// =================================================================
+// BODY PRINCIPAL
 // =================================================================
 
 type SectionState = {
@@ -396,7 +724,6 @@ function RotinaHojeBody({ desktop = false }: { desktop?: boolean }) {
     [checkin],
   );
 
-  // Conta atividades marcadas pra mostrar no botão de save
   const completedCount = React.useMemo(() => {
     if (!checkin) return 0;
     let n = 0;
@@ -412,6 +739,30 @@ function RotinaHojeBody({ desktop = false }: { desktop?: boolean }) {
     if (checkin.gym) n += 1;
     if (checkin.sleep_hygiene) n += 1;
     return n;
+  }, [checkin]);
+
+  // Contadores por seção pra badge
+  const trabalhoCount = React.useMemo(() => {
+    if (!checkin) return { done: 0, total: 6 };
+    let done = 0;
+    if (checkin.videos_posted >= TTS_GOALS.videos_posted) done += 1;
+    if (checkin.videos_recorded >= TTS_GOALS.videos_recorded) done += 1;
+    if (checkin.live_chat_done) done += 1;
+    if (checkin.live_shop_done) done += 1;
+    if (checkin.analytics_done) done += 1;
+    if (checkin.comms_done) done += 1;
+    return { done, total: 6 };
+  }, [checkin]);
+
+  const pessoalCount = React.useMemo(() => {
+    if (!checkin) return { done: 0, total: 5 };
+    let done = 0;
+    if (checkin.skincare_morning) done += 1;
+    if (checkin.skincare_night) done += 1;
+    if (checkin.supplementation) done += 1;
+    if (checkin.gym) done += 1;
+    if (checkin.sleep_hygiene) done += 1;
+    return { done, total: 5 };
   }, [checkin]);
 
   const handleSave = async () => {
@@ -443,332 +794,216 @@ function RotinaHojeBody({ desktop = false }: { desktop?: boolean }) {
   };
 
   if (loading || !checkin) {
-    return <LoadingSplash message="Carregando seu dia" />;
+    return (
+      <div
+        className="flex-1 overflow-auto relative hero-radial flex items-center justify-center"
+        style={{ minHeight: "60vh" }}
+      >
+        <LoadingSplash message="Carregando seu dia" />
+      </div>
+    );
   }
 
   return (
-    <div className={`flex-1 overflow-auto ${desktop ? "py-8 px-12" : "pb-28"}`}>
-      <div className={desktop ? "max-w-[680px]" : "px-4 pt-4"}>
-        {desktop && (
-          <>
-            <div className="text-[12px] font-bold text-spark-brand tracking-[0.06em] uppercase">
-              📊 Check-in de Hoje
-            </div>
-            <h1 className="mt-1 font-extrabold tracking-tight leading-[1.1] text-[36px]">
-              Como foi seu dia? ✨
-            </h1>
-          </>
-        )}
+    <div
+      className="flex-1 overflow-auto relative"
+      style={{ paddingBottom: desktop ? 96 : 160 }}
+    >
+      <HeroSection desktop={desktop} />
 
-        {/* HEADER COM % ADERÊNCIA + ATALHOS */}
-        <div className="rounded-3xl bg-brand-grad-hero text-white p-5 overflow-hidden relative shadow-[0_12px_32px_-16px_oklch(0.55_0.24_340/0.45)] mb-5">
-          <div
-            aria-hidden
-            className="absolute -top-10 -right-6 w-44 h-44 rounded-full bg-white/15 blur-3xl pointer-events-none"
+      {/* Aderência hero + shortcuts + sections */}
+      <section className={`relative ${desktop ? "px-12" : "px-5"} pb-12`}>
+        <div className={desktop ? "max-w-[680px] mx-auto" : ""}>
+          <AdherenceHero
+            adherence={adherence}
+            completed={completedCount}
+            total={11}
           />
-          <div className="relative flex items-center gap-4">
-            <div className="relative w-20 h-20 shrink-0">
-              <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="44"
-                  fill="none"
-                  stroke="rgba(255,255,255,0.2)"
-                  strokeWidth="8"
-                />
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="44"
-                  fill="none"
-                  stroke="white"
-                  strokeWidth="8"
-                  strokeLinecap="round"
-                  strokeDasharray={`${(adherence / 100) * 276.46} 276.46`}
-                  className="transition-all duration-500"
-                />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-[22px] font-extrabold">{adherence}%</span>
-              </div>
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-[11px] font-bold uppercase tracking-[0.08em] opacity-90">
-                Rotina TTS hoje
-              </div>
-              <div className="mt-1 text-[16px] font-extrabold leading-tight">
-                {adherence >= 80
-                  ? "Tá voando! 🚀"
-                  : adherence >= 50
-                    ? "Tá rolando bem 💕"
-                    : adherence > 0
-                      ? "Bora dar gás ✨"
-                      : "Marca o que já fez 👇"}
-              </div>
-              <div className="mt-1 text-[12px] opacity-90">
-                {completedCount} de 11 itens completos
-              </div>
-            </div>
+
+          <div className="mt-5">
+            <Shortcuts />
           </div>
-        </div>
 
-        {/* ATALHOS PRA OUTRAS SUB-ROTAS */}
-        <div className="grid grid-cols-2 gap-2.5 mb-5">
-          <Link
-            href="/rotina/evolucao"
-            className="rounded-2xl bg-spark-surface border border-spark-hairline p-3 flex items-center gap-2.5 hover:border-spark-brand/30 transition-colors"
-          >
-            <div className="w-9 h-9 rounded-xl bg-spark-brand-soft text-spark-brand-deep flex items-center justify-center">
-              <TrendingUp size={16} strokeWidth={2} />
-            </div>
-            <div className="text-[12px] font-extrabold leading-tight">
-              Evolução
-              <div className="text-[10.5px] font-semibold text-spark-ink-50 mt-0.5">
-                KPIs + gráficos
-              </div>
-            </div>
-          </Link>
-          <Link
-            href="/rotina/referencia"
-            className="rounded-2xl bg-spark-surface border border-spark-hairline p-3 flex items-center gap-2.5 hover:border-spark-brand/30 transition-colors"
-          >
-            <div className="w-9 h-9 rounded-xl bg-spark-brand-soft text-spark-brand-deep flex items-center justify-center">
-              <BookOpen size={16} strokeWidth={2} />
-            </div>
-            <div className="text-[12px] font-extrabold leading-tight">
-              Rotina TTS
-              <div className="text-[10.5px] font-semibold text-spark-ink-50 mt-0.5">
-                Dia ideal completo
-              </div>
-            </div>
-          </Link>
-        </div>
-
-        {/* SEÇÕES */}
-        <div className="space-y-3">
-          {/* TRABALHO */}
-          <section className="rounded-3xl bg-spark-surface border border-spark-hairline overflow-hidden">
-            <SectionHeader
+          <div className="mt-7 space-y-3">
+            <SectionAccordion
               emoji="☀️"
               title="Trabalho"
-              hint="Vídeos, lives, análise, comunicação"
+              hint="Vídeos, lives, análise, comms"
+              badge={`${trabalhoCount.done}/${trabalhoCount.total}`}
               open={sections.trabalho}
               onToggle={() => setSections((s) => ({ ...s, trabalho: !s.trabalho }))}
-            />
-            {sections.trabalho && (
-              <div className="px-4 pb-4 space-y-2.5">
-                <Stepper
-                  label="Vídeos postados"
-                  emoji="📱"
-                  value={checkin.videos_posted}
-                  goal={TTS_GOALS.videos_posted}
-                  onChange={(v) => update("videos_posted", v)}
-                />
-                <Stepper
-                  label="Vídeos gravados (lote)"
-                  emoji="🎬"
-                  value={checkin.videos_recorded}
-                  goal={TTS_GOALS.videos_recorded}
-                  onChange={(v) => update("videos_recorded", v)}
-                />
-                <ToggleCard
-                  emoji="🔴"
-                  label="Live Bate-papo (manhã)"
-                  hint="Conexão com a comunidade no café"
-                  checked={checkin.live_chat_done}
-                  onToggle={() => update("live_chat_done", !checkin.live_chat_done)}
-                />
-                <ToggleCard
-                  emoji="🛍️"
-                  label="Live Shop (noite)"
-                  hint="Vendas em tempo real"
-                  checked={checkin.live_shop_done}
-                  onToggle={() => update("live_shop_done", !checkin.live_shop_done)}
-                />
-                <ToggleCard
-                  emoji="📊"
-                  label="Análise de métricas"
-                  hint="Retenção, ganchos, faturamento"
-                  checked={checkin.analytics_done}
-                  onToggle={() => update("analytics_done", !checkin.analytics_done)}
-                />
-                <ToggleCard
-                  emoji="💬"
-                  label="Lote de comunicação"
-                  hint="Comentários, WhatsApp, e-mail"
-                  checked={checkin.comms_done}
-                  onToggle={() => update("comms_done", !checkin.comms_done)}
-                />
-              </div>
-            )}
-          </section>
+            >
+              <Stepper
+                label="Vídeos postados"
+                emoji="📱"
+                value={checkin.videos_posted}
+                goal={TTS_GOALS.videos_posted}
+                onChange={(v) => update("videos_posted", v)}
+              />
+              <Stepper
+                label="Vídeos gravados (lote)"
+                emoji="🎬"
+                value={checkin.videos_recorded}
+                goal={TTS_GOALS.videos_recorded}
+                onChange={(v) => update("videos_recorded", v)}
+              />
+              <ToggleCard
+                emoji="🔴"
+                label="Live Bate-papo"
+                hint="Conexão da manhã"
+                checked={checkin.live_chat_done}
+                onToggle={() => update("live_chat_done", !checkin.live_chat_done)}
+              />
+              <ToggleCard
+                emoji="🛍️"
+                label="Live Shop"
+                hint="Vendas em tempo real"
+                checked={checkin.live_shop_done}
+                onToggle={() => update("live_shop_done", !checkin.live_shop_done)}
+              />
+              <ToggleCard
+                emoji="📊"
+                label="Análise de métricas"
+                hint="Retenção, ganchos, faturamento"
+                checked={checkin.analytics_done}
+                onToggle={() => update("analytics_done", !checkin.analytics_done)}
+              />
+              <ToggleCard
+                emoji="💬"
+                label="Lote de comunicação"
+                hint="Comentários, WhatsApp, e-mail"
+                checked={checkin.comms_done}
+                onToggle={() => update("comms_done", !checkin.comms_done)}
+              />
+            </SectionAccordion>
 
-          {/* PESSOAL */}
-          <section className="rounded-3xl bg-spark-surface border border-spark-hairline overflow-hidden">
-            <SectionHeader
+            <SectionAccordion
               emoji="💕"
               title="Autocuidado"
-              hint="Skincare, suplementos, academia, sono"
+              hint="Skincare, suplementos, treino, sono"
+              badge={`${pessoalCount.done}/${pessoalCount.total}`}
               open={sections.pessoal}
               onToggle={() => setSections((s) => ({ ...s, pessoal: !s.pessoal }))}
-            />
-            {sections.pessoal && (
-              <div className="px-4 pb-4 space-y-2.5">
-                <ToggleCard
-                  emoji="☀️"
-                  label="Skincare manhã"
-                  checked={checkin.skincare_morning}
-                  onToggle={() => update("skincare_morning", !checkin.skincare_morning)}
-                />
-                <ToggleCard
-                  emoji="🌙"
-                  label="Skincare noite"
-                  checked={checkin.skincare_night}
-                  onToggle={() => update("skincare_night", !checkin.skincare_night)}
-                />
-                <ToggleCard
-                  emoji="💊"
-                  label="Suplementação"
-                  checked={checkin.supplementation}
-                  onToggle={() => update("supplementation", !checkin.supplementation)}
-                />
-                <ToggleCard
-                  emoji="🏋️"
-                  label="Academia"
-                  checked={checkin.gym}
-                  onToggle={() => update("gym", !checkin.gym)}
-                />
-                <ToggleCard
-                  emoji="🛌"
-                  label="Higiene do sono"
-                  hint="Sem tela depois das 22h"
-                  checked={checkin.sleep_hygiene}
-                  onToggle={() => update("sleep_hygiene", !checkin.sleep_hygiene)}
-                />
-              </div>
-            )}
-          </section>
+            >
+              <ToggleCard
+                emoji="☀️"
+                label="Skincare manhã"
+                checked={checkin.skincare_morning}
+                onToggle={() => update("skincare_morning", !checkin.skincare_morning)}
+              />
+              <ToggleCard
+                emoji="🌙"
+                label="Skincare noite"
+                checked={checkin.skincare_night}
+                onToggle={() => update("skincare_night", !checkin.skincare_night)}
+              />
+              <ToggleCard
+                emoji="💊"
+                label="Suplementação"
+                checked={checkin.supplementation}
+                onToggle={() => update("supplementation", !checkin.supplementation)}
+              />
+              <ToggleCard
+                emoji="🏋️"
+                label="Academia"
+                checked={checkin.gym}
+                onToggle={() => update("gym", !checkin.gym)}
+              />
+              <ToggleCard
+                emoji="🛌"
+                label="Higiene do sono"
+                hint="Sem tela depois das 22h"
+                checked={checkin.sleep_hygiene}
+                onToggle={() => update("sleep_hygiene", !checkin.sleep_hygiene)}
+              />
+            </SectionAccordion>
 
-          {/* RESULTADOS */}
-          <section className="rounded-3xl bg-spark-surface border border-spark-hairline overflow-hidden">
-            <SectionHeader
+            <SectionAccordion
               emoji="📊"
               title="Resultados do dia"
               hint="3 números (opcional)"
               open={sections.resultados}
               onToggle={() => setSections((s) => ({ ...s, resultados: !s.resultados }))}
-            />
-            {sections.resultados && (
-              <div className="px-4 pb-4 space-y-3">
-                <NumberInput
-                  label="Vendas (Live Shop + dia)"
-                  emoji="💰"
-                  placeholder="0,00"
-                  prefix="R$"
-                  value={checkin.sales_brl}
-                  onChange={(v) => update("sales_brl", v)}
-                />
-                <NumberInput
-                  label="Comissão estimada"
-                  emoji="💵"
-                  placeholder="0,00"
-                  prefix="R$"
-                  value={checkin.commission_brl}
-                  onChange={(v) => update("commission_brl", v)}
-                />
-                <NumberInput
-                  label="Views totais"
-                  emoji="👀"
-                  placeholder="0"
-                  value={checkin.total_views}
-                  onChange={(v) => update("total_views", v == null ? null : Math.round(v))}
-                />
-              </div>
-            )}
-          </section>
+            >
+              <NumberInput
+                label="vendas (live shop + dia)"
+                emoji="💰"
+                placeholder="0,00"
+                prefix="R$"
+                value={checkin.sales_brl}
+                onChange={(v) => update("sales_brl", v)}
+              />
+              <NumberInput
+                label="comissão estimada"
+                emoji="💵"
+                placeholder="0,00"
+                prefix="R$"
+                value={checkin.commission_brl}
+                onChange={(v) => update("commission_brl", v)}
+              />
+              <NumberInput
+                label="views totais"
+                emoji="👀"
+                placeholder="0"
+                value={checkin.total_views}
+                onChange={(v) => update("total_views", v == null ? null : Math.round(v))}
+              />
+            </SectionAccordion>
 
-          {/* REFLEXÃO */}
-          <section className="rounded-3xl bg-spark-surface border border-spark-hairline overflow-hidden">
-            <SectionHeader
+            <SectionAccordion
               emoji="🌷"
-              title="Como você se sentiu hoje?"
+              title="Como você se sentiu?"
+              hint="Mood + energia + nota"
               open={sections.reflexao}
               onToggle={() => setSections((s) => ({ ...s, reflexao: !s.reflexao }))}
-            />
-            {sections.reflexao && (
-              <div className="px-4 pb-4 space-y-4">
-                <div>
-                  <label className="block text-[12.5px] font-bold text-spark-ink mb-2">
-                    😊 Humor
-                  </label>
-                  <MoodPicker
-                    value={checkin.mood}
-                    onChange={(v) => update("mood", v)}
-                  />
-                </div>
-                <EnergySlider
-                  value={checkin.energy_level}
-                  onChange={(v) => update("energy_level", v)}
+            >
+              <div>
+                <label className="block text-eyebrow text-spark-ink mb-2">
+                  😊 humor
+                </label>
+                <MoodPicker
+                  value={checkin.mood}
+                  onChange={(v) => update("mood", v)}
                 />
-                <div>
-                  <label className="block text-[12.5px] font-bold text-spark-ink mb-1.5">
-                    📝 Nota livre (opcional)
-                  </label>
-                  <textarea
-                    value={checkin.notes ?? ""}
-                    onChange={(e) => update("notes", e.target.value.slice(0, 500))}
-                    placeholder="O que você quer lembrar desse dia?"
-                    rows={3}
-                    maxLength={500}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-spark-hairline bg-white text-[13.5px] text-spark-ink placeholder:text-spark-ink-35 focus:outline-none focus:border-spark-brand resize-none"
-                  />
-                </div>
               </div>
-            )}
-          </section>
+              <EnergySlider
+                value={checkin.energy_level}
+                onChange={(v) => update("energy_level", v)}
+              />
+              <div>
+                <label className="block text-eyebrow text-spark-ink mb-2">
+                  📝 nota livre (opcional)
+                </label>
+                <textarea
+                  value={checkin.notes ?? ""}
+                  onChange={(e) => update("notes", e.target.value.slice(0, 500))}
+                  placeholder="O que você quer lembrar desse dia?"
+                  rows={3}
+                  maxLength={500}
+                  className="w-full px-4 py-3 rounded-2xl border border-spark-hairline bg-white text-[14px] text-spark-ink placeholder:text-spark-ink-35 focus:outline-none focus:border-spark-brand focus:ring-2 focus:ring-spark-brand/15 transition-all duration-200 resize-none"
+                />
+              </div>
+            </SectionAccordion>
+          </div>
         </div>
+      </section>
 
-        {/* SAVE BAR */}
-        <div
-          className={cn(
-            desktop
-              ? "mt-8"
-              : "mt-6 fixed bottom-0 inset-x-0 px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+88px)] bg-white/95 backdrop-blur border-t border-spark-hairline z-10",
-          )}
-        >
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving}
-            className="w-full inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-2xl bg-brand-grad text-white text-[15px] font-extrabold shadow-[0_8px_24px_-12px_oklch(0.55_0.24_340/0.5)] active:scale-95 transition-transform disabled:opacity-60 disabled:active:scale-100"
-          >
-            <Save size={16} strokeWidth={2.2} />
-            {saving ? "Salvando..." : "Salvar check-in ✨"}
-          </button>
-        </div>
-      </div>
+      <SaveBar
+        desktop={desktop}
+        onSave={handleSave}
+        saving={saving}
+        adherence={adherence}
+      />
     </div>
   );
 }
 
 // =================================================================
-// Page
+// PAGE
 // =================================================================
 
 function RotinaHojeMobile() {
-  return (
-    <>
-      <MobileHeader
-        variant="editorial"
-        eyebrow="🌷 CHECK-IN DE HOJE"
-        title="Como foi seu dia?"
-        back={{ href: "/" }}
-      />
-      <RotinaHojeBody />
-      <BottomNav active="rotina" />
-    </>
-  );
+  return <RotinaHojeBody />;
 }
 
 function RotinaHojeDesktop() {
@@ -777,13 +1012,14 @@ function RotinaHojeDesktop() {
 
 export default function RotinaHojePage() {
   return (
-    <ResponsiveShell
-      mobile={<RotinaHojeMobile />}
-      desktop={<RotinaHojeDesktop />}
-      active="rotina"
-    />
+    <>
+      <ResponsiveShell
+        mobile={<RotinaHojeMobile />}
+        desktop={<RotinaHojeDesktop />}
+        active="rotina"
+        customSidebar
+      />
+      <FloatingMainNav active="rotina" />
+    </>
   );
 }
-
-// Suprime warning de Flame não usado — preserva import pro futuro streak inline
-void Flame;

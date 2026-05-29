@@ -3,14 +3,36 @@
 import * as React from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { Copy, Trash2, Pen } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowUpRight,
+  Copy,
+  Trash2,
+  Check,
+  Sparkles,
+  Clock,
+} from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
-import { BottomNav } from "@/components/layout/bottom-nav";
-import { MobileHeader } from "@/components/layout/mobile-header";
-import { SButton } from "@/components/atoms/s-button";
-import { SBadge } from "@/components/atoms/s-badge";
+import { FloatingMainNav } from "@/components/layout/floating-main-nav";
+import { HeroBlob } from "@/components/atoms/hero-blob";
+import { SparkleField } from "@/components/atoms/sparkle-field";
+import { Sticker } from "@/components/atoms/sticker";
+import { SectionReveal } from "@/components/atoms/section-reveal";
 import { LoadingSplash } from "@/components/atoms/loading-splash";
 import { useConfirm, useToast } from "@/components/molecules/dialog-provider";
+import { cn } from "@/lib/cn";
+
+/**
+ * /scripts/[id] — biblioteca editorial premium dos roteiros.
+ *
+ * Layout:
+ *   • Hero compacto: back + sticker + Tanker title + chips metadata
+ *   • Cards de roteiros COMPLETOS (formato Yara) com blocos
+ *     coloridos: gancho destacado em gradient, dev/benefício/CTA
+ *     em sub-cards limpos. Numero do roteiro em ring grande.
+ *   • Suporta também formato LEGADO (hooks soltos).
+ *   • Action bar flutuante glass: copiar tudo + apagar.
+ */
 
 // Item pode ser ROTEIRO COMPLETO (com development/benefit/cta/style) ou
 // HOOK SIMPLES (formato antigo). Detecta-se pela presença de `development`.
@@ -36,15 +58,15 @@ function isFullScript(item: ScriptItem): boolean {
 const STYLE_EMOJI: Record<string, string> = {
   fofoca: "💬",
   polemico: "🔥",
-  "polêmico": "🔥",
+  polêmico: "🔥",
   engracado: "😄",
-  "engraçado": "😄",
+  engraçado: "😄",
   educativo: "📚",
   storytelling: "📖",
   comparacao: "⚖️",
-  "comparação": "⚖️",
+  comparação: "⚖️",
   transformacao: "✨",
-  "transformação": "✨",
+  transformação: "✨",
 };
 
 type ScriptDetail = {
@@ -89,10 +111,353 @@ function useScript(id: string) {
   return { script, loading, error };
 }
 
+// =================================================================
+// HERO
+// =================================================================
+
+function ScriptHero({
+  script,
+  desktop,
+}: {
+  script: ScriptDetail;
+  desktop: boolean;
+}) {
+  const isFull = script.hooks.some(isFullScript);
+  const label = isFull ? "roteiros" : "hooks";
+
+  return (
+    <section
+      className="relative overflow-hidden hero-radial"
+      style={{
+        paddingTop: desktop ? "72px" : "calc(env(safe-area-inset-top) + 64px)",
+        paddingBottom: desktop ? "64px" : "40px",
+      }}
+    >
+      <HeroBlob color="rose" variant={1} className="-top-24 -left-24 w-[420px] h-[420px]" />
+      <HeroBlob color="lilac" variant={2} className="top-10 -right-32 w-[460px] h-[460px]" />
+      <SparkleField count={12} seed={848} className="opacity-60" />
+
+      <div className={`relative ${desktop ? "px-12 max-w-[920px] mx-auto" : "px-5"}`}>
+        {/* Back */}
+        <SectionReveal direction="down" durationMs={500}>
+          <Link
+            href="/scripts"
+            className="inline-flex items-center gap-1.5 px-3 py-2 -ml-3 rounded-full text-spark-ink-70 hover:text-spark-ink hover:bg-spark-surface-sunken/60 text-[12.5px] font-extrabold transition-colors duration-300"
+          >
+            <ArrowLeft size={14} strokeWidth={2.5} />
+            Voltar pra biblioteca
+          </Link>
+        </SectionReveal>
+
+        <div className="flex items-start justify-between gap-4 mt-6">
+          <SectionReveal direction="down" delay={100} durationMs={600}>
+            <div className="text-eyebrow text-spark-brand-deep">
+              ✦ {script.hooks.length} {label}
+            </div>
+          </SectionReveal>
+
+          {desktop && (
+            <SectionReveal direction="scale" delay={250}>
+              <Sticker text="ROTEIROS · TTS · 2026 · " emoji="✍️" size={108} />
+            </SectionReveal>
+          )}
+        </div>
+
+        <SectionReveal direction="up" delay={200} durationMs={800}>
+          <h1
+            className="mt-5 font-display lowercase leading-[0.92] tracking-tight text-spark-ink"
+            style={{
+              fontSize: desktop ? "clamp(2.25rem, 4.5vw, 4rem)" : "clamp(1.875rem, 7vw, 2.75rem)",
+            }}
+          >
+            {script.title.toLowerCase()}
+          </h1>
+        </SectionReveal>
+
+        <SectionReveal direction="up" delay={400}>
+          <div className="mt-6 flex items-center gap-2 text-[11.5px] text-spark-ink-50 font-mono">
+            <Clock size={11} strokeWidth={2} />
+            criado em{" "}
+            {new Date(script.created_at).toLocaleDateString("pt-BR", {
+              day: "2-digit",
+              month: "long",
+              year: "numeric",
+            })}
+          </div>
+        </SectionReveal>
+      </div>
+    </section>
+  );
+}
+
+// =================================================================
+// FULL SCRIPT CARD (formato Yara — gancho + dev + benefício + CTA)
+// =================================================================
+
+function FullScriptCard({
+  item,
+  n,
+  index,
+}: {
+  item: ScriptItem;
+  n: number;
+  index: number;
+}) {
+  const styleKey = (item.style ?? "").toLowerCase();
+  const emoji = STYLE_EMOJI[styleKey] ?? "🎬";
+
+  return (
+    <SectionReveal direction="up" delay={Math.min(index * 90, 360)}>
+      <article className="relative rounded-spark-3xl bg-spark-surface border border-spark-hairline overflow-hidden shadow-rest hover-lift">
+        {/* Header colorido */}
+        <header className="relative px-6 sm:px-8 py-5 bg-gradient-to-br from-rose-100 via-amber-50 to-purple-100">
+          <div
+            aria-hidden
+            className="absolute inset-0"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle at 25% 30%, rgba(255,255,255,0.55) 0%, transparent 40%)",
+            }}
+          />
+          <div className="relative flex items-center gap-4">
+            {/* Numero em ring grande */}
+            <div className="shrink-0 relative">
+              <svg width="64" height="64" viewBox="0 0 64 64" className="drop-shadow-sm">
+                <circle
+                  cx="32"
+                  cy="32"
+                  r="28"
+                  fill="white"
+                  stroke="oklch(0.65 0.20 350)"
+                  strokeWidth="2"
+                />
+                <text
+                  x="32"
+                  y="42"
+                  textAnchor="middle"
+                  fontSize="24"
+                  fontWeight="800"
+                  fill="oklch(0.50 0.22 345)"
+                  fontFamily="var(--font-display)"
+                >
+                  {n}
+                </text>
+              </svg>
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <div className="text-eyebrow text-spark-brand-deep mb-1.5">
+                ✦ roteiro {item.duration_sec ? `· ${item.duration_sec}s` : ""}
+              </div>
+              <div
+                className="font-display lowercase tracking-tight text-spark-ink leading-tight flex items-center gap-2 truncate"
+                style={{ fontSize: "clamp(1.25rem, 3vw, 1.875rem)" }}
+              >
+                <span aria-hidden className="text-[24px]">
+                  {emoji}
+                </span>
+                {item.style ?? "completo"}
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Blocos */}
+        <div className="p-6 sm:p-8 space-y-5">
+          {item.hook && (
+            <Block
+              emoji="🎣"
+              label="gancho (3s)"
+              tone="highlight"
+            >
+              {item.hook}
+            </Block>
+          )}
+          {item.development && (
+            <Block emoji="💡" label="desenvolvimento">
+              {item.development}
+            </Block>
+          )}
+          {item.benefit && (
+            <Block emoji="✨" label="benefício">
+              {item.benefit}
+            </Block>
+          )}
+          {item.cta && (
+            <Block emoji="💕" label="CTA" tone="brand">
+              {item.cta}
+            </Block>
+          )}
+        </div>
+      </article>
+    </SectionReveal>
+  );
+}
+
+function Block({
+  emoji,
+  label,
+  tone = "default",
+  children,
+}: {
+  emoji: string;
+  label: string;
+  tone?: "default" | "highlight" | "brand";
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <div className="flex items-center gap-1.5 text-eyebrow text-spark-brand mb-2">
+        <span className="text-[14px] leading-none" aria-hidden>
+          {emoji}
+        </span>
+        {label}
+      </div>
+      <div
+        className={cn(
+          "text-[14.5px] leading-relaxed",
+          tone === "highlight" &&
+            "p-4 rounded-2xl bg-spark-ink text-white font-semibold tracking-tight",
+          tone === "brand" &&
+            "p-4 rounded-2xl bg-spark-brand-soft/60 border border-spark-brand/20 text-spark-ink font-medium",
+          tone === "default" && "text-spark-ink-70",
+        )}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// =================================================================
+// LEGACY HOOK CARD (formato antigo — hook simples)
+// =================================================================
+
+function LegacyHookCard({
+  item,
+  n,
+  index,
+}: {
+  item: ScriptItem;
+  n: number;
+  index: number;
+}) {
+  return (
+    <SectionReveal direction="up" delay={Math.min(index * 70, 320)}>
+      <div className="rounded-spark-2xl bg-spark-surface border border-spark-hairline overflow-hidden shadow-rest hover-lift">
+        <div className="p-5 flex gap-4">
+          <div className="shrink-0 w-12 h-12 rounded-full bg-brand-grad-soft text-spark-brand-deep flex items-center justify-center text-[16px] font-extrabold font-mono">
+            {n}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[14.5px] leading-snug text-spark-ink font-medium">
+              {item.hook ?? "—"}
+            </div>
+            {(item.trigger || item.fire) && (
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {item.trigger && (
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-spark-brand-soft text-spark-brand-deep text-[11px] font-extrabold">
+                    {item.trigger}
+                  </span>
+                )}
+                {item.fire && (
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-good/15 text-good text-[11px] font-extrabold">
+                    🔥 {item.fire}
+                  </span>
+                )}
+              </div>
+            )}
+            {item.why && (
+              <div className="mt-3 text-[12.5px] text-spark-ink-50 italic leading-snug">
+                {item.why}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </SectionReveal>
+  );
+}
+
+// =================================================================
+// ACTION BAR
+// =================================================================
+
+function ActionBar({
+  onCopy,
+  onDelete,
+  copied,
+  deleting,
+  desktop,
+}: {
+  onCopy: () => void;
+  onDelete: () => void;
+  copied: boolean;
+  deleting: boolean;
+  desktop: boolean;
+}) {
+  return (
+    <div
+      className="fixed inset-x-0 z-30 px-4 pointer-events-none"
+      style={{ bottom: "calc(env(safe-area-inset-bottom) + 92px)" }}
+    >
+      <div
+        className={cn(
+          "mx-auto pointer-events-auto glass rounded-full shadow-lift flex items-center gap-2 p-2",
+          desktop ? "max-w-[760px]" : "max-w-full",
+        )}
+      >
+        <button
+          type="button"
+          onClick={onDelete}
+          disabled={deleting}
+          aria-label="Apagar"
+          className="inline-flex items-center justify-center w-12 h-12 rounded-full text-spark-ink-70 hover:text-bad hover:bg-bad/10 transition-colors duration-300 disabled:opacity-50"
+        >
+          <Trash2 size={16} strokeWidth={2.2} />
+        </button>
+        <div className="flex-1 text-[12px] text-spark-ink-50 px-2 hidden sm:block">
+          Cola lá no TikTok ou no Notion e bora gravar 💕
+        </div>
+        <button
+          type="button"
+          onClick={onCopy}
+          className={cn(
+            "group inline-flex items-center gap-2 px-6 py-3 rounded-full text-white text-[13px] font-extrabold shadow-lift transition-all duration-300 ease-premium hover:-translate-y-0.5 active:translate-y-0",
+            copied ? "bg-good" : "bg-spark-ink hover:bg-spark-brand-deep",
+          )}
+        >
+          {copied ? (
+            <>
+              <Check size={14} strokeWidth={2.5} />
+              Copiado
+            </>
+          ) : (
+            <>
+              <Copy size={14} strokeWidth={2.5} />
+              Copiar tudo
+              <ArrowUpRight
+                size={14}
+                strokeWidth={2.5}
+                className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+              />
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// =================================================================
+// BODY
+// =================================================================
+
 function ScriptBody({ id, desktop = false }: { id: string; desktop?: boolean }) {
   const router = useRouter();
   const { script, loading, error } = useScript(id);
   const [deleting, setDeleting] = React.useState(false);
+  const [copied, setCopied] = React.useState(false);
   const confirm = useConfirm();
   const toast = useToast();
 
@@ -102,7 +467,6 @@ function ScriptBody({ id, desktop = false }: { id: string; desktop?: boolean }) 
       .map((h, i) => {
         const n = h.n ?? i + 1;
         if (isFullScript(h)) {
-          // Roteiro completo
           const lines = [
             `═══ ROTEIRO ${n}${h.style ? ` — ${h.style.toUpperCase()}` : ""} ═══`,
           ];
@@ -112,12 +476,16 @@ function ScriptBody({ id, desktop = false }: { id: string; desktop?: boolean }) 
           if (h.cta) lines.push(`\n💕 CTA\n${h.cta}`);
           return lines.join("\n");
         }
-        return `${n.toString().padStart(2, "0")}. ${h.hook ?? ""}${h.trigger ? ` [${h.trigger}]` : ""}`;
+        return `${n.toString().padStart(2, "0")}. ${h.hook ?? ""}${
+          h.trigger ? ` [${h.trigger}]` : ""
+        }`;
       })
       .join("\n\n");
     try {
       await navigator.clipboard.writeText(text);
+      setCopied(true);
       toast.success("Roteiros copiados 💕");
+      setTimeout(() => setCopied(false), 2200);
     } catch {
       toast.error("Não consegui copiar");
     }
@@ -126,7 +494,7 @@ function ScriptBody({ id, desktop = false }: { id: string; desktop?: boolean }) 
   const remove = async () => {
     const ok = await confirm({
       title: "Apagar esses scripts?",
-      description: "Os hooks somem da sua biblioteca. Você pode pedir pra Scripts gerar de novo. ✨",
+      description: "Os roteiros somem da sua biblioteca. ✨",
       confirmLabel: "Apagar",
       destructive: true,
     });
@@ -134,17 +502,43 @@ function ScriptBody({ id, desktop = false }: { id: string; desktop?: boolean }) 
     setDeleting(true);
     const res = await fetch(`/api/scripts/${id}`, { method: "DELETE" });
     setDeleting(false);
-    if (res.ok) router.push("/scripts");
+    if (res.ok) {
+      toast.success("Removido 💕");
+      router.push("/scripts");
+    } else {
+      toast.error("Não consegui remover");
+    }
   };
 
-  if (loading) return <LoadingSplash message="Abrindo o script" />;
+  if (loading) {
+    return (
+      <div
+        className="flex-1 overflow-auto relative hero-radial flex items-center justify-center"
+        style={{ minHeight: "60vh" }}
+      >
+        <LoadingSplash message="Abrindo o script" />
+      </div>
+    );
+  }
+
   if (error || !script) {
     return (
-      <div className="p-6 text-center text-[13px] text-spark-ink-50">
-        {error ?? "Erro."}
-        <div className="mt-3">
-          <Link href="/scripts" className="text-spark-brand font-semibold">
-            ← Voltar
+      <div className="flex-1 overflow-auto relative hero-radial">
+        <SparkleField count={8} seed={42} className="opacity-50" />
+        <div className="px-6 py-32 text-center max-w-[480px] mx-auto relative">
+          <div className="text-[64px] mb-4">😕</div>
+          <h1 className="font-display lowercase text-fluid-headline text-spark-ink leading-tight">
+            opa, sumiu.
+          </h1>
+          <p className="mt-4 text-[14px] text-spark-ink-70 leading-snug">
+            {error ?? "Erro desconhecido."}
+          </p>
+          <Link
+            href="/scripts"
+            className="mt-8 inline-flex items-center gap-1.5 px-6 py-3 rounded-full bg-spark-ink text-white text-[13px] font-extrabold shadow-lift transition-all duration-300 ease-premium hover:-translate-y-0.5"
+          >
+            <ArrowLeft size={14} strokeWidth={2.5} />
+            Voltar pra biblioteca
           </Link>
         </div>
       </div>
@@ -152,161 +546,69 @@ function ScriptBody({ id, desktop = false }: { id: string; desktop?: boolean }) 
   }
 
   return (
-    <div className={`flex-1 overflow-auto ${desktop ? "py-8 px-12" : "pb-10"}`}>
-      <div className={desktop ? "max-w-[760px]" : "px-4 pt-2"}>
-        <div className="flex items-start gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-spark-brand-soft text-spark-brand-deep flex items-center justify-center">
-            <Pen size={20} strokeWidth={1.7} />
-          </div>
-          <div className="flex-1">
-            <h1 className={`font-extrabold tracking-[-0.02em] leading-tight ${desktop ? "text-[28px]" : "text-[22px]"}`}>
-              {script.title}
-            </h1>
-            <div className="mt-1.5 text-[12px] text-spark-ink-50 font-mono">
-              {script.hooks.length} {script.hooks.some(isFullScript) ? "roteiros" : "hooks"} · {new Date(script.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
-            </div>
-          </div>
-        </div>
+    <div
+      className="flex-1 overflow-auto relative"
+      style={{ paddingBottom: desktop ? 96 : 160 }}
+    >
+      <ScriptHero script={script} desktop={desktop} />
 
-        {script.hooks.length === 0 ? (
-          <div className="mt-5 p-5 rounded-2xl border border-spark-hairline bg-spark-surface text-center text-[13px] text-spark-ink-50">
-            Sem conteúdo salvo.
-          </div>
-        ) : (
-          <div className="mt-5 flex flex-col gap-3">
-            {script.hooks.map((h, i) => {
-              const n = h.n ?? i + 1;
-              if (isFullScript(h)) {
-                const styleKey = (h.style ?? "").toLowerCase();
-                const emoji = STYLE_EMOJI[styleKey] ?? "🎬";
-                return (
-                  <div
-                    key={i}
-                    className="rounded-2xl border border-spark-hairline bg-spark-surface overflow-hidden"
-                  >
-                    <div className="px-4 py-3 bg-spark-brand-soft/40 border-b border-spark-hairline flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-lg bg-white text-spark-brand-deep flex items-center justify-center text-[13px] font-extrabold font-mono shrink-0">
-                        {n}
-                      </div>
-                      <div className="flex-1">
-                        <div className="text-[10px] uppercase tracking-[0.08em] font-bold text-spark-brand-deep/70">
-                          Roteiro {h.duration_sec ? `· ${h.duration_sec}s` : ""}
-                        </div>
-                        <div className="text-[14px] font-extrabold tracking-tight flex items-center gap-1.5">
-                          {emoji} {h.style ?? "completo"}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="p-4 space-y-3.5">
-                      {h.hook && (
-                        <Block label="Gancho (3s)" emoji="🎣" highlight>
-                          {h.hook}
-                        </Block>
-                      )}
-                      {h.development && (
-                        <Block label="Desenvolvimento" emoji="💡">
-                          {h.development}
-                        </Block>
-                      )}
-                      {h.benefit && (
-                        <Block label="Benefício" emoji="✨">
-                          {h.benefit}
-                        </Block>
-                      )}
-                      {h.cta && (
-                        <Block label="CTA" emoji="💕">
-                          {h.cta}
-                        </Block>
-                      )}
-                    </div>
-                  </div>
+      {/* Scripts grid */}
+      <section className={`relative ${desktop ? "py-12 px-12" : "py-8 px-5"}`}>
+        <div className={desktop ? "max-w-[920px] mx-auto" : ""}>
+          {script.hooks.length === 0 ? (
+            <SectionReveal>
+              <div className="rounded-spark-2xl bg-spark-surface border border-spark-hairline p-8 text-center text-[13px] text-spark-ink-50">
+                Sem conteúdo salvo.
+              </div>
+            </SectionReveal>
+          ) : (
+            <div className="space-y-4">
+              {script.hooks.map((h, i) => {
+                const n = h.n ?? i + 1;
+                return isFullScript(h) ? (
+                  <FullScriptCard key={i} item={h} n={n} index={i} />
+                ) : (
+                  <LegacyHookCard key={i} item={h} n={n} index={i} />
                 );
-              }
-              // Legado — hook simples
-              return (
-                <div
-                  key={i}
-                  className="p-3.5 rounded-xl border border-spark-hairline bg-spark-surface flex gap-3"
-                >
-                  <div className="w-7 h-7 rounded-md bg-spark-surface-sunken text-spark-ink-70 flex items-center justify-center text-[12px] font-bold font-mono shrink-0">
-                    {n}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[14px] leading-snug">{h.hook ?? "—"}</div>
-                    <div className="mt-1.5 flex flex-wrap gap-1.5">
-                      {h.trigger && <SBadge tone="brand">{h.trigger}</SBadge>}
-                      {h.fire && <SBadge tone="good">🔥 {h.fire}</SBadge>}
-                    </div>
-                    {h.why && (
-                      <div className="mt-1.5 text-[12px] text-spark-ink-50 italic leading-snug">{h.why}</div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        <div className="mt-5 flex flex-wrap gap-2">
-          <SButton variant="primary" size="md" Icon={Copy} onClick={copyAll}>
-            Copiar tudo
-          </SButton>
-          <SButton variant="ghost" size="md" Icon={Trash2} onClick={remove} disabled={deleting}>
-            Apagar
-          </SButton>
+              })}
+            </div>
+          )}
         </div>
-      </div>
+      </section>
+
+      <ActionBar
+        onCopy={copyAll}
+        onDelete={remove}
+        copied={copied}
+        deleting={deleting}
+        desktop={desktop}
+      />
     </div>
   );
 }
 
-function Block({
-  label,
-  emoji,
-  highlight,
-  children,
-}: {
-  label: string;
-  emoji: string;
-  highlight?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <div className="text-[10.5px] uppercase tracking-[0.08em] font-bold text-spark-ink-50 mb-1 flex items-center gap-1">
-        <span>{emoji}</span> {label}
-      </div>
-      <div
-        className={`text-[14px] leading-relaxed ${
-          highlight
-            ? "p-3 rounded-xl bg-spark-brand-soft/60 border border-spark-brand/15 font-semibold text-spark-ink"
-            : "text-spark-ink-70"
-        }`}
-      >
-        {children}
-      </div>
-    </div>
-  );
-}
+// =================================================================
+// PAGE
+// =================================================================
 
 function MobileWrap({ id }: { id: string }) {
-  return (
-    <>
-      <MobileHeader title="Roteiros" back={{ href: "/scripts" }} />
-      <ScriptBody id={id} />
-      <BottomNav active="scripts" />
-    </>
-  );
+  return <ScriptBody id={id} />;
 }
 
 export default function ScriptDetailPage() {
   const params = useParams<{ id: string }>();
   const id = params?.id ?? "";
   return (
-    <ResponsiveShell
-      mobile={<MobileWrap id={id} />}
-      desktop={<ScriptBody id={id} desktop />}
-      active="scripts"
-    />
+    <>
+      <ResponsiveShell
+        mobile={<MobileWrap id={id} />}
+        desktop={<ScriptBody id={id} desktop />}
+        active="scripts"
+        customSidebar
+      />
+      <FloatingMainNav active="scripts" />
+    </>
   );
 }
+
+void Sparkles;
