@@ -21,6 +21,10 @@ import { getDisplayStatus, statusLabel } from "@/lib/plan-access";
 import { ResetPasswordForm } from "./reset-password-form";
 import { ProfileEditor } from "./profile-editor";
 import { ChangePasswordForm } from "./change-password-form";
+import { AvatarEditor } from "./avatar-editor";
+import { ProfileExtrasEditor } from "./profile-extras-editor";
+import { RevenueCard } from "./revenue-card";
+import { RankingOptInCard } from "./ranking-opt-in-card";
 
 const KIWIFY_PORTAL_URL =
   process.env.NEXT_PUBLIC_KIWIFY_PORTAL_URL ?? "https://dashboard.kiwify.com.br";
@@ -34,11 +38,6 @@ type Stats = {
   scripts: number;
   aulasVistas: number;
 };
-
-function getInitial(name: string | null | undefined, email: string): string {
-  const source = name?.trim() || email;
-  return source.charAt(0).toUpperCase();
-}
 
 function formatDate(iso: string | null | undefined): string {
   if (!iso) return "—";
@@ -85,6 +84,13 @@ function ContaBody({
   email,
   name,
   niche,
+  avatarUrl,
+  bio,
+  instagramHandle,
+  tiktokHandle,
+  cidadeUf,
+  metaMensalBrl,
+  rankingOptIn,
   planActive,
   planStatus,
   planExpiresAt,
@@ -99,6 +105,13 @@ function ContaBody({
   email: string;
   name: string;
   niche: string | null;
+  avatarUrl: string | null;
+  bio: string | null;
+  instagramHandle: string | null;
+  tiktokHandle: string | null;
+  cidadeUf: string | null;
+  metaMensalBrl: number | null;
+  rankingOptIn: boolean;
   planActive: boolean;
   planStatus: string | null;
   planExpiresAt: string | null;
@@ -154,11 +167,12 @@ function ContaBody({
           {/* Avatar + nome card */}
           <SectionReveal direction="up" delay={250}>
             <div className="mt-7 flex items-center gap-4 p-5 rounded-spark-2xl glass border border-spark-hairline shadow-rest">
-              <div
-                className={`${desktop ? "w-20 h-20 text-3xl" : "w-16 h-16 text-2xl"} rounded-full text-white flex items-center justify-center font-display bg-brand-grad shrink-0 shadow-lift-brand`}
-              >
-                {getInitial(name, email)}
-              </div>
+              <AvatarEditor
+                email={email}
+                name={name}
+                initialAvatarUrl={avatarUrl}
+                size="lg"
+              />
               <div className="flex-1 min-w-0">
                 <div
                   className={`font-extrabold ${desktop ? "text-[22px]" : "text-[18px]"} truncate text-spark-ink`}
@@ -323,9 +337,30 @@ function ContaBody({
             </InfoCard>
           </SectionReveal>
 
-          {/* Edição de perfil */}
+          {/* Edição de perfil identidade (nome + nichos) */}
           <SectionReveal direction="up" delay={200}>
             <ProfileEditor initialName={name} initialNiche={niche ?? ""} />
+          </SectionReveal>
+
+          {/* Sobre mim (bio + redes + cidade + meta) */}
+          <SectionReveal direction="up" delay={220}>
+            <ProfileExtrasEditor
+              initialBio={bio ?? ""}
+              initialInstagram={instagramHandle ?? ""}
+              initialTiktok={tiktokHandle ?? ""}
+              initialCidade={cidadeUf ?? ""}
+              initialMeta={metaMensalBrl}
+            />
+          </SectionReveal>
+
+          {/* Faturamento mensal */}
+          <SectionReveal direction="up" delay={240}>
+            <RevenueCard metaMensalBrl={metaMensalBrl} />
+          </SectionReveal>
+
+          {/* Ranking opt-in */}
+          <SectionReveal direction="up" delay={260}>
+            <RankingOptInCard initialOptIn={rankingOptIn} />
           </SectionReveal>
 
           {/* Alterar senha */}
@@ -452,6 +487,15 @@ export default async function ContaPage({ searchParams }: ContaPageProps) {
       email={profile.email}
       name={profile.name ?? ""}
       niche={profile.niche}
+      avatarUrl={profile.avatar_url ?? null}
+      bio={profile.bio ?? null}
+      instagramHandle={profile.instagram_handle ?? null}
+      tiktokHandle={profile.tiktok_handle ?? null}
+      cidadeUf={profile.cidade_uf ?? null}
+      metaMensalBrl={
+        profile.meta_mensal_brl != null ? Number(profile.meta_mensal_brl) : null
+      }
+      rankingOptIn={profile.ranking_opt_in ?? false}
       planActive={profile.plan_active}
       planStatus={profile.plan_status ?? null}
       planExpiresAt={profile.plan_expires_at ?? null}

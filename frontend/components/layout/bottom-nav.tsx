@@ -10,6 +10,7 @@ export type NavId =
   | "ao-vivo"
   | "educacao"
   | "news"
+  | "ranking"
   | "conta";
 
 type Item = {

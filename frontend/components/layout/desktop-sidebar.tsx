@@ -18,6 +18,7 @@ export type SidebarActive =
   | "ao-vivo"
   | "educacao"
   | "news"
+  | "ranking"
   | "conta"
   | "admin";
 

@@ -11,6 +11,7 @@ import {
   Activity,
   GraduationCap,
   Newspaper,
+  Trophy,
   User,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -56,6 +57,7 @@ const ITEMS: Item[] = [
   { id: "scripts", label: "Scripts", href: "/scripts", Icon: PenLine },
   { id: "rotina", label: "Rotina", href: "/rotina/hoje", Icon: Activity },
   { id: "educacao", label: "Educação", href: "/educacao", Icon: GraduationCap },
+  { id: "ranking", label: "Ranking", href: "/ranking", Icon: Trophy },
   { id: "news", label: "News", href: "/news", Icon: Newspaper },
   { id: "conta", label: "Conta", href: "/conta", Icon: User },
 ];
@@ -69,6 +71,7 @@ function deriveActive(pathname: string | null): NavId | undefined {
   if (pathname.startsWith("/rotina")) return "rotina";
   // /ao-vivo agora vive sob o guarda-chuva "Educação" no menu
   if (pathname.startsWith("/educacao") || pathname.startsWith("/ao-vivo")) return "educacao";
+  if (pathname.startsWith("/ranking")) return "ranking";
   if (pathname.startsWith("/news")) return "news";
   if (pathname.startsWith("/conta")) return "conta";
   return undefined;

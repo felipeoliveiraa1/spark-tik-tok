@@ -4,6 +4,21 @@ import { getSupabaseServer } from "@/lib/supabase-server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const PROFILE_FIELDS =
+  "id, email, name, niche, plan_active, must_reset_password, role, avatar_url, bio, instagram_handle, tiktok_handle, cidade_uf, meta_mensal_brl, ranking_opt_in";
+
+function clean(s: unknown, maxLen: number): string | null {
+  if (typeof s !== "string") return null;
+  const t = s.trim().slice(0, maxLen);
+  return t || null;
+}
+
+function cleanHandle(s: unknown): string | null {
+  if (typeof s !== "string") return null;
+  const t = s.trim().replace(/^@/, "").slice(0, 40);
+  return t || null;
+}
+
 export async function GET() {
   const supabase = await getSupabaseServer();
   const {
@@ -13,7 +28,7 @@ export async function GET() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, email, name, niche, plan_active, must_reset_password, role")
+    .select(PROFILE_FIELDS)
     .eq("id", user.id)
     .maybeSingle();
 
@@ -22,9 +37,10 @@ export async function GET() {
 
 /**
  * PATCH /api/me — atualiza dados do perfil da aluna.
- * Aceita: name (string), niche (string).
- * Não permite editar email, plan_active, role — esses são gerenciados
- * por outras rotas (webhook Kiwify, admin).
+ * Aceita: name, niche, bio, instagram_handle, tiktok_handle, cidade_uf,
+ * meta_mensal_brl, ranking_opt_in.
+ * Não permite editar email, plan_active, role, avatar_url (esse vai por
+ * /api/me/avatar).
  */
 export async function PATCH(request: Request) {
   const supabase = await getSupabaseServer();
@@ -41,14 +57,26 @@ export async function PATCH(request: Request) {
   }
 
   const patch: Record<string, unknown> = {};
-  if (typeof body.name === "string") {
-    const trimmed = body.name.trim().slice(0, 80);
-    patch.name = trimmed || null;
+  if ("name" in body) patch.name = clean(body.name, 80);
+  if ("niche" in body) patch.niche = clean(body.niche, 80);
+  if ("bio" in body) patch.bio = clean(body.bio, 240);
+  if ("instagram_handle" in body) patch.instagram_handle = cleanHandle(body.instagram_handle);
+  if ("tiktok_handle" in body) patch.tiktok_handle = cleanHandle(body.tiktok_handle);
+  if ("cidade_uf" in body) patch.cidade_uf = clean(body.cidade_uf, 80);
+  if ("meta_mensal_brl" in body) {
+    const v = body.meta_mensal_brl;
+    if (v === null || v === "") {
+      patch.meta_mensal_brl = null;
+    } else if (typeof v === "number" && v >= 0) {
+      patch.meta_mensal_brl = v;
+    } else {
+      return NextResponse.json({ error: "invalid_meta_mensal_brl" }, { status: 400 });
+    }
   }
-  if (typeof body.niche === "string") {
-    const trimmed = body.niche.trim().slice(0, 80);
-    patch.niche = trimmed || null;
+  if ("ranking_opt_in" in body) {
+    patch.ranking_opt_in = !!body.ranking_opt_in;
   }
+
   if (Object.keys(patch).length === 0) {
     return NextResponse.json({ error: "nothing_to_update" }, { status: 400 });
   }
@@ -58,7 +86,7 @@ export async function PATCH(request: Request) {
     .from("profiles")
     .update(patch)
     .eq("id", user.id)
-    .select("id, email, name, niche, plan_active, must_reset_password, role")
+    .select(PROFILE_FIELDS)
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
