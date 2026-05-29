@@ -186,6 +186,60 @@ function ContaBody({
       {/* Conteúdo */}
       <section className={`relative ${desktop ? "px-12" : "px-5"} pt-2 space-y-5`}>
         <div className={desktop ? "max-w-[720px] mx-auto space-y-5" : "space-y-5"}>
+          {/* BANNER bloqueador — primeiro login com senha temporária */}
+          {showReset && (
+            <SectionReveal direction="down" durationMs={500}>
+              <div className="relative p-5 lg:p-6 rounded-spark-2xl bg-brand-grad text-white shadow-hero overflow-hidden">
+                <div
+                  aria-hidden
+                  className="absolute inset-0"
+                  style={{
+                    background:
+                      "linear-gradient(180deg, rgba(255,255,255,0.18) 0%, transparent 60%)",
+                  }}
+                />
+                <div className="relative flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur flex items-center justify-center shrink-0">
+                    <KeyRound size={18} strokeWidth={2.4} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[10.5px] font-extrabold uppercase tracking-widest opacity-90">
+                      ✦ ação obrigatória
+                    </div>
+                    <div
+                      className="mt-1 font-display lowercase leading-tight tracking-tight"
+                      style={{ fontSize: "clamp(1.25rem, 3vw, 1.625rem)" }}
+                    >
+                      troque sua senha pra continuar
+                    </div>
+                    <p className="mt-2 text-[13px] leading-relaxed opacity-95 font-semibold">
+                      Você entrou com a senha temporária. Antes de usar o app, defina uma senha
+                      sua logo abaixo ↓
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </SectionReveal>
+          )}
+
+          {/* Reset senha em destaque — hoist pro topo quando showReset */}
+          {showReset && (
+            <SectionReveal direction="up" delay={100}>
+              <div className="p-6 rounded-spark-2xl bg-brand-grad-soft border border-spark-brand/20 shadow-lift-brand">
+                <div className="flex items-center gap-2 text-[14px] font-extrabold text-spark-brand-deep">
+                  <KeyRound size={16} strokeWidth={2.2} />
+                  Defina uma senha sua
+                </div>
+                <p className="text-[12.5px] text-spark-ink-70 mt-2 leading-relaxed">
+                  Cria uma senha que só você conhece. Mínimo 8 caracteres.
+                </p>
+                <div className="mt-4">
+                  <ResetPasswordForm />
+                </div>
+              </div>
+            </SectionReveal>
+          )}
+
           {/* Stats em grid */}
           <SectionReveal direction="up">
             <div className="grid grid-cols-3 gap-3">
@@ -273,25 +327,6 @@ function ContaBody({
           <SectionReveal direction="up" delay={200}>
             <ProfileEditor initialName={name} initialNiche={niche ?? ""} />
           </SectionReveal>
-
-          {/* Reset senha em destaque */}
-          {showReset && (
-            <SectionReveal direction="up" delay={250}>
-              <div className="p-6 rounded-spark-2xl bg-brand-grad-soft border border-spark-brand/20 shadow-lift-brand">
-                <div className="flex items-center gap-2 text-[14px] font-extrabold text-spark-brand-deep">
-                  <KeyRound size={16} strokeWidth={2.2} />
-                  Defina uma senha sua
-                </div>
-                <p className="text-[12.5px] text-spark-ink-70 mt-2 leading-relaxed">
-                  Você entrou com a senha temporária. Cria uma nova agora pra ninguém usar a
-                  antiga.
-                </p>
-                <div className="mt-4">
-                  <ResetPasswordForm />
-                </div>
-              </div>
-            </SectionReveal>
-          )}
 
           {/* Alterar senha */}
           {!showReset && (
