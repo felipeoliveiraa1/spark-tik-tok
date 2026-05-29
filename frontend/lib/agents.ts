@@ -34,6 +34,9 @@ export const AGENTS: Record<AgentId, AgentMeta> = {
     bg: "oklch(0.96 0.04 300)",
     tailwindFg: "text-agent-info-fg",
     tailwindBg: "bg-agent-info-bg",
+    // Pausado — funcionalidade absorvida pelos agentes de Scripts.
+    // Conversas existentes continuam acessiveis.
+    hidden: true,
   },
   viral: {
     id: "viral",

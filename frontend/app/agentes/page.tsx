@@ -11,7 +11,7 @@ import { Sticker } from "@/components/atoms/sticker";
 import { SectionReveal } from "@/components/atoms/section-reveal";
 import { CharacterReveal } from "@/components/atoms/character-reveal";
 import { cn } from "@/lib/cn";
-import { AGENTS_CATALOG, type AgentCatalogItem } from "@/lib/agents-catalog";
+import { VISIBLE_AGENTS_CATALOG, type AgentCatalogItem } from "@/lib/agents-catalog";
 
 /**
  * /agentes — vitrine premium magazine das especialistas externas (ChatGPT
@@ -609,7 +609,7 @@ function AgentesFeed({
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const count = React.useMemo(
     () =>
-      AGENTS_CATALOG.reduce((acc, a) => {
+      VISIBLE_AGENTS_CATALOG.reduce((acc, a) => {
         const url = platform === "chatgpt" ? a.chatgptUrl : a.geminiUrl;
         return url ? acc + 1 : acc;
       }, 0),
@@ -617,7 +617,7 @@ function AgentesFeed({
   );
 
   const slugsWithIntro = React.useMemo(
-    () => ["__intro", ...AGENTS_CATALOG.map((a) => a.slug)],
+    () => ["__intro", ...VISIBLE_AGENTS_CATALOG.map((a) => a.slug)],
     [],
   );
   const { active, setRef } = useActiveSlide(slugsWithIntro, scrollRef);
@@ -631,19 +631,19 @@ function AgentesFeed({
         <IntroSlide
           platform={platform}
           onChangePlatform={onChangePlatform}
-          totalAgents={AGENTS_CATALOG.length}
+          totalAgents={VISIBLE_AGENTS_CATALOG.length}
           count={count}
           setRef={setRef("__intro")}
           desktop={desktop}
         />
-        {AGENTS_CATALOG.map((agent, idx) => (
+        {VISIBLE_AGENTS_CATALOG.map((agent, idx) => (
           <AgentSlide
             key={agent.slug}
             agent={agent}
             platform={platform}
             setRef={setRef(agent.slug)}
             index={idx}
-            total={AGENTS_CATALOG.length}
+            total={VISIBLE_AGENTS_CATALOG.length}
             desktop={desktop}
             isActive={active === agent.slug}
           />

@@ -26,7 +26,7 @@ import { SButton } from "@/components/atoms/s-button";
 import { SBadge } from "@/components/atoms/s-badge";
 import { AgentTile } from "@/components/atoms/agent-tile";
 import { type AgentId } from "@/lib/agents";
-import { AGENTS_CATALOG, CATEGORY_LABELS } from "@/lib/agents-catalog";
+import { VISIBLE_AGENTS_CATALOG, CATEGORY_LABELS } from "@/lib/agents-catalog";
 
 const KIWIFY_CHECKOUT_URL =
   process.env.NEXT_PUBLIC_KIWIFY_CHECKOUT_URL ?? "https://pay.kiwify.com.br/YOR83Pu";
@@ -63,7 +63,7 @@ const antesDepois = [
 ];
 
 const pilares = [
-  { Icon: Sparkle, t: "agentes ia", d: "11 especialistas: análise, 9 nichos de scripts e tira-dúvida." },
+  { Icon: Sparkle, t: "agentes ia", d: "10 especialistas: 9 nichos de scripts e tira-dúvida." },
   { Icon: Package, t: "catálogo", d: "Seus produtos cadastrados, prontos pra usar nos agentes." },
   { Icon: PenLine, t: "scripts", d: "Biblioteca dos seus roteiros salvos. Você escolhe o que vai." },
   { Icon: Activity, t: "rotina", d: "Aderência semanal, evolução e referências num lugar só." },
@@ -81,7 +81,7 @@ const steps = [
 ];
 
 const features = [
-  "11 agentes IA · 1 análise + 9 nichos + 1 suporte, todos em PT-BR",
+  "10 agentes IA · 9 nichos + 1 suporte, todos em PT-BR",
   "Catálogo ilimitado dos seus produtos",
   "Biblioteca ilimitada dos seus roteiros",
   "Análise de produto com foto, link ou texto — sem limite",
@@ -456,10 +456,10 @@ export default function LandingPage() {
                       {/* Mini galeria de agentes por nicho */}
                       <div className="mt-3">
                         <div className="text-[8.5px] font-extrabold text-spark-ink-50 uppercase tracking-wider mb-2">
-                          ✦ 11 especialistas
+                          ✦ 10 agentes
                         </div>
                         <div className="flex flex-wrap gap-1.5">
-                          {["📊", "💪", "🧴", "💄", "💇‍♀️", "🌸", "🏠", "👗", "🤱", "📱", "💬"].map((e, i) => (
+                          {["💪", "🧴", "💄", "💇‍♀️", "🌸", "🏠", "👗", "🤱", "📱", "💬"].map((e, i) => (
                             <div
                               key={i}
                               className="w-7 h-7 rounded-full bg-spark-surface border border-spark-hairline flex items-center justify-center text-[12px] shadow-rest"
@@ -778,7 +778,7 @@ export default function LandingPage() {
               className="mt-3 font-display lowercase tracking-tight text-spark-ink leading-[0.9] max-w-[820px]"
               style={{ fontSize: "clamp(2.25rem, 5vw, 4rem)" }}
             >
-              11 especialistas. <span className="text-grad-brand">uma pra cada nicho.</span>
+              10 especialistas. <span className="text-grad-brand">uma pra cada nicho.</span>
             </h2>
           </SectionReveal>
 
@@ -789,9 +789,10 @@ export default function LandingPage() {
             </p>
           </SectionReveal>
 
-          {/* Grid editorial com TODOS os 11 agentes */}
+          {/* Grid editorial com TODOS os agentes visiveis */}
           {(["info", "scripts", "suporte"] as const).map((cat, catIdx) => {
-            const items = AGENTS_CATALOG.filter((a) => a.category === cat);
+            const items = VISIBLE_AGENTS_CATALOG.filter((a) => a.category === cat);
+            if (items.length === 0) return null;
             const meta = CATEGORY_LABELS[cat];
             const isScripts = cat === "scripts";
             return (

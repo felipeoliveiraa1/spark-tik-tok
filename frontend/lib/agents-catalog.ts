@@ -39,6 +39,11 @@ export type AgentCatalogItem = {
   imageUrl: string | null;
   /** Cor do gradient do card (Tailwind classes) — usado como fundo/overlay */
   accent: string;
+  /**
+   * Quando true, agente fica oculto das listagens (chat, landing, welcome).
+   * Útil pra "pausar" um agente sem deletar dados/contexto.
+   */
+  hidden?: boolean;
 };
 
 export const AGENTS_CATALOG: AgentCatalogItem[] = [
@@ -56,6 +61,10 @@ export const AGENTS_CATALOG: AgentCatalogItem[] = [
     geminiUrl: null,
     imageUrl: "/info.png",
     accent: "from-pink-500 to-rose-400",
+    // Pausado por enquanto — Felipe vai decidir se ressuscita com GPT/Gem proprio
+    // ou se fica embutido nos agentes de Scripts. Mantemos no catalogo pra
+    // conversas existentes nao quebrarem.
+    hidden: true,
   },
 
   // ─── SCRIPTS POR NICHO (na ordem definida pela Yara) ─────────────
@@ -221,6 +230,16 @@ export const AGENTS_CATALOG: AgentCatalogItem[] = [
     accent: "from-sky-500 to-blue-400",
   },
 ];
+
+/**
+ * Lista filtrada — sem os agentes hidden. Use isso na UI.
+ * AGENTS_CATALOG raw deve ser usado só pra lookup por slug em conversas
+ * legadas (assim a aluna nao perde acesso a conversas que ja teve com
+ * agentes posteriormente ocultados).
+ */
+export const VISIBLE_AGENTS_CATALOG: AgentCatalogItem[] = AGENTS_CATALOG.filter(
+  (a) => !a.hidden,
+);
 
 /** Agrupa os agentes por categoria pra render organizado */
 export function groupByCategory(items: AgentCatalogItem[]): Record<AgentCategory, AgentCatalogItem[]> {
