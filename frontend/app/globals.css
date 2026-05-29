@@ -328,13 +328,15 @@ html, body {
 html { scroll-behavior: smooth; }
 
 /* Text gradient — bg-clip-text + transparent text. NÃO USE bg-brand-grad-hero
-   junto com bg-clip-text porque o `background:` shorthand reseta o clip. */
+   junto com bg-clip-text porque o `background:` shorthand reseta o clip.
+   Lightness baixa pra contrastar com fundos rosa do hero-radial sem
+   perder a vibe brand. Mais escuro = legivel no mobile tambem. */
 @utility text-grad-brand {
   background-image: linear-gradient(
     160deg,
-    oklch(0.68 0.22 350) 0%,
-    oklch(0.72 0.18 25) 60%,
-    oklch(0.60 0.20 340) 100%
+    oklch(0.52 0.26 350) 0%,
+    oklch(0.56 0.24 20) 55%,
+    oklch(0.46 0.26 340) 100%
   );
   -webkit-background-clip: text;
   background-clip: text;
