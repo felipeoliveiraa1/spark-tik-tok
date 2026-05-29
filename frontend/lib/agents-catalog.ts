@@ -159,6 +159,21 @@ export const AGENTS_CATALOG: AgentCatalogItem[] = [
     accent: "from-indigo-500 to-violet-400",
   },
   {
+    slug: "scripts-maternidade",
+    chip: "Maternidade",
+    name: "Scripts Maternidade",
+    category: "scripts",
+    emoji: "🤱",
+    shortDescription:
+      "Pra fraldas, mamadeira, papinha, brinquedos, roupinhas, cuidados do bebê.",
+    howItWorks:
+      "Especialista em maternidade + Método TTS. Gera 5 roteiros com tom emocional real da rotina de mãe — sem julgamento, com humor leve do dia a dia, identificação imediata com quem tá no caos da maternidade.",
+    chatgptUrl: null,
+    geminiUrl: null,
+    imageUrl: "/maternidade.png",
+    accent: "from-rose-300 to-pink-200",
+  },
+  {
     slug: "scripts-eletronicos",
     chip: "Eletrônicos",
     name: "Scripts Eletrônicos",
