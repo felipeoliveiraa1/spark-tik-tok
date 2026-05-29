@@ -219,10 +219,10 @@ export default function LandingPage() {
         <div className="max-w-[1200px] mx-auto px-4 sm:px-5 lg:px-10 py-3.5 lg:py-4 flex items-center gap-2 sm:gap-3">
           {/* Logo responsiva: maior no desktop, media no mobile */}
           <div className="lg:hidden">
-            <SparkWordmark size={40} />
+            <SparkWordmark size={52} />
           </div>
           <div className="hidden lg:block">
-            <SparkWordmark size={56} />
+            <SparkWordmark size={76} />
           </div>
           <div className="flex-1" />
 
