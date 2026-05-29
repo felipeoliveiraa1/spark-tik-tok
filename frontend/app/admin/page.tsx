@@ -16,26 +16,22 @@ function getServiceClient() {
 
 async function getStats() {
   const supabase = getServiceClient();
-  const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
 
   const [
     news,
     videos,
     lives,
+    modules,
     alunas,
     alunasAtivas,
     alunasTrial,
     products,
     scripts,
-    conversations,
-    aiUsageMonth,
-    aiUsageToday,
   ] = await Promise.all([
     supabase.from("news").select("id", { count: "exact", head: true }),
     supabase.from("education_videos").select("id", { count: "exact", head: true }),
     supabase.from("live_events").select("id", { count: "exact", head: true }),
+    supabase.from("education_modules").select("id", { count: "exact", head: true }),
     supabase
       .from("profiles")
       .select("id", { count: "exact", head: true })
@@ -52,48 +48,20 @@ async function getStats() {
       .or("role.is.null,role.neq.admin"),
     supabase.from("products").select("id", { count: "exact", head: true }),
     supabase.from("generated_scripts").select("id", { count: "exact", head: true }),
-    supabase.from("conversations").select("id", { count: "exact", head: true }),
-    supabase
-      .from("ai_usage")
-      .select("cost_usd")
-      .gte("created_at", startOfMonth),
-    supabase
-      .from("ai_usage")
-      .select("cost_usd")
-      .gte("created_at", startOfDay),
   ]);
-
-  const monthCostUsd = (aiUsageMonth.data ?? []).reduce(
-    (sum, r) => sum + Number(r.cost_usd ?? 0),
-    0,
-  );
-  const todayCostUsd = (aiUsageToday.data ?? []).reduce(
-    (sum, r) => sum + Number(r.cost_usd ?? 0),
-    0,
-  );
 
   return {
     news: news.count ?? 0,
     videos: videos.count ?? 0,
     lives: lives.count ?? 0,
+    modules: modules.count ?? 0,
     alunas: alunas.count ?? 0,
     alunasAtivas: alunasAtivas.count ?? 0,
     alunasTrial: alunasTrial.count ?? 0,
     alunasInativas: (alunas.count ?? 0) - (alunasAtivas.count ?? 0),
     products: products.count ?? 0,
     scripts: scripts.count ?? 0,
-    conversations: conversations.count ?? 0,
-    monthCostUsd,
-    todayCostUsd,
   };
-}
-
-function formatBRL(usd: number, fx = 5.5): string {
-  return (usd * fx).toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-    minimumFractionDigits: 2,
-  });
 }
 
 export default async function AdminHome() {
@@ -135,48 +103,21 @@ export default async function AdminHome() {
           </div>
         </SectionBlock>
 
-        {/* Custos IA */}
-        <SectionBlock label="✦ custos" title="quanto a ia tá comendo">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatCard
-              label="Hoje (USD)"
-              value={`$${s.todayCostUsd.toFixed(4)}`}
-              emoji="📅"
-            />
-            <StatCard
-              label="Hoje (BRL ~)"
-              value={formatBRL(s.todayCostUsd)}
-              emoji="🇧🇷"
-            />
-            <StatCard
-              label="Mês (USD)"
-              value={`$${s.monthCostUsd.toFixed(4)}`}
-              emoji="📆"
-            />
-            <StatCard
-              label="Mês (BRL ~)"
-              value={formatBRL(s.monthCostUsd)}
-              emoji="💸"
-              tone={s.monthCostUsd * 5.5 > 500 ? "bad" : "brand"}
-            />
-          </div>
-        </SectionBlock>
-
         {/* Conteúdo gerado */}
         <SectionBlock label="✦ produção" title="o que as alunas geraram">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <StatCard label="Produtos salvos" value={s.products} emoji="📦" />
             <StatCard label="Roteiros gerados" value={s.scripts} emoji="✍️" />
-            <StatCard label="Conversas no chat" value={s.conversations} emoji="💬" />
           </div>
         </SectionBlock>
 
         {/* Catálogo */}
         <SectionBlock label="✦ catálogo" title="conteúdo do método">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <StatCard label="Notícias publicadas" value={s.news} emoji="📰" />
-            <StatCard label="Videoaulas" value={s.videos} emoji="🎓" />
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <StatCard label="Módulos" value={s.modules} emoji="📚" tone="brand" />
+            <StatCard label="Aulas" value={s.videos} emoji="🎓" />
             <StatCard label="Lives" value={s.lives} emoji="🔴" />
+            <StatCard label="Notícias" value={s.news} emoji="📰" />
           </div>
         </SectionBlock>
 
@@ -190,22 +131,16 @@ export default async function AdminHome() {
               desc="Criar contas em lote com N dias gratuitos. Email automático com senha."
             />
             <ActionCard
-              href="/admin/usage"
-              emoji="💰"
-              title="Custos detalhados"
-              desc="Uso da IA por aluna, modelo, agente. Últimos 30 dias."
+              href="/admin/educacao"
+              emoji="🎓"
+              title="Gerenciar Trilha"
+              desc="Módulos + aulas multi-kind (vídeo, conteúdo rich, checklist)."
             />
             <ActionCard
               href="/admin/news"
               emoji="📰"
               title="Gerenciar News"
               desc="Criar, editar e despublicar artigos do jornal."
-            />
-            <ActionCard
-              href="/admin/educacao"
-              emoji="🎓"
-              title="Gerenciar Aulas"
-              desc="Adicionar videoaulas do YouTube, organizar categorias."
             />
             <ActionCard
               href="/admin/ao-vivo"
