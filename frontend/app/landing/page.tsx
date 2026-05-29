@@ -244,9 +244,23 @@ export default function LandingPage() {
 
       {/* ============== HERO — capa de revista ============== */}
       <section className="relative overflow-hidden hero-radial">
-        <HeroBlob color="rose" variant={1} className="-top-32 -left-32 w-[640px] h-[640px]" />
-        <HeroBlob color="peach" variant={2} className="top-20 -right-40 w-[600px] h-[600px]" />
-        <HeroBlob color="lilac" variant={3} className="-bottom-40 left-1/4 w-[520px] h-[520px]" />
+        {/* Blobs reduzidos e mais transparentes no mobile pra nao lavar
+            o fundo de rosa e prejudicar contraste do headline gradient */}
+        <HeroBlob
+          color="rose"
+          variant={1}
+          className="-top-32 -left-32 w-[360px] h-[360px] lg:w-[640px] lg:h-[640px] opacity-60 lg:opacity-100"
+        />
+        <HeroBlob
+          color="peach"
+          variant={2}
+          className="top-20 -right-40 w-[340px] h-[340px] lg:w-[600px] lg:h-[600px] opacity-50 lg:opacity-100"
+        />
+        <HeroBlob
+          color="lilac"
+          variant={3}
+          className="-bottom-40 left-1/4 w-[300px] h-[300px] lg:w-[520px] lg:h-[520px] opacity-50 lg:opacity-100"
+        />
         <SparkleField count={24} seed={777} className="opacity-55" />
 
         {/* Sticker editorial */}
@@ -282,7 +296,15 @@ export default function LandingPage() {
                   <br />
                   mil roteiros.
                   <br />
-                  <span className="text-grad-brand">um método.</span>
+                  <span
+                    className="text-transparent bg-clip-text"
+                    style={{
+                      backgroundImage:
+                        "linear-gradient(135deg, oklch(0.48 0.26 350) 0%, oklch(0.52 0.26 20) 100%)",
+                    }}
+                  >
+                    um método.
+                  </span>
                 </h1>
               </SectionReveal>
 
