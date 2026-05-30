@@ -55,7 +55,7 @@ const agents: { id: AgentId; t: string; d: string }[] = [
 
 const antesDepois = [
   { antes: "Planilha bagunçada de produto", depois: "Catálogo organizado no app" },
-  { antes: "IA gringa que escreve igual robô", depois: "Agente em PT-BR com tom de amiga" },
+  { antes: "IA gringa que escreve igual robô", depois: "Agente em português com tom de amiga" },
   { antes: "Postar no escuro sem método", depois: "Rotina diária com aderência mensurável" },
   { antes: "Tirar dúvida no DM do Insta", depois: "Tira-dúvida no chat, 24/7" },
   { antes: "Aula em PDF de 2 anos atrás", depois: "Aula em vídeo + live ao vivo no app" },
@@ -81,7 +81,7 @@ const steps = [
 ];
 
 const features = [
-  "10 agentes IA · 9 nichos + 1 suporte, todos em PT-BR",
+  "10 agentes IA · 9 nichos + 1 suporte, todos em português",
   "Catálogo ilimitado dos seus produtos",
   "Biblioteca ilimitada dos seus roteiros",
   "Análise de produto com foto, link ou texto — sem limite",
@@ -304,7 +304,7 @@ export default function LandingPage() {
                 <p className="mt-8 text-fluid-lead text-spark-ink-70 leading-snug max-w-[56ch] font-semibold">
                   Pra criadora que cansou de IA gringa, planilha bagunçada e palpite de guru.{" "}
                   <strong>Sistema integrado</strong> de agentes, catálogo, scripts, rotina, aulas e
-                  lives — feito por mulher pra mulher, em PT-BR, com método.
+                  lives — feito por mulher pra mulher, em português, com método.
                 </p>
               </SectionReveal>
 
@@ -594,7 +594,7 @@ export default function LandingPage() {
                 "✦",
                 "NÃO PRA QUEM CHUTA",
                 "✦",
-                "EM PT-BR",
+                "EM PORTUGUÊS",
                 "✦",
                 "FEITO POR MULHER",
                 "✦",

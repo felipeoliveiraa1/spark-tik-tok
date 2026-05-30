@@ -8,6 +8,7 @@ import {
   Lock,
   AlertCircle,
   Sparkles,
+  Loader2,
 } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { SparkMark } from "@/components/atoms/spark-mark";
@@ -19,6 +20,13 @@ import { Sticker } from "@/components/atoms/sticker";
 import { SInput } from "@/components/atoms/s-input";
 import { SButton } from "@/components/atoms/s-button";
 import { loginAction } from "@/lib/auth";
+
+// Wrapper de spinner compatível com IconComp do SButton
+function SpinnerIcon({ size, strokeWidth }: { size?: number; strokeWidth?: number }) {
+  return (
+    <Loader2 size={size} strokeWidth={strokeWidth} className="animate-spin" />
+  );
+}
 
 function LoginForm({ desktop = false }: { desktop?: boolean }) {
   const [error, setError] = React.useState<string | null>(null);
@@ -76,7 +84,7 @@ function LoginForm({ desktop = false }: { desktop?: boolean }) {
         variant="primary"
         size={desktop ? "lg" : "lg"}
         full
-        IconRight={ArrowRight}
+        IconRight={pending ? SpinnerIcon : ArrowRight}
         disabled={pending}
       >
         {pending ? "Entrando..." : "Entrar"}
