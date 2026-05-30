@@ -25,6 +25,7 @@ import { AvatarEditor } from "./avatar-editor";
 import { ProfileExtrasEditor } from "./profile-extras-editor";
 import { RevenueCard } from "./revenue-card";
 import { RankingOptInCard } from "./ranking-opt-in-card";
+import { ContaTour } from "./conta-tour";
 
 const KIWIFY_PORTAL_URL =
   process.env.NEXT_PUBLIC_KIWIFY_PORTAL_URL ?? "https://dashboard.kiwify.com.br";
@@ -166,7 +167,7 @@ function ContaBody({
 
           {/* Avatar + nome card */}
           <SectionReveal direction="up" delay={250}>
-            <div className="mt-7 flex items-center gap-4 p-5 rounded-spark-2xl glass border border-spark-hairline shadow-rest">
+            <div data-tutorial-id="conta-avatar" className="mt-7 flex items-center gap-4 p-5 rounded-spark-2xl glass border border-spark-hairline shadow-rest">
               <AvatarEditor
                 email={email}
                 name={name}
@@ -256,7 +257,7 @@ function ContaBody({
 
           {/* Stats em grid */}
           <SectionReveal direction="up">
-            <div className="grid grid-cols-3 gap-3">
+            <div data-tutorial-id="conta-stats" className="grid grid-cols-3 gap-3">
               <StatCard emoji="📦" Icon={Package} value={stats.products} label="Produtos" />
               <StatCard emoji="✍️" Icon={Pen} value={stats.scripts} label="Scripts" />
               <StatCard
@@ -290,6 +291,7 @@ function ContaBody({
 
           {/* Plano detalhado */}
           <SectionReveal direction="up" delay={150}>
+            <div data-tutorial-id="conta-plano">
             <InfoCard
               label="✦ plano"
               trailing={<SBadge tone={badgeTone}>{statusBadgeLabel}</SBadge>}
@@ -335,33 +337,38 @@ function ContaBody({
                 <ExternalLink size={12} strokeWidth={2.5} />
               </a>
             </InfoCard>
+            </div>
           </SectionReveal>
 
           {/* Edição de perfil identidade (nome + nichos) */}
-          <SectionReveal direction="up" delay={200}>
-            <ProfileEditor initialName={name} initialNiche={niche ?? ""} />
-          </SectionReveal>
+          <div data-tutorial-id="conta-perfil" className="space-y-5">
+            <SectionReveal direction="up" delay={200}>
+              <ProfileEditor initialName={name} initialNiche={niche ?? ""} />
+            </SectionReveal>
 
-          {/* Sobre mim (bio + redes + cidade + meta) */}
-          <SectionReveal direction="up" delay={220}>
-            <ProfileExtrasEditor
-              initialBio={bio ?? ""}
-              initialInstagram={instagramHandle ?? ""}
-              initialTiktok={tiktokHandle ?? ""}
-              initialCidade={cidadeUf ?? ""}
-              initialMeta={metaMensalBrl}
-            />
-          </SectionReveal>
+            {/* Sobre mim (bio + redes + cidade + meta) */}
+            <SectionReveal direction="up" delay={220}>
+              <ProfileExtrasEditor
+                initialBio={bio ?? ""}
+                initialInstagram={instagramHandle ?? ""}
+                initialTiktok={tiktokHandle ?? ""}
+                initialCidade={cidadeUf ?? ""}
+                initialMeta={metaMensalBrl}
+              />
+            </SectionReveal>
+          </div>
 
-          {/* Faturamento mensal */}
-          <SectionReveal direction="up" delay={240}>
-            <RevenueCard metaMensalBrl={metaMensalBrl} />
-          </SectionReveal>
+          {/* Faturamento mensal + Ranking opt-in juntos */}
+          <div data-tutorial-id="conta-revenue" className="space-y-5">
+            <SectionReveal direction="up" delay={240}>
+              <RevenueCard metaMensalBrl={metaMensalBrl} />
+            </SectionReveal>
 
-          {/* Ranking opt-in */}
-          <SectionReveal direction="up" delay={260}>
-            <RankingOptInCard initialOptIn={rankingOptIn} />
-          </SectionReveal>
+            {/* Ranking opt-in */}
+            <SectionReveal direction="up" delay={260}>
+              <RankingOptInCard initialOptIn={rankingOptIn} />
+            </SectionReveal>
+          </div>
 
           {/* Alterar senha */}
           {!showReset && (
@@ -372,7 +379,7 @@ function ContaBody({
 
           {/* Logout */}
           <SectionReveal direction="up" delay={300}>
-            <div className="rounded-spark-2xl bg-spark-surface border border-spark-hairline overflow-hidden shadow-rest">
+            <div data-tutorial-id="conta-logout" className="rounded-spark-2xl bg-spark-surface border border-spark-hairline overflow-hidden shadow-rest">
               <form action={logoutAction}>
                 <button
                   type="submit"
@@ -517,6 +524,7 @@ export default async function ContaPage({ searchParams }: ContaPageProps) {
         customSidebar
       />
       <FloatingMainNav active="conta" />
+      <ContaTour />
     </>
   );
 }
