@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
+  HelpCircle,
   Trophy,
   MapPin,
   Crown,
@@ -19,6 +20,8 @@ import { Sticker } from "@/components/atoms/sticker";
 import { SectionReveal } from "@/components/atoms/section-reveal";
 import { LoadingSplash } from "@/components/atoms/loading-splash";
 import { cn } from "@/lib/cn";
+import { TutorialOverlay } from "@/components/molecules/tutorial-overlay";
+import { type TutorialStep } from "@/lib/tutorial";
 
 // =================================================================
 // TYPES
@@ -321,7 +324,13 @@ function EmptyRanking() {
 // BODY
 // =================================================================
 
-function RankingBody({ desktop = false }: { desktop?: boolean }) {
+function RankingBody({
+  desktop = false,
+  onReopenTour,
+}: {
+  desktop?: boolean;
+  onReopenTour: () => void;
+}) {
   const [period, setPeriod] = React.useState<Period>("month");
   const { data, loading } = useRanking(period);
 
@@ -350,24 +359,37 @@ function RankingBody({ desktop = false }: { desktop?: boolean }) {
 
         <div className={`relative ${desktop ? "px-12 max-w-[900px] mx-auto" : "px-5"}`}>
           <SectionReveal direction="down" durationMs={500}>
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1.5 px-3 py-2 -ml-3 rounded-full text-spark-ink-70 hover:text-spark-ink hover:bg-spark-surface-sunken/60 text-[12.5px] font-extrabold transition-colors duration-300"
-            >
-              <ArrowLeft size={14} strokeWidth={2.5} />
-              Voltar pra home
-            </Link>
+            <div className="flex items-center justify-between gap-3">
+              <Link
+                href="/"
+                className="inline-flex items-center gap-1.5 px-3 py-2 -ml-3 rounded-full text-spark-ink-70 hover:text-spark-ink hover:bg-spark-surface-sunken/60 text-[12.5px] font-extrabold transition-colors duration-300"
+              >
+                <ArrowLeft size={14} strokeWidth={2.5} />
+                Voltar pra home
+              </Link>
+              <button
+                type="button"
+                onClick={onReopenTour}
+                className="group inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full glass border border-spark-hairline text-spark-ink-70 hover:text-spark-brand-deep hover:bg-spark-brand-soft hover:-translate-y-0.5 text-[12px] font-extrabold transition-all duration-300 ease-premium shadow-rest"
+                aria-label="Refazer tour do ranking"
+              >
+                <HelpCircle size={12} strokeWidth={2.5} />
+                <span className="hidden sm:inline">Tour</span>
+              </button>
+            </div>
           </SectionReveal>
 
           <div className="flex items-start justify-between gap-4 mt-6">
             <SectionReveal direction="down" delay={100}>
-              <div className="text-eyebrow text-spark-brand-deep flex items-center gap-2">
-                <Trophy size={13} strokeWidth={2.5} />
-                ✦ ranking de criadoras
+              <div data-tutorial-id="ranking-intro">
+                <div className="text-eyebrow text-spark-brand-deep flex items-center gap-2">
+                  <Trophy size={13} strokeWidth={2.5} />
+                  ✦ ranking de criadoras
+                </div>
+                <p className="mt-3 text-fluid-lead text-spark-ink-70 max-w-[40ch] font-semibold">
+                  Faturamento + consistência viraram um score só. Bora pra cima.
+                </p>
               </div>
-              <p className="mt-3 text-fluid-lead text-spark-ink-70 max-w-[40ch] font-semibold">
-                Faturamento + consistência viraram um score só. Bora pra cima.
-              </p>
             </SectionReveal>
 
             {desktop && (
@@ -388,7 +410,7 @@ function RankingBody({ desktop = false }: { desktop?: boolean }) {
 
           {/* Tabs periodo */}
           <SectionReveal direction="up" delay={350}>
-            <div className="mt-8 inline-flex p-1.5 rounded-full glass border border-spark-hairline shadow-rest gap-1">
+            <div data-tutorial-id="ranking-tabs" className="mt-8 inline-flex p-1.5 rounded-full glass border border-spark-hairline shadow-rest gap-1">
               {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
                 <button
                   key={p}
@@ -430,7 +452,10 @@ function RankingBody({ desktop = false }: { desktop?: boolean }) {
       </section>
 
       {/* Conteúdo */}
-      <section className={`relative ${desktop ? "px-12 py-12" : "px-5 py-8"}`}>
+      <section
+        data-tutorial-id="ranking-listagem"
+        className={`relative ${desktop ? "px-12 py-12" : "px-5 py-8"}`}
+      >
         <div className={desktop ? "max-w-[900px] mx-auto" : ""}>
           {loading ? (
             <div className="py-16 flex justify-center">
@@ -482,20 +507,106 @@ function RankingBody({ desktop = false }: { desktop?: boolean }) {
 // PAGE
 // =================================================================
 
-function RankingMobile() {
-  return <RankingBody />;
+function RankingMobile({ onReopenTour }: { onReopenTour: () => void }) {
+  return <RankingBody onReopenTour={onReopenTour} />;
 }
 
-export default function RankingPage() {
+// Steps do tour de Ranking (6 steps com variantes mobile/desktop pro nav)
+function buildRankingSteps(desktop: boolean): TutorialStep[] {
+  const navStep: TutorialStep = desktop
+    ? {
+        id: "nav",
+        target: "desktop-nav",
+        title: "Sua navegação principal",
+        description:
+          "Sidebar lateral com tudo: agentes, produtos, scripts, rotina, educação, ranking, news e conta.",
+        padding: 8,
+        radius: 32,
+      }
+    : {
+        id: "nav",
+        target: "mobile-nav",
+        title: "Sua navegação principal",
+        description:
+          "Barra fixa com 4 atalhos rápidos. O botão Mais abre a grade completa.",
+        padding: 6,
+        radius: 32,
+      };
+
+  return [
+    {
+      id: "welcome",
+      title: "bem-vinda ao ranking!",
+      description:
+        "Aqui você vê quem tá no topo. Score combina faturamento (60%) e consistência da rotina (40%) — não adianta só vender, tem que manter o hábito. Em 20s te mostro tudo.",
+    },
+    {
+      id: "intro",
+      target: "ranking-intro",
+      title: "Score: dinheiro + hábito",
+      description:
+        "Não é só quem fatura mais que ganha. O score equilibra faturamento mensal e consistência da rotina diária. Você precisa optar por aparecer (opt-in em Conta).",
+    },
+    {
+      id: "tabs",
+      target: "ranking-tabs",
+      title: "Filtros de período",
+      description:
+        "Vê o ranking dos últimos 7 dias, do mês atual ou do ano todo. Cada período recalcula o score e mostra quem dominou aquela janela.",
+    },
+    {
+      id: "listagem",
+      target: "ranking-listagem",
+      title: "Pódio + posições",
+      description:
+        "Top 3 fica em destaque no pódio com a coroa de quem está em 1°. Da 4ª pra baixo vira lista. Se você tá fora dos 50 primeiros, sua posição aparece num card destacado embaixo.",
+    },
+    navStep,
+    {
+      id: "done",
+      title: "pronto! agora é subir 💕",
+      description:
+        "Pra entrar no ranking, ativa o opt-in em Conta e registra teu faturamento mensal. Pra refazer o tour, clica no ✨ Tour no canto.",
+    },
+  ];
+}
+
+function RankingPageContent() {
+  const [desktopMode, setDesktopMode] = React.useState(false);
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(min-width: 1024px)");
+    setDesktopMode(mq.matches);
+    const onChange = (e: MediaQueryListEvent) => setDesktopMode(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  const steps = React.useMemo(() => buildRankingSteps(desktopMode), [desktopMode]);
+
+  const [tourOpen, setTourOpen] = React.useState(false);
+  const reopenTour = React.useCallback(() => setTourOpen(true), []);
+
   return (
     <>
       <ResponsiveShell
-        mobile={<RankingMobile />}
-        desktop={<RankingBody desktop />}
+        mobile={<RankingMobile onReopenTour={reopenTour} />}
+        desktop={<RankingBody desktop onReopenTour={reopenTour} />}
         active="ranking"
         customSidebar
       />
       <FloatingMainNav active="ranking" />
+      <TutorialOverlay
+        steps={steps}
+        storageKey="ranking"
+        autoStart={!tourOpen}
+        open={tourOpen || undefined}
+        onClose={() => setTourOpen(false)}
+      />
     </>
   );
+}
+
+export default function RankingPage() {
+  return <RankingPageContent />;
 }
