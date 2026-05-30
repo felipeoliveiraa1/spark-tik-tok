@@ -3,11 +3,13 @@ import { createServerClient } from "@supabase/ssr";
 import { hasActiveAccess } from "@/lib/plan-access";
 
 /**
- * Proxy do Next 16 (era middleware nas versões anteriores). Cobre 2 guards:
+ * Proxy do Next 16 (era middleware nas versões anteriores). Cobre 3 guards:
  *
  *   1. Auth: rotas públicas (/login, /landing) chutam logados pra dentro;
  *      rotas protegidas chutam não-logados pra /landing.
- *   2. Plano: alunas logadas sem assinatura ativa caem em /plano-inativo,
+ *   2. Senha temporária: aluna com must_reset_password=true fica trancada
+ *      em /conta?reset=1 até trocar a senha.
+ *   3. Plano: alunas logadas sem assinatura ativa caem em /plano-inativo,
  *      exceto em rotas livres (/conta, /welcome, etc).
  *
  * Onboarding: se já tem session mas profile não tem `name`, mandamos pra
@@ -35,6 +37,16 @@ function isFreeFromPlanGuard(pathname: string): boolean {
   // Permite /conta/qualquer-coisa e /plano-inativo/qualquer-coisa
   if ([...FREE_FROM_PLAN_GUARD].some((p) => pathname.startsWith(p + "/"))) return true;
   return false;
+}
+
+// Rotas permitidas quando must_reset_password=true. Tudo o mais redireciona
+// pra /conta?reset=1 ate ela trocar a senha.
+const RESET_ALLOWED = ["/conta", "/api/me", "/api/logout"];
+
+function isResetAllowed(pathname: string): boolean {
+  return RESET_ALLOWED.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`),
+  );
 }
 
 export async function proxy(request: NextRequest) {
@@ -100,12 +112,26 @@ export async function proxy(request: NextRequest) {
   if (isPageRoute) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("name, niche, plan_active, plan_status, plan_expires_at, role")
+      .select(
+        "name, niche, plan_active, plan_status, plan_expires_at, role, must_reset_password",
+      )
       .eq("id", user.id)
       .maybeSingle();
 
     // Admin tem acesso a tudo, ignora guards de onboarding e plano.
     const isAdmin = profile?.role === "admin";
+
+    // Senha temporaria → /conta?reset=1 (prioridade maxima, admin pula tb)
+    // Bloqueia tudo exceto /conta + APIs essenciais ate ela trocar.
+    if (
+      !isAdmin &&
+      profile?.must_reset_password === true &&
+      !isResetAllowed(pathname)
+    ) {
+      const url = new URL("/conta", request.url);
+      url.searchParams.set("reset", "1");
+      return NextResponse.redirect(url);
+    }
 
     // Profile incompleto → onboarding (admin pula)
     if (!isAdmin && !profile?.name) {
