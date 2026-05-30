@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   ArrowLeft,
   ArrowUpRight,
+  HelpCircle,
   PlayCircle,
   GraduationCap,
   Radio,
@@ -23,6 +24,8 @@ import { CountUp } from "@/components/atoms/count-up";
 import { LoadingSplash } from "@/components/atoms/loading-splash";
 import { cn } from "@/lib/cn";
 import { getLiveStatus, formatCountdown, minutesUntil } from "@/lib/live-status";
+import { TutorialOverlay } from "@/components/molecules/tutorial-overlay";
+import { type TutorialStep } from "@/lib/tutorial";
 
 // =================================================================
 // TYPES
@@ -192,12 +195,14 @@ function HeroSection({
   completed,
   hasLiveNow,
   desktop,
+  onReopenTour,
 }: {
   totalModules: number;
   totalLessons: number;
   completed: number;
   hasLiveNow: boolean;
   desktop: boolean;
+  onReopenTour: () => void;
 }) {
   const pct = totalLessons > 0 ? Math.round((completed / totalLessons) * 100) : 0;
   return (
@@ -215,28 +220,41 @@ function HeroSection({
 
       <div className={`relative ${desktop ? "px-12 max-w-[1200px] mx-auto" : "px-5"}`}>
         <SectionReveal direction="down" durationMs={500}>
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1.5 px-3 py-2 -ml-3 rounded-full text-spark-ink-70 hover:text-spark-ink hover:bg-spark-surface-sunken/60 text-[12.5px] font-extrabold transition-colors duration-300"
-          >
-            <ArrowLeft size={14} strokeWidth={2.5} />
-            Voltar pra home
-          </Link>
+          <div className="flex items-center justify-between gap-3">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 px-3 py-2 -ml-3 rounded-full text-spark-ink-70 hover:text-spark-ink hover:bg-spark-surface-sunken/60 text-[12.5px] font-extrabold transition-colors duration-300"
+            >
+              <ArrowLeft size={14} strokeWidth={2.5} />
+              Voltar pra home
+            </Link>
+            <button
+              type="button"
+              onClick={onReopenTour}
+              className="group inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full glass border border-spark-hairline text-spark-ink-70 hover:text-spark-brand-deep hover:bg-spark-brand-soft hover:-translate-y-0.5 text-[12px] font-extrabold transition-all duration-300 ease-premium shadow-rest"
+              aria-label="Refazer tour da educação"
+            >
+              <HelpCircle size={12} strokeWidth={2.5} />
+              <span className="hidden sm:inline">Tour</span>
+            </button>
+          </div>
         </SectionReveal>
 
         <div className="flex items-start justify-between gap-4 mt-6">
           <SectionReveal direction="down" delay={100} durationMs={600}>
-            <div className="text-eyebrow text-spark-brand-deep flex items-center gap-2">
-              {hasLiveNow && (
-                <span className="relative inline-flex w-2 h-2">
-                  <span className="absolute inset-0 rounded-full bg-bad animate-pulse-soft" />
-                  <span className="relative w-2 h-2 rounded-full bg-bad" />
-                </span>
-              )}
-              ✦ educação · método tts
-            </div>
-            <div className="mt-3 text-fluid-lead text-spark-ink-70 max-w-[40ch] font-semibold">
-              Módulos editoriais, aulas em vídeo, lives ao vivo e checklist interativo — tudo dentro do app.
+            <div data-tutorial-id="educacao-intro">
+              <div className="text-eyebrow text-spark-brand-deep flex items-center gap-2">
+                {hasLiveNow && (
+                  <span className="relative inline-flex w-2 h-2">
+                    <span className="absolute inset-0 rounded-full bg-bad animate-pulse-soft" />
+                    <span className="relative w-2 h-2 rounded-full bg-bad" />
+                  </span>
+                )}
+                ✦ educação · método tts
+              </div>
+              <div className="mt-3 text-fluid-lead text-spark-ink-70 max-w-[40ch] font-semibold">
+                Módulos editoriais, aulas em vídeo, lives ao vivo e checklist interativo — tudo dentro do app.
+              </div>
             </div>
           </SectionReveal>
 
@@ -259,7 +277,7 @@ function HeroSection({
 
         {totalModules > 0 && (
           <SectionReveal direction="up" delay={700}>
-            <div className="mt-10 grid grid-cols-3 gap-3 max-w-[560px]">
+            <div data-tutorial-id="educacao-stats" className="mt-10 grid grid-cols-3 gap-3 max-w-[560px]">
               <div className="rounded-spark-2xl glass border border-spark-hairline p-4">
                 <div className="text-eyebrow text-spark-ink-50 mb-1.5">módulos</div>
                 <div className="font-extrabold tracking-tight leading-none text-spark-ink text-[26px]">
@@ -663,7 +681,13 @@ function EmptyEducation({ desktop }: { desktop: boolean }) {
 // BODY
 // =================================================================
 
-function HubBody({ desktop = false }: { desktop?: boolean }) {
+function HubBody({
+  desktop = false,
+  onReopenTour,
+}: {
+  desktop?: boolean;
+  onReopenTour: () => void;
+}) {
   const { modules, progress, featuredLives, totalLives, replaysCount, loading } = useHubData();
   const totalLessons = modules.reduce((sum, m) => sum + m.lessons.length, 0);
   const completedCount = Object.values(progress).filter((p) => p.completed).length;
@@ -681,6 +705,7 @@ function HubBody({ desktop = false }: { desktop?: boolean }) {
         completed={completedCount}
         hasLiveNow={hasLiveNow}
         desktop={desktop}
+        onReopenTour={onReopenTour}
       />
 
       {loading ? (
@@ -695,16 +720,18 @@ function HubBody({ desktop = false }: { desktop?: boolean }) {
             <div className="space-y-14">
               {/* Lives destaque */}
               {totalLives > 0 && (
-                <LivesHubSection
-                  featured={featuredLives}
-                  replaysCount={replaysCount}
-                  desktop={desktop}
-                />
+                <div data-tutorial-id="educacao-lives">
+                  <LivesHubSection
+                    featured={featuredLives}
+                    replaysCount={replaysCount}
+                    desktop={desktop}
+                  />
+                </div>
               )}
 
               {/* Módulos */}
               {modules.length > 0 && (
-                <section>
+                <section data-tutorial-id="educacao-modulos">
                   <SectionReveal direction="up" durationMs={500}>
                     <div className="mb-7 flex items-end justify-between gap-3 flex-wrap">
                       <div>
@@ -750,24 +777,117 @@ function HubBody({ desktop = false }: { desktop?: boolean }) {
 // PAGE
 // =================================================================
 
-function HubMobile() {
-  return <HubBody />;
+function HubMobile({ onReopenTour }: { onReopenTour: () => void }) {
+  return <HubBody onReopenTour={onReopenTour} />;
 }
 
-function HubDesktop() {
-  return <HubBody desktop />;
+function HubDesktop({ onReopenTour }: { onReopenTour: () => void }) {
+  return <HubBody desktop onReopenTour={onReopenTour} />;
 }
 
-export default function EducacaoPage() {
+// Steps do tour de Educação (7 steps com variantes mobile/desktop pro nav)
+function buildEducacaoSteps(desktop: boolean): TutorialStep[] {
+  const navStep: TutorialStep = desktop
+    ? {
+        id: "nav",
+        target: "desktop-nav",
+        title: "Sua navegação principal",
+        description:
+          "Sidebar lateral com tudo: agentes, produtos, scripts, rotina, educação, ranking, news e conta.",
+        padding: 8,
+        radius: 32,
+      }
+    : {
+        id: "nav",
+        target: "mobile-nav",
+        title: "Sua navegação principal",
+        description:
+          "Barra fixa com 4 atalhos rápidos. O botão Mais abre a grade completa.",
+        padding: 6,
+        radius: 32,
+      };
+
+  return [
+    {
+      id: "welcome",
+      title: "bem-vinda à educação!",
+      description:
+        "Aqui mora a trilha completa do método: módulos teóricos, aulas em vídeo, lives ao vivo e checklists. Em 30s te mostro como navegar.",
+    },
+    {
+      id: "intro",
+      target: "educacao-intro",
+      title: "O que tem aqui dentro",
+      description:
+        "Quatro formatos pra você aprender no seu ritmo: módulos editoriais lendo, vídeos curtos, lives ao vivo e checklist interativo pra colocar em prática.",
+    },
+    {
+      id: "stats",
+      target: "educacao-stats",
+      title: "Seu progresso visível",
+      description:
+        "Total de módulos, total de aulas e quantos % você já concluiu. Quanto mais aulas você marca como vista, maior o número da direita.",
+    },
+    {
+      id: "lives",
+      target: "educacao-lives",
+      title: "Lives ao vivo + replays",
+      description:
+        "Se tem live acontecendo, aparece com indicador AO VIVO. As próximas e os replays gravados também ficam aqui pra você assistir quando quiser.",
+    },
+    {
+      id: "modulos",
+      target: "educacao-modulos",
+      title: "Os módulos da trilha",
+      description:
+        "Cada card é um módulo com várias aulas. Clica num pra abrir, ver as aulas dentro, marcar como vista. Faz na ordem ou pula direto pro que precisa.",
+    },
+    navStep,
+    {
+      id: "done",
+      title: "pronto! agora é estudar 💕",
+      description:
+        "Recomendo começar pelo primeiro módulo e ir marcando conforme avança. Pra refazer o tour, clica no ✨ Tour no canto.",
+    },
+  ];
+}
+
+function EducacaoPageContent() {
+  const [desktopMode, setDesktopMode] = React.useState(false);
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(min-width: 1024px)");
+    setDesktopMode(mq.matches);
+    const onChange = (e: MediaQueryListEvent) => setDesktopMode(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  const steps = React.useMemo(() => buildEducacaoSteps(desktopMode), [desktopMode]);
+
+  const [tourOpen, setTourOpen] = React.useState(false);
+  const reopenTour = React.useCallback(() => setTourOpen(true), []);
+
   return (
     <>
       <ResponsiveShell
-        mobile={<HubMobile />}
-        desktop={<HubDesktop />}
+        mobile={<HubMobile onReopenTour={reopenTour} />}
+        desktop={<HubDesktop onReopenTour={reopenTour} />}
         active="educacao"
         customSidebar
       />
       <FloatingMainNav active="educacao" />
+      <TutorialOverlay
+        steps={steps}
+        storageKey="educacao"
+        autoStart={!tourOpen}
+        open={tourOpen || undefined}
+        onClose={() => setTourOpen(false)}
+      />
     </>
   );
+}
+
+export default function EducacaoPage() {
+  return <EducacaoPageContent />;
 }
