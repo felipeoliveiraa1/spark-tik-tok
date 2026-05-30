@@ -1,30 +1,47 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, Save } from "lucide-react";
+import {
+  ArrowLeft,
+  Plus,
+  Trash2,
+  Save,
+  Sparkles,
+} from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
-import { MobileHeader } from "@/components/layout/mobile-header";
+import { FloatingMainNav } from "@/components/layout/floating-main-nav";
+import { HeroBlob } from "@/components/atoms/hero-blob";
+import { SparkleField } from "@/components/atoms/sparkle-field";
+import { Sticker } from "@/components/atoms/sticker";
+import { SectionReveal } from "@/components/atoms/section-reveal";
+import { CharacterReveal } from "@/components/atoms/character-reveal";
 import { useToast } from "@/components/molecules/dialog-provider";
+import { cn } from "@/lib/cn";
 
 /**
- * Página de cadastro manual de roteiros.
+ * /scripts/novo — cadastro premium magazine de roteiros.
  *
  * Aluna pega os roteiros que gerou no agente Scripts (no ChatGPT/Gemini)
- * e cadastra aqui. 1-5 roteiros, cada um com 4 blocos do método Yara:
+ * e cadastra aqui. 1-5 roteiros, cada um com 4 blocos do método TTS:
  *   gancho (3s) → desenvolvimento → benefício → CTA
  *
  * Opcionalmente vincula com 1 produto do catálogo (dropdown).
+ *
+ * Mantém toda a lógica funcional original. Repagina visual no padrão
+ * magazine: hero radial, blobs, Tanker, cards glass com border premium,
+ * save bar sticky com glass effect.
  */
 
 const STYLES = [
-  { value: "fofoca", label: "Fofoca" },
-  { value: "polemico", label: "Polêmico" },
-  { value: "engracado", label: "Engraçado" },
-  { value: "educativo", label: "Educativo" },
-  { value: "storytelling", label: "Storytelling" },
-  { value: "comparacao", label: "Comparação" },
-  { value: "transformacao", label: "Transformação" },
+  { value: "fofoca", label: "Fofoca", emoji: "👀" },
+  { value: "polemico", label: "Polêmico", emoji: "🔥" },
+  { value: "engracado", label: "Engraçado", emoji: "😂" },
+  { value: "educativo", label: "Educativo", emoji: "📚" },
+  { value: "storytelling", label: "Storytelling", emoji: "📖" },
+  { value: "comparacao", label: "Comparação", emoji: "⚖️" },
+  { value: "transformacao", label: "Transformação", emoji: "✨" },
 ];
 
 type ScriptItem = {
@@ -47,6 +64,212 @@ const emptyScript = (n: number): ScriptItem => ({
   cta: "",
 });
 
+// =================================================================
+// HERO
+// =================================================================
+
+function HeroSection({ desktop }: { desktop: boolean }) {
+  return (
+    <section
+      className="relative overflow-hidden hero-radial"
+      style={{
+        paddingTop: desktop ? "72px" : "calc(env(safe-area-inset-top) + 64px)",
+        paddingBottom: desktop ? "48px" : "32px",
+      }}
+    >
+      <HeroBlob color="rose" variant={1} className="-top-32 -left-32 w-[460px] h-[460px]" />
+      <HeroBlob color="lilac" variant={2} className="top-20 -right-40 w-[420px] h-[420px]" />
+      <HeroBlob color="peach" variant={3} className="bottom-0 left-1/3 w-[360px] h-[360px]" />
+      <SparkleField count={12} seed={414} className="opacity-60" />
+
+      <div className={`relative ${desktop ? "px-12 max-w-[820px] mx-auto" : "px-5"}`}>
+        <SectionReveal direction="down" durationMs={500}>
+          <Link
+            href="/scripts"
+            className="inline-flex items-center gap-1.5 px-3 py-2 -ml-3 rounded-full text-spark-ink-70 hover:text-spark-ink hover:bg-spark-surface-sunken/60 text-[12.5px] font-extrabold transition-colors duration-300"
+          >
+            <ArrowLeft size={14} strokeWidth={2.5} />
+            Voltar pros scripts
+          </Link>
+        </SectionReveal>
+
+        <div className="flex items-start justify-between gap-4 mt-6">
+          <SectionReveal direction="down" delay={100} durationMs={600}>
+            <div className="text-eyebrow text-spark-brand-deep">
+              ✦ novo conjunto
+            </div>
+            <div className="mt-3 text-fluid-lead text-spark-ink-70 max-w-[34ch] font-semibold">
+              Cola os roteiros gerados no agente Scripts. Cada um com 4 blocos do método TTS.
+            </div>
+          </SectionReveal>
+
+          {desktop && (
+            <SectionReveal direction="scale" delay={250}>
+              <Sticker text="ROTEIROS · MÉTODO TTS · " emoji="✍️" size={118} />
+            </SectionReveal>
+          )}
+        </div>
+
+        <SectionReveal direction="up" delay={150} durationMs={900}>
+          <h1
+            className="mt-6 font-display lowercase leading-[0.9] tracking-tight max-w-[14ch]"
+            style={{ fontSize: desktop ? "clamp(2.5rem, 6vw, 4.5rem)" : "clamp(2.25rem, 9vw, 3rem)" }}
+          >
+            <CharacterReveal as="span" immediate staggerMs={28} className="block text-spark-ink">
+              cadastrar
+            </CharacterReveal>
+            <CharacterReveal
+              as="span"
+              immediate
+              staggerMs={28}
+              delayMs={350}
+              className="block"
+              charClassName="text-grad-brand"
+            >
+              roteiros.
+            </CharacterReveal>
+          </h1>
+        </SectionReveal>
+      </div>
+    </section>
+  );
+}
+
+// =================================================================
+// FIELD HELPER
+// =================================================================
+
+function Field({
+  label,
+  children,
+  hint,
+}: {
+  label: string;
+  children: React.ReactNode;
+  hint?: string;
+}) {
+  return (
+    <div>
+      <div className="flex items-baseline justify-between gap-2 mb-1.5">
+        <label className="block text-[12.5px] font-extrabold text-spark-ink uppercase tracking-wider">
+          {label}
+        </label>
+        {hint && (
+          <span className="text-[10.5px] text-spark-ink-50 font-mono">{hint}</span>
+        )}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+// =================================================================
+// SCRIPT CARD
+// =================================================================
+
+function ScriptCard({
+  s,
+  idx,
+  canRemove,
+  onUpdate,
+  onRemove,
+}: {
+  s: ScriptItem;
+  idx: number;
+  canRemove: boolean;
+  onUpdate: <K extends keyof ScriptItem>(key: K, value: ScriptItem[K]) => void;
+  onRemove: () => void;
+}) {
+  return (
+    <SectionReveal direction="up" delay={Math.min(idx * 60, 240)}>
+      <div className="rounded-spark-2xl bg-spark-surface border border-spark-hairline p-5 lg:p-6 shadow-rest space-y-4">
+        {/* Header */}
+        <div className="flex items-center justify-between gap-2 pb-3 border-b border-spark-hairline">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-brand-grad text-white flex items-center justify-center font-extrabold text-[14px] shadow-lift-brand">
+              {s.n}
+            </div>
+            <div>
+              <div className="text-eyebrow text-spark-brand-deep">✦ roteiro</div>
+              <div className="text-[14.5px] font-extrabold text-spark-ink leading-none mt-0.5">
+                {s.n} de 5
+              </div>
+            </div>
+          </div>
+          {canRemove && (
+            <button
+              type="button"
+              onClick={onRemove}
+              aria-label="Remover roteiro"
+              className="w-9 h-9 rounded-full flex items-center justify-center text-spark-ink-50 hover:text-bad hover:bg-bad/10 transition-colors"
+            >
+              <Trash2 size={14} strokeWidth={2.2} />
+            </button>
+          )}
+        </div>
+
+        <Field label="Estilo">
+          <select
+            value={s.style}
+            onChange={(e) => onUpdate("style", e.target.value)}
+            className="w-full px-3.5 py-3 rounded-xl border-2 border-spark-hairline bg-spark-surface text-[14px] text-spark-ink font-semibold focus:outline-none focus:border-spark-brand transition-colors"
+          >
+            {STYLES.map((st) => (
+              <option key={st.value} value={st.value}>
+                {st.emoji} {st.label}
+              </option>
+            ))}
+          </select>
+        </Field>
+
+        <Field label="🎣 Gancho" hint="3 segundos pra prender">
+          <textarea
+            value={s.hook}
+            onChange={(e) => onUpdate("hook", e.target.value)}
+            placeholder="Frase curta que para o scroll nos primeiros 3 segundos"
+            rows={2}
+            className="w-full px-3.5 py-3 rounded-xl border-2 border-spark-hairline bg-spark-surface text-[14px] text-spark-ink placeholder:text-spark-ink-35 focus:outline-none focus:border-spark-brand resize-none transition-colors"
+          />
+        </Field>
+
+        <Field label="💡 Desenvolvimento" hint="a história / contexto">
+          <textarea
+            value={s.development}
+            onChange={(e) => onUpdate("development", e.target.value)}
+            placeholder="Analogia ou explicação simples, conecta com situação real"
+            rows={3}
+            className="w-full px-3.5 py-3 rounded-xl border-2 border-spark-hairline bg-spark-surface text-[14px] text-spark-ink placeholder:text-spark-ink-35 focus:outline-none focus:border-spark-brand resize-none transition-colors"
+          />
+        </Field>
+
+        <Field label="✨ Benefício" hint="o que entrega de verdade">
+          <textarea
+            value={s.benefit}
+            onChange={(e) => onUpdate("benefit", e.target.value)}
+            placeholder="O que o produto entrega — sem milagre, sem promessa vazia"
+            rows={2}
+            className="w-full px-3.5 py-3 rounded-xl border-2 border-spark-hairline bg-spark-surface text-[14px] text-spark-ink placeholder:text-spark-ink-35 focus:outline-none focus:border-spark-brand resize-none transition-colors"
+          />
+        </Field>
+
+        <Field label="💕 CTA" hint="convite leve pra ação">
+          <textarea
+            value={s.cta}
+            onChange={(e) => onUpdate("cta", e.target.value)}
+            placeholder="'link na bio', 'salva esse pra depois', 'me chama no direct'"
+            rows={2}
+            className="w-full px-3.5 py-3 rounded-xl border-2 border-spark-hairline bg-spark-surface text-[14px] text-spark-ink placeholder:text-spark-ink-35 focus:outline-none focus:border-spark-brand resize-none transition-colors"
+          />
+        </Field>
+      </div>
+    </SectionReveal>
+  );
+}
+
+// =================================================================
+// BODY
+// =================================================================
+
 function NovoScriptBody({ desktop = false }: { desktop?: boolean }) {
   const router = useRouter();
   const toast = useToast();
@@ -56,7 +279,6 @@ function NovoScriptBody({ desktop = false }: { desktop?: boolean }) {
   const [scripts, setScripts] = React.useState<ScriptItem[]>([emptyScript(1)]);
   const [saving, setSaving] = React.useState(false);
 
-  // Carrega produtos pro dropdown
   React.useEffect(() => {
     let cancelled = false;
     fetch("/api/products", { cache: "no-store" })
@@ -70,7 +292,6 @@ function NovoScriptBody({ desktop = false }: { desktop?: boolean }) {
     };
   }, []);
 
-  // Quando seleciona produto, sugere título "N roteiros · Nome"
   React.useEffect(() => {
     if (productId && !title.trim()) {
       const p = products.find((x) => x.id === productId);
@@ -93,7 +314,6 @@ function NovoScriptBody({ desktop = false }: { desktop?: boolean }) {
   };
 
   const handleSubmit = async () => {
-    // Valida: cada roteiro tem que ter os 4 blocos preenchidos
     for (const s of scripts) {
       if (!s.hook.trim() || !s.development.trim() || !s.benefit.trim() || !s.cta.trim()) {
         toast.error(`Roteiro ${s.n} tá com bloco vazio. Preenche todos pra continuar 💕`);
@@ -131,183 +351,151 @@ function NovoScriptBody({ desktop = false }: { desktop?: boolean }) {
   };
 
   return (
-    <div className={`flex-1 overflow-auto ${desktop ? "py-8 px-12" : "pb-24"}`}>
-      <div className={desktop ? "max-w-[720px]" : "px-4 pt-4"}>
-        {desktop && (
-          <>
-            <div className="text-[12px] font-bold text-spark-brand tracking-[0.06em] uppercase">
-              ✍️ Novo Conjunto de Roteiros
-            </div>
-            <h1 className="mt-1 font-extrabold tracking-tight leading-[1.1] text-[36px]">
-              Cadastrar roteiros ✨
-            </h1>
-          </>
-        )}
-        <p
-          className={`text-[13.5px] text-spark-ink-50 max-w-[560px] ${desktop ? "mt-1.5 mb-6" : "mb-5"}`}
-        >
-          Cola os roteiros que você gerou no agente Scripts do seu nicho. Cada um tem 4 blocos do
-          método Yara: gancho, desenvolvimento, benefício e CTA 💕
-        </p>
+    <div
+      className="flex-1 overflow-auto relative"
+      style={{
+        paddingBottom: desktop ? 48 : "calc(env(safe-area-inset-bottom) + 200px)",
+      }}
+    >
+      <HeroSection desktop={desktop} />
 
-        {/* Meta */}
-        <section className="mb-6 space-y-3">
-          <Field label="Título do conjunto">
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="ex: 5 roteiros · Gel de Limpeza"
-              maxLength={150}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-spark-hairline bg-white text-[14px] text-spark-ink placeholder:text-spark-ink-35 focus:outline-none focus:border-spark-brand"
-            />
-          </Field>
-          <Field label="Produto relacionado">
-            <select
-              value={productId}
-              onChange={(e) => setProductId(e.target.value)}
-              className="w-full px-3 py-2.5 rounded-xl border border-spark-hairline bg-white text-[14px] text-spark-ink focus:outline-none focus:border-spark-brand"
-            >
-              <option value="">Nenhum (avulso)</option>
-              {products.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-        </section>
-
-        {/* Roteiros */}
-        <section className="space-y-4">
-          {scripts.map((s, idx) => (
-            <div
-              key={idx}
-              className="rounded-2xl bg-spark-surface border border-spark-hairline p-4 space-y-3"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <h3 className="text-[14px] font-extrabold text-spark-ink">
-                  Roteiro {s.n}
-                </h3>
-                {scripts.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeScript(idx)}
-                    aria-label="Remover roteiro"
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-spark-ink-50 hover:text-bad hover:bg-bad/10 transition-colors"
-                  >
-                    <Trash2 size={13} strokeWidth={1.8} />
-                  </button>
-                )}
+      {/* CONTEÚDO */}
+      <section className={`relative ${desktop ? "px-12 py-8" : "px-5 py-6"}`}>
+        <div className={desktop ? "max-w-[820px] mx-auto space-y-6" : "space-y-6"}>
+          {/* Meta */}
+          <SectionReveal direction="up">
+            <div className="rounded-spark-2xl bg-spark-surface border border-spark-hairline p-5 lg:p-6 shadow-rest space-y-4">
+              <div className="text-eyebrow text-spark-brand flex items-center gap-1.5">
+                <Sparkles size={11} strokeWidth={2.5} />
+                ✦ informações gerais
               </div>
 
-              <Field label="Estilo">
+              <Field label="Título do conjunto">
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="ex: 5 roteiros · Gel de Limpeza"
+                  maxLength={150}
+                  className="w-full px-3.5 py-3 rounded-xl border-2 border-spark-hairline bg-spark-surface text-[14px] text-spark-ink placeholder:text-spark-ink-35 focus:outline-none focus:border-spark-brand transition-colors"
+                />
+              </Field>
+
+              <Field label="Produto relacionado" hint="opcional">
                 <select
-                  value={s.style}
-                  onChange={(e) => updateScript(idx, "style", e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-spark-hairline bg-white text-[13.5px] text-spark-ink focus:outline-none focus:border-spark-brand"
+                  value={productId}
+                  onChange={(e) => setProductId(e.target.value)}
+                  className="w-full px-3.5 py-3 rounded-xl border-2 border-spark-hairline bg-spark-surface text-[14px] text-spark-ink font-semibold focus:outline-none focus:border-spark-brand transition-colors"
                 >
-                  {STYLES.map((st) => (
-                    <option key={st.value} value={st.value}>
-                      {st.label}
+                  <option value="">Nenhum (avulso)</option>
+                  {products.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
                     </option>
                   ))}
                 </select>
               </Field>
-
-              <Field label="🎣 Gancho (3s)">
-                <textarea
-                  value={s.hook}
-                  onChange={(e) => updateScript(idx, "hook", e.target.value)}
-                  placeholder="Frase curta que prende nos primeiros 3 segundos"
-                  rows={2}
-                  className="w-full px-3 py-2 rounded-lg border border-spark-hairline bg-white text-[13.5px] text-spark-ink placeholder:text-spark-ink-35 focus:outline-none focus:border-spark-brand resize-none"
-                />
-              </Field>
-
-              <Field label="💡 Desenvolvimento">
-                <textarea
-                  value={s.development}
-                  onChange={(e) => updateScript(idx, "development", e.target.value)}
-                  placeholder="Analogia ou explicação simples, conecta com situação real"
-                  rows={3}
-                  className="w-full px-3 py-2 rounded-lg border border-spark-hairline bg-white text-[13.5px] text-spark-ink placeholder:text-spark-ink-35 focus:outline-none focus:border-spark-brand resize-none"
-                />
-              </Field>
-
-              <Field label="✨ Benefício">
-                <textarea
-                  value={s.benefit}
-                  onChange={(e) => updateScript(idx, "benefit", e.target.value)}
-                  placeholder="O que o produto entrega de verdade — sem milagre"
-                  rows={2}
-                  className="w-full px-3 py-2 rounded-lg border border-spark-hairline bg-white text-[13.5px] text-spark-ink placeholder:text-spark-ink-35 focus:outline-none focus:border-spark-brand resize-none"
-                />
-              </Field>
-
-              <Field label="💕 CTA">
-                <textarea
-                  value={s.cta}
-                  onChange={(e) => updateScript(idx, "cta", e.target.value)}
-                  placeholder="Convite leve pra ação — 'link na bio', 'salva esse', etc"
-                  rows={2}
-                  className="w-full px-3 py-2 rounded-lg border border-spark-hairline bg-white text-[13.5px] text-spark-ink placeholder:text-spark-ink-35 focus:outline-none focus:border-spark-brand resize-none"
-                />
-              </Field>
             </div>
-          ))}
+          </SectionReveal>
 
+          {/* Lista de roteiros */}
+          <div className="space-y-4">
+            {scripts.map((s, idx) => (
+              <ScriptCard
+                key={idx}
+                s={s}
+                idx={idx}
+                canRemove={scripts.length > 1}
+                onUpdate={(key, value) => updateScript(idx, key, value)}
+                onRemove={() => removeScript(idx)}
+              />
+            ))}
+          </div>
+
+          {/* Add card */}
           {scripts.length < 5 && (
-            <button
-              type="button"
-              onClick={addScript}
-              className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl border-2 border-dashed border-spark-hairline text-spark-ink-70 text-[13px] font-bold hover:border-spark-brand hover:text-spark-brand transition-colors"
-            >
-              <Plus size={14} strokeWidth={2.5} />
-              Adicionar mais um roteiro ({scripts.length}/5)
-            </button>
+            <SectionReveal direction="up" delay={120}>
+              <button
+                type="button"
+                onClick={addScript}
+                className="group w-full flex items-center justify-center gap-2 px-5 py-5 rounded-spark-2xl border-2 border-dashed border-spark-brand/30 bg-spark-brand-soft/30 text-spark-brand-deep text-[13.5px] font-extrabold transition-all duration-300 ease-premium hover:border-spark-brand/60 hover:bg-spark-brand-soft/50 hover:-translate-y-0.5"
+              >
+                <div className="w-10 h-10 rounded-full bg-brand-grad text-white flex items-center justify-center shadow-lift-brand transition-transform duration-300 group-hover:rotate-90">
+                  <Plus size={18} strokeWidth={2.5} />
+                </div>
+                Adicionar mais um · {scripts.length}/5
+              </button>
+            </SectionReveal>
           )}
-        </section>
 
-        {/* SAVE BAR */}
-        <div className={`${desktop ? "mt-8" : "mt-6 sticky bottom-0 -mx-4 px-4 py-3 bg-white border-t border-spark-hairline"}`}>
+          {/* CTA inline desktop */}
+          {desktop && (
+            <SectionReveal direction="up" delay={150}>
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={saving}
+                className={cn(
+                  "w-full inline-flex items-center justify-center gap-2 px-6 py-4 rounded-full text-[14px] font-extrabold shadow-hero transition-all duration-300 ease-premium hover:-translate-y-0.5 active:translate-y-0",
+                  saving
+                    ? "bg-spark-surface text-spark-ink-50 border border-spark-hairline cursor-not-allowed"
+                    : "bg-brand-grad text-white",
+                )}
+              >
+                <Save size={15} strokeWidth={2.5} />
+                {saving
+                  ? "Salvando..."
+                  : `Salvar ${scripts.length} roteiro${scripts.length > 1 ? "s" : ""}`}
+              </button>
+            </SectionReveal>
+          )}
+        </div>
+      </section>
+
+      {/* CTA sticky bottom mobile (acima do FloatingMainNav) */}
+      {!desktop && (
+        <div
+          className="lg:hidden fixed left-1/2 -translate-x-1/2 z-30 w-full max-w-[520px] px-5"
+          style={{ bottom: "calc(env(safe-area-inset-bottom) + 92px)" }}
+        >
+          {/* Fade glass atrás pra disfarcar conteudo */}
+          <div
+            aria-hidden
+            className="absolute -inset-x-3 -bottom-6 -top-3 -z-10 pointer-events-none"
+            style={{
+              background:
+                "linear-gradient(180deg, transparent 0%, oklch(0.98 0.005 320 / 0.6) 35%, oklch(0.98 0.005 320 / 0.92) 65%)",
+              filter: "blur(8px)",
+            }}
+          />
           <button
             type="button"
             onClick={handleSubmit}
             disabled={saving}
-            className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-brand-grad text-white text-[14px] font-extrabold shadow-[0_8px_24px_-12px_oklch(0.55_0.24_340/0.5)] active:scale-95 transition-transform disabled:opacity-60 disabled:active:scale-100"
+            className={cn(
+              "w-full inline-flex items-center justify-center gap-2 px-6 py-4 rounded-full text-[14px] font-extrabold shadow-hero transition-all duration-300 ease-premium active:scale-95",
+              saving
+                ? "bg-spark-surface text-spark-ink-50 border border-spark-hairline cursor-not-allowed"
+                : "bg-brand-grad text-white",
+            )}
           >
-            <Save size={15} strokeWidth={2.2} />
-            {saving ? "Salvando..." : `Salvar ${scripts.length} roteiro${scripts.length > 1 ? "s" : ""}`}
+            <Save size={15} strokeWidth={2.5} />
+            {saving
+              ? "Salvando..."
+              : `Salvar ${scripts.length} roteiro${scripts.length > 1 ? "s" : ""}`}
           </button>
         </div>
-      </div>
+      )}
     </div>
   );
 }
 
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <label className="block text-[12.5px] font-bold text-spark-ink mb-1.5">{label}</label>
-      {children}
-    </div>
-  );
-}
+// =================================================================
+// PAGE
+// =================================================================
 
 function NovoScriptMobile() {
-  return (
-    <>
-      <MobileHeader title="Novos Roteiros ✨" back={{ href: "/scripts" }} />
-      <NovoScriptBody />
-    </>
-  );
+  return <NovoScriptBody />;
 }
 
 function NovoScriptDesktop() {
@@ -316,6 +504,14 @@ function NovoScriptDesktop() {
 
 export default function NovoScriptPage() {
   return (
-    <ResponsiveShell mobile={<NovoScriptMobile />} desktop={<NovoScriptDesktop />} active="scripts" />
+    <>
+      <ResponsiveShell
+        mobile={<NovoScriptMobile />}
+        desktop={<NovoScriptDesktop />}
+        active="scripts"
+        customSidebar
+      />
+      <FloatingMainNav active="scripts" />
+    </>
   );
 }
