@@ -6,6 +6,7 @@ import {
   ArrowRight,
   ArrowUpRight,
   Flame,
+  HelpCircle,
   Package,
   Pen,
   Plus,
@@ -24,6 +25,8 @@ import { Sticker } from "@/components/atoms/sticker";
 import { SectionReveal } from "@/components/atoms/section-reveal";
 import { Parallax } from "@/components/atoms/parallax";
 import { SplashScreen } from "@/components/atoms/splash-screen";
+import { TutorialOverlay } from "@/components/molecules/tutorial-overlay";
+import { resetTutorial, type TutorialStep } from "@/lib/tutorial";
 import { getLiveStatus, formatCountdown } from "@/lib/live-status";
 
 /**
@@ -185,10 +188,12 @@ function HeroSection({
   firstName,
   profile,
   desktop,
+  onReopenTour,
 }: {
   firstName: string;
   profile: Profile | null;
   desktop: boolean;
+  onReopenTour: () => void;
 }) {
   const hi = greeting(new Date().getHours());
   const isAdmin = profile?.role === "admin";
@@ -210,38 +215,60 @@ function HeroSection({
       {/* Sparkles dançantes */}
       <SparkleField count={14} seed={27} className="opacity-70" />
 
-      {/* Pílula Admin (só admins veem) */}
-      {isAdmin && (
-        <Link
-          href="/admin"
-          className="group absolute z-10 top-4 right-4 lg:top-6 lg:right-12 inline-flex items-center gap-2 px-4 py-2 rounded-full glass border border-spark-brand/25 text-spark-brand-deep text-[11.5px] font-extrabold uppercase tracking-widest shadow-lift-brand hover:bg-spark-brand-soft hover:-translate-y-0.5 transition-all duration-300 ease-premium"
-          style={{ top: desktop ? "24px" : "calc(env(safe-area-inset-top) + 12px)" }}
-          aria-label="Abrir painel admin"
+      {/* Pílulas top-right: Admin (se for admin) + Tour */}
+      <div
+        className="absolute z-10 flex items-center gap-2"
+        style={{
+          top: desktop ? "24px" : "calc(env(safe-area-inset-top) + 12px)",
+          right: desktop ? "48px" : "16px",
+        }}
+      >
+        {isAdmin && (
+          <Link
+            href="/admin"
+            className="group inline-flex items-center gap-2 px-4 py-2 rounded-full glass border border-spark-brand/25 text-spark-brand-deep text-[11.5px] font-extrabold uppercase tracking-widest shadow-lift-brand hover:bg-spark-brand-soft hover:-translate-y-0.5 transition-all duration-300 ease-premium"
+            aria-label="Abrir painel admin"
+          >
+            <Shield
+              size={13}
+              strokeWidth={2.5}
+              className="transition-transform duration-300 group-hover:scale-110"
+            />
+            <span className="hidden sm:inline">Painel admin</span>
+            <ArrowUpRight
+              size={12}
+              strokeWidth={2.5}
+              className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+            />
+          </Link>
+        )}
+        <button
+          type="button"
+          onClick={onReopenTour}
+          className="group inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full glass border border-spark-hairline text-spark-ink-70 hover:text-spark-brand-deep hover:bg-spark-brand-soft hover:-translate-y-0.5 text-[11.5px] font-extrabold uppercase tracking-widest shadow-rest transition-all duration-300 ease-premium"
+          aria-label="Refazer tour da home"
         >
-          <Shield
+          <HelpCircle
             size={13}
             strokeWidth={2.5}
             className="transition-transform duration-300 group-hover:scale-110"
           />
-          Painel admin
-          <ArrowUpRight
-            size={12}
-            strokeWidth={2.5}
-            className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-          />
-        </Link>
-      )}
+          <span className="hidden sm:inline">Tour</span>
+        </button>
+      </div>
 
       {/* Conteúdo */}
       <div className={`relative ${desktop ? "px-12 max-w-[1200px] mx-auto" : "px-5"}`}>
         {/* Eyebrow + sticker rotativo */}
         <div className="flex items-start justify-between gap-4 mb-8">
           <SectionReveal direction="down" durationMs={600}>
-            <div className="text-eyebrow text-spark-brand-deep">
-              ✦ {hi.text}, {firstName} {hi.emoji}
-            </div>
-            <div className="mt-2 text-fluid-lead text-spark-ink-70 max-w-[28ch] font-semibold">
-              Sua central pra criar, vender e crescer no TikTok Shop.
+            <div data-tutorial-id="greeting">
+              <div className="text-eyebrow text-spark-brand-deep">
+                ✦ {hi.text}, {firstName} {hi.emoji}
+              </div>
+              <div className="mt-2 text-fluid-lead text-spark-ink-70 max-w-[28ch] font-semibold">
+                Sua central pra criar, vender e crescer no TikTok Shop.
+              </div>
             </div>
           </SectionReveal>
 
@@ -261,6 +288,7 @@ function HeroSection({
         {/* Headline gigante — TANKER lowercase pra wow factor */}
         <SectionReveal direction="up" delay={100} durationMs={900}>
           <h1
+            data-tutorial-id="headline"
             className="font-display lowercase leading-[0.9] tracking-tight max-w-[18ch]"
             style={{ fontSize: "clamp(2.5rem, 8vw, 7rem)" }}
           >
@@ -292,7 +320,7 @@ function HeroSection({
             Tudo num lugar só, do jeitinho que você merece. 💕
           </p>
 
-          <div className="mt-8 flex flex-wrap gap-3">
+          <div data-tutorial-id="hero-ctas" className="mt-8 flex flex-wrap gap-3">
             <Link
               href="/agentes"
               className="group inline-flex items-center gap-2 px-7 py-4 rounded-full bg-spark-ink text-white text-[14px] font-extrabold shadow-lift transition-all duration-300 ease-premium hover:-translate-y-1 hover:bg-spark-brand-deep active:translate-y-0"
@@ -383,7 +411,10 @@ function StatsSection({
           </h2>
         </SectionReveal>
 
-        <div className={`mt-10 grid gap-3 ${desktop ? "grid-cols-4" : "grid-cols-2"}`}>
+        <div
+          data-tutorial-id="stats"
+          className={`mt-10 grid gap-3 ${desktop ? "grid-cols-4" : "grid-cols-2"}`}
+        >
           {stats.map((s, i) => (
             <SectionReveal key={s.label} delay={i * 80} direction="up">
               <Link
@@ -498,7 +529,10 @@ function ActionsSection({ desktop }: { desktop: boolean }) {
           </div>
         </SectionReveal>
 
-        <div className={`grid gap-4 ${desktop ? "grid-cols-3" : "grid-cols-1"}`}>
+        <div
+          data-tutorial-id="actions"
+          className={`grid gap-4 ${desktop ? "grid-cols-3" : "grid-cols-1"}`}
+        >
           {actions.map((a, i) => (
             <SectionReveal key={a.href} delay={i * 120}>
               <Link
@@ -591,7 +625,10 @@ function RotinaSection({
           </h2>
         </SectionReveal>
 
-        <div className={`mt-10 grid gap-4 ${desktop ? "grid-cols-2" : "grid-cols-1"}`}>
+        <div
+          data-tutorial-id="rotina"
+          className={`mt-10 grid gap-4 ${desktop ? "grid-cols-2" : "grid-cols-1"}`}
+        >
           {/* Streak card */}
           <SectionReveal direction="left">
             <Link
@@ -694,6 +731,7 @@ function CatalogoSection({
   return (
     <section
       id="catalogo"
+      data-tutorial-id="catalogo"
       className={`relative ${desktop ? "py-24 px-12" : "py-16 px-5"}`}
     >
       <div className={desktop ? "max-w-[1200px] mx-auto" : ""}>
@@ -862,7 +900,9 @@ function NewsSection({ news, desktop }: { news: NewsRow[]; desktop: boolean }) {
   const items = news.slice(0, desktop ? 3 : 2);
 
   return (
-    <section className={`relative ${desktop ? "py-24 px-12" : "py-16 px-5"}`}>
+    <section
+      className={`relative ${desktop ? "py-24 px-12" : "py-16 px-5"}`}
+    >
       <div className={desktop ? "max-w-[1200px] mx-auto" : ""}>
         <SectionReveal>
           <div className="flex items-end justify-between gap-4 mb-10">
@@ -881,7 +921,10 @@ function NewsSection({ news, desktop }: { news: NewsRow[]; desktop: boolean }) {
           </div>
         </SectionReveal>
 
-        <div className={`grid gap-4 ${desktop ? "grid-cols-3" : "grid-cols-1"}`}>
+        <div
+          data-tutorial-id="news"
+          className={`grid gap-4 ${desktop ? "grid-cols-3" : "grid-cols-1"}`}
+        >
           {items.map((n, i) => (
             <SectionReveal key={n.id} delay={i * 110}>
               <Link
@@ -916,6 +959,96 @@ function NewsSection({ news, desktop }: { news: NewsRow[]; desktop: boolean }) {
 // Body principal
 // =================================================================
 
+// Steps do tour — versões mobile e desktop sao parecidas mas o último step
+// muda (mobile fala da bottom bar / desktop fala da sidebar lateral).
+function buildHomeSteps(desktop: boolean, firstName: string): TutorialStep[] {
+  const navStep: TutorialStep = desktop
+    ? {
+        id: "nav",
+        target: "desktop-nav",
+        title: "Sua navegação principal",
+        description:
+          "Sidebar lateral com tudo: agentes, produtos, scripts, rotina, educação, ranking, news e conta. Passa o mouse pra expandir os labels.",
+        placement: "right",
+        padding: 8,
+        radius: 32,
+      }
+    : {
+        id: "nav",
+        target: "mobile-nav",
+        title: "Sua navegação principal",
+        description:
+          "Barra fixa com 4 atalhos rápidos. O botão Mais abre uma grade com TODOS os 9 itens do app — ranking, educação, news e mais.",
+        placement: "top",
+        padding: 6,
+        radius: 32,
+      };
+
+  return [
+    {
+      id: "welcome",
+      title: `bem-vinda, ${firstName}!`,
+      description:
+        "Em 30 segundos eu te mostro tudo que tem nessa tela. Pode pular a qualquer momento e refazer depois pelo botão ✨ Tour.",
+    },
+    {
+      id: "greeting",
+      target: "greeting",
+      title: "Sua saudação personalizada",
+      description:
+        "Aqui mostra a hora do dia e seu nome. É o ponto de partida — bom dia, boa tarde, boa noite, sempre te lembrando que esse espaço é seu.",
+      placement: "bottom",
+    },
+    {
+      id: "headline",
+      target: "headline",
+      title: "O lema do método",
+      description:
+        "Chega de postar no escuro. Tudo no app é pra você criar com método, não com chute. Toda decisão tem dado e direção por trás.",
+      placement: "bottom",
+    },
+    {
+      id: "ctas",
+      target: "hero-ctas",
+      title: "Seus dois fluxos principais",
+      description:
+        "Conversar com agentes abre os 10 GPTs/Gems especialistas por nicho. Check-in de hoje vai pra sua rotina diária — quanto mais consistente, melhor o resultado.",
+      placement: "bottom",
+    },
+    {
+      id: "stats",
+      target: "stats",
+      title: "Seus números em tempo real",
+      description:
+        "Produtos cadastrados, scripts salvos, aulas concluídas e seu streak de check-ins. Tudo clicável — toca em qualquer um pra ir direto na seção.",
+      placement: desktop ? "top" : "top",
+    },
+    {
+      id: "actions",
+      target: "actions",
+      title: "Próximas ações sugeridas",
+      description:
+        "Cards mostrando o que fazer agora baseado em onde você tá. Cadastrar produto novo, gerar scripts, completar uma aula — sempre tem próximo passo.",
+      placement: "top",
+    },
+    {
+      id: "rotina",
+      target: "rotina",
+      title: "Sua rotina + lives ao vivo",
+      description:
+        "Resumo do seu streak diário e atalho pra próxima live com a Yara. Hábito é o que separa quem posta 1x por semana de quem posta 5x por dia.",
+      placement: "top",
+    },
+    navStep,
+    {
+      id: "done",
+      title: "pronto! agora é com você 💕",
+      description:
+        "Explora à vontade. Se precisar refazer o tour, clica no botão ✨ Tour no canto da home. Bora vender no TikTok Shop!",
+    },
+  ];
+}
+
 function HomeBody({ desktop = false }: { desktop?: boolean }) {
   const data = useDashboardData();
   const firstName =
@@ -926,6 +1059,17 @@ function HomeBody({ desktop = false }: { desktop?: boolean }) {
     [data.lives],
   );
 
+  const steps = React.useMemo(
+    () => buildHomeSteps(desktop, firstName),
+    [desktop, firstName],
+  );
+
+  const [tourOpen, setTourOpen] = React.useState(false);
+  const reopenTour = () => {
+    resetTutorial("home");
+    setTourOpen(true);
+  };
+
   return (
     <div
       className="flex-1 overflow-auto relative"
@@ -934,13 +1078,27 @@ function HomeBody({ desktop = false }: { desktop?: boolean }) {
       {/* Floating Nav de seções (aparece no scroll, sempre top) */}
       <FloatingNav items={NAV_ITEMS} position="top" />
 
-      <HeroSection firstName={firstName} profile={data.profile} desktop={desktop} />
+      <HeroSection
+        firstName={firstName}
+        profile={data.profile}
+        desktop={desktop}
+        onReopenTour={reopenTour}
+      />
       <StatsSection data={data} desktop={desktop} />
       <ActionsSection desktop={desktop} />
       <RotinaSection streak={data.streak} liveNow={liveNow} desktop={desktop} />
       <CatalogoSection products={data.products} desktop={desktop} />
       <NewsSection news={data.news} desktop={desktop} />
       <FinalCtaSection desktop={desktop} />
+
+      {/* Tour guiado — auto-abre na primeira visita e pode re-abrir pelo botão */}
+      <TutorialOverlay
+        steps={steps}
+        storageKey="home"
+        autoStart={!tourOpen}
+        open={tourOpen || undefined}
+        onClose={() => setTourOpen(false)}
+      />
     </div>
   );
 }

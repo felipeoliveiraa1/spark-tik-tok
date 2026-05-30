@@ -108,6 +108,7 @@ function DesktopFloatingNav({ active }: { active?: NavId }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       aria-label="Navegação principal"
+      data-tutorial-id="desktop-nav"
       className={cn(
         "hidden lg:flex fixed left-5 z-40",
         "flex-col gap-1 p-2.5 rounded-spark-3xl glass shadow-lift",
@@ -212,6 +213,7 @@ function MobileFloatingNav({ active }: { active?: NavId }) {
       {/* Bottom bar fixa: 4 atalhos + botão "Mais" */}
       <nav
         aria-label="Navegação principal"
+        data-tutorial-id="mobile-nav"
         className={cn(
           "lg:hidden fixed left-1/2 -translate-x-1/2 z-40",
           "px-2 py-2 rounded-full glass shadow-lift",

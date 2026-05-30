@@ -70,14 +70,13 @@ export function SplashScreen({
     if (show) return;
     const elapsed = Date.now() - mountedAt.current;
     const wait = Math.max(0, minDurationMs - elapsed);
+    let t2: ReturnType<typeof setTimeout> | null = null;
     const t1 = setTimeout(() => {
       setFadingOut(true);
-      const t2 = setTimeout(() => setVisible(false), fadeOutMs);
-      (t1 as unknown as { _t2?: ReturnType<typeof setTimeout> })._t2 = t2;
+      t2 = setTimeout(() => setVisible(false), fadeOutMs);
     }, wait);
     return () => {
       clearTimeout(t1);
-      const t2 = (t1 as unknown as { _t2?: ReturnType<typeof setTimeout> })._t2;
       if (t2) clearTimeout(t2);
     };
   }, [show, minDurationMs, fadeOutMs]);
