@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ArrowUpRight, ChevronDown, ChevronsDown, ExternalLink, HelpCircle, Sparkles } from "lucide-react";
+import { ArrowUpRight, ChevronDown, ChevronsDown, ExternalLink, Sparkles } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { FloatingMainNav } from "@/components/layout/floating-main-nav";
 import { SplashScreen } from "@/components/atoms/splash-screen";
@@ -13,6 +13,7 @@ import { CharacterReveal } from "@/components/atoms/character-reveal";
 import { cn } from "@/lib/cn";
 import { VISIBLE_AGENTS_CATALOG, type AgentCatalogItem } from "@/lib/agents-catalog";
 import { TutorialOverlay } from "@/components/molecules/tutorial-overlay";
+import { HelpMenu } from "@/components/molecules/help-menu";
 import { type TutorialStep } from "@/lib/tutorial";
 
 /**
@@ -260,7 +261,7 @@ function IntroSlide({
       {/* Sparkles */}
       <SparkleField count={16} seed={91} className="opacity-70" />
 
-      {/* Botão Tour — top-right */}
+      {/* Botão ? — top-right */}
       <div
         className="absolute z-10"
         style={{
@@ -268,19 +269,7 @@ function IntroSlide({
           right: desktop ? "48px" : "16px",
         }}
       >
-        <button
-          type="button"
-          onClick={onReopenTour}
-          className="group inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full glass border border-spark-hairline text-spark-ink-70 hover:text-spark-brand-deep hover:bg-spark-brand-soft hover:-translate-y-0.5 text-[11.5px] font-extrabold uppercase tracking-widest shadow-rest transition-all duration-300 ease-premium"
-          aria-label="Refazer tour de agentes"
-        >
-          <HelpCircle
-            size={13}
-            strokeWidth={2.5}
-            className="transition-transform duration-300 group-hover:scale-110"
-          />
-          <span className="hidden sm:inline">Tour</span>
-        </button>
+        <HelpMenu onReopenTour={onReopenTour} />
       </div>
 
       <div className={cn("relative w-full", desktop ? "max-w-[1100px] mx-auto px-12" : "px-5 py-10")}>

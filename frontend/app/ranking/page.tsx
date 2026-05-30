@@ -4,7 +4,6 @@ import * as React from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
-  HelpCircle,
   Trophy,
   MapPin,
   Crown,
@@ -21,6 +20,7 @@ import { SectionReveal } from "@/components/atoms/section-reveal";
 import { LoadingSplash } from "@/components/atoms/loading-splash";
 import { cn } from "@/lib/cn";
 import { TutorialOverlay } from "@/components/molecules/tutorial-overlay";
+import { HelpMenu } from "@/components/molecules/help-menu";
 import { type TutorialStep } from "@/lib/tutorial";
 
 // =================================================================
@@ -367,15 +367,7 @@ function RankingBody({
                 <ArrowLeft size={14} strokeWidth={2.5} />
                 Voltar pra home
               </Link>
-              <button
-                type="button"
-                onClick={onReopenTour}
-                className="group inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full glass border border-spark-hairline text-spark-ink-70 hover:text-spark-brand-deep hover:bg-spark-brand-soft hover:-translate-y-0.5 text-[12px] font-extrabold transition-all duration-300 ease-premium shadow-rest"
-                aria-label="Refazer tour do ranking"
-              >
-                <HelpCircle size={12} strokeWidth={2.5} />
-                <span className="hidden sm:inline">Tour</span>
-              </button>
+              <HelpMenu onReopenTour={onReopenTour} />
             </div>
           </SectionReveal>
 

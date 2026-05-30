@@ -8,7 +8,6 @@ import {
   Check,
   CheckCircle2,
   Activity,
-  HelpCircle,
   Lock,
   RotateCcw,
   Flame,
@@ -23,6 +22,7 @@ import { LoadingSplash } from "@/components/atoms/loading-splash";
 import { useConfirm, useToast } from "@/components/molecules/dialog-provider";
 import { cn } from "@/lib/cn";
 import { TutorialOverlay } from "@/components/molecules/tutorial-overlay";
+import { HelpMenu } from "@/components/molecules/help-menu";
 import { type TutorialStep } from "@/lib/tutorial";
 
 // =================================================================
@@ -416,15 +416,7 @@ function RoutineView({
                 Voltar
               </Link>
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={onReopenTour}
-                  className="group inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full glass border border-spark-hairline text-spark-ink-70 hover:text-spark-brand-deep hover:bg-spark-brand-soft hover:-translate-y-0.5 text-[12px] font-extrabold transition-all duration-300 ease-premium shadow-rest"
-                  aria-label="Refazer tour da rotina"
-                >
-                  <HelpCircle size={12} strokeWidth={2.5} />
-                  <span className="hidden sm:inline">Tour</span>
-                </button>
+                <HelpMenu onReopenTour={onReopenTour} />
                 <Link
                   data-tutorial-id="rotina-edit"
                   href="/rotina/editar"

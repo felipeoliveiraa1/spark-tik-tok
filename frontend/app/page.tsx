@@ -6,7 +6,6 @@ import {
   ArrowRight,
   ArrowUpRight,
   Flame,
-  HelpCircle,
   Package,
   Pen,
   Plus,
@@ -26,6 +25,7 @@ import { SectionReveal } from "@/components/atoms/section-reveal";
 import { Parallax } from "@/components/atoms/parallax";
 import { SplashScreen } from "@/components/atoms/splash-screen";
 import { TutorialOverlay } from "@/components/molecules/tutorial-overlay";
+import { HelpMenu } from "@/components/molecules/help-menu";
 import { type TutorialStep } from "@/lib/tutorial";
 import { getLiveStatus, formatCountdown } from "@/lib/live-status";
 
@@ -242,19 +242,7 @@ function HeroSection({
             />
           </Link>
         )}
-        <button
-          type="button"
-          onClick={onReopenTour}
-          className="group inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full glass border border-spark-hairline text-spark-ink-70 hover:text-spark-brand-deep hover:bg-spark-brand-soft hover:-translate-y-0.5 text-[11.5px] font-extrabold uppercase tracking-widest shadow-rest transition-all duration-300 ease-premium"
-          aria-label="Refazer tour da home"
-        >
-          <HelpCircle
-            size={13}
-            strokeWidth={2.5}
-            className="transition-transform duration-300 group-hover:scale-110"
-          />
-          <span className="hidden sm:inline">Tour</span>
-        </button>
+        <HelpMenu onReopenTour={onReopenTour} />
       </div>
 
       {/* Conteúdo */}

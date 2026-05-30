@@ -27,6 +27,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <AdminNavLink href="/admin/news">News</AdminNavLink>
           <AdminNavLink href="/admin/educacao">Aulas</AdminNavLink>
           <AdminNavLink href="/admin/ao-vivo">Ao vivo</AdminNavLink>
+          <AdminNavLink href="/admin/feedback">Feedback</AdminNavLink>
           <Link
             href="/"
             className="ml-2 inline-flex items-center px-3 py-1.5 rounded-full glass border border-spark-hairline text-spark-ink-70 hover:text-spark-ink hover:-translate-y-0.5 transition-all duration-300 ease-premium"

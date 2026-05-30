@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Pen, ArrowUpRight, HelpCircle, Plus } from "lucide-react";
+import { Pen, ArrowUpRight, Plus } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { FloatingMainNav } from "@/components/layout/floating-main-nav";
 import { HeroBlob } from "@/components/atoms/hero-blob";
@@ -14,6 +14,7 @@ import { CountUp } from "@/components/atoms/count-up";
 import { LoadingSplash } from "@/components/atoms/loading-splash";
 import { cn } from "@/lib/cn";
 import { TutorialOverlay } from "@/components/molecules/tutorial-overlay";
+import { HelpMenu } from "@/components/molecules/help-menu";
 import { type TutorialStep } from "@/lib/tutorial";
 
 type ScriptItem = {
@@ -95,7 +96,7 @@ function HeroSection({
       <HeroBlob color="peach" variant={3} className="bottom-0 left-1/3 w-[400px] h-[400px]" />
       <SparkleField count={14} seed={701} className="opacity-70" />
 
-      {/* Botão Tour — top-right */}
+      {/* Botão ? — top-right */}
       <div
         className="absolute z-10"
         style={{
@@ -103,19 +104,7 @@ function HeroSection({
           right: desktop ? "48px" : "16px",
         }}
       >
-        <button
-          type="button"
-          onClick={onReopenTour}
-          className="group inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full glass border border-spark-hairline text-spark-ink-70 hover:text-spark-brand-deep hover:bg-spark-brand-soft hover:-translate-y-0.5 text-[11.5px] font-extrabold uppercase tracking-widest shadow-rest transition-all duration-300 ease-premium"
-          aria-label="Refazer tour de scripts"
-        >
-          <HelpCircle
-            size={13}
-            strokeWidth={2.5}
-            className="transition-transform duration-300 group-hover:scale-110"
-          />
-          <span className="hidden sm:inline">Tour</span>
-        </button>
+        <HelpMenu onReopenTour={onReopenTour} />
       </div>
 
       <div className={`relative ${desktop ? "px-12 max-w-[1200px] mx-auto" : "px-5"}`}>

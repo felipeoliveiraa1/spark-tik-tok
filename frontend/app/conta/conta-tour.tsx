@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { HelpCircle } from "lucide-react";
 import { TutorialOverlay } from "@/components/molecules/tutorial-overlay";
+import { HelpMenu } from "@/components/molecules/help-menu";
 import { type TutorialStep } from "@/lib/tutorial";
 
 /**
@@ -110,25 +110,16 @@ export function ContaTour() {
 
   return (
     <>
-      {/* Botao flutuante top-right (igual outras telas, em fixed pra evitar
-          mexer no JSX server-side do hero) */}
-      <button
-        type="button"
-        onClick={reopenTour}
-        className="fixed z-40 group inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full glass border border-spark-hairline text-spark-ink-70 hover:text-spark-brand-deep hover:bg-spark-brand-soft hover:-translate-y-0.5 text-[11.5px] font-extrabold uppercase tracking-widest shadow-rest transition-all duration-300 ease-premium"
+      {/* Botao flutuante top-right (fixed pra ficar acima do JSX server-side) */}
+      <div
+        className="fixed z-40"
         style={{
           top: "calc(env(safe-area-inset-top) + 16px)",
           right: "16px",
         }}
-        aria-label="Refazer tour da conta"
       >
-        <HelpCircle
-          size={13}
-          strokeWidth={2.5}
-          className="transition-transform duration-300 group-hover:scale-110"
-        />
-        <span className="hidden sm:inline">Tour</span>
-      </button>
+        <HelpMenu onReopenTour={reopenTour} />
+      </div>
 
       <TutorialOverlay
         steps={steps}
