@@ -26,7 +26,7 @@ import { SectionReveal } from "@/components/atoms/section-reveal";
 import { Parallax } from "@/components/atoms/parallax";
 import { SplashScreen } from "@/components/atoms/splash-screen";
 import { TutorialOverlay } from "@/components/molecules/tutorial-overlay";
-import { resetTutorial, type TutorialStep } from "@/lib/tutorial";
+import { type TutorialStep } from "@/lib/tutorial";
 import { getLiveStatus, formatCountdown } from "@/lib/live-status";
 
 /**
@@ -1066,7 +1066,6 @@ function HomeBody({ desktop = false }: { desktop?: boolean }) {
 
   const [tourOpen, setTourOpen] = React.useState(false);
   const reopenTour = () => {
-    resetTutorial("home");
     setTourOpen(true);
   };
 

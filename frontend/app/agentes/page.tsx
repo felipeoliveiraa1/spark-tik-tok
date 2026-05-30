@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ArrowUpRight, ChevronDown, ChevronsDown, ExternalLink, Sparkles } from "lucide-react";
+import { ArrowUpRight, ChevronDown, ChevronsDown, ExternalLink, HelpCircle, Sparkles } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { FloatingMainNav } from "@/components/layout/floating-main-nav";
 import { SplashScreen } from "@/components/atoms/splash-screen";
@@ -12,6 +12,8 @@ import { SectionReveal } from "@/components/atoms/section-reveal";
 import { CharacterReveal } from "@/components/atoms/character-reveal";
 import { cn } from "@/lib/cn";
 import { VISIBLE_AGENTS_CATALOG, type AgentCatalogItem } from "@/lib/agents-catalog";
+import { TutorialOverlay } from "@/components/molecules/tutorial-overlay";
+import { type TutorialStep } from "@/lib/tutorial";
 
 /**
  * /agentes — vitrine premium magazine das especialistas externas (ChatGPT
@@ -231,6 +233,7 @@ function IntroSlide({
   count,
   setRef,
   desktop,
+  onReopenTour,
 }: {
   platform: Platform;
   onChangePlatform: (p: Platform) => void;
@@ -238,6 +241,7 @@ function IntroSlide({
   count: number;
   setRef: (el: HTMLElement | null) => void;
   desktop: boolean;
+  onReopenTour: () => void;
 }) {
   return (
     <section
@@ -256,15 +260,40 @@ function IntroSlide({
       {/* Sparkles */}
       <SparkleField count={16} seed={91} className="opacity-70" />
 
+      {/* Botão Tour — top-right */}
+      <div
+        className="absolute z-10"
+        style={{
+          top: desktop ? "24px" : "calc(env(safe-area-inset-top) + 12px)",
+          right: desktop ? "48px" : "16px",
+        }}
+      >
+        <button
+          type="button"
+          onClick={onReopenTour}
+          className="group inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full glass border border-spark-hairline text-spark-ink-70 hover:text-spark-brand-deep hover:bg-spark-brand-soft hover:-translate-y-0.5 text-[11.5px] font-extrabold uppercase tracking-widest shadow-rest transition-all duration-300 ease-premium"
+          aria-label="Refazer tour de agentes"
+        >
+          <HelpCircle
+            size={13}
+            strokeWidth={2.5}
+            className="transition-transform duration-300 group-hover:scale-110"
+          />
+          <span className="hidden sm:inline">Tour</span>
+        </button>
+      </div>
+
       <div className={cn("relative w-full", desktop ? "max-w-[1100px] mx-auto px-12" : "px-5 py-10")}>
         {/* Top row: eyebrow + sticker */}
         <div className="flex items-start justify-between gap-4 mb-8">
           <SectionReveal direction="down" durationMs={600}>
-            <div className="text-eyebrow text-spark-brand-deep">
-              ✦ {totalAgents} especialistas
-            </div>
-            <div className="mt-3 text-fluid-lead text-spark-ink-70 max-w-[28ch] font-semibold">
-              Cada nicho com sua expert. Conversa direto no ChatGPT ou Gemini.
+            <div data-tutorial-id="agentes-intro">
+              <div className="text-eyebrow text-spark-brand-deep">
+                ✦ {totalAgents} especialistas
+              </div>
+              <div className="mt-3 text-fluid-lead text-spark-ink-70 max-w-[28ch] font-semibold">
+                Cada nicho com sua expert. Conversa direto no ChatGPT ou Gemini.
+              </div>
             </div>
           </SectionReveal>
 
@@ -308,7 +337,7 @@ function IntroSlide({
 
         {/* Tabs */}
         <SectionReveal direction="up" delay={750}>
-          <div className="mt-10 flex items-center gap-4 flex-wrap">
+          <div data-tutorial-id="agentes-tabs" className="mt-10 flex items-center gap-4 flex-wrap">
             <PlatformTabs platform={platform} onChange={onChangePlatform} />
             <span className="text-[12.5px] text-spark-ink-50 font-semibold">
               <strong className="text-spark-ink">{count}</strong> de {totalAgents} já no{" "}
@@ -320,6 +349,7 @@ function IntroSlide({
         {/* Como funciona — 3 passos */}
         <SectionReveal direction="up" delay={900}>
           <div
+            data-tutorial-id="agentes-how"
             className={cn(
               "mt-10 rounded-spark-2xl glass border border-spark-hairline p-6 sm:p-7",
             )}
@@ -359,7 +389,10 @@ function IntroSlide({
 
         {/* Scroll indicator */}
         <SectionReveal delay={1100}>
-          <div className="mt-10 flex flex-col items-center gap-1 text-spark-ink-50">
+          <div
+            data-tutorial-id="agentes-scroll"
+            className="mt-10 flex flex-col items-center gap-1 text-spark-ink-50"
+          >
             <span className="text-eyebrow">desliza pra ver</span>
             <ChevronsDown size={20} strokeWidth={2.2} className="animate-bounce" />
           </div>
@@ -601,10 +634,12 @@ function AgentesFeed({
   platform,
   onChangePlatform,
   desktop,
+  onReopenTour,
 }: {
   platform: Platform;
   onChangePlatform: (p: Platform) => void;
   desktop: boolean;
+  onReopenTour: () => void;
 }) {
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const count = React.useMemo(
@@ -635,6 +670,7 @@ function AgentesFeed({
           count={count}
           setRef={setRef("__intro")}
           desktop={desktop}
+          onReopenTour={onReopenTour}
         />
         {VISIBLE_AGENTS_CATALOG.map((agent, idx) => (
           <AgentSlide
@@ -658,14 +694,95 @@ function AgentesFeed({
 // PAGE
 // =================================================================
 
-function AgentesMobile() {
+function AgentesMobile({ onReopenTour }: { onReopenTour: () => void }) {
   const [platform, setPlatform] = usePersistedPlatform();
-  return <AgentesFeed platform={platform} onChangePlatform={setPlatform} desktop={false} />;
+  return (
+    <AgentesFeed
+      platform={platform}
+      onChangePlatform={setPlatform}
+      desktop={false}
+      onReopenTour={onReopenTour}
+    />
+  );
 }
 
-function AgentesDesktop() {
+function AgentesDesktop({ onReopenTour }: { onReopenTour: () => void }) {
   const [platform, setPlatform] = usePersistedPlatform();
-  return <AgentesFeed platform={platform} onChangePlatform={setPlatform} desktop={true} />;
+  return (
+    <AgentesFeed
+      platform={platform}
+      onChangePlatform={setPlatform}
+      desktop={true}
+      onReopenTour={onReopenTour}
+    />
+  );
+}
+
+// Steps do tour de Agentes — mesma estrutura da home (Welcome → targets → Nav → Done)
+function buildAgentesSteps(desktop: boolean): TutorialStep[] {
+  const navStep: TutorialStep = desktop
+    ? {
+        id: "nav",
+        target: "desktop-nav",
+        title: "Sua navegação principal",
+        description:
+          "Sidebar lateral com tudo: agentes, produtos, scripts, rotina, educação, ranking, news e conta. Passa o mouse pra expandir os labels.",
+        padding: 8,
+        radius: 32,
+      }
+    : {
+        id: "nav",
+        target: "mobile-nav",
+        title: "Sua navegação principal",
+        description:
+          "Barra fixa com 4 atalhos rápidos. O botão Mais abre uma grade com TODOS os itens do app.",
+        padding: 6,
+        radius: 32,
+      };
+
+  return [
+    {
+      id: "welcome",
+      title: "bem-vinda às especialistas!",
+      description:
+        "Em 20 segundos eu te mostro como funcionam os agentes. Cada um é uma expert de nicho diferente, e elas abrem no ChatGPT ou Gemini — você pode pular a qualquer hora e refazer depois pelo botão ✨ Tour.",
+    },
+    {
+      id: "intro",
+      target: "agentes-intro",
+      title: "Cada nicho com sua expert",
+      description:
+        "São especialistas treinadas pra cada categoria: skincare, makeup, suplementos, casa, eletrônicos, eletro… cada uma sabe o que vende e o que não vende no nicho dela.",
+    },
+    {
+      id: "tabs",
+      target: "agentes-tabs",
+      title: "Escolha sua plataforma",
+      description:
+        "ChatGPT ou Gemini — escolhe a que você já usa. Sua preferência fica salva. O contador mostra quantos agentes já tão liberados na plataforma escolhida.",
+    },
+    {
+      id: "how",
+      target: "agentes-how",
+      title: "Como usar em 3 passos",
+      description:
+        "1) Escolhe a plataforma. 2) Desliza pra ver as especialistas. 3) Abre uma, conversa lá e cola o resultado em Produtos ou Scripts aqui no app.",
+    },
+    {
+      id: "scroll",
+      target: "agentes-scroll",
+      title: "Desliza pra conhecer cada uma",
+      description:
+        "Cada agente vira um slide cheio com foto, descrição, como funciona e o botão pra abrir. Use o scroll vertical do mouse, trackpad ou dedinho 💕",
+    },
+    navStep,
+    {
+      id: "done",
+      title: "pronto! agora é com você 💕",
+      description:
+        "Desliza, abre a especialista do seu nicho e volta pra cá pra cadastrar o que ela gerou. Se quiser refazer o tour, clica no botão ✨ Tour no canto.",
+    },
+  ];
 }
 
 function AgentesPageContent() {
@@ -676,16 +793,43 @@ function AgentesPageContent() {
     return () => clearTimeout(t);
   }, []);
 
+  const [desktopMode, setDesktopMode] = React.useState(false);
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(min-width: 1024px)");
+    setDesktopMode(mq.matches);
+    const onChange = (e: MediaQueryListEvent) => setDesktopMode(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  const steps = React.useMemo(
+    () => buildAgentesSteps(desktopMode),
+    [desktopMode],
+  );
+
+  const [tourOpen, setTourOpen] = React.useState(false);
+  const reopenTour = React.useCallback(() => {
+    setTourOpen(true);
+  }, []);
+
   return (
     <>
       <SplashScreen show={showSplash} minDurationMs={1000} />
       <ResponsiveShell
-        mobile={<AgentesMobile />}
-        desktop={<AgentesDesktop />}
+        mobile={<AgentesMobile onReopenTour={reopenTour} />}
+        desktop={<AgentesDesktop onReopenTour={reopenTour} />}
         active="chat"
         customSidebar
       />
       <FloatingMainNav active="chat" />
+      <TutorialOverlay
+        steps={steps}
+        storageKey="agentes"
+        autoStart={!tourOpen}
+        open={tourOpen || undefined}
+        onClose={() => setTourOpen(false)}
+      />
     </>
   );
 }

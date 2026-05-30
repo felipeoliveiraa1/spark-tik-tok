@@ -4,7 +4,8 @@ import * as React from "react";
 import { X, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import { cn } from "@/lib/cn";
 import {
-  hasSeenTutorial,
+  hasSeenTutorialLocal,
+  fetchSeenTutorials,
   markTutorialSeen,
   type TutorialStep,
 } from "@/lib/tutorial";
@@ -35,16 +36,33 @@ export function TutorialOverlay({
 
   const open = externalOpen ?? internalOpen;
 
-  // Auto-start (espera 2.5s pra dar tempo do splash terminar)
+  // Auto-start (espera 2.5s pra dar tempo do splash terminar).
+  // Estrategia 2 fontes: cache local (sincrono) + server (async).
+  // Se EITHER disser que ja viu, NAO abre. Server eh fonte de verdade
+  // pra cross-device, local evita flash enquanto fetch carrega.
   React.useEffect(() => {
     if (externalOpen !== undefined) return;
     if (!autoStart) return;
-    if (hasSeenTutorial(storageKey)) return;
-    const t = setTimeout(() => {
-      setInternalOpen(true);
-      setStepIndex(0);
-    }, 2500);
-    return () => clearTimeout(t);
+    if (hasSeenTutorialLocal(storageKey)) return;
+
+    let cancelled = false;
+    let timerId: ReturnType<typeof setTimeout> | null = null;
+
+    (async () => {
+      const seen = await fetchSeenTutorials();
+      if (cancelled) return;
+      if (seen.includes(storageKey)) return;
+      timerId = setTimeout(() => {
+        if (cancelled) return;
+        setInternalOpen(true);
+        setStepIndex(0);
+      }, 2500);
+    })();
+
+    return () => {
+      cancelled = true;
+      if (timerId) clearTimeout(timerId);
+    };
   }, [autoStart, storageKey, externalOpen]);
 
   React.useEffect(() => {
@@ -63,16 +81,19 @@ export function TutorialOverlay({
 
   const close = React.useCallback(() => {
     markTutorialSeen(storageKey);
-    if (externalOnClose) externalOnClose();
-    else setInternalOpen(false);
+    // Fecha ambos os estados — internal (auto-start) e external (botao Tour
+    // do parent). Sem isso, auto-start aberto nunca fecha porque tourOpen
+    // do parent ja era false.
+    setInternalOpen(false);
+    externalOnClose?.();
   }, [storageKey, externalOnClose]);
 
   const next = React.useCallback(() => {
     setStepIndex((i) => {
       if (i < steps.length - 1) return i + 1;
       markTutorialSeen(storageKey);
-      if (externalOnClose) externalOnClose();
-      else setInternalOpen(false);
+      setInternalOpen(false);
+      externalOnClose?.();
       return i;
     });
   }, [steps.length, storageKey, externalOnClose]);
