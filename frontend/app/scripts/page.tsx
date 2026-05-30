@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Pen, ArrowUpRight, Plus } from "lucide-react";
+import { Pen, ArrowUpRight, HelpCircle, Plus } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { FloatingMainNav } from "@/components/layout/floating-main-nav";
 import { HeroBlob } from "@/components/atoms/hero-blob";
@@ -13,6 +13,8 @@ import { CharacterReveal } from "@/components/atoms/character-reveal";
 import { CountUp } from "@/components/atoms/count-up";
 import { LoadingSplash } from "@/components/atoms/loading-splash";
 import { cn } from "@/lib/cn";
+import { TutorialOverlay } from "@/components/molecules/tutorial-overlay";
+import { type TutorialStep } from "@/lib/tutorial";
 
 type ScriptItem = {
   n?: number;
@@ -71,7 +73,15 @@ function useScripts() {
 // HERO
 // =================================================================
 
-function HeroSection({ count, desktop }: { count: number; desktop: boolean }) {
+function HeroSection({
+  count,
+  desktop,
+  onReopenTour,
+}: {
+  count: number;
+  desktop: boolean;
+  onReopenTour: () => void;
+}) {
   return (
     <section
       className="relative overflow-hidden hero-radial"
@@ -85,14 +95,39 @@ function HeroSection({ count, desktop }: { count: number; desktop: boolean }) {
       <HeroBlob color="peach" variant={3} className="bottom-0 left-1/3 w-[400px] h-[400px]" />
       <SparkleField count={14} seed={701} className="opacity-70" />
 
+      {/* Botão Tour — top-right */}
+      <div
+        className="absolute z-10"
+        style={{
+          top: desktop ? "24px" : "calc(env(safe-area-inset-top) + 12px)",
+          right: desktop ? "48px" : "16px",
+        }}
+      >
+        <button
+          type="button"
+          onClick={onReopenTour}
+          className="group inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full glass border border-spark-hairline text-spark-ink-70 hover:text-spark-brand-deep hover:bg-spark-brand-soft hover:-translate-y-0.5 text-[11.5px] font-extrabold uppercase tracking-widest shadow-rest transition-all duration-300 ease-premium"
+          aria-label="Refazer tour de scripts"
+        >
+          <HelpCircle
+            size={13}
+            strokeWidth={2.5}
+            className="transition-transform duration-300 group-hover:scale-110"
+          />
+          <span className="hidden sm:inline">Tour</span>
+        </button>
+      </div>
+
       <div className={`relative ${desktop ? "px-12 max-w-[1200px] mx-auto" : "px-5"}`}>
         <div className="flex items-start justify-between gap-4 mb-8">
           <SectionReveal direction="down" durationMs={600}>
-            <div className="text-eyebrow text-spark-brand-deep">
-              ✦ biblioteca de scripts
-            </div>
-            <div className="mt-3 text-fluid-lead text-spark-ink-70 max-w-[30ch] font-semibold">
-              Gancho, desenvolvimento, benefício e CTA. Prontos pra gravar.
+            <div data-tutorial-id="scripts-intro">
+              <div className="text-eyebrow text-spark-brand-deep">
+                ✦ biblioteca de scripts
+              </div>
+              <div className="mt-3 text-fluid-lead text-spark-ink-70 max-w-[30ch] font-semibold">
+                Gancho, desenvolvimento, benefício e CTA. Prontos pra gravar.
+              </div>
             </div>
           </SectionReveal>
 
@@ -125,7 +160,7 @@ function HeroSection({ count, desktop }: { count: number; desktop: boolean }) {
         </SectionReveal>
 
         <SectionReveal direction="up" delay={900}>
-          <div className="mt-10 flex items-center gap-5 flex-wrap">
+          <div data-tutorial-id="scripts-action" className="mt-10 flex items-center gap-5 flex-wrap">
             <Link
               href="/scripts/novo"
               className="group inline-flex items-center gap-2 px-7 py-4 rounded-full bg-spark-ink text-white text-[14px] font-extrabold shadow-lift transition-all duration-300 ease-premium hover:-translate-y-1 hover:bg-spark-brand-deep active:translate-y-0"
@@ -372,47 +407,141 @@ function EmptyScripts({ desktop }: { desktop: boolean }) {
 // BODY + PAGE
 // =================================================================
 
-function ScriptsBody({ desktop = false }: { desktop?: boolean }) {
+function ScriptsBody({
+  desktop = false,
+  onReopenTour,
+}: {
+  desktop?: boolean;
+  onReopenTour: () => void;
+}) {
   const { scripts, loading } = useScripts();
   return (
     <div
       className="flex-1 overflow-auto relative"
       style={{ paddingBottom: desktop ? 0 : "calc(env(safe-area-inset-bottom) + 88px)" }}
     >
-      <HeroSection count={scripts.length} desktop={desktop} />
-      {loading ? (
-        <section className="py-24 flex justify-center">
-          <LoadingSplash message="Buscando seus scripts" />
-        </section>
-      ) : scripts.length === 0 ? (
-        <EmptyScripts desktop={desktop} />
-      ) : (
-        <ScriptsGrid scripts={scripts} desktop={desktop} />
-      )}
+      <HeroSection count={scripts.length} desktop={desktop} onReopenTour={onReopenTour} />
+      <div data-tutorial-id="scripts-vitrine">
+        {loading ? (
+          <section className="py-24 flex justify-center">
+            <LoadingSplash message="Buscando seus scripts" />
+          </section>
+        ) : scripts.length === 0 ? (
+          <EmptyScripts desktop={desktop} />
+        ) : (
+          <ScriptsGrid scripts={scripts} desktop={desktop} />
+        )}
+      </div>
     </div>
   );
 }
 
-function ScriptsMobile() {
-  return <ScriptsBody />;
+function ScriptsMobile({ onReopenTour }: { onReopenTour: () => void }) {
+  return <ScriptsBody onReopenTour={onReopenTour} />;
 }
 
-function ScriptsDesktop() {
-  return <ScriptsBody desktop />;
+function ScriptsDesktop({ onReopenTour }: { onReopenTour: () => void }) {
+  return <ScriptsBody desktop onReopenTour={onReopenTour} />;
 }
 
-export default function ScriptsPage() {
+// Steps do tour de Scripts (6 steps com variantes mobile/desktop pro nav)
+function buildScriptsSteps(desktop: boolean): TutorialStep[] {
+  const navStep: TutorialStep = desktop
+    ? {
+        id: "nav",
+        target: "desktop-nav",
+        title: "Sua navegação principal",
+        description:
+          "Sidebar lateral com tudo: agentes, produtos, scripts, rotina, educação, ranking, news e conta.",
+        padding: 8,
+        radius: 32,
+      }
+    : {
+        id: "nav",
+        target: "mobile-nav",
+        title: "Sua navegação principal",
+        description:
+          "Barra fixa com 4 atalhos rápidos. O botão Mais abre a grade completa.",
+        padding: 6,
+        radius: 32,
+      };
+
+  return [
+    {
+      id: "welcome",
+      title: "bem-vinda aos scripts!",
+      description:
+        "Aqui ficam os roteiros prontos pra gravar — 5 versões por conjunto, cada uma com gancho, desenvolvimento, benefício e CTA. Em 20s te mostro tudo.",
+    },
+    {
+      id: "intro",
+      target: "scripts-intro",
+      title: "Como os roteiros funcionam",
+      description:
+        "Cada conjunto vem com 5 variações: gancho que prende, desenvolvimento que vende, benefício que convence e CTA que converte. Você só grava.",
+    },
+    {
+      id: "action",
+      target: "scripts-action",
+      title: "Adicionar e acompanhar",
+      description:
+        "Botão Adicionar roteiros cola o que o agente Scripts gerou. O contador do lado mostra quantos conjuntos você já tem salvos.",
+    },
+    {
+      id: "vitrine",
+      target: "scripts-vitrine",
+      title: "Seu acervo",
+      description:
+        "Cards com título, número de roteiros e prévia do primeiro gancho. Clica num pra ver os 5 roteiros completos, editar ou apagar. Vazio mostra o passo a passo.",
+    },
+    navStep,
+    {
+      id: "done",
+      title: "pronto! agora é gravar 💕",
+      description:
+        "Quanto mais roteiros prontos, menos você fica travada na hora de gravar. Pra refazer o tour, clica no ✨ Tour no canto.",
+    },
+  ];
+}
+
+function ScriptsPageContent() {
+  const [desktopMode, setDesktopMode] = React.useState(false);
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(min-width: 1024px)");
+    setDesktopMode(mq.matches);
+    const onChange = (e: MediaQueryListEvent) => setDesktopMode(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  const steps = React.useMemo(() => buildScriptsSteps(desktopMode), [desktopMode]);
+
+  const [tourOpen, setTourOpen] = React.useState(false);
+  const reopenTour = React.useCallback(() => setTourOpen(true), []);
+
   return (
     <>
       <ResponsiveShell
-        mobile={<ScriptsMobile />}
-        desktop={<ScriptsDesktop />}
+        mobile={<ScriptsMobile onReopenTour={reopenTour} />}
+        desktop={<ScriptsDesktop onReopenTour={reopenTour} />}
         active="scripts"
         customSidebar
       />
       <FloatingMainNav active="scripts" />
+      <TutorialOverlay
+        steps={steps}
+        storageKey="scripts"
+        autoStart={!tourOpen}
+        open={tourOpen || undefined}
+        onClose={() => setTourOpen(false)}
+      />
     </>
   );
+}
+
+export default function ScriptsPage() {
+  return <ScriptsPageContent />;
 }
 
 void Pen;
