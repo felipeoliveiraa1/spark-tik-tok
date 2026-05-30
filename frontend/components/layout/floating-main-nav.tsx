@@ -13,7 +13,11 @@ import {
   Newspaper,
   Trophy,
   User,
+  X,
+  Check,
+  LayoutGrid,
 } from "lucide-react";
+import { SparkleField } from "@/components/atoms/sparkle-field";
 import { cn } from "@/lib/cn";
 import type { NavId } from "./bottom-nav";
 
@@ -170,58 +174,256 @@ function DesktopFloatingNav({ active }: { active?: NavId }) {
 }
 
 // =================================================================
-// MOBILE — pill horizontal centered bottom
+// MOBILE — bottom bar com 4 atalhos rápidos + botão "Mais" → overlay grid 3x3
 // =================================================================
 
+// Os 4 que a aluna usa todo dia. Restantes ficam no overlay.
+const QUICK_IDS: NavId[] = ["home", "chat", "scripts", "rotina"];
+
 function MobileFloatingNav({ active }: { active?: NavId }) {
+  const [open, setOpen] = React.useState(false);
+
+  // Fecha em ESC
+  React.useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  // Trava scroll do body quando overlay aberto
+  React.useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
+  const quickItems = QUICK_IDS.map((id) => ITEMS.find((it) => it.id === id)!).filter(
+    Boolean,
+  );
+
   return (
-    <nav
-      aria-label="Navegação principal"
-      className={cn(
-        "lg:hidden fixed left-1/2 -translate-x-1/2 z-40",
-        "px-1.5 py-1.5 rounded-full glass shadow-lift",
-        "flex items-center gap-0.5 overflow-x-auto no-scrollbar",
-      )}
-      style={{
-        bottom: "calc(env(safe-area-inset-bottom) + 12px)",
-        maxWidth: "calc(100vw - 16px)",
-      }}
-    >
-      {ITEMS.map((it) => {
-        const isActive = active === it.id;
-        return (
-          <Link
-            key={it.id}
-            href={it.href}
-            aria-label={it.label}
-            aria-current={isActive ? "page" : undefined}
-            className={cn(
-              "relative inline-flex flex-col items-center justify-center gap-0.5 rounded-full transition-all duration-300 ease-premium shrink-0",
-              "min-w-[42px] h-12 px-1.5",
-              isActive
-                ? "bg-brand-grad text-white shadow-lift-brand"
-                : "text-spark-ink-70 hover:bg-spark-surface-sunken/60 hover:text-spark-ink",
-            )}
-          >
-            <it.Icon
-              size={17}
-              strokeWidth={isActive ? 2.4 : 2.1}
+    <>
+      {/* Bottom bar fixa: 4 atalhos + botão "Mais" */}
+      <nav
+        aria-label="Navegação principal"
+        className={cn(
+          "lg:hidden fixed left-1/2 -translate-x-1/2 z-40",
+          "px-2 py-2 rounded-full glass shadow-lift",
+          "flex items-center gap-1",
+        )}
+        style={{
+          bottom: "calc(env(safe-area-inset-bottom) + 12px)",
+        }}
+      >
+        {quickItems.map((it) => {
+          const isActive = active === it.id;
+          return (
+            <Link
+              key={it.id}
+              href={it.href}
+              aria-label={it.label}
+              aria-current={isActive ? "page" : undefined}
               className={cn(
-                "transition-transform duration-300",
-                isActive ? "scale-110" : "opacity-85",
-              )}
-            />
-            <span
-              className={cn(
-                "text-[8.5px] leading-none tracking-tight",
-                isActive ? "font-extrabold" : "font-semibold opacity-90",
+                "relative inline-flex flex-col items-center justify-center gap-0.5 rounded-full transition-all duration-300 ease-premium",
+                "min-w-[52px] h-12 px-2",
+                isActive
+                  ? "bg-brand-grad text-white shadow-lift-brand"
+                  : "text-spark-ink-70 hover:bg-spark-surface-sunken/60 hover:text-spark-ink",
               )}
             >
-              {it.label}
-            </span>
-          </Link>
-        );
-      })}
-    </nav>
+              <it.Icon
+                size={17}
+                strokeWidth={isActive ? 2.4 : 2.1}
+                className={cn(
+                  "transition-transform duration-300",
+                  isActive ? "scale-110" : "opacity-90",
+                )}
+              />
+              <span
+                className={cn(
+                  "text-[9px] leading-none tracking-tight",
+                  isActive ? "font-extrabold" : "font-extrabold opacity-90",
+                )}
+              >
+                {it.label}
+              </span>
+            </Link>
+          );
+        })}
+
+        {/* Separador sutil */}
+        <span aria-hidden className="w-px h-7 bg-spark-hairline mx-0.5" />
+
+        {/* Botão "Mais" — abre overlay com todos */}
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-label="Mais opções de menu"
+          aria-expanded={open}
+          aria-controls="mobile-nav-overlay"
+          className={cn(
+            "relative inline-flex flex-col items-center justify-center gap-0.5 rounded-full transition-all duration-300 ease-premium",
+            "min-w-[52px] h-12 px-2",
+            "bg-brand-grad-soft text-spark-brand-deep hover:bg-spark-brand-soft hover:-translate-y-0.5",
+            // Destaca se a rota atual NÃO está nos atalhos
+            active && !QUICK_IDS.includes(active)
+              ? "ring-2 ring-spark-brand shadow-lift-brand"
+              : "",
+          )}
+        >
+          <LayoutGrid size={17} strokeWidth={2.4} />
+          <span className="text-[9px] leading-none tracking-tight font-extrabold">
+            mais
+          </span>
+        </button>
+      </nav>
+
+      {/* Overlay com grid 3x3 */}
+      {open && (
+        <div
+          id="mobile-nav-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Menu de navegação"
+          className="lg:hidden fixed inset-0 z-50 flex flex-col"
+          style={{ animation: "nav-fade-in 240ms ease-premium both" }}
+        >
+          {/* Backdrop tap-to-close */}
+          <button
+            type="button"
+            aria-label="Fechar menu"
+            onClick={() => setOpen(false)}
+            className="absolute inset-0 bg-spark-ink/30 backdrop-blur-md"
+          />
+
+          {/* Conteúdo (clique aqui NÃO fecha) */}
+          <div
+            className="relative flex-1 flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Sparkles textura */}
+            <SparkleField
+              count={14}
+              seed={2026}
+              color="rgba(255,255,255,0.55)"
+              className="opacity-60"
+            />
+
+            {/* Painel principal sliding from bottom */}
+            <div
+              className="relative mt-auto bg-spark-surface rounded-t-spark-3xl shadow-hero p-5 lg:p-7"
+              style={{
+                paddingBottom: "calc(env(safe-area-inset-bottom) + 24px)",
+                animation: "nav-slide-up 360ms cubic-bezier(0.2, 0.7, 0.2, 1) both",
+              }}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between mb-5">
+                <div className="text-eyebrow text-spark-brand">
+                  ✦ onde você quer ir?
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  aria-label="Fechar menu"
+                  className="w-9 h-9 rounded-full bg-spark-surface-sunken text-spark-ink-70 hover:text-spark-ink hover:bg-spark-brand-soft flex items-center justify-center transition-all duration-300 ease-premium active:scale-95"
+                >
+                  <X size={16} strokeWidth={2.5} />
+                </button>
+              </div>
+
+              {/* Grid 3x3 (9 itens) */}
+              <div className="grid grid-cols-3 gap-3">
+                {ITEMS.map((it, i) => {
+                  const isActive = active === it.id;
+                  return (
+                    <Link
+                      key={it.id}
+                      href={it.href}
+                      onClick={() => setOpen(false)}
+                      aria-current={isActive ? "page" : undefined}
+                      className={cn(
+                        "group relative aspect-square flex flex-col items-center justify-center gap-2 p-3 rounded-spark-2xl transition-all duration-300 ease-premium hover:-translate-y-0.5 active:scale-95",
+                        isActive
+                          ? "bg-brand-grad text-white shadow-lift-brand scale-105"
+                          : "bg-spark-surface-sunken text-spark-ink hover:bg-spark-brand-soft hover:text-spark-brand-deep shadow-rest hover:shadow-lift",
+                      )}
+                      style={{
+                        animation: `nav-card-in 420ms cubic-bezier(0.2, 0.7, 0.2, 1) ${i * 35}ms both`,
+                      }}
+                    >
+                      {/* Badge "aqui" no item ativo */}
+                      {isActive && (
+                        <span
+                          aria-hidden
+                          className="absolute top-1.5 right-1.5 inline-flex items-center justify-center w-5 h-5 rounded-full bg-white text-spark-brand-deep shadow-sm"
+                        >
+                          <Check size={11} strokeWidth={3} />
+                        </span>
+                      )}
+
+                      <it.Icon
+                        size={24}
+                        strokeWidth={isActive ? 2.4 : 2.1}
+                        className={cn(
+                          "transition-transform duration-300",
+                          isActive ? "scale-110" : "group-hover:scale-110",
+                        )}
+                      />
+                      <span
+                        className={cn(
+                          "text-[11px] leading-tight tracking-tight text-center",
+                          isActive ? "font-extrabold" : "font-extrabold",
+                        )}
+                      >
+                        {it.label}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Keyframes inline pra animações */}
+          <style jsx>{`
+            @keyframes nav-fade-in {
+              from {
+                opacity: 0;
+              }
+              to {
+                opacity: 1;
+              }
+            }
+            @keyframes nav-slide-up {
+              from {
+                transform: translateY(40px);
+                opacity: 0;
+              }
+              to {
+                transform: translateY(0);
+                opacity: 1;
+              }
+            }
+            @keyframes nav-card-in {
+              from {
+                opacity: 0;
+                transform: translateY(12px) scale(0.96);
+              }
+              to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+              }
+            }
+          `}</style>
+        </div>
+      )}
+    </>
   );
 }
