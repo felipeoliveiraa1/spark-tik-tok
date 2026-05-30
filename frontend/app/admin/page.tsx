@@ -14,6 +14,16 @@ function getServiceClient() {
   });
 }
 
+type FeedbackPreview = {
+  id: string;
+  type: "bug" | "suggestion";
+  title: string;
+  status: "open" | "in_review" | "resolved" | "dismissed";
+  created_at: string;
+  user_name: string | null;
+  user_email: string | null;
+};
+
 async function getStats() {
   const supabase = getServiceClient();
 
@@ -27,6 +37,13 @@ async function getStats() {
     alunasTrial,
     products,
     scripts,
+    feedbackOpen,
+    feedbackInReview,
+    feedbackResolved,
+    feedbackDismissed,
+    feedbackBugsOpen,
+    feedbackSuggestionsOpen,
+    feedbackRecent,
   ] = await Promise.all([
     supabase.from("news").select("id", { count: "exact", head: true }),
     supabase.from("education_videos").select("id", { count: "exact", head: true }),
@@ -48,7 +65,64 @@ async function getStats() {
       .or("role.is.null,role.neq.admin"),
     supabase.from("products").select("id", { count: "exact", head: true }),
     supabase.from("generated_scripts").select("id", { count: "exact", head: true }),
+    supabase
+      .from("user_feedback")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "open"),
+    supabase
+      .from("user_feedback")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "in_review"),
+    supabase
+      .from("user_feedback")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "resolved"),
+    supabase
+      .from("user_feedback")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "dismissed"),
+    supabase
+      .from("user_feedback")
+      .select("id", { count: "exact", head: true })
+      .eq("type", "bug")
+      .eq("status", "open"),
+    supabase
+      .from("user_feedback")
+      .select("id", { count: "exact", head: true })
+      .eq("type", "suggestion")
+      .eq("status", "open"),
+    supabase
+      .from("user_feedback")
+      .select(
+        "id, type, title, status, created_at, profiles!user_feedback_user_id_fkey(name, email)",
+      )
+      .order("created_at", { ascending: false })
+      .limit(5),
   ]);
+
+  type RawRecent = {
+    id: string;
+    type: "bug" | "suggestion";
+    title: string;
+    status: "open" | "in_review" | "resolved" | "dismissed";
+    created_at: string;
+    profiles: { name: string | null; email: string } | { name: string | null; email: string }[] | null;
+  };
+
+  const recent: FeedbackPreview[] = ((feedbackRecent.data as RawRecent[] | null) ?? []).map(
+    (r) => {
+      const p = Array.isArray(r.profiles) ? r.profiles[0] : r.profiles;
+      return {
+        id: r.id,
+        type: r.type,
+        title: r.title,
+        status: r.status,
+        created_at: r.created_at,
+        user_name: p?.name ?? null,
+        user_email: p?.email ?? null,
+      };
+    },
+  );
 
   return {
     news: news.count ?? 0,
@@ -61,8 +135,33 @@ async function getStats() {
     alunasInativas: (alunas.count ?? 0) - (alunasAtivas.count ?? 0),
     products: products.count ?? 0,
     scripts: scripts.count ?? 0,
+    feedbackOpen: feedbackOpen.count ?? 0,
+    feedbackInReview: feedbackInReview.count ?? 0,
+    feedbackResolved: feedbackResolved.count ?? 0,
+    feedbackDismissed: feedbackDismissed.count ?? 0,
+    feedbackBugsOpen: feedbackBugsOpen.count ?? 0,
+    feedbackSuggestionsOpen: feedbackSuggestionsOpen.count ?? 0,
+    feedbackRecent: recent,
   };
 }
+
+function fmtRelativeShort(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime();
+  const mins = Math.round(ms / 60_000);
+  if (mins < 1) return "agora";
+  if (mins < 60) return `${mins}min`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.round(hours / 24);
+  return `${days}d`;
+}
+
+const STATUS_DOT: Record<FeedbackPreview["status"], { color: string; label: string }> = {
+  open: { color: "bg-warn", label: "Aberto" },
+  in_review: { color: "bg-spark-brand-deep", label: "Em análise" },
+  resolved: { color: "bg-good", label: "Resolvido" },
+  dismissed: { color: "bg-spark-ink-35", label: "Dispensado" },
+};
 
 export default async function AdminHome() {
   const s = await getStats();
@@ -100,6 +199,89 @@ export default async function AdminHome() {
             <StatCard label="Plano ativo" value={s.alunasAtivas} emoji="✅" tone="good" />
             <StatCard label="Em trial" value={s.alunasTrial} emoji="🎁" tone="warn" />
             <StatCard label="Inativas" value={s.alunasInativas} emoji="⏸️" />
+          </div>
+        </SectionBlock>
+
+        {/* Feedback */}
+        <SectionBlock label="✦ feedback" title="o que as alunas estão reportando">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            <StatCard
+              label="Abertos"
+              value={s.feedbackOpen}
+              emoji="🟠"
+              tone={s.feedbackOpen > 0 ? "warn" : undefined}
+            />
+            <StatCard label="Em análise" value={s.feedbackInReview} emoji="🔵" />
+            <StatCard label="Resolvidos" value={s.feedbackResolved} emoji="🟢" tone="good" />
+            <StatCard label="Dispensados" value={s.feedbackDismissed} emoji="⚪" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <StatCard label="Bugs abertos" value={s.feedbackBugsOpen} emoji="🐛" />
+            <StatCard label="Sugestões abertas" value={s.feedbackSuggestionsOpen} emoji="💡" />
+          </div>
+
+          {/* Recentes */}
+          <div className="rounded-spark-2xl bg-spark-surface border border-spark-hairline shadow-rest overflow-hidden">
+            <div className="px-5 py-4 border-b border-spark-hairline flex items-center justify-between">
+              <div className="text-eyebrow text-spark-brand">✦ últimos reports</div>
+              <Link
+                href="/admin/feedback"
+                className="text-[11.5px] font-extrabold text-spark-brand-deep hover:text-spark-brand transition-colors uppercase tracking-wider"
+              >
+                Ver todos →
+              </Link>
+            </div>
+            {s.feedbackRecent.length === 0 ? (
+              <div className="px-5 py-10 text-center">
+                <div className="text-[28px] mb-2">✨</div>
+                <div className="text-[13px] text-spark-ink-50 font-semibold">
+                  Nenhum report ainda. Quando uma aluna mandar bug ou sugestão, aparece aqui.
+                </div>
+              </div>
+            ) : (
+              <ul className="divide-y divide-spark-hairline">
+                {s.feedbackRecent.map((r) => (
+                  <li key={r.id}>
+                    <Link
+                      href="/admin/feedback"
+                      className="group flex items-center gap-3 px-5 py-3.5 hover:bg-spark-surface-sunken/40 transition-colors"
+                    >
+                      <span className="text-[18px] shrink-0" aria-hidden>
+                        {r.type === "bug" ? "🐛" : "💡"}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[13.5px] font-extrabold text-spark-ink tracking-tight truncate group-hover:text-spark-brand-deep transition-colors">
+                          {r.title}
+                        </div>
+                        <div className="text-[11px] text-spark-ink-50 truncate mt-0.5">
+                          {r.user_name ?? r.user_email?.split("@")[0] ?? "Aluna"}
+                          {r.user_email && (
+                            <>
+                              <span className="mx-1.5 opacity-50">·</span>
+                              <span className="font-mono">{r.user_email}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span
+                          className={`inline-flex items-center gap-1.5 text-[10.5px] font-extrabold uppercase tracking-wider text-spark-ink-70`}
+                        >
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[r.status].color}`}
+                          />
+                          {STATUS_DOT[r.status].label}
+                        </span>
+                        <span className="text-[10.5px] text-spark-ink-50 font-mono w-9 text-right">
+                          {fmtRelativeShort(r.created_at)}
+                        </span>
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </SectionBlock>
 
@@ -147,6 +329,12 @@ export default async function AdminHome() {
               emoji="🔴"
               title="Agendar Lives"
               desc="Marcar encontros ao vivo via YouTube. Replay automático."
+            />
+            <ActionCard
+              href="/admin/feedback"
+              emoji="🐛"
+              title="Feedback das alunas"
+              desc="Bugs e sugestões reportados pelas alunas. Triagem e status."
             />
           </div>
         </SectionBlock>
