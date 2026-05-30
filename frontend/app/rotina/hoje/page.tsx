@@ -8,6 +8,7 @@ import {
   Check,
   CheckCircle2,
   Activity,
+  HelpCircle,
   Lock,
   RotateCcw,
   Flame,
@@ -21,6 +22,8 @@ import { SectionReveal } from "@/components/atoms/section-reveal";
 import { LoadingSplash } from "@/components/atoms/loading-splash";
 import { useConfirm, useToast } from "@/components/molecules/dialog-provider";
 import { cn } from "@/lib/cn";
+import { TutorialOverlay } from "@/components/molecules/tutorial-overlay";
+import { type TutorialStep } from "@/lib/tutorial";
 
 // =================================================================
 // TYPES
@@ -326,6 +329,7 @@ function RoutineView({
   desktop,
   onToggle,
   onComplete,
+  onReopenTour,
 }: {
   habits: Habit[];
   checked: Set<string>;
@@ -333,6 +337,7 @@ function RoutineView({
   desktop: boolean;
   onToggle: (id: string) => void;
   onComplete: () => void;
+  onReopenTour: () => void;
 }) {
   const total = habits.length;
   const done = habits.filter((h) => checked.has(h.id)).length;
@@ -353,6 +358,7 @@ function RoutineView({
       type="button"
       onClick={onComplete}
       disabled={done === 0}
+      data-tutorial-id="rotina-cta"
       className={cn(
         "group w-full inline-flex items-center justify-center gap-2 px-6 py-4 rounded-full text-[14px] font-extrabold shadow-hero transition-all duration-300 ease-premium hover:-translate-y-0.5 active:translate-y-0",
         done === 0
@@ -409,39 +415,53 @@ function RoutineView({
                 <ArrowLeft size={14} strokeWidth={2.5} />
                 Voltar
               </Link>
-              <Link
-                href="/rotina/editar"
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full glass border border-spark-hairline text-spark-ink text-[12px] font-extrabold hover:bg-spark-brand-soft hover:text-spark-brand-deep hover:-translate-y-0.5 transition-all duration-300 ease-premium shadow-rest"
-              >
-                <Pencil size={12} strokeWidth={2.5} />
-                Editar minha rotina
-              </Link>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={onReopenTour}
+                  className="group inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full glass border border-spark-hairline text-spark-ink-70 hover:text-spark-brand-deep hover:bg-spark-brand-soft hover:-translate-y-0.5 text-[12px] font-extrabold transition-all duration-300 ease-premium shadow-rest"
+                  aria-label="Refazer tour da rotina"
+                >
+                  <HelpCircle size={12} strokeWidth={2.5} />
+                  <span className="hidden sm:inline">Tour</span>
+                </button>
+                <Link
+                  data-tutorial-id="rotina-edit"
+                  href="/rotina/editar"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full glass border border-spark-hairline text-spark-ink text-[12px] font-extrabold hover:bg-spark-brand-soft hover:text-spark-brand-deep hover:-translate-y-0.5 transition-all duration-300 ease-premium shadow-rest"
+                >
+                  <Pencil size={12} strokeWidth={2.5} />
+                  Editar minha rotina
+                </Link>
+              </div>
             </div>
           </SectionReveal>
 
           <SectionReveal direction="up" delay={100} durationMs={800}>
-            <div className="mt-7 text-eyebrow text-spark-brand-deep first-letter:capitalize">
-              ✦ {fmtDateBR(todayISO())}
-              {streak > 0 && (
-                <>
-                  <span className="mx-2 opacity-50">·</span>
-                  <span className="inline-flex items-center gap-1">
-                    <Flame size={11} strokeWidth={2.5} />
-                    streak {streak} {streak === 1 ? "dia" : "dias"}
-                  </span>
-                </>
-              )}
+            <div data-tutorial-id="rotina-header">
+              <div className="text-eyebrow text-spark-brand-deep first-letter:capitalize mt-7">
+                ✦ {fmtDateBR(todayISO())}
+                {streak > 0 && (
+                  <>
+                    <span className="mx-2 opacity-50">·</span>
+                    <span className="inline-flex items-center gap-1">
+                      <Flame size={11} strokeWidth={2.5} />
+                      streak {streak} {streak === 1 ? "dia" : "dias"}
+                    </span>
+                  </>
+                )}
+              </div>
+              <h1
+                className="mt-3 font-display lowercase tracking-tight text-spark-ink leading-[0.9]"
+                style={{ fontSize: "clamp(2.25rem, 7vw, 4.5rem)" }}
+              >
+                rotina <span className="text-grad-brand">de hoje.</span>
+              </h1>
             </div>
-            <h1
-              className="mt-3 font-display lowercase tracking-tight text-spark-ink leading-[0.9]"
-              style={{ fontSize: "clamp(2.25rem, 7vw, 4.5rem)" }}
-            >
-              rotina <span className="text-grad-brand">de hoje.</span>
-            </h1>
           </SectionReveal>
 
           <SectionReveal direction="up" delay={250}>
-            <div className="mt-8 flex items-center gap-4">
+            <div data-tutorial-id="rotina-progress" className="mt-8 flex items-center gap-4">
               <div className="flex-1 h-2.5 rounded-full bg-spark-surface-sunken overflow-hidden border border-spark-hairline">
                 <div
                   className="h-full bg-brand-grad transition-all duration-700 ease-premium"
@@ -458,7 +478,10 @@ function RoutineView({
       </section>
 
       {/* Lista */}
-      <section className={`relative ${desktop ? "px-12 py-8" : "px-5 py-6"}`}>
+      <section
+        data-tutorial-id="rotina-list"
+        className={`relative ${desktop ? "px-12 py-8" : "px-5 py-6"}`}
+      >
         <div className={desktop ? "max-w-[720px] mx-auto" : ""}>
           {habits.length === 0 ? (
             <SectionReveal direction="up">
@@ -547,7 +570,13 @@ function RoutineView({
 // BODY
 // =================================================================
 
-function RotinaHojeBody({ desktop = false }: { desktop?: boolean }) {
+function RotinaHojeBody({
+  desktop = false,
+  onReopenTour,
+}: {
+  desktop?: boolean;
+  onReopenTour: () => void;
+}) {
   const { habits, checked, completion, streak, loading, refresh, setChecked } = useRoutine();
   const confirm = useConfirm();
   const toast = useToast();
@@ -648,6 +677,7 @@ function RotinaHojeBody({ desktop = false }: { desktop?: boolean }) {
       desktop={desktop}
       onToggle={toggle}
       onComplete={completeDay}
+      onReopenTour={onReopenTour}
     />
   );
 }
@@ -656,20 +686,120 @@ function RotinaHojeBody({ desktop = false }: { desktop?: boolean }) {
 // PAGE
 // =================================================================
 
-function RotinaMobile() {
-  return <RotinaHojeBody />;
+function RotinaMobile({ onReopenTour }: { onReopenTour: () => void }) {
+  return <RotinaHojeBody onReopenTour={onReopenTour} />;
 }
 
-export default function RotinaHojePage() {
+// Steps do tour de Rotina (7 steps com variantes mobile/desktop pro nav)
+function buildRotinaSteps(desktop: boolean): TutorialStep[] {
+  const navStep: TutorialStep = desktop
+    ? {
+        id: "nav",
+        target: "desktop-nav",
+        title: "Sua navegação principal",
+        description:
+          "Sidebar lateral com tudo: agentes, produtos, scripts, rotina, educação, ranking, news e conta.",
+        padding: 8,
+        radius: 32,
+      }
+    : {
+        id: "nav",
+        target: "mobile-nav",
+        title: "Sua navegação principal",
+        description:
+          "Barra fixa com 4 atalhos rápidos. O botão Mais abre a grade completa.",
+        padding: 6,
+        radius: 32,
+      };
+
+  return [
+    {
+      id: "welcome",
+      title: "bem-vinda à sua rotina!",
+      description:
+        "Consistência diária é o que separa quem posta 1x por semana de quem fatura no TikTok Shop. Em 30s te mostro como funciona.",
+    },
+    {
+      id: "header",
+      target: "rotina-header",
+      title: "Dia + streak em destaque",
+      description:
+        "Mostra a data de hoje e quantos dias seguidos você tá batendo a rotina. Streak é o número que mais importa — quanto maior, mais firme tá o hábito.",
+    },
+    {
+      id: "edit",
+      target: "rotina-edit",
+      title: "Personaliza tua rotina",
+      description:
+        "Esse botão abre o editor pra adicionar, tirar ou organizar os hábitos do dia. Trabalho, pessoal, resultado e os seus próprios.",
+    },
+    {
+      id: "progress",
+      target: "rotina-progress",
+      title: "Seu progresso visual",
+      description:
+        "Barra mostra quanto você já fez do dia. Do lado, contador X/Y dos hábitos marcados. Vai enchendo enquanto você marca cada um.",
+    },
+    {
+      id: "list",
+      target: "rotina-list",
+      title: "Marca cada hábito feito",
+      description:
+        "Toca em qualquer hábito pra marcar como feito. Eles ficam agrupados por categoria. Não precisa fazer todos — o importante é a constância, não a perfeição.",
+    },
+    {
+      id: "cta",
+      target: "rotina-cta",
+      title: "Conclui o dia quando terminar",
+      description:
+        "Quando bater o que conseguiu, clica em Concluir dia. A rotina trava até amanhã e seu streak vai +1. Marcou errado? Tem botão pra destrancar.",
+    },
+    navStep,
+    {
+      id: "done",
+      title: "pronto! bora bater hoje 💕",
+      description:
+        "Foca em fazer pelo menos 1 hábito todo dia. Streak quebrado não é fracasso, é só recomeço. Pra refazer o tour, clica no ✨ Tour no topo.",
+    },
+  ];
+}
+
+function RotinaHojePageContent() {
+  const [desktopMode, setDesktopMode] = React.useState(false);
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(min-width: 1024px)");
+    setDesktopMode(mq.matches);
+    const onChange = (e: MediaQueryListEvent) => setDesktopMode(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  const steps = React.useMemo(() => buildRotinaSteps(desktopMode), [desktopMode]);
+
+  const [tourOpen, setTourOpen] = React.useState(false);
+  const reopenTour = React.useCallback(() => setTourOpen(true), []);
+
   return (
     <>
       <ResponsiveShell
-        mobile={<RotinaMobile />}
-        desktop={<RotinaHojeBody desktop />}
+        mobile={<RotinaMobile onReopenTour={reopenTour} />}
+        desktop={<RotinaHojeBody desktop onReopenTour={reopenTour} />}
         active="rotina"
         customSidebar
       />
       <FloatingMainNav active="rotina" />
+      <TutorialOverlay
+        steps={steps}
+        storageKey="rotina"
+        autoStart={!tourOpen}
+        open={tourOpen || undefined}
+        onClose={() => setTourOpen(false)}
+      />
     </>
   );
+}
+
+export default function RotinaHojePage() {
+  return <RotinaHojePageContent />;
 }
