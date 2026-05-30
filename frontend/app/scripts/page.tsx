@@ -362,7 +362,7 @@ function EmptyScripts({ desktop }: { desktop: boolean }) {
                 <span className="shrink-0 w-7 h-7 rounded-full bg-brand-grad text-white text-[12px] font-extrabold flex items-center justify-center shadow-lift-brand">
                   2
                 </span>
-                <span>Gera os 5 roteiros completos lá no ChatGPT ou Gemini.</span>
+                <span>Gera os roteiros completos lá no ChatGPT ou Gemini.</span>
               </li>
               <li className="flex items-start gap-3">
                 <span className="shrink-0 w-7 h-7 rounded-full bg-brand-grad text-white text-[12px] font-extrabold flex items-center justify-center shadow-lift-brand">
@@ -471,7 +471,7 @@ function buildScriptsSteps(desktop: boolean): TutorialStep[] {
       id: "welcome",
       title: "bem-vinda aos scripts!",
       description:
-        "Aqui ficam os roteiros prontos pra gravar — 5 versões por conjunto, cada uma com gancho, desenvolvimento, benefício e CTA. Em 20s te mostro tudo.",
+        "Aqui ficam os roteiros prontos pra gravar — várias versões por conjunto, cada uma com gancho, desenvolvimento, benefício e CTA. Em 20s te mostro tudo.",
     },
     {
       id: "intro",
@@ -492,7 +492,7 @@ function buildScriptsSteps(desktop: boolean): TutorialStep[] {
       target: "scripts-vitrine",
       title: "Seu acervo",
       description:
-        "Cards com título, número de roteiros e prévia do primeiro gancho. Clica num pra ver os 5 roteiros completos, editar ou apagar. Vazio mostra o passo a passo.",
+        "Cards com título, número de roteiros e prévia do primeiro gancho. Clica num pra ver os roteiros completos, editar ou apagar. Vazio mostra o passo a passo.",
     },
     navStep,
     {

@@ -170,12 +170,14 @@ function Field({
 function ScriptCard({
   s,
   idx,
+  total,
   canRemove,
   onUpdate,
   onRemove,
 }: {
   s: ScriptItem;
   idx: number;
+  total: number;
   canRemove: boolean;
   onUpdate: <K extends keyof ScriptItem>(key: K, value: ScriptItem[K]) => void;
   onRemove: () => void;
@@ -192,7 +194,7 @@ function ScriptCard({
             <div>
               <div className="text-eyebrow text-spark-brand-deep">✦ roteiro</div>
               <div className="text-[14.5px] font-extrabold text-spark-ink leading-none mt-0.5">
-                {s.n} de 5
+                {s.n} de {total}
               </div>
             </div>
           </div>
@@ -304,7 +306,6 @@ function NovoScriptBody({ desktop = false }: { desktop?: boolean }) {
   };
 
   const addScript = () => {
-    if (scripts.length >= 5) return;
     setScripts((arr) => [...arr, emptyScript(arr.length + 1)]);
   };
 
@@ -405,6 +406,7 @@ function NovoScriptBody({ desktop = false }: { desktop?: boolean }) {
                 key={idx}
                 s={s}
                 idx={idx}
+                total={scripts.length}
                 canRemove={scripts.length > 1}
                 onUpdate={(key, value) => updateScript(idx, key, value)}
                 onRemove={() => removeScript(idx)}
@@ -412,21 +414,19 @@ function NovoScriptBody({ desktop = false }: { desktop?: boolean }) {
             ))}
           </div>
 
-          {/* Add card */}
-          {scripts.length < 5 && (
-            <SectionReveal direction="up" delay={120}>
-              <button
-                type="button"
-                onClick={addScript}
-                className="group w-full flex items-center justify-center gap-2 px-5 py-5 rounded-spark-2xl border-2 border-dashed border-spark-brand/30 bg-spark-brand-soft/30 text-spark-brand-deep text-[13.5px] font-extrabold transition-all duration-300 ease-premium hover:border-spark-brand/60 hover:bg-spark-brand-soft/50 hover:-translate-y-0.5"
-              >
-                <div className="w-10 h-10 rounded-full bg-brand-grad text-white flex items-center justify-center shadow-lift-brand transition-transform duration-300 group-hover:rotate-90">
-                  <Plus size={18} strokeWidth={2.5} />
-                </div>
-                Adicionar mais um · {scripts.length}/5
-              </button>
-            </SectionReveal>
-          )}
+          {/* Add card — sem limite */}
+          <SectionReveal direction="up" delay={120}>
+            <button
+              type="button"
+              onClick={addScript}
+              className="group w-full flex items-center justify-center gap-2 px-5 py-5 rounded-spark-2xl border-2 border-dashed border-spark-brand/30 bg-spark-brand-soft/30 text-spark-brand-deep text-[13.5px] font-extrabold transition-all duration-300 ease-premium hover:border-spark-brand/60 hover:bg-spark-brand-soft/50 hover:-translate-y-0.5"
+            >
+              <div className="w-10 h-10 rounded-full bg-brand-grad text-white flex items-center justify-center shadow-lift-brand transition-transform duration-300 group-hover:rotate-90">
+                <Plus size={18} strokeWidth={2.5} />
+              </div>
+              Adicionar mais um roteiro
+            </button>
+          </SectionReveal>
 
           {/* CTA inline desktop */}
           {desktop && (
