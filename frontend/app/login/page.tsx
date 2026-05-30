@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import {
   Mail,
@@ -28,15 +29,31 @@ function SpinnerIcon({ size, strokeWidth }: { size?: number; strokeWidth?: numbe
   );
 }
 
+// Botão separado pra poder usar useFormStatus (precisa estar dentro do <form>).
+// React 19 trata server actions como transitions — useState nao reflete pending
+// confiavelmente. useFormStatus e o jeito oficial.
+function SubmitButton({ desktop }: { desktop: boolean }) {
+  const { pending } = useFormStatus();
+  return (
+    <SButton
+      type="submit"
+      variant="primary"
+      size={desktop ? "lg" : "lg"}
+      full
+      IconRight={pending ? SpinnerIcon : ArrowRight}
+      disabled={pending}
+    >
+      {pending ? "Entrando..." : "Entrar"}
+    </SButton>
+  );
+}
+
 function LoginForm({ desktop = false }: { desktop?: boolean }) {
   const [error, setError] = React.useState<string | null>(null);
-  const [pending, setPending] = React.useState(false);
 
   async function onSubmit(formData: FormData) {
     setError(null);
-    setPending(true);
     const result = await loginAction(formData);
-    setPending(false);
     if (result && "error" in result) {
       setError(result.error);
     }
@@ -79,16 +96,7 @@ function LoginForm({ desktop = false }: { desktop?: boolean }) {
         </div>
       )}
       <div className="h-5" />
-      <SButton
-        type="submit"
-        variant="primary"
-        size={desktop ? "lg" : "lg"}
-        full
-        IconRight={pending ? SpinnerIcon : ArrowRight}
-        disabled={pending}
-      >
-        {pending ? "Entrando..." : "Entrar"}
-      </SButton>
+      <SubmitButton desktop={desktop} />
     </form>
   );
 }
