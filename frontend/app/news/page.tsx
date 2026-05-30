@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowUpRight, Newspaper, Clock } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, HelpCircle, Newspaper, Clock } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { FloatingMainNav } from "@/components/layout/floating-main-nav";
 import { HeroBlob } from "@/components/atoms/hero-blob";
@@ -12,6 +12,8 @@ import { SectionReveal } from "@/components/atoms/section-reveal";
 import { CountUp } from "@/components/atoms/count-up";
 import { LoadingSplash } from "@/components/atoms/loading-splash";
 import { cn } from "@/lib/cn";
+import { TutorialOverlay } from "@/components/molecules/tutorial-overlay";
+import { type TutorialStep } from "@/lib/tutorial";
 
 type NewsRow = {
   id: string;
@@ -57,7 +59,15 @@ function useNews() {
 // HERO
 // =================================================================
 
-function HeroSection({ total, desktop }: { total: number; desktop: boolean }) {
+function HeroSection({
+  total,
+  desktop,
+  onReopenTour,
+}: {
+  total: number;
+  desktop: boolean;
+  onReopenTour: () => void;
+}) {
   return (
     <section
       className="relative overflow-hidden hero-radial"
@@ -73,22 +83,35 @@ function HeroSection({ total, desktop }: { total: number; desktop: boolean }) {
 
       <div className={`relative ${desktop ? "px-12 max-w-[1100px] mx-auto" : "px-5"}`}>
         <SectionReveal direction="down" durationMs={500}>
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1.5 px-3 py-2 -ml-3 rounded-full text-spark-ink-70 hover:text-spark-ink hover:bg-spark-surface-sunken/60 text-[12.5px] font-extrabold transition-colors duration-300"
-          >
-            <ArrowLeft size={14} strokeWidth={2.5} />
-            Voltar pra home
-          </Link>
+          <div className="flex items-center justify-between gap-3">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 px-3 py-2 -ml-3 rounded-full text-spark-ink-70 hover:text-spark-ink hover:bg-spark-surface-sunken/60 text-[12.5px] font-extrabold transition-colors duration-300"
+            >
+              <ArrowLeft size={14} strokeWidth={2.5} />
+              Voltar pra home
+            </Link>
+            <button
+              type="button"
+              onClick={onReopenTour}
+              className="group inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full glass border border-spark-hairline text-spark-ink-70 hover:text-spark-brand-deep hover:bg-spark-brand-soft hover:-translate-y-0.5 text-[12px] font-extrabold transition-all duration-300 ease-premium shadow-rest"
+              aria-label="Refazer tour das news"
+            >
+              <HelpCircle size={12} strokeWidth={2.5} />
+              <span className="hidden sm:inline">Tour</span>
+            </button>
+          </div>
         </SectionReveal>
 
         <div className="flex items-start justify-between gap-4 mt-6">
           <SectionReveal direction="down" delay={100} durationMs={600}>
-            <div className="text-eyebrow text-spark-brand-deep">
-              ✦ jornal da yara
-            </div>
-            <div className="mt-3 text-fluid-lead text-spark-ink-70 max-w-[34ch] font-semibold">
-              Atualizações, dicas e movimentos do TikTok Shop direto da redação.
+            <div data-tutorial-id="news-intro">
+              <div className="text-eyebrow text-spark-brand-deep">
+                ✦ jornal da yara
+              </div>
+              <div className="mt-3 text-fluid-lead text-spark-ink-70 max-w-[34ch] font-semibold">
+                Atualizações, dicas e movimentos do TikTok Shop direto da redação.
+              </div>
             </div>
           </SectionReveal>
 
@@ -306,7 +329,13 @@ function EmptyNews({ desktop }: { desktop: boolean }) {
 // BODY
 // =================================================================
 
-function NewsBody({ desktop = false }: { desktop?: boolean }) {
+function NewsBody({
+  desktop = false,
+  onReopenTour,
+}: {
+  desktop?: boolean;
+  onReopenTour: () => void;
+}) {
   const { news, loading } = useNews();
   const featured = news[0];
   const rest = news.slice(1);
@@ -316,7 +345,7 @@ function NewsBody({ desktop = false }: { desktop?: boolean }) {
       className="flex-1 overflow-auto relative"
       style={{ paddingBottom: desktop ? 32 : "calc(env(safe-area-inset-bottom) + 100px)" }}
     >
-      <HeroSection total={news.length} desktop={desktop} />
+      <HeroSection total={news.length} desktop={desktop} onReopenTour={onReopenTour} />
 
       {loading ? (
         <section className="py-24 flex justify-center">
@@ -328,7 +357,7 @@ function NewsBody({ desktop = false }: { desktop?: boolean }) {
         <section className={`relative ${desktop ? "px-12 py-12" : "px-5 py-8"}`}>
           <div className={desktop ? "max-w-[1100px] mx-auto" : ""}>
             {featured && (
-              <div className="mb-10">
+              <div data-tutorial-id="news-featured" className="mb-10">
                 <FeaturedCard item={featured} />
               </div>
             )}
@@ -348,7 +377,10 @@ function NewsBody({ desktop = false }: { desktop?: boolean }) {
               </SectionReveal>
             )}
 
-            <div className={`grid gap-4 ${desktop ? "grid-cols-3" : "grid-cols-1 sm:grid-cols-2"}`}>
+            <div
+              data-tutorial-id="news-grid"
+              className={`grid gap-4 ${desktop ? "grid-cols-3" : "grid-cols-1 sm:grid-cols-2"}`}
+            >
               {rest.map((n, i) => (
                 <NewsCard key={n.id} item={n} index={i} />
               ))}
@@ -364,24 +396,110 @@ function NewsBody({ desktop = false }: { desktop?: boolean }) {
 // PAGE
 // =================================================================
 
-function NewsMobile() {
-  return <NewsBody />;
+function NewsMobile({ onReopenTour }: { onReopenTour: () => void }) {
+  return <NewsBody onReopenTour={onReopenTour} />;
 }
 
-function NewsDesktop() {
-  return <NewsBody desktop />;
+function NewsDesktop({ onReopenTour }: { onReopenTour: () => void }) {
+  return <NewsBody desktop onReopenTour={onReopenTour} />;
 }
 
-export default function NewsPage() {
+// Steps do tour de News (6 steps com variantes mobile/desktop pro nav)
+function buildNewsSteps(desktop: boolean): TutorialStep[] {
+  const navStep: TutorialStep = desktop
+    ? {
+        id: "nav",
+        target: "desktop-nav",
+        title: "Sua navegação principal",
+        description:
+          "Sidebar lateral com tudo: agentes, produtos, scripts, rotina, educação, ranking, news e conta.",
+        padding: 8,
+        radius: 32,
+      }
+    : {
+        id: "nav",
+        target: "mobile-nav",
+        title: "Sua navegação principal",
+        description:
+          "Barra fixa com 4 atalhos rápidos. O botão Mais abre a grade completa.",
+        padding: 6,
+        radius: 32,
+      };
+
+  return [
+    {
+      id: "welcome",
+      title: "bem-vinda às news!",
+      description:
+        "Aqui ficam as atualizações do TikTok Shop e do método — mudanças de algoritmo, oportunidades de mercado, dicas da Yara. Em 20s te mostro como navegar.",
+    },
+    {
+      id: "intro",
+      target: "news-intro",
+      title: "O jornal da Yara",
+      description:
+        "Curadoria pra você ficar a par do que muda na plataforma sem precisar caçar informação por aí. Categoria + tempo de leitura em cada nota.",
+    },
+    {
+      id: "featured",
+      target: "news-featured",
+      title: "Matéria em destaque",
+      description:
+        "A publicação mais recente vira card grande no topo. Se for novidade quente, ganha selo NOVO. Clica pra ler a matéria completa.",
+    },
+    {
+      id: "grid",
+      target: "news-grid",
+      title: "Outras matérias",
+      description:
+        "Grid com as demais notas. Cada card tem foto, categoria, título, prévia e tempo de leitura. Clica em qualquer uma pra abrir.",
+    },
+    navStep,
+    {
+      id: "done",
+      title: "pronto! agora é se atualizar 💕",
+      description:
+        "Confere de tempos em tempos pra não perder mudança importante. Pra refazer o tour, clica no ✨ Tour no canto.",
+    },
+  ];
+}
+
+function NewsPageContent() {
+  const [desktopMode, setDesktopMode] = React.useState(false);
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(min-width: 1024px)");
+    setDesktopMode(mq.matches);
+    const onChange = (e: MediaQueryListEvent) => setDesktopMode(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  const steps = React.useMemo(() => buildNewsSteps(desktopMode), [desktopMode]);
+
+  const [tourOpen, setTourOpen] = React.useState(false);
+  const reopenTour = React.useCallback(() => setTourOpen(true), []);
+
   return (
     <>
       <ResponsiveShell
-        mobile={<NewsMobile />}
-        desktop={<NewsDesktop />}
+        mobile={<NewsMobile onReopenTour={reopenTour} />}
+        desktop={<NewsDesktop onReopenTour={reopenTour} />}
         active="news"
         customSidebar
       />
       <FloatingMainNav active="news" />
+      <TutorialOverlay
+        steps={steps}
+        storageKey="news"
+        autoStart={!tourOpen}
+        open={tourOpen || undefined}
+        onClose={() => setTourOpen(false)}
+      />
     </>
   );
+}
+
+export default function NewsPage() {
+  return <NewsPageContent />;
 }
