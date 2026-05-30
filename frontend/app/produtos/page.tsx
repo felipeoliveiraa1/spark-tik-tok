@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Package, ArrowUpRight, Plus } from "lucide-react";
+import { Package, ArrowUpRight, HelpCircle, Plus } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { FloatingMainNav } from "@/components/layout/floating-main-nav";
 import { SplashScreen } from "@/components/atoms/splash-screen";
@@ -14,6 +14,8 @@ import { CharacterReveal } from "@/components/atoms/character-reveal";
 import { CountUp } from "@/components/atoms/count-up";
 import { LoadingSplash } from "@/components/atoms/loading-splash";
 import { cn } from "@/lib/cn";
+import { TutorialOverlay } from "@/components/molecules/tutorial-overlay";
+import { type TutorialStep } from "@/lib/tutorial";
 
 /**
  * /produtos — catálogo magazine premium.
@@ -77,9 +79,11 @@ function useProducts() {
 function HeroSection({
   count,
   desktop,
+  onReopenTour,
 }: {
   count: number;
   desktop: boolean;
+  onReopenTour: () => void;
 }) {
   return (
     <section
@@ -97,16 +101,41 @@ function HeroSection({
       {/* Sparkles */}
       <SparkleField count={14} seed={104} className="opacity-70" />
 
+      {/* Botão Tour — top-right */}
+      <div
+        className="absolute z-10"
+        style={{
+          top: desktop ? "24px" : "calc(env(safe-area-inset-top) + 12px)",
+          right: desktop ? "48px" : "16px",
+        }}
+      >
+        <button
+          type="button"
+          onClick={onReopenTour}
+          className="group inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full glass border border-spark-hairline text-spark-ink-70 hover:text-spark-brand-deep hover:bg-spark-brand-soft hover:-translate-y-0.5 text-[11.5px] font-extrabold uppercase tracking-widest shadow-rest transition-all duration-300 ease-premium"
+          aria-label="Refazer tour de produtos"
+        >
+          <HelpCircle
+            size={13}
+            strokeWidth={2.5}
+            className="transition-transform duration-300 group-hover:scale-110"
+          />
+          <span className="hidden sm:inline">Tour</span>
+        </button>
+      </div>
+
       {/* Conteúdo */}
       <div className={`relative ${desktop ? "px-12 max-w-[1200px] mx-auto" : "px-5"}`}>
         {/* Top: eyebrow + sticker */}
         <div className="flex items-start justify-between gap-4 mb-8">
           <SectionReveal direction="down" durationMs={600}>
-            <div className="text-eyebrow text-spark-brand-deep">
-              ✦ catálogo TTS
-            </div>
-            <div className="mt-3 text-fluid-lead text-spark-ink-70 max-w-[30ch] font-semibold">
-              Cada ficha que você cadastra vira fonte pra um roteiro novo.
+            <div data-tutorial-id="produtos-intro">
+              <div className="text-eyebrow text-spark-brand-deep">
+                ✦ catálogo TTS
+              </div>
+              <div className="mt-3 text-fluid-lead text-spark-ink-70 max-w-[30ch] font-semibold">
+                Cada ficha que você cadastra vira fonte pra um roteiro novo.
+              </div>
             </div>
           </SectionReveal>
 
@@ -150,7 +179,7 @@ function HeroSection({
 
         {/* Contador + CTA */}
         <SectionReveal direction="up" delay={900}>
-          <div className="mt-10 flex items-center gap-5 flex-wrap">
+          <div data-tutorial-id="produtos-action" className="mt-10 flex items-center gap-5 flex-wrap">
             <Link
               href="/produtos/novo"
               className="group inline-flex items-center gap-2 px-7 py-4 rounded-full bg-spark-ink text-white text-[14px] font-extrabold shadow-lift transition-all duration-300 ease-premium hover:-translate-y-1 hover:bg-spark-brand-deep active:translate-y-0"
@@ -402,7 +431,13 @@ function EmptyProducts({ desktop }: { desktop: boolean }) {
 // BODY
 // =================================================================
 
-function ProductsBody({ desktop = false }: { desktop?: boolean }) {
+function ProductsBody({
+  desktop = false,
+  onReopenTour,
+}: {
+  desktop?: boolean;
+  onReopenTour: () => void;
+}) {
   const { products, loading } = useProducts();
 
   return (
@@ -410,17 +445,19 @@ function ProductsBody({ desktop = false }: { desktop?: boolean }) {
       className="flex-1 overflow-auto relative"
       style={{ paddingBottom: desktop ? 0 : "calc(env(safe-area-inset-bottom) + 88px)" }}
     >
-      <HeroSection count={products.length} desktop={desktop} />
+      <HeroSection count={products.length} desktop={desktop} onReopenTour={onReopenTour} />
 
-      {loading ? (
-        <section className="py-24 flex justify-center">
-          <LoadingSplash message="Carregando produtos" />
-        </section>
-      ) : products.length === 0 ? (
-        <EmptyProducts desktop={desktop} />
-      ) : (
-        <ProductsGrid products={products} desktop={desktop} />
-      )}
+      <div data-tutorial-id="produtos-vitrine">
+        {loading ? (
+          <section className="py-24 flex justify-center">
+            <LoadingSplash message="Carregando produtos" />
+          </section>
+        ) : products.length === 0 ? (
+          <EmptyProducts desktop={desktop} />
+        ) : (
+          <ProductsGrid products={products} desktop={desktop} />
+        )}
+      </div>
     </div>
   );
 }
@@ -429,12 +466,72 @@ function ProductsBody({ desktop = false }: { desktop?: boolean }) {
 // PAGE
 // =================================================================
 
-function ProductsMobile() {
-  return <ProductsBody />;
+function ProductsMobile({ onReopenTour }: { onReopenTour: () => void }) {
+  return <ProductsBody onReopenTour={onReopenTour} />;
 }
 
-function ProductsDesktop() {
-  return <ProductsBody desktop />;
+function ProductsDesktop({ onReopenTour }: { onReopenTour: () => void }) {
+  return <ProductsBody desktop onReopenTour={onReopenTour} />;
+}
+
+// Steps do tour de Produtos (6 steps com variantes mobile/desktop pro nav)
+function buildProdutosSteps(desktop: boolean): TutorialStep[] {
+  const navStep: TutorialStep = desktop
+    ? {
+        id: "nav",
+        target: "desktop-nav",
+        title: "Sua navegação principal",
+        description:
+          "Sidebar lateral com tudo: agentes, produtos, scripts, rotina, educação, ranking, news e conta.",
+        padding: 8,
+        radius: 32,
+      }
+    : {
+        id: "nav",
+        target: "mobile-nav",
+        title: "Sua navegação principal",
+        description:
+          "Barra fixa com 4 atalhos rápidos. O botão Mais abre a grade completa.",
+        padding: 6,
+        radius: 32,
+      };
+
+  return [
+    {
+      id: "welcome",
+      title: "bem-vinda aos produtos!",
+      description:
+        "Aqui fica seu catálogo. Cada produto cadastrado vira fonte pra roteiros e referência pros agentes especialistas. Em 20s te mostro tudo.",
+    },
+    {
+      id: "intro",
+      target: "produtos-intro",
+      title: "Pra que serve esse catálogo",
+      description:
+        "Cada ficha que você cadastra fica salva aqui pra usar nos agentes e scripts. Quanto mais detalhada a ficha, melhor o roteiro que os agentes geram depois.",
+    },
+    {
+      id: "action",
+      target: "produtos-action",
+      title: "Adicionar e acompanhar",
+      description:
+        "Botão Adicionar produto abre o formulário de ficha. Do lado, o contador mostra quantos você tem cadastrados.",
+    },
+    {
+      id: "vitrine",
+      target: "produtos-vitrine",
+      title: "Sua vitrine",
+      description:
+        "Cards com foto, categoria, público e faixa de preço. Clica em qualquer um pra ver a ficha completa, editar ou apagar. Se não tem nenhum ainda, mostra um passo a passo.",
+    },
+    navStep,
+    {
+      id: "done",
+      title: "pronto! agora é cadastrar 💕",
+      description:
+        "Quanto mais produtos cadastrados, mais material pros agentes e scripts. Se quiser refazer o tour, clica no botão ✨ Tour no canto.",
+    },
+  ];
 }
 
 function ProductsPageContent() {
@@ -444,16 +541,38 @@ function ProductsPageContent() {
     return () => clearTimeout(t);
   }, []);
 
+  const [desktopMode, setDesktopMode] = React.useState(false);
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(min-width: 1024px)");
+    setDesktopMode(mq.matches);
+    const onChange = (e: MediaQueryListEvent) => setDesktopMode(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  const steps = React.useMemo(() => buildProdutosSteps(desktopMode), [desktopMode]);
+
+  const [tourOpen, setTourOpen] = React.useState(false);
+  const reopenTour = React.useCallback(() => setTourOpen(true), []);
+
   return (
     <>
       <SplashScreen show={showSplash} minDurationMs={1000} />
       <ResponsiveShell
-        mobile={<ProductsMobile />}
-        desktop={<ProductsDesktop />}
+        mobile={<ProductsMobile onReopenTour={reopenTour} />}
+        desktop={<ProductsDesktop onReopenTour={reopenTour} />}
         active="produtos"
         customSidebar
       />
       <FloatingMainNav active="produtos" />
+      <TutorialOverlay
+        steps={steps}
+        storageKey="produtos"
+        autoStart={!tourOpen}
+        open={tourOpen || undefined}
+        onClose={() => setTourOpen(false)}
+      />
     </>
   );
 }
