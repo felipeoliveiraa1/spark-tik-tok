@@ -296,47 +296,137 @@ export default function FormularioPage() {
 
 function StepWelcome({ onNext }: { onNext: () => void }) {
   return (
-    <div>
-      <div className="text-eyebrow text-spark-brand-deep mb-4">✦ método tts</div>
-      <h1
-        className="font-display lowercase leading-[0.9] tracking-tight max-w-[14ch]"
-        style={{ fontSize: "clamp(2.5rem, 9vw, 5.5rem)" }}
-      >
-        <CharacterReveal as="span" immediate staggerMs={28} className="block text-spark-ink">
-          chega de
-        </CharacterReveal>
-        <CharacterReveal
-          as="span"
-          immediate
-          staggerMs={28}
-          delayMs={350}
-          className="block"
-          charClassName="text-grad-brand"
-        >
-          postar no escuro.
-        </CharacterReveal>
-      </h1>
+    <div className="space-y-8">
+      {/* Sticker rotativo (mobile only — desktop tem painel direito) */}
+      <div className="lg:hidden -mb-2 inline-flex">
+        <Sticker text="MÉTODO TTS · 2026 · PREMIUM · " emoji="✨" size={92} />
+      </div>
 
-      <p className="mt-7 text-fluid-lead text-spark-ink-70 leading-snug font-semibold max-w-[44ch]">
-        Eu sou a Yara — vou te fazer 5 perguntinhas rápidas pra entender onde você tá no TikTok Shop e te chamar pra dentro do método. Leva menos de 1 minuto 💕
-      </p>
-
-      <div className="mt-10 flex items-center gap-4 flex-wrap">
-        <button
-          type="button"
-          onClick={onNext}
-          className="group inline-flex items-center gap-2 px-7 py-4 rounded-full bg-brand-grad text-white text-[15px] font-extrabold shadow-lift-brand transition-all duration-300 ease-premium hover:-translate-y-1"
+      <div>
+        <div className="text-eyebrow text-spark-brand-deep mb-4">✦ método tts</div>
+        <h1
+          className="font-display lowercase leading-[0.9] tracking-tight max-w-[14ch]"
+          style={{ fontSize: "clamp(2.5rem, 9vw, 5.5rem)" }}
         >
-          Bora começar
-          <ArrowRight
-            size={16}
-            strokeWidth={2.5}
-            className="transition-transform duration-300 group-hover:translate-x-0.5"
-          />
-        </button>
-        <div className="text-[12px] text-spark-ink-50 font-mono">
-          ✦ 5 perguntas · menos de 1min
+          <CharacterReveal as="span" immediate staggerMs={28} className="block text-spark-ink">
+            chega de
+          </CharacterReveal>
+          <CharacterReveal
+            as="span"
+            immediate
+            staggerMs={28}
+            delayMs={350}
+            className="block"
+            charClassName="text-grad-brand"
+          >
+            postar no escuro.
+          </CharacterReveal>
+        </h1>
+
+        <p className="mt-7 text-fluid-lead text-spark-ink-70 leading-snug font-semibold max-w-[44ch]">
+          Eu sou a Yara — vou te fazer 5 perguntinhas rápidas pra entender onde você tá no TikTok Shop e te chamar pra dentro do método. Leva menos de 1 minuto 💕
+        </p>
+
+        <div className="mt-8 flex items-center gap-4 flex-wrap">
+          <button
+            type="button"
+            onClick={onNext}
+            className="group inline-flex items-center gap-2 px-7 py-4 rounded-full bg-brand-grad text-white text-[15px] font-extrabold shadow-lift-brand transition-all duration-300 ease-premium hover:-translate-y-1"
+          >
+            Bora começar
+            <ArrowRight
+              size={16}
+              strokeWidth={2.5}
+              className="transition-transform duration-300 group-hover:translate-x-0.5"
+            />
+          </button>
+          <div className="text-[12px] text-spark-ink-50 font-mono">
+            ✦ 5 perguntas · menos de 1min
+          </div>
         </div>
+      </div>
+
+      {/* "O que tem dentro" — preview do método (mobile only) */}
+      <div className="lg:hidden">
+        <div className="text-eyebrow text-spark-brand mb-4">✦ o que tem dentro</div>
+        <div className="grid grid-cols-1 gap-3">
+          <PreviewCard
+            emoji="✨"
+            gradient="from-rose-400 via-pink-500 to-rose-500"
+            label="8 agentes especialistas"
+            hint="Skincare, makeup, suplementos… cada nicho com sua expert no ChatGPT/Gemini."
+          />
+          <PreviewCard
+            emoji="🔥"
+            gradient="from-orange-400 via-pink-500 to-rose-500"
+            label="Rotina diária + streak"
+            hint="Checklist de hábitos. Quanto mais dias seguidos, melhor o algoritmo te entrega."
+          />
+          <PreviewCard
+            emoji="✍️"
+            gradient="from-purple-400 via-pink-500 to-rose-500"
+            label="Roteiros prontos pra gravar"
+            hint="Método gancho → desenvolvimento → benefício → CTA. Você só fala."
+          />
+          <PreviewCard
+            emoji="🏆"
+            gradient="from-amber-400 via-orange-500 to-rose-500"
+            label="Ranking de criadoras"
+            hint="Faturamento + consistência viraram score. Inspiração e meta visíveis."
+          />
+        </div>
+      </div>
+
+      {/* Trust strip */}
+      <div className="lg:hidden rounded-spark-2xl bg-spark-surface border border-spark-hairline px-5 py-4 shadow-rest">
+        <div className="grid grid-cols-3 gap-3 text-center">
+          <TrustBadge value="234+" label="criadoras" />
+          <TrustBadge value="24h" label="resposta" />
+          <TrustBadge value="0" label="spam" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PreviewCard({
+  emoji,
+  gradient,
+  label,
+  hint,
+}: {
+  emoji: string;
+  gradient: string;
+  label: string;
+  hint: string;
+}) {
+  return (
+    <div className="group flex items-start gap-3 p-4 rounded-spark-2xl bg-spark-surface border border-spark-hairline shadow-rest transition-all duration-300 ease-premium hover:-translate-y-0.5 hover:shadow-lift">
+      <div
+        className={`shrink-0 w-12 h-12 rounded-full bg-gradient-to-br ${gradient} flex items-center justify-center text-[22px] shadow-lift transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6`}
+      >
+        {emoji}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-[13.5px] font-extrabold text-spark-ink tracking-tight leading-tight">
+          {label}
+        </div>
+        <div className="mt-1 text-[12px] text-spark-ink-70 leading-snug font-semibold">
+          {hint}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TrustBadge({ value, label }: { value: string; label: string }) {
+  return (
+    <div>
+      <div className="font-display lowercase text-spark-ink leading-none text-[24px] tracking-tight">
+        {value}
+      </div>
+      <div className="mt-1 text-[10px] text-spark-ink-50 font-extrabold uppercase tracking-widest">
+        {label}
       </div>
     </div>
   );
