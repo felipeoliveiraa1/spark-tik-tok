@@ -6,7 +6,14 @@ export const dynamic = "force-dynamic";
 
 type Params = { params: Promise<{ id: string }> };
 
-const EDITABLE = ["label", "emoji", "category", "order_index", "is_active"] as const;
+const EDITABLE = [
+  "label",
+  "emoji",
+  "category",
+  "order_index",
+  "is_active",
+  "scheduled_time",
+] as const;
 
 export async function PATCH(request: Request, { params }: Params) {
   const { id } = await params;
@@ -28,6 +35,16 @@ export async function PATCH(request: Request, { params }: Params) {
 
   if (patch.category && !["trabalho", "pessoal", "resultado", "custom"].includes(patch.category as string)) {
     return NextResponse.json({ error: "invalid_category" }, { status: 400 });
+  }
+
+  // scheduled_time: aceita null (limpa), "" (vira null) ou "HH:MM" valido
+  if ("scheduled_time" in patch) {
+    const v = patch.scheduled_time;
+    if (v === null || v === "") {
+      patch.scheduled_time = null;
+    } else if (typeof v !== "string" || !/^[0-2][0-9]:[0-5][0-9]$/.test(v)) {
+      return NextResponse.json({ error: "invalid_scheduled_time" }, { status: 400 });
+    }
   }
 
   if (Object.keys(patch).length === 0) {

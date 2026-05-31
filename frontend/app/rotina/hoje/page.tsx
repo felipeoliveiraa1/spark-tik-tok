@@ -8,6 +8,7 @@ import {
   Check,
   CheckCircle2,
   Activity,
+  Clock,
   Lock,
   RotateCcw,
   Flame,
@@ -39,6 +40,7 @@ type Habit = {
   category: HabitCategory;
   order_index: number;
   is_active: boolean;
+  scheduled_time: string | null;
 };
 
 type Completion = {
@@ -294,6 +296,25 @@ function HabitRow({
           : "bg-spark-surface border-spark-hairline hover:border-spark-brand/30 hover:shadow-lift hover:-translate-y-0.5 shadow-rest",
       )}
     >
+      {/* Horario (se setado) — pill com hora */}
+      {habit.scheduled_time ? (
+        <div
+          className={cn(
+            "shrink-0 inline-flex flex-col items-center justify-center w-[58px] py-1.5 rounded-spark-xl transition-all duration-300",
+            checked
+              ? "bg-good/10 text-good/70"
+              : "bg-spark-brand-soft/60 text-spark-brand-deep",
+          )}
+        >
+          <Clock size={10} strokeWidth={2.5} className="opacity-60" />
+          <span className="text-[12.5px] font-extrabold font-mono leading-none mt-0.5">
+            {habit.scheduled_time}
+          </span>
+        </div>
+      ) : (
+        <div className="shrink-0 w-[58px]" aria-hidden />
+      )}
+
       <div
         className={cn(
           "shrink-0 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 ease-premium",
@@ -349,6 +370,18 @@ function RoutineView({
       const arr = byCat.get(h.category) ?? [];
       arr.push(h);
       byCat.set(h.category, arr);
+    }
+    // Ordena dentro de cada categoria: com horario primeiro (por hora
+    // crescente), depois os sem horario pela ordem original.
+    for (const [, arr] of byCat) {
+      arr.sort((a, b) => {
+        if (a.scheduled_time && b.scheduled_time) {
+          return a.scheduled_time.localeCompare(b.scheduled_time);
+        }
+        if (a.scheduled_time) return -1;
+        if (b.scheduled_time) return 1;
+        return a.order_index - b.order_index;
+      });
     }
     return Array.from(byCat.entries());
   }, [habits]);

@@ -11,6 +11,7 @@ import {
   GripVertical,
   X,
   Check,
+  Clock,
   RotateCcw,
   Sparkles,
   ArrowRight,
@@ -34,6 +35,7 @@ type Habit = {
   category: HabitCategory;
   order_index: number;
   is_active: boolean;
+  scheduled_time: string | null;
 };
 
 const CATEGORIES: { key: HabitCategory; label: string; emoji: string }[] = [
@@ -60,6 +62,7 @@ function EditarBody({ desktop = false }: { desktop?: boolean }) {
   const [newLabel, setNewLabel] = React.useState("");
   const [newEmoji, setNewEmoji] = React.useState("✨");
   const [newCat, setNewCat] = React.useState<HabitCategory>("custom");
+  const [newTime, setNewTime] = React.useState("");
   const confirm = useConfirm();
   const toast = useToast();
 
@@ -143,13 +146,19 @@ function EditarBody({ desktop = false }: { desktop?: boolean }) {
     const res = await fetch("/api/rotina/habits", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ label, emoji: newEmoji, category: newCat }),
+      body: JSON.stringify({
+        label,
+        emoji: newEmoji,
+        category: newCat,
+        scheduled_time: newTime || null,
+      }),
     });
     setSavingNew(false);
     if (res.ok) {
       setNewLabel("");
       setNewEmoji("✨");
       setNewCat("custom");
+      setNewTime("");
       toast.success("Hábito adicionado 💕");
       await refresh();
     } else {
@@ -276,6 +285,36 @@ function EditarBody({ desktop = false }: { desktop?: boolean }) {
                   ))}
                 </div>
 
+                {/* Horario sugerido (opcional) */}
+                <div className="flex items-center gap-3 px-4 py-3 rounded-spark-xl bg-spark-bg border border-spark-hairline">
+                  <Clock size={15} strokeWidth={2.2} className="text-spark-ink-50 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <label
+                      htmlFor="new-habit-time"
+                      className="block text-[11px] font-extrabold uppercase tracking-widest text-spark-ink-50"
+                    >
+                      horário (opcional)
+                    </label>
+                    <input
+                      id="new-habit-time"
+                      type="time"
+                      value={newTime}
+                      onChange={(e) => setNewTime(e.target.value)}
+                      className="w-full bg-transparent text-[14.5px] font-extrabold text-spark-ink outline-none mt-0.5"
+                    />
+                  </div>
+                  {newTime && (
+                    <button
+                      type="button"
+                      onClick={() => setNewTime("")}
+                      className="w-7 h-7 rounded-full flex items-center justify-center text-spark-ink-50 hover:text-bad hover:bg-bad/10 transition-colors shrink-0"
+                      aria-label="Limpar horário"
+                    >
+                      <X size={13} strokeWidth={2.5} />
+                    </button>
+                  )}
+                </div>
+
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {CATEGORIES.map((c) => (
                     <button
@@ -348,6 +387,9 @@ function EditarBody({ desktop = false }: { desktop?: boolean }) {
                         }
                         onLabelChange={(label) => updateHabit(h.id, { label })}
                         onEmojiChange={(emoji) => updateHabit(h.id, { emoji })}
+                        onTimeChange={(scheduled_time) =>
+                          updateHabit(h.id, { scheduled_time })
+                        }
                       />
                     ))}
                   </div>
@@ -414,6 +456,7 @@ function HabitEditRow({
   onMoveDown,
   onLabelChange,
   onEmojiChange,
+  onTimeChange,
 }: {
   habit: Habit;
   showBorder: boolean;
@@ -423,10 +466,13 @@ function HabitEditRow({
   onMoveDown?: () => void;
   onLabelChange: (label: string) => void;
   onEmojiChange: (emoji: string) => void;
+  onTimeChange: (time: string | null) => void;
 }) {
   const [editing, setEditing] = React.useState(false);
+  const [editingTime, setEditingTime] = React.useState(false);
   const [tmpLabel, setTmpLabel] = React.useState(habit.label);
   const [tmpEmoji, setTmpEmoji] = React.useState(habit.emoji);
+  const [tmpTime, setTmpTime] = React.useState(habit.scheduled_time ?? "");
 
   const saveEdit = () => {
     const next = tmpLabel.trim();
@@ -439,6 +485,17 @@ function HabitEditRow({
     setTmpLabel(habit.label);
     setTmpEmoji(habit.emoji);
     setEditing(false);
+  };
+
+  const saveTime = () => {
+    const next = tmpTime || null;
+    if (next !== habit.scheduled_time) onTimeChange(next);
+    setEditingTime(false);
+  };
+
+  const cancelTime = () => {
+    setTmpTime(habit.scheduled_time ?? "");
+    setEditingTime(false);
   };
 
   return (
@@ -529,6 +586,63 @@ function HabitEditRow({
           >
             {habit.label}
           </button>
+
+          {/* Horario */}
+          {editingTime ? (
+            <div className="inline-flex items-center gap-1">
+              <input
+                type="time"
+                value={tmpTime}
+                onChange={(e) => setTmpTime(e.target.value)}
+                autoFocus
+                className="px-2 py-1.5 rounded-spark-lg bg-spark-bg border border-spark-brand/40 focus:ring-2 focus:ring-spark-brand/15 outline-none text-[12.5px] font-extrabold text-spark-ink font-mono w-[92px]"
+              />
+              <button
+                type="button"
+                onClick={saveTime}
+                className="w-8 h-8 rounded-full bg-good text-white flex items-center justify-center shadow-lift"
+                aria-label="Salvar horário"
+              >
+                <Check size={13} strokeWidth={2.5} />
+              </button>
+              <button
+                type="button"
+                onClick={cancelTime}
+                className="w-8 h-8 rounded-full text-spark-ink-50 hover:bg-spark-surface-sunken flex items-center justify-center"
+                aria-label="Cancelar"
+              >
+                <X size={13} strokeWidth={2.5} />
+              </button>
+            </div>
+          ) : habit.scheduled_time ? (
+            <button
+              type="button"
+              onClick={() => {
+                setTmpTime(habit.scheduled_time ?? "");
+                setEditingTime(true);
+              }}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-spark-brand-soft/60 text-spark-brand-deep text-[11.5px] font-extrabold font-mono hover:bg-spark-brand-soft transition-colors shrink-0"
+              aria-label="Editar horário"
+              title="Editar horário"
+            >
+              <Clock size={11} strokeWidth={2.5} />
+              {habit.scheduled_time}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setTmpTime("");
+                setEditingTime(true);
+              }}
+              className="w-9 h-9 rounded-full text-spark-ink-50 hover:text-spark-brand-deep hover:bg-spark-brand-soft/40 flex items-center justify-center transition-colors shrink-0"
+              aria-label="Definir horário"
+              title="Definir horário"
+            >
+              <Clock size={14} strokeWidth={2.2} />
+            </button>
+          )}
+
           <button
             type="button"
             onClick={onToggleActive}

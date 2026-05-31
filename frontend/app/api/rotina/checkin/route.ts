@@ -31,7 +31,7 @@ export async function GET(request: Request) {
   const [habitsRes, checksRes, completionRes] = await Promise.all([
     supabase
       .from("user_habits")
-      .select("id, slug, label, emoji, category, order_index, is_active")
+      .select("id, slug, label, emoji, category, order_index, is_active, scheduled_time")
       .eq("user_id", user.id)
       .eq("is_active", true)
       .order("order_index", { ascending: true }),

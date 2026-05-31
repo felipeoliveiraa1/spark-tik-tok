@@ -31,7 +31,7 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from("user_habits")
-    .select("id, slug, label, emoji, category, order_index, is_active")
+    .select("id, slug, label, emoji, category, order_index, is_active, scheduled_time")
     .eq("user_id", user.id)
     .order("order_index", { ascending: true });
 
@@ -79,6 +79,15 @@ export async function POST(request: Request) {
     .maybeSingle();
   const nextOrder = ((last?.order_index as number) ?? -1) + 1;
 
+  // scheduled_time: opcional, formato "HH:MM"
+  let scheduled_time: string | null = null;
+  if (body.scheduled_time !== undefined && body.scheduled_time !== null && body.scheduled_time !== "") {
+    if (typeof body.scheduled_time !== "string" || !/^[0-2][0-9]:[0-5][0-9]$/.test(body.scheduled_time)) {
+      return NextResponse.json({ error: "invalid_scheduled_time" }, { status: 400 });
+    }
+    scheduled_time = body.scheduled_time;
+  }
+
   const payload = {
     user_id: user.id,
     slug,
@@ -87,6 +96,7 @@ export async function POST(request: Request) {
     category,
     order_index: typeof body.order_index === "number" ? body.order_index : nextOrder,
     is_active: true,
+    scheduled_time,
   };
 
   const { data, error } = await supabase
