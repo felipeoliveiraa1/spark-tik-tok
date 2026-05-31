@@ -6,12 +6,14 @@ import {
   ArrowRight,
   ArrowUpRight,
   Flame,
+  MessageCircle,
   Package,
   Pen,
   Plus,
   Radio,
   Shield,
   Sparkles,
+  Users,
 } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { FloatingMainNav } from "@/components/layout/floating-main-nav";
@@ -455,6 +457,106 @@ function StatsSection({
               ))}
             </div>
           </div>
+        </SectionReveal>
+      </div>
+    </section>
+  );
+}
+
+// =================================================================
+// COMUNIDADE — Banner WhatsApp premium
+// =================================================================
+
+const COMMUNITY_WHATSAPP_URL = "https://chat.whatsapp.com/LnrukfQ4QawLB7y9XshBWh";
+
+function CommunitySection({ desktop }: { desktop: boolean }) {
+  return (
+    <section
+      className={`relative ${desktop ? "py-20 px-12" : "py-12 px-5"}`}
+    >
+      <div className={desktop ? "max-w-[1200px] mx-auto" : ""}>
+        <SectionReveal>
+          <a
+            href={COMMUNITY_WHATSAPP_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group relative block rounded-spark-3xl overflow-hidden hover-lift shadow-hero"
+            style={{
+              background:
+                "linear-gradient(135deg, oklch(0.68 0.18 145) 0%, oklch(0.55 0.18 155) 100%)",
+            }}
+          >
+            {/* Sparkles + blobs decorativos */}
+            <SparkleField count={12} seed={555} color="rgba(255,255,255,0.7)" className="opacity-60" />
+            <div
+              aria-hidden
+              className="absolute -top-32 -right-32 w-[420px] h-[420px] rounded-full opacity-30"
+              style={{
+                background:
+                  "radial-gradient(circle, rgba(255,255,255,0.4) 0%, transparent 70%)",
+              }}
+            />
+            <div
+              aria-hidden
+              className="absolute -bottom-20 -left-10 w-[300px] h-[300px] rounded-full opacity-25"
+              style={{
+                background:
+                  "radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%)",
+              }}
+            />
+
+            <div
+              className={`relative ${
+                desktop
+                  ? "p-12 grid grid-cols-[1fr_auto] items-center gap-10"
+                  : "p-7 flex flex-col gap-6"
+              } text-white`}
+            >
+              <div className="min-w-0">
+                <div className="text-eyebrow text-white/85 mb-3 flex items-center gap-2">
+                  <MessageCircle size={11} strokeWidth={2.5} />
+                  ✦ comunidade no whatsapp
+                </div>
+                <h2
+                  className="font-display lowercase leading-[0.9] tracking-tight"
+                  style={{ fontSize: desktop ? "clamp(2.25rem, 4vw, 3.5rem)" : "clamp(1.75rem, 7vw, 2.5rem)" }}
+                >
+                  bora pra dentro<br />
+                  <span className="text-white/90">do grupo.</span>
+                </h2>
+                <p className="mt-5 text-[14.5px] lg:text-[16px] text-white/90 leading-snug font-semibold max-w-[44ch]">
+                  Comunidade exclusiva pra dividir resultado, tirar dúvida com a Yara e
+                  com as outras criadoras, ver o que tá funcionando agora 💕
+                </p>
+
+                <div className="mt-6 flex items-center gap-4 text-white/90 text-[12px] font-extrabold uppercase tracking-widest flex-wrap">
+                  <span className="inline-flex items-center gap-1.5">
+                    <Users size={12} strokeWidth={2.5} />
+                    Comunidade ativa
+                  </span>
+                  <span className="opacity-50">·</span>
+                  <span>Acesso liberado pelo seu plano</span>
+                </div>
+              </div>
+
+              {/* CTA visual */}
+              <div className={desktop ? "shrink-0" : ""}>
+                <div
+                  className={`inline-flex items-center gap-3 px-7 py-5 rounded-full bg-white text-[#0d6b3d] font-extrabold shadow-lift transition-all duration-300 ease-premium group-hover:-translate-y-1 ${
+                    desktop ? "text-[15px]" : "text-[14px] w-full justify-center"
+                  }`}
+                >
+                  <span className="text-[22px] leading-none">💬</span>
+                  Entrar no grupo
+                  <ArrowUpRight
+                    size={16}
+                    strokeWidth={2.5}
+                    className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                  />
+                </div>
+              </div>
+            </div>
+          </a>
         </SectionReveal>
       </div>
     </section>
@@ -1072,6 +1174,7 @@ function HomeBody({ desktop = false }: { desktop?: boolean }) {
         onReopenTour={reopenTour}
       />
       <StatsSection data={data} desktop={desktop} />
+      <CommunitySection desktop={desktop} />
       <ActionsSection desktop={desktop} />
       <RotinaSection streak={data.streak} liveNow={liveNow} desktop={desktop} />
       <CatalogoSection products={data.products} desktop={desktop} />
