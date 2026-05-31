@@ -24,7 +24,7 @@ export async function POST() {
   // Retorna a lista atualizada pra UI consumir direto
   const { data: habits } = await supabase
     .from("user_habits")
-    .select("id, slug, label, emoji, category, order_index, is_active")
+    .select("id, slug, label, emoji, category, order_index, is_active, scheduled_time")
     .eq("user_id", user.id)
     .order("order_index", { ascending: true });
 
