@@ -24,6 +24,15 @@ type FeedbackPreview = {
   user_email: string | null;
 };
 
+type LeadPreview = {
+  id: string;
+  nome: string;
+  tiktok_handle: string;
+  already_selling: boolean;
+  status: "new" | "contacted" | "converted" | "dismissed";
+  created_at: string;
+};
+
 async function getStats() {
   const supabase = getServiceClient();
 
@@ -44,6 +53,11 @@ async function getStats() {
     feedbackBugsOpen,
     feedbackSuggestionsOpen,
     feedbackRecent,
+    leadsNew,
+    leadsContacted,
+    leadsConverted,
+    leadsTotal,
+    leadsRecent,
   ] = await Promise.all([
     supabase.from("news").select("id", { count: "exact", head: true }),
     supabase.from("education_videos").select("id", { count: "exact", head: true }),
@@ -98,6 +112,26 @@ async function getStats() {
       )
       .order("created_at", { ascending: false })
       .limit(5),
+    supabase
+      .from("leads")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "new"),
+    supabase
+      .from("leads")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "contacted"),
+    supabase
+      .from("leads")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "converted"),
+    supabase
+      .from("leads")
+      .select("id", { count: "exact", head: true }),
+    supabase
+      .from("leads")
+      .select("id, nome, tiktok_handle, already_selling, status, created_at")
+      .order("created_at", { ascending: false })
+      .limit(5),
   ]);
 
   type RawRecent = {
@@ -124,6 +158,8 @@ async function getStats() {
     },
   );
 
+  const leadsRecentRows: LeadPreview[] = (leadsRecent.data as LeadPreview[] | null) ?? [];
+
   return {
     news: news.count ?? 0,
     videos: videos.count ?? 0,
@@ -142,6 +178,11 @@ async function getStats() {
     feedbackBugsOpen: feedbackBugsOpen.count ?? 0,
     feedbackSuggestionsOpen: feedbackSuggestionsOpen.count ?? 0,
     feedbackRecent: recent,
+    leadsNew: leadsNew.count ?? 0,
+    leadsContacted: leadsContacted.count ?? 0,
+    leadsConverted: leadsConverted.count ?? 0,
+    leadsTotal: leadsTotal.count ?? 0,
+    leadsRecent: leadsRecentRows,
   };
 }
 
@@ -199,6 +240,100 @@ export default async function AdminHome() {
             <StatCard label="Plano ativo" value={s.alunasAtivas} emoji="✅" tone="good" />
             <StatCard label="Em trial" value={s.alunasTrial} emoji="🎁" tone="warn" />
             <StatCard label="Inativas" value={s.alunasInativas} emoji="⏸️" />
+          </div>
+        </SectionBlock>
+
+        {/* Leads (formulario publico) */}
+        <SectionBlock label="✦ leads" title="quem chegou pelo formulário">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            <StatCard
+              label="Novos"
+              value={s.leadsNew}
+              emoji="🟠"
+              tone={s.leadsNew > 0 ? "warn" : undefined}
+            />
+            <StatCard label="Contactados" value={s.leadsContacted} emoji="🔵" />
+            <StatCard label="Convertidos" value={s.leadsConverted} emoji="🟢" tone="good" />
+            <StatCard label="Total no banco" value={s.leadsTotal} emoji="✨" />
+          </div>
+
+          <div className="rounded-spark-2xl bg-spark-surface border border-spark-hairline shadow-rest overflow-hidden">
+            <div className="px-5 py-4 border-b border-spark-hairline flex items-center justify-between">
+              <div className="text-eyebrow text-spark-brand">✦ últimos cadastros</div>
+              <Link
+                href="/admin/leads"
+                className="text-[11.5px] font-extrabold text-spark-brand-deep hover:text-spark-brand transition-colors uppercase tracking-wider"
+              >
+                Ver todos →
+              </Link>
+            </div>
+            {s.leadsRecent.length === 0 ? (
+              <div className="px-5 py-10 text-center">
+                <div className="text-[28px] mb-2">✨</div>
+                <div className="text-[13px] text-spark-ink-50 font-semibold">
+                  Nenhum lead ainda. Quando o link do form pegar tráfego, aparecem aqui.
+                </div>
+                <Link
+                  href="/formulario"
+                  target="_blank"
+                  className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-extrabold text-spark-brand-deep hover:text-spark-brand uppercase tracking-wider"
+                >
+                  abrir o formulário →
+                </Link>
+              </div>
+            ) : (
+              <ul className="divide-y divide-spark-hairline">
+                {s.leadsRecent.map((r) => (
+                  <li key={r.id}>
+                    <Link
+                      href="/admin/leads"
+                      className="group flex items-center gap-3 px-5 py-3.5 hover:bg-spark-surface-sunken/40 transition-colors"
+                    >
+                      <span className="shrink-0 w-9 h-9 rounded-full bg-brand-grad text-white flex items-center justify-center font-extrabold text-[13px]">
+                        {r.nome.charAt(0).toUpperCase()}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[13.5px] font-extrabold text-spark-ink tracking-tight truncate group-hover:text-spark-brand-deep transition-colors">
+                          {r.nome}
+                        </div>
+                        <div className="text-[11px] text-spark-ink-50 truncate mt-0.5 font-mono">
+                          @{r.tiktok_handle}
+                          <span className="mx-1.5 opacity-50">·</span>
+                          {r.already_selling ? "✅ vende" : "🌱 ainda não"}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span
+                          className={`inline-flex items-center gap-1.5 text-[10.5px] font-extrabold uppercase tracking-wider text-spark-ink-70`}
+                        >
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${
+                              r.status === "new"
+                                ? "bg-warn"
+                                : r.status === "contacted"
+                                  ? "bg-spark-brand-deep"
+                                  : r.status === "converted"
+                                    ? "bg-good"
+                                    : "bg-spark-ink-35"
+                            }`}
+                          />
+                          {r.status === "new"
+                            ? "Novo"
+                            : r.status === "contacted"
+                              ? "Contactado"
+                              : r.status === "converted"
+                                ? "Convertido"
+                                : "Dispensado"}
+                        </span>
+                        <span className="text-[10.5px] text-spark-ink-50 font-mono w-9 text-right">
+                          {fmtRelativeShort(r.created_at)}
+                        </span>
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </SectionBlock>
 
@@ -335,6 +470,12 @@ export default async function AdminHome() {
               emoji="🐛"
               title="Feedback das alunas"
               desc="Bugs e sugestões reportados pelas alunas. Triagem e status."
+            />
+            <ActionCard
+              href="/admin/leads"
+              emoji="✨"
+              title="Leads do formulário"
+              desc="Cadastros do /formulario (link na bio). Triagem + WhatsApp 1-click."
             />
           </div>
         </SectionBlock>

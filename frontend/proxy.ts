@@ -22,7 +22,13 @@ const PUBLIC_ROUTES = new Set(["/login", "/landing"]);
 
 // Rotas SEMPRE acessíveis (logado ou não). Necessário pro reset de senha
 // porque o link do email cria sessão temporária — não dá pra kickar.
-const ALWAYS_PUBLIC = new Set(["/forgot-password", "/reset-password"]);
+// /formulario eh pagina publica de captacao de leads (bio do TikTok).
+const ALWAYS_PUBLIC = new Set([
+  "/forgot-password",
+  "/reset-password",
+  "/formulario",
+  "/formulario/obrigada",
+]);
 const ONBOARDING_ROUTES = new Set(["/welcome"]);
 
 // Rotas que SEMPRE liberam mesmo sem assinatura ativa (logada mas sem plano):
