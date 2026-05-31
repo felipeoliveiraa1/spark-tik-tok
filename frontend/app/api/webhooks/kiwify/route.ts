@@ -135,17 +135,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid_json" }, { status: 400 });
   }
 
-  // HMAC eh sobre o JSON re-serializado do payload externo (raw recebido).
-  // Kiwify documenta o calculo sobre o body que ele envia, entao usamos raw.
-  const calculatedSignature = createHmac("sha1", secret)
+  // Kiwify calcula HMAC-SHA1 do body exatamente como enviado. Tentamos 2
+  // variantes pra cobrir os casos:
+  //  - rawBody (o exato que recebemos — preferido)
+  //  - JSON.stringify(rawPayload) (re-serializado, caso o body venha
+  //    com format/espacos que o calc do Kiwify nao bate)
+  const sigFromRaw = createHmac("sha1", secret).update(rawBody).digest("hex");
+  const sigFromReserialized = createHmac("sha1", secret)
     .update(JSON.stringify(rawPayload))
     .digest("hex");
 
-  if (
-    signature.length !== calculatedSignature.length ||
-    !timingSafeEqual(Buffer.from(signature), Buffer.from(calculatedSignature))
-  ) {
-    console.warn("[kiwify webhook] signature invalida");
+  const signatureMatches =
+    (signature.length === sigFromRaw.length &&
+      timingSafeEqual(Buffer.from(signature), Buffer.from(sigFromRaw))) ||
+    (signature.length === sigFromReserialized.length &&
+      timingSafeEqual(Buffer.from(signature), Buffer.from(sigFromReserialized)));
+
+  if (!signatureMatches) {
+    console.warn("[kiwify webhook] signature invalida", {
+      received: signature,
+      calculated_from_raw: sigFromRaw,
+      calculated_from_reserialized: sigFromReserialized,
+      body_length: rawBody.length,
+    });
     return NextResponse.json({ error: "invalid_signature" }, { status: 401 });
   }
 
