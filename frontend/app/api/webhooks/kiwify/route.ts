@@ -61,7 +61,22 @@ type KiwifyPayload = {
     product_id?: string;
     product_name?: string;
   };
+  /** Kiwify pode envelopar tudo dentro de `order`. unwrapPayload normaliza. */
+  order?: KiwifyPayload;
 };
+
+/**
+ * Kiwify entrega payload em 2 formatos dependendo de canal/versao:
+ *  A) flat:  { webhook_event_type, order_id, Customer, ... }
+ *  B) wrap:  { url, signature, order: { webhook_event_type, ... } }
+ * Sempre retorna o "interior" — campos no root.
+ */
+function unwrapPayload(raw: KiwifyPayload): KiwifyPayload {
+  if (raw.order && typeof raw.order === "object" && raw.order.webhook_event_type) {
+    return raw.order;
+  }
+  return raw;
+}
 
 function getServiceClient(): SupabaseClient | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -113,15 +128,17 @@ export async function POST(request: Request) {
   }
 
   const rawBody = await request.text();
-  let payload: KiwifyPayload;
+  let rawPayload: KiwifyPayload;
   try {
-    payload = JSON.parse(rawBody) as KiwifyPayload;
+    rawPayload = JSON.parse(rawBody) as KiwifyPayload;
   } catch {
     return NextResponse.json({ error: "invalid_json" }, { status: 400 });
   }
 
+  // HMAC eh sobre o JSON re-serializado do payload externo (raw recebido).
+  // Kiwify documenta o calculo sobre o body que ele envia, entao usamos raw.
   const calculatedSignature = createHmac("sha1", secret)
-    .update(JSON.stringify(payload))
+    .update(JSON.stringify(rawPayload))
     .digest("hex");
 
   if (
@@ -131,6 +148,9 @@ export async function POST(request: Request) {
     console.warn("[kiwify webhook] signature invalida");
     return NextResponse.json({ error: "invalid_signature" }, { status: 401 });
   }
+
+  // Normaliza payload — Kiwify as vezes envelopa em `{order: ...}`.
+  const payload = unwrapPayload(rawPayload);
 
   const eventType = payload.webhook_event_type ?? "";
   const orderId = payload.order_id ?? "";
