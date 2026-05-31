@@ -298,8 +298,8 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
   return (
     <div className="space-y-8">
       {/* Sticker rotativo (mobile only — desktop tem painel direito) */}
-      <div className="lg:hidden -mb-2 inline-flex">
-        <Sticker text="MÉTODO TTS · 2026 · PREMIUM · " emoji="✨" size={92} />
+      <div className="lg:hidden flex justify-start">
+        <Sticker text="MÉTODO TTS · 2026 · PREMIUM · " emoji="✨" size={96} />
       </div>
 
       <div>
