@@ -98,6 +98,8 @@ export default function AdminLeadsPage() {
 
   const confirm = useConfirm();
   const toast = useToast();
+  const toastRef = React.useRef(toast);
+  toastRef.current = toast;
 
   const load = React.useCallback(async () => {
     setLoading(true);
@@ -110,10 +112,10 @@ export default function AdminLeadsPage() {
       const data = (await res.json()) as { leads: LeadRow[] };
       setItems(data.leads);
     } else {
-      toast.error("Não consegui carregar agora");
+      toastRef.current.error("Não consegui carregar agora");
     }
     setLoading(false);
-  }, [statusFilter, sellingFilter, q, toast]);
+  }, [statusFilter, sellingFilter, q]);
 
   React.useEffect(() => {
     void load();

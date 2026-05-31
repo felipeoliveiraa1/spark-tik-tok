@@ -80,6 +80,8 @@ export default function AdminFeedbackPage() {
 
   const confirm = useConfirm();
   const toast = useToast();
+  const toastRef = React.useRef(toast);
+  toastRef.current = toast;
 
   const load = React.useCallback(async () => {
     setLoading(true);
@@ -92,10 +94,10 @@ export default function AdminFeedbackPage() {
       const data = (await res.json()) as { feedback: FeedbackRow[] };
       setItems(data.feedback);
     } else {
-      toast.error("Não consegui carregar agora");
+      toastRef.current.error("Não consegui carregar agora");
     }
     setLoading(false);
-  }, [typeFilter, statusFilter, q, toast]);
+  }, [typeFilter, statusFilter, q]);
 
   React.useEffect(() => {
     void load();
