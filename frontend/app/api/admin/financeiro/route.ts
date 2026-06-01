@@ -8,10 +8,13 @@ export const dynamic = "force-dynamic";
 /**
  * GET /api/admin/financeiro — metricas financeiras do negocio.
  *
- * Tudo derivado de `kiwify_events.payload` (charge_amount + my_commission)
+ * Tudo derivado de `kiwify_events.payload` (charge_amount - kiwify_fee)
  * + `profiles` (status do plano).
  *
  * Valores em CENTAVOS (charge_amount vem assim do Kiwify). UI converte.
+ *
+ * NET = bruto - taxa Kiwify (NAO desconta split com co-produtor). O
+ * usuario nao quer ver a propria %, so o liquido apos a plataforma.
  */
 
 function getServiceClient() {
@@ -50,6 +53,7 @@ type KiwifyEventRow = {
   payload: {
     Commissions?: {
       charge_amount?: number;
+      kiwify_fee?: number;
       my_commission?: number;
     };
     Subscription?: {
@@ -74,6 +78,17 @@ type ProfileRow = {
   plan_expires_at: string | null;
   role: string | null;
 };
+
+/**
+ * Net = bruto - taxa Kiwify. NAO desconta o split com co-produtor (essa
+ * parte fica fora do dashboard porque o usuario nao quer ver a propria
+ * porcentagem, so o liquido apos taxa da plataforma).
+ */
+function netOf(row: KiwifyEventRow): number {
+  const gross = row.payload?.Commissions?.charge_amount ?? 0;
+  const fee = row.payload?.Commissions?.kiwify_fee ?? 0;
+  return Math.max(0, gross - fee);
+}
 
 function monthKey(d: Date): string {
   const y = d.getUTCFullYear();
@@ -160,7 +175,7 @@ export async function GET() {
     if (!recentPayments.has(e.customer_email)) {
       recentPayments.set(e.customer_email, {
         gross: e.payload?.Commissions?.charge_amount ?? 0,
-        net: e.payload?.Commissions?.my_commission ?? 0,
+        net: netOf(e),
         date: e.processed_at,
       });
     }
@@ -194,7 +209,7 @@ export async function GET() {
     const bucket = monthsMap.get(key);
     if (!bucket) continue;
     bucket.gross_cents += e.payload?.Commissions?.charge_amount ?? 0;
-    bucket.net_cents += e.payload?.Commissions?.my_commission ?? 0;
+    bucket.net_cents += netOf(e);
     bucket.transactions += 1;
     if (e.event_type === "order_approved") bucket.new_customers += 1;
   }
@@ -223,7 +238,7 @@ export async function GET() {
   for (const e of paidEvents) {
     const d = new Date(e.processed_at);
     const gross = e.payload?.Commissions?.charge_amount ?? 0;
-    const net = e.payload?.Commissions?.my_commission ?? 0;
+    const net = netOf(e);
     if (d >= startCurrent) {
       currentMonthRevenue.gross_cents += gross;
       currentMonthRevenue.net_cents += net;
@@ -280,7 +295,7 @@ export async function GET() {
     customer_email: e.customer_email,
     event_type: e.event_type,
     gross_cents: e.payload?.Commissions?.charge_amount ?? 0,
-    net_cents: e.payload?.Commissions?.my_commission ?? 0,
+    net_cents: netOf(e),
     order_id: e.order_id,
   }));
 
@@ -307,7 +322,8 @@ export async function GET() {
       // Sem historico recente — usa avgTicket como fallback
       upcomingCount += 1;
       upcomingGross += avgTicketGrossCents;
-      upcomingNet += Math.round(avgTicketGrossCents * 0.35); // estimativa rough
+      // ~87% sobra apos taxa Kiwify (~13% media — varia por meio de pagamento)
+      upcomingNet += Math.round(avgTicketGrossCents * 0.87);
     }
   }
 

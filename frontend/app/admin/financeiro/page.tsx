@@ -220,14 +220,14 @@ function FinanceiroContent({ data }: { data: FinanceiroData }) {
           <KpiCard
             label="MRR bruto"
             value={fmtBRL(data.mrr.gross)}
-            sub={`Líquido: ${fmtBRL(data.mrr.net)}`}
+            sub={`Após Kiwify: ${fmtBRL(data.mrr.net)}`}
             tone="brand"
             emoji="📊"
           />
           <KpiCard
             label="ARR projetado"
             value={fmtBRL(data.arr.gross)}
-            sub={`Líquido: ${fmtBRL(data.arr.net)}`}
+            sub={`Após Kiwify: ${fmtBRL(data.arr.net)}`}
             emoji="📈"
           />
           <KpiCard
@@ -254,14 +254,14 @@ function FinanceiroContent({ data }: { data: FinanceiroData }) {
           <KpiCard
             label="Mês corrente"
             value={fmtBRL(data.revenue.current_month.gross_cents)}
-            sub={`Líquido: ${fmtBRL(data.revenue.current_month.net_cents)}`}
+            sub={`Após Kiwify: ${fmtBRL(data.revenue.current_month.net_cents)}`}
             tone="brand"
             emoji="💰"
           />
           <KpiCard
             label="Mês anterior"
             value={fmtBRL(data.revenue.prev_month.gross_cents)}
-            sub={`Líquido: ${fmtBRL(data.revenue.prev_month.net_cents)}`}
+            sub={`Após Kiwify: ${fmtBRL(data.revenue.prev_month.net_cents)}`}
             emoji="🗓️"
           />
           <KpiCard
@@ -307,12 +307,12 @@ function FinanceiroContent({ data }: { data: FinanceiroData }) {
             </div>
           </div>
           <div>
-            <div className="text-eyebrow text-spark-brand-deep mb-1.5">receita líquida</div>
+            <div className="text-eyebrow text-spark-brand-deep mb-1.5">líquido após Kiwify</div>
             <div className="font-display lowercase tracking-tight leading-none text-spark-brand-deep text-[36px]">
               {fmtBRL(data.upcoming_30d.projected_net)}
             </div>
             <div className="mt-1 text-[12px] text-spark-ink-50 font-extrabold uppercase tracking-wider">
-              sua comissão estimada
+              descontando taxa da plataforma
             </div>
           </div>
         </div>
@@ -324,7 +324,7 @@ function FinanceiroContent({ data }: { data: FinanceiroData }) {
           <div>
             <div className="text-eyebrow text-spark-brand">✦ evolução mensal</div>
             <div className="text-[12px] text-spark-ink-50 font-mono font-extrabold uppercase tracking-wider mt-1">
-              últimos 12 meses · bruto + líquido
+              últimos 12 meses · bruto + após Kiwify
             </div>
           </div>
           <Legend />
@@ -410,10 +410,11 @@ function FinanceiroContent({ data }: { data: FinanceiroData }) {
 
       {/* Nota explicativa */}
       <div className="rounded-spark-2xl bg-spark-surface-sunken/60 border border-spark-hairline px-5 py-4 text-[12px] text-spark-ink-50 leading-relaxed font-mono">
-        ✦ <strong className="text-spark-ink-70">Bruto</strong> = total cobrado das alunas (charge_amount Kiwify).{" "}
-        <strong className="text-spark-ink-70">Líquido</strong> = sua comissão depois das taxas Kiwify e split com
-        co-produtor (my_commission). MRR considera apenas alunas com plan_status ∈ (active, late) e
-        cobrança nos últimos 60 dias.
+        ✦ <strong className="text-spark-ink-70">Bruto</strong> = total cobrado das alunas
+        (charge_amount Kiwify). <strong className="text-spark-ink-70">Após Kiwify</strong> = bruto
+        descontando a taxa da plataforma (charge_amount - kiwify_fee), sem considerar split entre
+        co-produtores. MRR considera apenas alunas com plan_status ∈ (active, late) e cobrança nos
+        últimos 60 dias.
       </div>
     </div>
   );
@@ -497,7 +498,7 @@ function Legend() {
       </span>
       <span className="inline-flex items-center gap-1.5">
         <span className="w-3 h-3 rounded-sm bg-good" />
-        Líquido
+        Após Kiwify
       </span>
     </div>
   );
@@ -520,7 +521,7 @@ function MonthlyChart({ history }: { history: MonthBucket[] }) {
               <div
                 className="w-full flex items-end gap-0.5 sm:gap-1"
                 style={{ height: "180px" }}
-                title={`${fmtMonth(m.month)}: bruto ${fmtBRL(m.gross_cents)}, líquido ${fmtBRL(m.net_cents)}, ${m.transactions} tx`}
+                title={`${fmtMonth(m.month)}: bruto ${fmtBRL(m.gross_cents)}, após Kiwify ${fmtBRL(m.net_cents)}, ${m.transactions} tx`}
               >
                 <div
                   className="flex-1 bg-brand-grad rounded-t-md transition-all duration-700 ease-premium min-h-[2px]"
