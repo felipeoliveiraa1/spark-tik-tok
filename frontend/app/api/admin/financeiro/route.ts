@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { requireAdmin } from "@/lib/auth-admin";
+import { hasActiveAccess } from "@/lib/plan-access";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -151,17 +152,20 @@ export async function GET() {
   }
   const profiles: ProfileRow[] = (rawProfiles as ProfileRow[] | null) ?? [];
 
-  // ----- MRR: soma do ultimo pagamento por aluna ativa -----
-  // "Ativa" = plan_active && plan_status in (active, late). Trial nao conta.
-  const activeStatuses = new Set(["active", "late"]);
-  const activeProfileIds = new Set(
-    profiles
-      .filter((p) => p.plan_active === true && activeStatuses.has(p.plan_status ?? ""))
-      .map((p) => p.id),
+  // ----- Quem tem ACESSO hoje (pra card "Assinantes ativas") -----
+  // Usa hasActiveAccess pra consistencia com middleware/proxy. Inclui:
+  // active, late, trial-nao-expirado, canceled-com-data-futura.
+  const accessProfileIds = new Set(
+    profiles.filter((p) => hasActiveAccess(p)).map((p) => p.id),
   );
-  const activeEmails = new Set(
+
+  // ----- Quem PAGA (pra MRR) — exclui trial -----
+  // MRR considera so quem cobrou recorrente: active + late (trial nao
+  // gera receita; canceled tambem nao gera receita futura).
+  const payingStatuses = new Set(["active", "late"]);
+  const payingEmails = new Set(
     profiles
-      .filter((p) => p.plan_active === true && activeStatuses.has(p.plan_status ?? ""))
+      .filter((p) => p.plan_active === true && payingStatuses.has(p.plan_status ?? ""))
       .map((p) => p.email),
   );
 
@@ -170,7 +174,7 @@ export async function GET() {
   const recentPayments = new Map<string, { gross: number; net: number; date: string }>();
   const recentSince = daysAgo(62);
   for (const e of paidEvents) {
-    if (!e.customer_email || !activeEmails.has(e.customer_email)) continue;
+    if (!e.customer_email || !payingEmails.has(e.customer_email)) continue;
     if (new Date(e.processed_at) < recentSince) continue;
     if (!recentPayments.has(e.customer_email)) {
       recentPayments.set(e.customer_email, {
@@ -279,7 +283,7 @@ export async function GET() {
     if (new Date(e.processed_at) >= since30) churned30 += 1;
   }
   const baseForChurn =
-    activeProfileIds.size + (statusBreakdown.canceled ?? 0);
+    accessProfileIds.size + (statusBreakdown.canceled ?? 0);
   const churn30Pct = baseForChurn > 0 ? (churned30 / baseForChurn) * 100 : 0;
 
   // ----- New customers 30d -----
@@ -308,7 +312,7 @@ export async function GET() {
   let upcomingGross = 0;
   let upcomingNet = 0;
   for (const p of profiles) {
-    if (!activeStatuses.has(p.plan_status ?? "")) continue;
+    if (!payingStatuses.has(p.plan_status ?? "")) continue;
     if (!p.plan_next_payment) continue;
     const next = new Date(p.plan_next_payment);
     if (next > within30) continue;
@@ -332,7 +336,8 @@ export async function GET() {
     units: "cents",
     mrr: { gross: mrrGross, net: mrrNet },
     arr: { gross: mrrGross * 12, net: mrrNet * 12 },
-    active_customers: activeProfileIds.size,
+    active_customers: accessProfileIds.size,
+    paying_customers: payingEmails.size,
     new_customers_30d: newCustomers30,
     churned_30d: churned30,
     churn_30d_pct: churn30Pct,

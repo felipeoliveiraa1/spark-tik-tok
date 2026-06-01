@@ -44,6 +44,7 @@ type FinanceiroData = {
   mrr: { gross: number; net: number };
   arr: { gross: number; net: number };
   active_customers: number;
+  paying_customers: number;
   new_customers_30d: number;
   churned_30d: number;
   churn_30d_pct: number;
@@ -233,7 +234,7 @@ function FinanceiroContent({ data }: { data: FinanceiroData }) {
           <KpiCard
             label="Assinantes ativas"
             value={String(data.active_customers)}
-            sub={`+${data.new_customers_30d} nos últimos 30d`}
+            sub={`${data.paying_customers} pagantes · +${data.new_customers_30d} nos últimos 30d`}
             tone="good"
             emoji="💕"
           />
@@ -413,8 +414,11 @@ function FinanceiroContent({ data }: { data: FinanceiroData }) {
         ✦ <strong className="text-spark-ink-70">Bruto</strong> = total cobrado das alunas
         (charge_amount Kiwify). <strong className="text-spark-ink-70">Após Kiwify</strong> = bruto
         descontando a taxa da plataforma (charge_amount - kiwify_fee), sem considerar split entre
-        co-produtores. MRR considera apenas alunas com plan_status ∈ (active, late) e cobrança nos
-        últimos 60 dias.
+        co-produtores.<br />
+        <strong className="text-spark-ink-70">Assinantes ativas</strong> = todas com acesso ao app
+        hoje (active + trial + late + canceled-com-data-futura, via hasActiveAccess).{" "}
+        <strong className="text-spark-ink-70">Pagantes</strong> = subset que gera MRR (só active +
+        late). MRR considera cobrança nos últimos 60 dias.
       </div>
     </div>
   );
