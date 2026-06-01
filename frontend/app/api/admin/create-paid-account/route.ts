@@ -3,7 +3,10 @@ import { createClient } from "@supabase/supabase-js";
 import { requireAdmin } from "@/lib/auth-admin";
 import { generateFriendlyPassword } from "@/lib/password-gen";
 import { sendEmail } from "@/lib/resend";
+import { sendWhatsApp } from "@/lib/evolution";
 import { buildWelcomeEmail } from "@/lib/email-templates/welcome";
+import { buildWelcomeWhatsApp } from "@/lib/whatsapp-templates/welcome";
+import { buildPlanReactivatedWhatsApp } from "@/lib/whatsapp-templates/plan";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -155,18 +158,29 @@ export async function POST(request: Request) {
 
     const fname = existingProfile.name?.split(/\s+/)[0] || firstName;
     const loginUrl = `${siteUrl()}/login`;
-    const sent = await sendEmail({
-      to: email,
-      subject: `Plano reativado, ${fname} 💕`,
-      text: `Oi ${fname}, tudo bem? ✨\n\nSeu plano no Método TTS foi reativado. Você já pode entrar com a senha de sempre:\n\n${loginUrl}\n\nSe não lembra a senha, define uma nova em ${siteUrl()}/forgot-password\n\nBeijos,\nEquipe Método TTS 🌹`,
-      tags: [{ name: "kind", value: "plan_reactivated_manual" }],
-    });
+    const forgotUrl = `${siteUrl()}/forgot-password`;
+
+    const [sent, waResult] = await Promise.all([
+      sendEmail({
+        to: email,
+        subject: `Plano reativado, ${fname} 💕`,
+        text: `Oi ${fname}, tudo bem? ✨\n\nSeu plano no Método TTS foi reativado. Você já pode entrar com a senha de sempre:\n\n${loginUrl}\n\nSe não lembra a senha, define uma nova em ${forgotUrl}\n\nBeijos,\nEquipe Método TTS 🌹`,
+        tags: [{ name: "kind", value: "plan_reactivated_manual" }],
+      }),
+      whatsapp
+        ? sendWhatsApp({
+            phone: whatsapp,
+            text: buildPlanReactivatedWhatsApp({ firstName: fname, loginUrl, forgotUrl }).text,
+          })
+        : Promise.resolve({ ok: false, error: "no_whatsapp" } as const),
+    ]);
 
     return NextResponse.json({
       ok: true,
       mode: "reactivated",
       profile_id: existingProfile.id,
       email_sent: sent.ok,
+      whatsapp_sent: waResult.ok,
     });
   }
 
@@ -210,19 +224,34 @@ export async function POST(request: Request) {
     payload: syntheticPayload,
   });
 
+  const loginUrl = `${siteUrl()}/login`;
   const welcome = buildWelcomeEmail({
     firstName,
     email,
     temporaryPassword: password,
-    loginUrl: `${siteUrl()}/login`,
+    loginUrl,
   });
-  const sent = await sendEmail({
-    to: email,
-    subject: welcome.subject,
-    text: welcome.text,
-    html: welcome.html,
-    tags: [{ name: "kind", value: "welcome_manual" }],
-  });
+
+  const [sent, waResult] = await Promise.all([
+    sendEmail({
+      to: email,
+      subject: welcome.subject,
+      text: welcome.text,
+      html: welcome.html,
+      tags: [{ name: "kind", value: "welcome_manual" }],
+    }),
+    whatsapp
+      ? sendWhatsApp({
+          phone: whatsapp,
+          text: buildWelcomeWhatsApp({
+            firstName,
+            email,
+            temporaryPassword: password,
+            loginUrl,
+          }).text,
+        })
+      : Promise.resolve({ ok: false, error: "no_whatsapp" } as const),
+  ]);
 
   return NextResponse.json({
     ok: true,
@@ -230,5 +259,7 @@ export async function POST(request: Request) {
     user_id: created.user.id,
     email_sent: sent.ok,
     email_error: sent.ok ? null : sent.error,
+    whatsapp_sent: waResult.ok,
+    whatsapp_error: waResult.ok ? null : waResult.error,
   });
 }

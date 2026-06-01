@@ -3,7 +3,9 @@ import { createClient } from "@supabase/supabase-js";
 import { requireAdmin } from "@/lib/auth-admin";
 import { generateFriendlyPassword } from "@/lib/password-gen";
 import { sendEmail } from "@/lib/resend";
+import { sendWhatsApp } from "@/lib/evolution";
 import { buildWelcomeEmail } from "@/lib/email-templates/welcome";
+import { buildWelcomeWhatsApp } from "@/lib/whatsapp-templates/welcome";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -49,7 +51,7 @@ export async function POST(request: Request) {
   const svc = getServiceClient();
   const { data: profile, error: profErr } = await svc
     .from("profiles")
-    .select("id, email, name")
+    .select("id, email, name, whatsapp")
     .eq("email", email)
     .maybeSingle();
 
@@ -84,23 +86,44 @@ export async function POST(request: Request) {
   }
 
   if (passwordSent) {
+    const loginUrl = `${siteUrl}/login`;
     const tmpl = buildWelcomeEmail({
       firstName,
       email,
       temporaryPassword: passwordSent,
-      loginUrl: `${siteUrl}/login`,
+      loginUrl,
     });
-    const sent = await sendEmail({
-      to: email,
-      subject: tmpl.subject,
-      text: tmpl.text,
-      html: tmpl.html,
-      tags: [{ name: "kind", value: "welcome_resent" }],
-    });
+
+    const [sent, waResult] = await Promise.all([
+      sendEmail({
+        to: email,
+        subject: tmpl.subject,
+        text: tmpl.text,
+        html: tmpl.html,
+        tags: [{ name: "kind", value: "welcome_resent" }],
+      }),
+      profile.whatsapp
+        ? sendWhatsApp({
+            phone: profile.whatsapp,
+            text: buildWelcomeWhatsApp({
+              firstName,
+              email,
+              temporaryPassword: passwordSent,
+              loginUrl,
+            }).text,
+          })
+        : Promise.resolve({ ok: false, error: "no_whatsapp" } as const),
+    ]);
+
     if (!sent.ok) {
       return NextResponse.json({ error: `resend_failed: ${sent.error}` }, { status: 500 });
     }
-    return NextResponse.json({ ok: true, mode: "new_password", email_id: sent.id });
+    return NextResponse.json({
+      ok: true,
+      mode: "new_password",
+      email_id: sent.id,
+      whatsapp_sent: waResult.ok,
+    });
   }
 
   // Sem regenerate: manda mensagem curta com link /forgot-password

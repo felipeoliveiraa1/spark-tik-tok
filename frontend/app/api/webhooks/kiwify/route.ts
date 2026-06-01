@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { generateFriendlyPassword } from "@/lib/password-gen";
 import { sendEmail } from "@/lib/resend";
+import { sendWhatsApp } from "@/lib/evolution";
 import { buildWelcomeEmail } from "@/lib/email-templates/welcome";
 import {
   buildPlanRenewedEmail,
@@ -10,6 +11,8 @@ import {
   buildPlanCanceledEmail,
   buildPlanRefundedEmail,
 } from "@/lib/email-templates/plan";
+import { buildWelcomeWhatsApp } from "@/lib/whatsapp-templates/welcome";
+import { buildPlanReactivatedWhatsApp } from "@/lib/whatsapp-templates/plan";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -289,6 +292,7 @@ async function handleOrderApproved({
   const subscriptionId = subscriptionIdOf(payload);
   const name = fullName(customer);
   const nextPayment = payload.Subscription?.next_payment ?? null;
+  const mobile = customer?.mobile?.trim() || null;
 
   const { data: existingProfile } = await supabase
     .from("profiles")
@@ -298,31 +302,53 @@ async function handleOrderApproved({
 
   if (existingProfile) {
     // Reativa plano da aluna existente.
+    const reactivatePatch: Record<string, unknown> = {
+      plan_active: true,
+      plan_status: "active",
+      plan_expires_at: null,
+      plan_canceled_at: null,
+      plan_renewed_at: new Date().toISOString(),
+      plan_next_payment: nextPayment,
+      kiwify_customer_id: customer?.CPF ?? null,
+      kiwify_subscription_id: subscriptionId,
+      updated_at: new Date().toISOString(),
+    };
+    if (mobile) reactivatePatch.whatsapp = mobile;
+
     await supabase
       .from("profiles")
-      .update({
-        plan_active: true,
-        plan_status: "active",
-        plan_expires_at: null,
-        plan_canceled_at: null,
-        plan_renewed_at: new Date().toISOString(),
-        plan_next_payment: nextPayment,
-        kiwify_customer_id: customer?.CPF ?? null,
-        kiwify_subscription_id: subscriptionId,
-        updated_at: new Date().toISOString(),
-      })
+      .update(reactivatePatch)
       .eq("id", existingProfile.id);
 
     const fname = (existingProfile.name?.split(/\s+/)[0] || firstName(customer)).trim();
     const loginUrl = `${siteUrl()}/login`;
-    await sendEmail({
-      to: email,
-      subject: `Plano reativado, ${fname} 💕`,
-      text: `Oi ${fname}, tudo bem? ✨\n\nSeu plano no Método TTS foi reativado. Você já pode entrar com a senha de sempre:\n\n${loginUrl}\n\nQualquer coisa é só responder esse email.\n\nBeijos,\nEquipe Método TTS 🌹`,
-      tags: [{ name: "kind", value: "plan_reactivated" }],
-    });
+    const forgotUrl = `${siteUrl()}/forgot-password`;
 
-    return { ok: true, status: "plan_reactivated", profile_id: existingProfile.id };
+    // Email + WhatsApp em paralelo (best-effort)
+    const [emailResult, waResult] = await Promise.all([
+      sendEmail({
+        to: email,
+        subject: `Plano reativado, ${fname} 💕`,
+        text: `Oi ${fname}, tudo bem? ✨\n\nSeu plano no Método TTS foi reativado. Você já pode entrar com a senha de sempre:\n\n${loginUrl}\n\nBeijos,\nEquipe Método TTS 🌹`,
+        tags: [{ name: "kind", value: "plan_reactivated" }],
+      }),
+      mobile
+        ? sendWhatsApp({
+            phone: mobile,
+            text: buildPlanReactivatedWhatsApp({ firstName: fname, loginUrl, forgotUrl }).text,
+          })
+        : Promise.resolve({ ok: false, error: "no_mobile" } as const),
+    ]);
+    if (!emailResult.ok) console.error("[kiwify] falha email reativ", emailResult.error);
+    if (!waResult.ok) console.warn("[kiwify] whatsapp reativ skip/falha", waResult.error);
+
+    return {
+      ok: true,
+      status: "plan_reactivated",
+      profile_id: existingProfile.id,
+      email_sent: emailResult.ok,
+      whatsapp_sent: waResult.ok,
+    };
   }
 
   // Cria conta nova
@@ -342,6 +368,7 @@ async function handleOrderApproved({
     .from("profiles")
     .update({
       name: name || null,
+      whatsapp: mobile,
       plan_active: true,
       plan_status: "active",
       plan_renewed_at: new Date().toISOString(),
@@ -353,23 +380,46 @@ async function handleOrderApproved({
     })
     .eq("id", created.user.id);
 
-  const welcome = buildWelcomeEmail({
-    firstName: firstName(customer),
+  const fname = firstName(customer);
+  const loginUrl = `${siteUrl()}/login`;
+  const welcomeEmail = buildWelcomeEmail({
+    firstName: fname,
     email,
     temporaryPassword: password,
-    loginUrl: `${siteUrl()}/login`,
+    loginUrl,
   });
-  const sent = await sendEmail({
-    to: email,
-    subject: welcome.subject,
-    text: welcome.text,
-    html: welcome.html,
-    tags: [{ name: "kind", value: "welcome" }],
-  });
-  if (!sent.ok) {
-    console.error("[kiwify webhook] falha email boas-vindas", sent.error);
-  }
-  return { ok: true, status: "account_created", user_id: created.user.id, email_sent: sent.ok };
+
+  // Email + WhatsApp em paralelo (best-effort)
+  const [sent, waResult] = await Promise.all([
+    sendEmail({
+      to: email,
+      subject: welcomeEmail.subject,
+      text: welcomeEmail.text,
+      html: welcomeEmail.html,
+      tags: [{ name: "kind", value: "welcome" }],
+    }),
+    mobile
+      ? sendWhatsApp({
+          phone: mobile,
+          text: buildWelcomeWhatsApp({
+            firstName: fname,
+            email,
+            temporaryPassword: password,
+            loginUrl,
+          }).text,
+        })
+      : Promise.resolve({ ok: false, error: "no_mobile" } as const),
+  ]);
+  if (!sent.ok) console.error("[kiwify] falha email welcome", sent.error);
+  if (!waResult.ok) console.warn("[kiwify] whatsapp welcome skip/falha", waResult.error);
+
+  return {
+    ok: true,
+    status: "account_created",
+    user_id: created.user.id,
+    email_sent: sent.ok,
+    whatsapp_sent: waResult.ok,
+  };
 }
 
 /**
