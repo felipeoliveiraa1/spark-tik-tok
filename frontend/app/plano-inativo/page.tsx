@@ -26,6 +26,15 @@ const STATUS_COPY: Record<string, { title: React.ReactNode; description: string 
     description:
       "Pra acessar o Método TTS você precisa de uma assinatura ativa. Bora reativar?",
   },
+  trial: {
+    title: (
+      <>
+        seu trial <span className="text-grad-brand">acabou 💕</span>
+      </>
+    ),
+    description:
+      "Os dias de teste terminaram. Pra continuar, é só assinar — toda sua conta (produtos, scripts, rotina) fica salva e volta na hora.",
+  },
   canceled: {
     title: (
       <>
