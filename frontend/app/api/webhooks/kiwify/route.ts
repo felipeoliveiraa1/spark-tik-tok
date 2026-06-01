@@ -315,10 +315,17 @@ async function handleOrderApproved({
     };
     if (mobile) reactivatePatch.whatsapp = mobile;
 
-    await supabase
+    const { error: reactivateErr } = await supabase
       .from("profiles")
       .update(reactivatePatch)
       .eq("id", existingProfile.id);
+    if (reactivateErr) {
+      console.error("[kiwify] falha update profile reativacao", reactivateErr, {
+        profile_id: existingProfile.id,
+        email,
+      });
+      throw new Error(`profile reactivate failed: ${reactivateErr.message}`);
+    }
 
     const fname = (existingProfile.name?.split(/\s+/)[0] || firstName(customer)).trim();
     const loginUrl = `${siteUrl()}/login`;
@@ -364,7 +371,7 @@ async function handleOrderApproved({
     throw new Error(`createUser failed: ${createErr?.message ?? "unknown"}`);
   }
 
-  await supabase
+  const { error: profileUpdateErr } = await supabase
     .from("profiles")
     .update({
       name: name || null,
@@ -379,6 +386,13 @@ async function handleOrderApproved({
       updated_at: new Date().toISOString(),
     })
     .eq("id", created.user.id);
+  if (profileUpdateErr) {
+    console.error("[kiwify] falha update profile na criacao", profileUpdateErr, {
+      user_id: created.user.id,
+      email,
+    });
+    throw new Error(`profile update failed: ${profileUpdateErr.message}`);
+  }
 
   const fname = firstName(customer);
   const loginUrl = `${siteUrl()}/login`;
