@@ -442,6 +442,12 @@ export default async function AdminHome() {
         <SectionBlock label="✦ ações rápidas" title="o que rolar agora">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <ActionCard
+              href="/admin/financeiro"
+              emoji="📊"
+              title="Financeiro · MRR + Churn"
+              desc="MRR, ARR, churn, ticket médio, evolução mensal, projeção 30 dias."
+            />
+            <ActionCard
               href="/admin/grant"
               emoji="🎁"
               title="Liberar acesso (trial)"

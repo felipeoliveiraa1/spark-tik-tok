@@ -24,6 +24,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </div>
         <nav className="flex items-center gap-1 text-[12.5px] font-extrabold">
           <AdminNavLink href="/admin">Painel</AdminNavLink>
+          <AdminNavLink href="/admin/financeiro">Financeiro</AdminNavLink>
           <AdminNavLink href="/admin/news">News</AdminNavLink>
           <AdminNavLink href="/admin/educacao">Aulas</AdminNavLink>
           <AdminNavLink href="/admin/ao-vivo">Ao vivo</AdminNavLink>
