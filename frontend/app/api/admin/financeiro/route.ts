@@ -227,14 +227,24 @@ export async function GET() {
     if (e.event_type === "order_approved") bucket.new_customers += 1;
   }
 
-  // Cancelamentos por mes
+  // Cancelamentos por mes — dedupe por email pra nao contar 2x quando
+  // Kiwify dispara subscription_canceled + order_refunded em sequencia
+  // (acontece quando aluna cancela e pede reembolso no mesmo fluxo).
+  // Contamos UMA aluna por mes mesmo se tiver multiplos eventos de churn.
   const canceledEvents = events.filter(
     (e) => e.event_type === "subscription_canceled" || e.event_type === "order_refunded",
   );
+  const churnedByMonth = new Map<string, Set<string>>();
   for (const e of canceledEvents) {
+    if (!e.customer_email) continue;
     const key = monthKey(new Date(e.processed_at));
+    const set = churnedByMonth.get(key) ?? new Set<string>();
+    set.add(e.customer_email);
+    churnedByMonth.set(key, set);
+  }
+  for (const [key, emails] of churnedByMonth) {
     const bucket = monthsMap.get(key);
-    if (bucket) bucket.churned += 1;
+    if (bucket) bucket.churned = emails.size;
   }
 
   const monthlyHistory = Array.from(monthsMap.values());
@@ -284,13 +294,13 @@ export async function GET() {
     else statusBreakdown.inactive += 1;
   }
 
-  // ----- Churn 30d -----
-  // Churned = subscription_canceled + order_refunded nos ultimos 30d
-  // Customers in start of window = ativos + canceled (que ainda nao perderam acesso)
-  let churned30 = 0;
+  // ----- Churn 30d ----- (dedupe por email, ver comentario acima)
+  const churnedEmails30 = new Set<string>();
   for (const e of canceledEvents) {
-    if (new Date(e.processed_at) >= since30) churned30 += 1;
+    if (!e.customer_email) continue;
+    if (new Date(e.processed_at) >= since30) churnedEmails30.add(e.customer_email);
   }
+  const churned30 = churnedEmails30.size;
   const baseForChurn =
     accessProfileIds.size + (statusBreakdown.canceled ?? 0);
   const churn30Pct = baseForChurn > 0 ? (churned30 / baseForChurn) * 100 : 0;
