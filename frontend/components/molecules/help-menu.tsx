@@ -6,12 +6,14 @@ import {
   Sparkles,
   Bug,
   Lightbulb,
+  Smartphone,
   X,
   Send,
   Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useToast } from "@/components/molecules/dialog-provider";
+import { InstallPwaModal } from "@/components/molecules/install-pwa-modal";
 
 /**
  * HelpMenu — botao "?" flutuante que abre popover com 3 acoes:
@@ -40,6 +42,7 @@ type Props = {
 export function HelpMenu({ onReopenTour, className }: Props) {
   const [open, setOpen] = React.useState(false);
   const [feedbackType, setFeedbackType] = React.useState<FeedbackType | null>(null);
+  const [installOpen, setInstallOpen] = React.useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
 
   // Fecha popover ao clicar fora
@@ -69,6 +72,11 @@ export function HelpMenu({ onReopenTour, className }: Props) {
   const openFeedback = (type: FeedbackType) => {
     setOpen(false);
     setFeedbackType(type);
+  };
+
+  const openInstall = () => {
+    setOpen(false);
+    setInstallOpen(true);
   };
 
   return (
@@ -112,6 +120,13 @@ export function HelpMenu({ onReopenTour, className }: Props) {
                 />
               )}
               <MenuItem
+                emoji="📱"
+                Icon={Smartphone}
+                label="Instalar o app"
+                hint="Ícone na tela inicial · acesso 1 toque"
+                onClick={openInstall}
+              />
+              <MenuItem
                 emoji="🐛"
                 Icon={Bug}
                 label="Reportar bug"
@@ -133,6 +148,8 @@ export function HelpMenu({ onReopenTour, className }: Props) {
       {feedbackType && (
         <FeedbackModal type={feedbackType} onClose={() => setFeedbackType(null)} />
       )}
+
+      {installOpen && <InstallPwaModal onClose={() => setInstallOpen(false)} />}
 
       <style jsx>{`
         @keyframes help-pop-in {
