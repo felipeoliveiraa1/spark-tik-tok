@@ -391,7 +391,7 @@ function StatsSection({
   return (
     <section
       id="stats"
-      className={`relative ${desktop ? "py-24 px-12" : "py-16 px-5"}`}
+      className={`relative overflow-hidden ${desktop ? "py-24 px-12" : "py-16 px-5"}`}
     >
       <div className={desktop ? "max-w-[1200px] mx-auto" : ""}>
         <SectionReveal>
@@ -472,7 +472,7 @@ const COMMUNITY_WHATSAPP_URL = "https://chat.whatsapp.com/LnrukfQ4QawLB7y9XshBWh
 function CommunitySection({ desktop }: { desktop: boolean }) {
   return (
     <section
-      className={`relative ${desktop ? "py-20 px-12" : "py-12 px-5"}`}
+      className={`relative overflow-hidden ${desktop ? "py-20 px-12" : "py-12 px-5"}`}
     >
       <div className={desktop ? "max-w-[1200px] mx-auto" : ""}>
         <SectionReveal>
@@ -599,7 +599,7 @@ function ActionsSection({ desktop }: { desktop: boolean }) {
   return (
     <section
       id="acoes"
-      className={`relative ${desktop ? "py-24 px-12" : "py-16 px-5"}`}
+      className={`relative overflow-hidden ${desktop ? "py-24 px-12" : "py-16 px-5"}`}
     >
       <div className={desktop ? "max-w-[1200px] mx-auto" : ""}>
         <SectionReveal>
@@ -704,7 +704,7 @@ function RotinaSection({
   return (
     <section
       id="rotina"
-      className={`relative ${desktop ? "py-24 px-12" : "py-16 px-5"}`}
+      className={`relative overflow-hidden ${desktop ? "py-24 px-12" : "py-16 px-5"}`}
     >
       <div className={desktop ? "max-w-[1200px] mx-auto" : ""}>
         <SectionReveal>
@@ -822,7 +822,7 @@ function CatalogoSection({
     <section
       id="catalogo"
       data-tutorial-id="catalogo"
-      className={`relative ${desktop ? "py-24 px-12" : "py-16 px-5"}`}
+      className={`relative overflow-hidden ${desktop ? "py-24 px-12" : "py-16 px-5"}`}
     >
       <div className={desktop ? "max-w-[1200px] mx-auto" : ""}>
         <SectionReveal>
@@ -991,7 +991,7 @@ function NewsSection({ news, desktop }: { news: NewsRow[]; desktop: boolean }) {
 
   return (
     <section
-      className={`relative ${desktop ? "py-24 px-12" : "py-16 px-5"}`}
+      className={`relative overflow-hidden ${desktop ? "py-24 px-12" : "py-16 px-5"}`}
     >
       <div className={desktop ? "max-w-[1200px] mx-auto" : ""}>
         <SectionReveal>
@@ -1161,7 +1161,7 @@ function HomeBody({ desktop = false }: { desktop?: boolean }) {
 
   return (
     <div
-      className="flex-1 overflow-auto relative"
+      className="flex-1 overflow-y-auto overflow-x-hidden relative"
       style={{ paddingBottom: desktop ? 0 : "calc(env(safe-area-inset-bottom) + 88px)" }}
     >
       {/* Floating Nav de seções (aparece no scroll, sempre top) */}
