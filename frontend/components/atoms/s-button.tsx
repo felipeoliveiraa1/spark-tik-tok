@@ -1,9 +1,10 @@
 import * as React from "react";
+import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 type Size = "sm" | "md" | "lg";
 type Variant = "primary" | "dark" | "ghost" | "soft" | "quiet";
-type IconComp = React.ComponentType<{ size?: number; strokeWidth?: number }>;
+type IconComp = React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
 
 type Props = {
   children?: React.ReactNode;
@@ -15,6 +16,8 @@ type Props = {
   className?: string;
   type?: "button" | "submit" | "reset";
   disabled?: boolean;
+  /** Mostra spinner animado e impede multiplos cliques. */
+  loading?: boolean;
   onClick?: () => void;
 };
 
@@ -45,24 +48,41 @@ export function SButton({
   className,
   type = "button",
   disabled,
+  loading,
   onClick,
 }: Props) {
   const classes = cn(
     "inline-flex items-center justify-center rounded-full font-semibold tracking-[-0.01em] cursor-pointer",
     "transition-all duration-300 ease-premium",
     "hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]",
-    "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0",
+    "disabled:opacity-70 disabled:cursor-wait disabled:hover:translate-y-0",
     sizeClasses[size],
     variantClasses[variant],
     full && "w-full",
     className,
   );
 
+  const isBusy = !!loading;
+
   return (
-    <button type={type} className={classes} disabled={disabled} onClick={onClick}>
-      {Icon && <Icon size={iconSizes[size]} strokeWidth={1.7} />}
+    <button
+      type={type}
+      className={classes}
+      disabled={disabled || isBusy}
+      aria-busy={isBusy}
+      onClick={onClick}
+    >
+      {isBusy ? (
+        <Loader2
+          size={iconSizes[size]}
+          strokeWidth={2.2}
+          className="animate-spin"
+        />
+      ) : (
+        Icon && <Icon size={iconSizes[size]} strokeWidth={1.7} />
+      )}
       {children}
-      {IconRight && <IconRight size={iconSizes[size]} strokeWidth={1.7} />}
+      {!isBusy && IconRight && <IconRight size={iconSizes[size]} strokeWidth={1.7} />}
     </button>
   );
 }

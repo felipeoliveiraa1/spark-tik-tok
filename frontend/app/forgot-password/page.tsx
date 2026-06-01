@@ -79,10 +79,15 @@ function ForgotPasswordForm() {
         size="lg"
         full
         IconRight={ArrowRight}
-        disabled={pending}
+        loading={pending}
       >
-        {pending ? "Enviando..." : "Enviar link de recuperação"}
+        {pending ? "Enviando o email..." : "Enviar link de recuperação"}
       </SButton>
+      {pending && (
+        <div className="mt-3 text-center text-[12.5px] text-spark-ink-50 font-semibold">
+          ✦ pode levar uns segundinhos — não fecha a tela
+        </div>
+      )}
       <div className="mt-4 text-center">
         <Link
           href="/login"

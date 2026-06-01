@@ -9,7 +9,6 @@ import {
   Lock,
   AlertCircle,
   Sparkles,
-  Loader2,
 } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { SparkMark } from "@/components/atoms/spark-mark";
@@ -22,13 +21,6 @@ import { SInput } from "@/components/atoms/s-input";
 import { SButton } from "@/components/atoms/s-button";
 import { loginAction } from "@/lib/auth";
 
-// Wrapper de spinner compatível com IconComp do SButton
-function SpinnerIcon({ size, strokeWidth }: { size?: number; strokeWidth?: number }) {
-  return (
-    <Loader2 size={size} strokeWidth={strokeWidth} className="animate-spin" />
-  );
-}
-
 // Botão separado pra poder usar useFormStatus (precisa estar dentro do <form>).
 // React 19 trata server actions como transitions — useState nao reflete pending
 // confiavelmente. useFormStatus e o jeito oficial.
@@ -40,8 +32,8 @@ function SubmitButton({ desktop }: { desktop: boolean }) {
       variant="primary"
       size={desktop ? "lg" : "lg"}
       full
-      IconRight={pending ? SpinnerIcon : ArrowRight}
-      disabled={pending}
+      IconRight={ArrowRight}
+      loading={pending}
     >
       {pending ? "Entrando..." : "Entrar"}
     </SButton>
