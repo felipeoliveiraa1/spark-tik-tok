@@ -169,6 +169,15 @@ export async function GET() {
       .map((p) => p.email),
   );
 
+  // ----- Trial ativas (sub-conjunto das ativas, NAO sobrepoe pagantes) -----
+  const now = Date.now();
+  const trialCustomers = profiles.filter(
+    (p) =>
+      p.plan_status === "trial" &&
+      p.plan_active === true &&
+      (!p.plan_expires_at || new Date(p.plan_expires_at).getTime() > now),
+  ).length;
+
   // Pega ultimo evento pago de cada email ativo nos ultimos 60 dias
   // (window pra cobrir mensal + leve atraso).
   const recentPayments = new Map<string, { gross: number; net: number; date: string }>();
@@ -338,6 +347,7 @@ export async function GET() {
     arr: { gross: mrrGross * 12, net: mrrNet * 12 },
     active_customers: accessProfileIds.size,
     paying_customers: payingEmails.size,
+    trial_customers: trialCustomers,
     new_customers_30d: newCustomers30,
     churned_30d: churned30,
     churn_30d_pct: churn30Pct,

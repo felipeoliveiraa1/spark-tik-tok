@@ -45,6 +45,7 @@ type FinanceiroData = {
   arr: { gross: number; net: number };
   active_customers: number;
   paying_customers: number;
+  trial_customers: number;
   new_customers_30d: number;
   churned_30d: number;
   churn_30d_pct: number;
@@ -232,11 +233,31 @@ function FinanceiroContent({ data }: { data: FinanceiroData }) {
             emoji="📈"
           />
           <KpiCard
-            label="Assinantes ativas"
-            value={String(data.active_customers)}
-            sub={`${data.paying_customers} pagantes · +${data.new_customers_30d} nos últimos 30d`}
+            label="Pagantes"
+            value={String(data.paying_customers)}
+            sub={`+${data.new_customers_30d} novas nos últimos 30d · geram MRR`}
             tone="good"
             emoji="💕"
+          />
+          <KpiCard
+            label="Em trial"
+            value={String(data.trial_customers)}
+            sub={`Acesso temporário · não geram MRR ainda`}
+            tone="warn"
+            emoji="🎁"
+          />
+        </div>
+      </section>
+
+      {/* Churn em linha separada (era 4-col junto, agora dedica espaço) */}
+      <section>
+        <div className="text-eyebrow text-spark-brand mb-3">✦ retenção</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <KpiCard
+            label="Total com acesso"
+            value={String(data.active_customers)}
+            sub={`Pagantes + Trial + Cancelada-com-acesso`}
+            emoji="✨"
           />
           <KpiCard
             label="Churn 30d"
@@ -415,10 +436,12 @@ function FinanceiroContent({ data }: { data: FinanceiroData }) {
         (charge_amount Kiwify). <strong className="text-spark-ink-70">Após Kiwify</strong> = bruto
         descontando a taxa da plataforma (charge_amount - kiwify_fee), sem considerar split entre
         co-produtores.<br />
-        <strong className="text-spark-ink-70">Assinantes ativas</strong> = todas com acesso ao app
-        hoje (active + trial + late + canceled-com-data-futura, via hasActiveAccess).{" "}
-        <strong className="text-spark-ink-70">Pagantes</strong> = subset que gera MRR (só active +
-        late). MRR considera cobrança nos últimos 60 dias.
+        <strong className="text-spark-ink-70">Pagantes</strong> = active + late (geram MRR).{" "}
+        <strong className="text-spark-ink-70">Em trial</strong> = plan_status=trial e não expirou
+        (não gera MRR — vira pagante quando comprar via Kiwify).{" "}
+        <strong className="text-spark-ink-70">Total com acesso</strong> = pagantes + trial +
+        canceled-com-data-futura (via hasActiveAccess, mesma função do middleware). MRR considera
+        cobrança nos últimos 60 dias.
       </div>
     </div>
   );
