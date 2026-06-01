@@ -46,7 +46,7 @@ type KiwifyEventRow = {
   event_type: string;
   customer_email: string | null;
   order_id: string | null;
-  created_at: string;
+  processed_at: string;
   payload: {
     Commissions?: {
       charge_amount?: number;
@@ -107,9 +107,9 @@ export async function GET() {
   const since = daysAgo(395).toISOString();
   const { data: rawEvents, error: evErr } = await svc
     .from("kiwify_events")
-    .select("event_type, customer_email, order_id, created_at, payload")
-    .gte("created_at", since)
-    .order("created_at", { ascending: false });
+    .select("event_type, customer_email, order_id, processed_at, payload")
+    .gte("processed_at", since)
+    .order("processed_at", { ascending: false });
 
   if (evErr) {
     return NextResponse.json({ error: evErr.message }, { status: 500 });
@@ -156,12 +156,12 @@ export async function GET() {
   const recentSince = daysAgo(62);
   for (const e of paidEvents) {
     if (!e.customer_email || !activeEmails.has(e.customer_email)) continue;
-    if (new Date(e.created_at) < recentSince) continue;
+    if (new Date(e.processed_at) < recentSince) continue;
     if (!recentPayments.has(e.customer_email)) {
       recentPayments.set(e.customer_email, {
         gross: e.payload?.Commissions?.charge_amount ?? 0,
         net: e.payload?.Commissions?.my_commission ?? 0,
-        date: e.created_at,
+        date: e.processed_at,
       });
     }
   }
@@ -190,7 +190,7 @@ export async function GET() {
   }
 
   for (const e of paidEvents) {
-    const key = monthKey(new Date(e.created_at));
+    const key = monthKey(new Date(e.processed_at));
     const bucket = monthsMap.get(key);
     if (!bucket) continue;
     bucket.gross_cents += e.payload?.Commissions?.charge_amount ?? 0;
@@ -204,7 +204,7 @@ export async function GET() {
     (e) => e.event_type === "subscription_canceled" || e.event_type === "order_refunded",
   );
   for (const e of canceledEvents) {
-    const key = monthKey(new Date(e.created_at));
+    const key = monthKey(new Date(e.processed_at));
     const bucket = monthsMap.get(key);
     if (bucket) bucket.churned += 1;
   }
@@ -221,7 +221,7 @@ export async function GET() {
 
   let last30Tx = 0;
   for (const e of paidEvents) {
-    const d = new Date(e.created_at);
+    const d = new Date(e.processed_at);
     const gross = e.payload?.Commissions?.charge_amount ?? 0;
     const net = e.payload?.Commissions?.my_commission ?? 0;
     if (d >= startCurrent) {
@@ -261,7 +261,7 @@ export async function GET() {
   // Customers in start of window = ativos + canceled (que ainda nao perderam acesso)
   let churned30 = 0;
   for (const e of canceledEvents) {
-    if (new Date(e.created_at) >= since30) churned30 += 1;
+    if (new Date(e.processed_at) >= since30) churned30 += 1;
   }
   const baseForChurn =
     activeProfileIds.size + (statusBreakdown.canceled ?? 0);
@@ -271,12 +271,12 @@ export async function GET() {
   let newCustomers30 = 0;
   for (const e of paidEvents) {
     if (e.event_type !== "order_approved") continue;
-    if (new Date(e.created_at) >= since30) newCustomers30 += 1;
+    if (new Date(e.processed_at) >= since30) newCustomers30 += 1;
   }
 
   // ----- Recent transactions (20 mais recentes) -----
   const recentTransactions: Transaction[] = paidEvents.slice(0, 20).map((e) => ({
-    created_at: e.created_at,
+    created_at: e.processed_at,
     customer_email: e.customer_email,
     event_type: e.event_type,
     gross_cents: e.payload?.Commissions?.charge_amount ?? 0,
