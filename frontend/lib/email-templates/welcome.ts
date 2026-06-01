@@ -66,19 +66,28 @@ export function buildWelcomeEmail(input: WelcomeInput): { subject: string; text:
 
   const logoUrl = `${getSiteUrl()}/tts-logo-horizontal.png`;
 
+  // Cores hex (Outlook/Hotmail nao renderizam oklch nem linear-gradient).
+  // Outlook le SO a primeira propriedade `background`/`background-color`,
+  // por isso colocamos sempre solid antes do gradient.
+  const brandSolid = "#db2777"; // pink 600 (proximo do oklch(0.55 0.24 340))
+  const brandLight = "#fce7f3"; // pink 100
+  const brandBorder = "#fbcfe8"; // pink 200
+  const brandDeep = "#9d174d"; // pink 800
+  const brandGradient = `linear-gradient(135deg,#ec4899,${brandSolid})`;
+
   const html = `<!doctype html>
 <html lang="pt-BR">
-<body style="margin:0;padding:24px;background:oklch(0.96 0.04 350);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1d1d1f;line-height:1.5;">
+<body style="margin:0;padding:24px;background-color:${brandLight};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1d1d1f;line-height:1.5;">
   <div style="max-width:520px;margin:0 auto;background:#fff;border-radius:24px;overflow:hidden;box-shadow:0 8px 24px -10px rgba(20,20,40,0.12);">
     <div style="padding:28px 28px 8px;background:#fff;text-align:center;">
       <img src="${escapeHtml(logoUrl)}" alt="Método TTS" width="180" style="max-width:180px;height:auto;display:inline-block;" />
     </div>
-    <div style="padding:8px 28px 24px;background:linear-gradient(135deg,oklch(0.65 0.22 350),oklch(0.55 0.24 340));color:#fff;">
-      <div style="font-weight:600;opacity:0.85;font-size:13px;letter-spacing:0.04em;text-transform:uppercase;">Bem-vinda</div>
-      <h1 style="margin:6px 0 0;font-size:26px;font-weight:800;letter-spacing:-0.02em;">
+    <div style="padding:8px 28px 24px;background-color:${brandSolid};background:${brandGradient};color:#fff;">
+      <div style="font-weight:600;opacity:0.85;font-size:13px;letter-spacing:0.04em;text-transform:uppercase;color:#fff;">Bem-vinda</div>
+      <h1 style="margin:6px 0 0;font-size:26px;font-weight:800;letter-spacing:-0.02em;color:#fff;">
         Oi ${escapeHtml(input.firstName)} 💕
       </h1>
-      <p style="margin:10px 0 0;font-size:14px;opacity:0.92;">
+      <p style="margin:10px 0 0;font-size:14px;opacity:0.92;color:#fff;">
         Sua conta no <strong>Método TTS</strong> foi criada. Bora começar?
       </p>
     </div>
@@ -86,28 +95,50 @@ export function buildWelcomeEmail(input: WelcomeInput): { subject: string; text:
     <div style="padding:24px 28px;">
       ${
         isTrial
-          ? `<div style="background-color:#fef3c7;background:#fef3c7;border:1px solid #fcd34d;border-radius:12px;padding:14px 16px;margin:0 0 16px;font-size:13.5px;color:#78350f;">
+          ? `<div style="background-color:#fef3c7;border:1px solid #fcd34d;border-radius:12px;padding:14px 16px;margin:0 0 16px;font-size:13.5px;color:#78350f;">
         <div style="font-weight:700;margin-bottom:4px;">🎁 ${input.trialDays} dias grátis</div>
         Você ganhou ${input.trialDays} dias de acesso completo. Quando o teste acabar, é só assinar pela Kiwify pra continuar — seu histórico fica salvo.
       </div>`
           : ""
       }
-      <p style="margin:0 0 16px;font-size:14.5px;color:#3a3a3f;">
+
+      <!-- CTA principal — bulletproof button (renderiza em Outlook/spam) -->
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 12px;">
+        <tr>
+          <td align="center" style="padding:0;">
+            <!--[if mso]>
+            <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${escapeHtml(input.loginUrl)}" style="height:56px;v-text-anchor:middle;width:320px;" arcsize="50%" stroke="f" fillcolor="${brandSolid}">
+              <w:anchorlock/>
+              <center style="color:#ffffff;font-family:Arial,sans-serif;font-size:17px;font-weight:bold;">&#10024; Entrar no Método TTS</center>
+            </v:roundrect>
+            <![endif]-->
+            <!--[if !mso]><!-- -->
+            <a href="${escapeHtml(input.loginUrl)}" style="background-color:${brandSolid};background:${brandGradient};border:2px solid ${brandSolid};border-radius:999px;color:#ffffff !important;display:inline-block;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:17px;font-weight:800;line-height:1;padding:18px 32px;text-align:center;text-decoration:none !important;mso-hide:all;">
+              ✨ Entrar no Método TTS
+            </a>
+            <!--<![endif]-->
+          </td>
+        </tr>
+      </table>
+
+      <!-- Fallback: link em texto grande pra caso botao nao renderize -->
+      <div style="text-align:center;margin:0 0 24px;font-size:13px;color:#86868b;">
+        ou copia esse link no navegador:<br />
+        <a href="${escapeHtml(input.loginUrl)}" style="color:${brandDeep};font-weight:700;word-break:break-all;text-decoration:underline;">${escapeHtml(input.loginUrl)}</a>
+      </div>
+
+      <p style="margin:0 0 14px;font-size:14.5px;color:#3a3a3f;">
         Pra entrar pela primeira vez, usa essas credenciais:
       </p>
 
-      <div style="background:oklch(0.96 0.04 350);border:1px solid oklch(0.92 0.04 350);border-radius:14px;padding:14px 16px;margin:0 0 18px;">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:oklch(0.5 0.22 345);">Email</div>
-        <div style="font-size:14px;margin:4px 0 12px;color:#1d1d1f;font-family:'SF Mono',ui-monospace,monospace;">${escapeHtml(input.email)}</div>
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:oklch(0.5 0.22 345);">Senha temporária</div>
-        <div style="font-size:15px;font-weight:700;margin:4px 0 0;color:#1d1d1f;font-family:'SF Mono',ui-monospace,monospace;">${escapeHtml(input.temporaryPassword)}</div>
+      <div style="background-color:${brandLight};border:1px solid ${brandBorder};border-radius:14px;padding:14px 16px;margin:0 0 18px;">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:${brandDeep};">Email</div>
+        <div style="font-size:14px;margin:4px 0 12px;color:#1d1d1f;font-family:'SF Mono',ui-monospace,monospace;word-break:break-all;">${escapeHtml(input.email)}</div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:${brandDeep};">Senha temporária</div>
+        <div style="font-size:16px;font-weight:700;margin:4px 0 0;color:#1d1d1f;font-family:'SF Mono',ui-monospace,monospace;letter-spacing:0.02em;">${escapeHtml(input.temporaryPassword)}</div>
       </div>
 
-      <a href="${escapeHtml(input.loginUrl)}" style="display:block;width:100%;box-sizing:border-box;text-align:center;background:linear-gradient(135deg,oklch(0.65 0.22 350),oklch(0.55 0.24 340));color:#fff;text-decoration:none;font-weight:700;font-size:15px;padding:14px 20px;border-radius:999px;margin:0 0 18px;">
-        Entrar no Método TTS →
-      </a>
-
-      <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:12px 14px;font-size:13px;color:#9a3412;margin:0 0 16px;">
+      <div style="background-color:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:12px 14px;font-size:13px;color:#9a3412;margin:0 0 16px;">
         <strong>Importante:</strong> Na primeira vez que entrar, vamos te pedir pra criar uma senha nova — a temporária não funciona depois.
       </div>
 
