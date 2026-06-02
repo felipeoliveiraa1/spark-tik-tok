@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { TrendingUp, Check, X, Pencil } from "lucide-react";
+import { TrendingUp, Check, X, Pencil, Plus } from "lucide-react";
 import { useToast } from "@/components/molecules/dialog-provider";
 import { cn } from "@/lib/cn";
 
@@ -38,7 +38,9 @@ export function RevenueCard({ metaMensalBrl }: Props) {
   const [revenue, setRevenue] = React.useState<RevenueRow[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [editing, setEditing] = React.useState(false);
+  const [addingSale, setAddingSale] = React.useState(false);
   const [amount, setAmount] = React.useState<string>("");
+  const [saleAmount, setSaleAmount] = React.useState<string>("");
   const [saving, setSaving] = React.useState(false);
 
   React.useEffect(() => {
@@ -84,6 +86,39 @@ export function RevenueCard({ metaMensalBrl }: Props) {
         const updated = revenue.filter((r) => r.year_month !== ym);
         setRevenue([{ year_month: ym, amount_brl: num, notes: null }, ...updated]);
         setEditing(false);
+        router.refresh();
+      } else {
+        toast.error("Não consegui salvar");
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Soma rápida: pega o valor atual e adiciona a venda — evita a aluna
+  // ter que fazer conta de cabeça toda vez. Salva o novo total via mesmo
+  // endpoint POST /api/revenue (substitui o valor do mes).
+  const addSale = async () => {
+    const sale = Number(saleAmount.replace(",", "."));
+    if (Number.isNaN(sale) || sale <= 0) {
+      toast.error("Coloca um valor maior que zero");
+      return;
+    }
+    const newTotal = currentMonthAmount + sale;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/revenue", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ year_month: ym, amount_brl: newTotal }),
+      });
+      if (res.ok) {
+        toast.success(`+${fmtBRL(sale)} somado 💸`);
+        const updated = revenue.filter((r) => r.year_month !== ym);
+        setRevenue([{ year_month: ym, amount_brl: newTotal, notes: null }, ...updated]);
+        setAmount(String(newTotal));
+        setSaleAmount("");
+        setAddingSale(false);
         router.refresh();
       } else {
         toast.error("Não consegui salvar");
@@ -168,7 +203,7 @@ export function RevenueCard({ metaMensalBrl }: Props) {
       ) : (
         <div>
           <div
-            className="font-display lowercase tracking-tight text-spark-ink leading-none"
+            className="font-display lowercase tracking-tight text-spark-ink leading-none transition-all duration-500"
             style={{ fontSize: "clamp(2.5rem, 6vw, 3.5rem)" }}
           >
             {fmtBRL(currentMonthAmount)}
@@ -193,6 +228,77 @@ export function RevenueCard({ metaMensalBrl }: Props) {
             <p className="mt-2 text-[12px] text-spark-ink-50">
               Define uma meta mensal no &ldquo;Sobre mim&rdquo; pra ver progresso.
             </p>
+          )}
+
+          {/* CTA "+R$ vendeu agora" — soma rápida sem fazer conta de cabeça */}
+          {addingSale ? (
+            <div className="mt-5 p-3 rounded-spark-xl bg-brand-grad-soft border border-spark-brand/30">
+              <div className="text-[11px] font-extrabold text-spark-brand-deep uppercase tracking-widest mb-2">
+                💸 quanto você vendeu agora?
+              </div>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-spark-brand-deep font-extrabold text-[14px]">
+                    +R$
+                  </span>
+                  <input
+                    type="number"
+                    value={saleAmount}
+                    onChange={(e) => setSaleAmount(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") void addSale();
+                      if (e.key === "Escape") {
+                        setAddingSale(false);
+                        setSaleAmount("");
+                      }
+                    }}
+                    placeholder="0"
+                    min={0}
+                    step={10}
+                    inputMode="decimal"
+                    className="w-full pl-12 pr-3 py-2.5 rounded-full bg-white border-2 border-spark-brand/40 focus:border-spark-brand focus:ring-2 focus:ring-spark-brand/15 outline-none text-[16px] font-extrabold font-mono transition-all duration-200"
+                    autoFocus
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={addSale}
+                  disabled={saving || !saleAmount}
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full bg-brand-grad text-white text-[13px] font-extrabold shadow-lift-brand hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 ease-premium disabled:opacity-50 disabled:hover:translate-y-0"
+                >
+                  <Check size={13} strokeWidth={2.5} />
+                  {saving ? "..." : "Somar"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAddingSale(false);
+                    setSaleAmount("");
+                  }}
+                  aria-label="Cancelar"
+                  className="w-10 h-10 rounded-full text-spark-ink-50 hover:bg-spark-surface-sunken flex items-center justify-center"
+                >
+                  <X size={14} strokeWidth={2.5} />
+                </button>
+              </div>
+              {saleAmount && !Number.isNaN(Number(saleAmount)) && Number(saleAmount) > 0 && (
+                <div className="mt-2 text-[11.5px] text-spark-ink-70 font-semibold">
+                  Novo total ficará{" "}
+                  <strong className="text-spark-brand-deep font-mono">
+                    {fmtBRL(currentMonthAmount + Number(saleAmount))}
+                  </strong>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setAddingSale(true)}
+              className="mt-5 w-full inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-full bg-brand-grad text-white text-[13.5px] font-extrabold shadow-lift-brand hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 ease-premium"
+            >
+              <Plus size={14} strokeWidth={2.8} />
+              Vendeu agora? Soma aqui
+            </button>
           )}
         </div>
       )}
