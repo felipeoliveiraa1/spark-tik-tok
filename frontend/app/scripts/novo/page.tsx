@@ -18,6 +18,7 @@ import { Sticker } from "@/components/atoms/sticker";
 import { SectionReveal } from "@/components/atoms/section-reveal";
 import { CharacterReveal } from "@/components/atoms/character-reveal";
 import { useToast } from "@/components/molecules/dialog-provider";
+import { ColaRapidaButton } from "@/components/molecules/cola-rapida-button";
 import { cn } from "@/lib/cn";
 
 /**
@@ -314,6 +315,27 @@ function NovoScriptBody({ desktop = false }: { desktop?: boolean }) {
     setScripts((arr) => arr.filter((_, i) => i !== idx).map((s, i) => ({ ...s, n: i + 1 })));
   };
 
+  // Auto-preenche o form a partir do bloco ===ROTEIROS TTS===. Ignora
+  // bloco de produto se vier (aluna pode colar tudo do agente sem
+  // problema, parser pega so a parte que importa pra essa tela).
+  const applyParsed = (parsed: { product?: unknown; scripts?: { title: string; scripts: Array<{ style: string; hook: string; development: string; benefit: string; cta: string }> } }) => {
+    if (!parsed.scripts || parsed.scripts.scripts.length === 0) {
+      toast.error("Nenhum bloco de roteiros encontrado no texto colado.");
+      return;
+    }
+    const items: ScriptItem[] = parsed.scripts.scripts.map((s, i) => ({
+      n: i + 1,
+      style: s.style,
+      hook: s.hook,
+      development: s.development,
+      benefit: s.benefit,
+      cta: s.cta,
+    }));
+    setScripts(items);
+    if (parsed.scripts.title) setTitle(parsed.scripts.title);
+    toast.success(`✓ ${items.length} roteiro${items.length === 1 ? "" : "s"} preenchido${items.length === 1 ? "" : "s"} 💕`);
+  };
+
   const handleSubmit = async () => {
     for (const s of scripts) {
       if (!s.hook.trim() || !s.development.trim() || !s.benefit.trim() || !s.cta.trim()) {
@@ -363,6 +385,24 @@ function NovoScriptBody({ desktop = false }: { desktop?: boolean }) {
       {/* CONTEÚDO */}
       <section className={`relative ${desktop ? "px-12 py-8" : "px-5 py-6"}`}>
         <div className={desktop ? "max-w-[820px] mx-auto space-y-6" : "space-y-6"}>
+          {/* Cola rápida — atalho do agente */}
+          <SectionReveal direction="up">
+            <div className="rounded-spark-2xl bg-brand-grad-soft border-2 border-spark-brand/25 shadow-rest p-5 lg:p-6 flex items-center gap-4 flex-wrap">
+              <div className="flex-1 min-w-0">
+                <div className="text-eyebrow text-spark-brand-deep mb-1.5">
+                  ✦ atalho do agente
+                </div>
+                <div className="text-[14px] font-extrabold text-spark-ink tracking-tight leading-tight">
+                  Já tem os roteiros do GPT?
+                </div>
+                <div className="text-[12.5px] text-spark-ink-70 mt-1 leading-snug font-semibold">
+                  Cola tudo aqui que o app preenche os 5 blocos automaticamente.
+                </div>
+              </div>
+              <ColaRapidaButton mode="scripts" onParsed={applyParsed} />
+            </div>
+          </SectionReveal>
+
           {/* Meta */}
           <SectionReveal direction="up">
             <div className="rounded-spark-2xl bg-spark-surface border border-spark-hairline p-5 lg:p-6 shadow-rest space-y-4">

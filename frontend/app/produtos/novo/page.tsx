@@ -20,6 +20,8 @@ import { SparkleField } from "@/components/atoms/sparkle-field";
 import { Sticker } from "@/components/atoms/sticker";
 import { SectionReveal } from "@/components/atoms/section-reveal";
 import { useToast } from "@/components/molecules/dialog-provider";
+import { ColaRapidaButton } from "@/components/molecules/cola-rapida-button";
+import { type ParsedScripts, type ParseResult } from "@/lib/cola-rapida";
 import { cn } from "@/lib/cn";
 
 /**
@@ -217,6 +219,9 @@ function NovoProdutoForm({ desktop }: { desktop: boolean }) {
   const [uploadingImage, setUploadingImage] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  // Quando aluna cola tudo do agente, scripts vem junto e a gente cria
+  // depois que o produto for salvo (precisa do product_id).
+  const [pendingScripts, setPendingScripts] = React.useState<ParsedScripts | null>(null);
 
   // Seções colapsáveis pra reduzir cognição inicial. Defaults baseados
   // na fase do form (primeiras abertas, análise estratégica fechada).
@@ -273,6 +278,46 @@ function NovoProdutoForm({ desktop }: { desktop: boolean }) {
     });
   };
 
+  // Auto-preenche o form com o que o parser extraiu do texto colado
+  const applyParsed = (parsed: ParseResult) => {
+    let appliedAny = false;
+    if (parsed.product) {
+      setForm((prev) => ({
+        ...prev,
+        name: parsed.product!.name || prev.name,
+        category: parsed.product!.category || prev.category,
+        target_audience: parsed.product!.target_audience || prev.target_audience,
+        price_range: parsed.product!.price_range || prev.price_range,
+        seasonality: parsed.product!.seasonality || prev.seasonality,
+        // Arrays — substitui se vier preenchido, senao mantem o atual
+        pain_points: parsed.product!.pain_points.length ? parsed.product!.pain_points : prev.pain_points,
+        strengths: parsed.product!.strengths.length ? parsed.product!.strengths : prev.strengths,
+        competitors: parsed.product!.competitors.length ? parsed.product!.competitors : prev.competitors,
+        differentiators: parsed.product!.differentiators.length ? parsed.product!.differentiators : prev.differentiators,
+        objections: parsed.product!.objections.length ? parsed.product!.objections : prev.objections,
+        emotional_triggers: parsed.product!.emotional_triggers.length ? parsed.product!.emotional_triggers : prev.emotional_triggers,
+        usage_moments: parsed.product!.usage_moments.length ? parsed.product!.usage_moments : prev.usage_moments,
+        content_angles: parsed.product!.content_angles.length ? parsed.product!.content_angles : prev.content_angles,
+        hook_ideas: parsed.product!.hook_ideas.length ? parsed.product!.hook_ideas : prev.hook_ideas,
+      }));
+      // Abre todas as seções colapsáveis pra aluna conferir
+      setOpenSections({ photo: true, basics: true, strategy: true });
+      appliedAny = true;
+    }
+    if (parsed.scripts) {
+      setPendingScripts(parsed.scripts);
+      appliedAny = true;
+    }
+    if (appliedAny) {
+      const msg = parsed.product && parsed.scripts
+        ? `✓ Produto preenchido + ${parsed.scripts.scripts.length} roteiros prontos pra criar junto 💕`
+        : parsed.product
+          ? "✓ Ficha de produto auto-preenchida 💕"
+          : `✓ ${parsed.scripts!.scripts.length} roteiros prontos pra criar 💕`;
+      toast.success(msg);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!form.name.trim()) {
       toast.error("Pelo menos o nome do produto precisa estar preenchido 💕");
@@ -307,8 +352,43 @@ function NovoProdutoForm({ desktop }: { desktop: boolean }) {
         toast.error(data?.error ?? "Não consegui salvar agora.");
         return;
       }
-      toast.success("Produto salvo 💕");
-      router.push(`/produtos/${data.id}`);
+      const productId = data.id;
+
+      // Se a aluna colou junto um bloco de roteiros, cria agora vinculado
+      // ao produto recem-salvo.
+      let scriptsCreated = false;
+      if (pendingScripts) {
+        try {
+          const scriptsRes = await fetch("/api/scripts", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              product_id: productId,
+              title:
+                pendingScripts.title ||
+                `${pendingScripts.scripts.length} roteiros · ${form.name}`,
+              hooks: pendingScripts.scripts.map((s, i) => ({
+                n: i + 1,
+                style: s.style,
+                hook: s.hook,
+                development: s.development,
+                benefit: s.benefit,
+                cta: s.cta,
+              })),
+            }),
+          });
+          scriptsCreated = scriptsRes.ok;
+        } catch {
+          /* segue mesmo se scripts falharem — produto ja foi salvo */
+        }
+      }
+
+      toast.success(
+        scriptsCreated
+          ? `Produto salvo + ${pendingScripts!.scripts.length} roteiros criados 💕`
+          : "Produto salvo 💕",
+      );
+      router.push(`/produtos/${productId}`);
     } catch {
       toast.error("Não consegui salvar agora.");
     } finally {
@@ -363,6 +443,25 @@ function NovoProdutoForm({ desktop }: { desktop: boolean }) {
             <div className="text-[18px] font-extrabold text-spark-ink tracking-tight">
               {progressPct}%
             </div>
+          </div>
+        </SectionReveal>
+
+        {/* COLA RAPIDA — atalho do agente */}
+        <SectionReveal direction="up">
+          <div className="rounded-spark-2xl bg-brand-grad-soft border-2 border-spark-brand/25 shadow-rest p-5 lg:p-6 mb-4 flex items-center gap-4 flex-wrap">
+            <div className="flex-1 min-w-0">
+              <div className="text-eyebrow text-spark-brand-deep mb-1.5">
+                ✦ atalho do agente
+              </div>
+              <div className="text-[14px] font-extrabold text-spark-ink tracking-tight leading-tight">
+                Já tem a resposta do GPT?
+              </div>
+              <div className="text-[12.5px] text-spark-ink-70 mt-1 leading-snug font-semibold">
+                Cola tudo aqui e o app preenche os campos automaticamente —
+                inclusive os 5 roteiros se vierem juntos.
+              </div>
+            </div>
+            <ColaRapidaButton mode="produto" onParsed={applyParsed} />
           </div>
         </SectionReveal>
 
