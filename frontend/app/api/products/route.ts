@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase-server";
+import { trackEvent } from "@/lib/track";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -100,5 +101,12 @@ export async function POST(request: Request) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  void trackEvent(user.id, "product_create", {
+    product_id: data.id,
+    name: data.name,
+    category: body.category ?? null,
+  });
+
   return NextResponse.json({ ok: true, ...data });
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase-server";
+import { trackEvent } from "@/lib/track";
 // Data no fuso do Brasil — UTC fazia rotina concluida apos 21h BRT virar
 // "amanha" e travava o dia seguinte.
 import { todayBrazil as todayISO } from "@/lib/checkin-config";
@@ -67,6 +68,13 @@ export async function POST(request: Request) {
     .select("*")
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  void trackEvent(user.id, "routine_check", {
+    date,
+    habits_done: habitsDone,
+    habits_total: habitsTotal,
+    all_done: habitsTotal > 0 && habitsDone === habitsTotal,
+  });
 
   return NextResponse.json({ ok: true, completion: data });
 }

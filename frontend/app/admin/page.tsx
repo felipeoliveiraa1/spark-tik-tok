@@ -20,8 +20,16 @@ import {
   GraduationCap,
   Radio,
   Newspaper,
-  BarChart3,
   ArrowRight,
+  ShoppingBag,
+  LogIn,
+  Compass,
+  CalendarCheck,
+  Flame,
+  DollarSign,
+  Zap,
+  Activity,
+  UserX,
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -209,6 +217,281 @@ async function getStats() {
   };
 }
 
+// =================================================================
+// FUNIL DE ATIVACAO
+// =================================================================
+//
+// 6 stages do ciclo de vida da aluna, de cima pra baixo. Cada stage
+// conta usuarias UNICAS (nao acoes). Numeros sempre decrescem — onde
+// o numero cai mais, e onde elas "vazam" e a gente precisa olhar.
+//
+// 1. Comprou       — profile criado (Kiwify webhook + admin grant)
+// 2. Acessou       — logou pelo menos 1 vez (auth.users.last_sign_in_at)
+// 3. Completou tour — viu 'home' no tutorials_seen
+// 4. Bateu rotina   — pelo menos 1 daily_completion na historia
+// 5. Mantem rotina  — bateu rotina nos ultimos 7 dias
+// 6. Faturou        — pelo menos 1 monthly_revenue cadastrado
+
+type FunnelStage = {
+  key: string;
+  label: string;
+  description: string;
+  count: number;
+  icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
+};
+
+async function getFunnel(): Promise<{
+  stages: FunnelStage[];
+  totalNonAdmin: number;
+}> {
+  const supabase = getServiceClient();
+
+  // 1. Total de profiles (excluindo admins)
+  const { data: nonAdminProfiles } = await supabase
+    .from("profiles")
+    .select("id")
+    .or("role.is.null,role.neq.admin");
+  const nonAdminIds = new Set((nonAdminProfiles ?? []).map((p) => p.id as string));
+  const totalCadastros = nonAdminIds.size;
+
+  // 2. Acessaram pelo menos 1x — via auth.admin.listUsers paginado
+  // Funciona bem ate ~10k usuarias. Acima disso, melhor mover pra uma
+  // SQL function via RPC pra agregar do lado do banco.
+  let loggedInCount = 0;
+  try {
+    const PAGE_SIZE = 1000;
+    let page = 1;
+    while (true) {
+      const { data, error } = await supabase.auth.admin.listUsers({
+        page,
+        perPage: PAGE_SIZE,
+      });
+      if (error || !data?.users) break;
+      for (const u of data.users) {
+        if (u.last_sign_in_at && nonAdminIds.has(u.id)) {
+          loggedInCount++;
+        }
+      }
+      if (data.users.length < PAGE_SIZE) break;
+      page++;
+      if (page > 50) break; // safety: 50k usuarias ja eh demais pra esse loop
+    }
+  } catch {
+    loggedInCount = 0;
+  }
+
+  // 3. Completou tour da home — tutorials_seen contem 'home'
+  const { data: tourData } = await supabase
+    .from("profiles")
+    .select("id, tutorials_seen")
+    .or("role.is.null,role.neq.admin");
+  const completouTour = (tourData ?? []).filter(
+    (p) =>
+      Array.isArray(p.tutorials_seen) &&
+      (p.tutorials_seen as unknown[]).includes("home"),
+  ).length;
+
+  // 4. Bateu rotina ao menos 1x
+  const { data: anyCompletion } = await supabase
+    .from("daily_completions")
+    .select("user_id");
+  const bateuRotinaIds = new Set(
+    (anyCompletion ?? [])
+      .map((c) => c.user_id as string)
+      .filter((id) => nonAdminIds.has(id)),
+  );
+  const bateuRotina = bateuRotinaIds.size;
+
+  // 5. Mantem rotina nos ultimos 7 dias
+  const today = new Date();
+  const weekAgo = new Date(today);
+  weekAgo.setDate(weekAgo.getDate() - 6);
+  const dateFrom = weekAgo.toISOString().slice(0, 10);
+  const { data: recentCompletions } = await supabase
+    .from("daily_completions")
+    .select("user_id")
+    .gte("date", dateFrom);
+  const mantemRotinaIds = new Set(
+    (recentCompletions ?? [])
+      .map((c) => c.user_id as string)
+      .filter((id) => nonAdminIds.has(id)),
+  );
+  const mantemRotina = mantemRotinaIds.size;
+
+  // 6. Cadastrou faturamento (qualquer mes)
+  const { data: revenueRows } = await supabase
+    .from("monthly_revenue")
+    .select("user_id");
+  const faturouIds = new Set(
+    (revenueRows ?? [])
+      .map((r) => r.user_id as string)
+      .filter((id) => nonAdminIds.has(id)),
+  );
+  const faturou = faturouIds.size;
+
+  const stages: FunnelStage[] = [
+    {
+      key: "comprou",
+      label: "Comprou",
+      description: "Conta criada via Kiwify ou grant manual",
+      count: totalCadastros,
+      icon: ShoppingBag,
+    },
+    {
+      key: "acessou",
+      label: "Acessou o app",
+      description: "Fez login pelo menos uma vez",
+      count: loggedInCount,
+      icon: LogIn,
+    },
+    {
+      key: "tour",
+      label: "Completou o tour",
+      description: "Terminou o tour guiado da home",
+      count: completouTour,
+      icon: Compass,
+    },
+    {
+      key: "rotina_1x",
+      label: "Bateu primeira rotina",
+      description: "Marcou os 3 itens da rotina pelo menos 1 vez",
+      count: bateuRotina,
+      icon: CalendarCheck,
+    },
+    {
+      key: "rotina_7d",
+      label: "Mantém rotina (7d)",
+      description: "Bateu rotina pelo menos 1 vez na última semana",
+      count: mantemRotina,
+      icon: Flame,
+    },
+    {
+      key: "faturou",
+      label: "Cadastrou faturamento",
+      description: "Lançou faturamento em algum mês",
+      count: faturou,
+      icon: DollarSign,
+    },
+  ];
+
+  return { stages, totalNonAdmin: totalCadastros };
+}
+
+// =================================================================
+// ENGAJAMENTO — DAU, WAU, sumidas, eventos
+// =================================================================
+
+type Engagement = {
+  dau: number; // ativas hoje (last_seen_at >= hoje 00:00 BRT)
+  wau: number; // ativas nos ultimos 7 dias
+  mau: number; // ativas nos ultimos 30 dias
+  sumidas7d: number; // last_seen_at < 7 dias atras (e ja logou alguma vez)
+  sumidas30d: number; // last_seen_at < 30 dias atras
+  eventsToday: number;
+  eventsWeek: number;
+  topEvents: { event: string; count: number }[];
+};
+
+async function getEngagement(): Promise<Engagement> {
+  const supabase = getServiceClient();
+
+  const now = new Date();
+  // Hoje 00:00 em BRT (offset -3) — converte pra UTC pra comparar
+  const todayBRT = new Date(now);
+  todayBRT.setUTCHours(3, 0, 0, 0); // 00h BRT = 03h UTC
+  if (todayBRT.getTime() > now.getTime()) {
+    todayBRT.setUTCDate(todayBRT.getUTCDate() - 1);
+  }
+  const today = todayBRT.toISOString();
+  const week = new Date(now.getTime() - 7 * 86400_000).toISOString();
+  const month = new Date(now.getTime() - 30 * 86400_000).toISOString();
+
+  const [dau, wau, mau, sumidas7d, sumidas30d, eventsToday, eventsWeek, eventsByType] =
+    await Promise.all([
+      supabase
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .gte("last_seen_at", today)
+        .or("role.is.null,role.neq.admin"),
+      supabase
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .gte("last_seen_at", week)
+        .or("role.is.null,role.neq.admin"),
+      supabase
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .gte("last_seen_at", month)
+        .or("role.is.null,role.neq.admin"),
+      supabase
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .lt("last_seen_at", week)
+        .not("last_seen_at", "is", null)
+        .or("role.is.null,role.neq.admin"),
+      supabase
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .lt("last_seen_at", month)
+        .not("last_seen_at", "is", null)
+        .or("role.is.null,role.neq.admin"),
+      supabase
+        .from("user_events")
+        .select("id", { count: "exact", head: true })
+        .gte("created_at", today),
+      supabase
+        .from("user_events")
+        .select("id", { count: "exact", head: true })
+        .gte("created_at", week),
+      supabase
+        .from("user_events")
+        .select("event")
+        .gte("created_at", week)
+        .limit(2000),
+    ]);
+
+  // Agrega top eventos da semana
+  const eventCounts = new Map<string, number>();
+  for (const row of (eventsByType.data ?? []) as { event: string }[]) {
+    eventCounts.set(row.event, (eventCounts.get(row.event) ?? 0) + 1);
+  }
+  const topEvents = Array.from(eventCounts.entries())
+    .map(([event, count]) => ({ event, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 6);
+
+  return {
+    dau: dau.count ?? 0,
+    wau: wau.count ?? 0,
+    mau: mau.count ?? 0,
+    sumidas7d: sumidas7d.count ?? 0,
+    sumidas30d: sumidas30d.count ?? 0,
+    eventsToday: eventsToday.count ?? 0,
+    eventsWeek: eventsWeek.count ?? 0,
+    topEvents,
+  };
+}
+
+// Mapa pra label legivel + icone por evento conhecido. Eventos novos
+// que nao estao no mapa caem num default (Zap + nome cru).
+const EVENT_LABELS: Record<string, string> = {
+  login: "Login",
+  routine_check: "Bateu rotina",
+  product_create: "Criou produto",
+  product_save_from_text: "Salvou produto (cola)",
+  script_generate: "Gerou roteiro",
+  script_save_from_text: "Salvou roteiro (cola)",
+  lesson_view: "Viu aula",
+  lesson_complete: "Concluiu aula",
+  live_join: "Entrou em live",
+  cola_rapida_use: "Usou cola rápida",
+  revenue_save: "Salvou faturamento",
+  install_pwa: "Instalou PWA",
+  tour_complete: "Completou tour",
+  whatsapp_send: "Recebeu WhatsApp",
+  feedback_submit: "Enviou feedback",
+};
+
 function fmtRelativeShort(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
   const mins = Math.round(ms / 60_000);
@@ -235,7 +518,7 @@ const LEAD_STATUS: Record<LeadPreview["status"], { color: string; label: string 
 };
 
 export default async function AdminHome() {
-  const s = await getStats();
+  const [s, funnel, eng] = await Promise.all([getStats(), getFunnel(), getEngagement()]);
   const dateStr = new Intl.DateTimeFormat("pt-BR", {
     weekday: "long",
     day: "2-digit",
@@ -277,6 +560,65 @@ export default async function AdminHome() {
           <Kpi label="Inativas" value={s.alunasInativas} icon={PauseCircle} />
         </div>
       </Section>
+
+      {/* Engajamento — DAU/WAU/MAU + sumidas */}
+      <Section title="Engajamento" subtitle="quem está usando agora">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
+          <Kpi label="Ativas hoje" value={eng.dau} icon={Zap} tone="brand" />
+          <Kpi label="Ativas 7d" value={eng.wau} icon={Flame} tone="good" />
+          <Kpi label="Ativas 30d" value={eng.mau} icon={Activity} />
+          <Kpi
+            label="Sumidas > 7d"
+            value={eng.sumidas7d}
+            icon={UserX}
+            tone={eng.sumidas7d > 0 ? "warn" : undefined}
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Kpi label="Eventos hoje" value={eng.eventsToday} icon={Activity} />
+          <Kpi label="Eventos 7d" value={eng.eventsWeek} icon={Activity} />
+        </div>
+      </Section>
+
+      {/* Funil de ativacao */}
+      <Section
+        title="Funil de ativação"
+        subtitle="do cadastro ao primeiro faturamento"
+      >
+        <Funnel stages={funnel.stages} />
+      </Section>
+
+      {/* Eventos mais comuns na semana */}
+      {eng.topEvents.length > 0 && (
+        <Section title="Top ações da semana" subtitle="o que as alunas fizeram nos últimos 7 dias">
+          <div className="rounded-spark-2xl bg-spark-surface border border-spark-hairline shadow-rest overflow-hidden">
+            <ul className="divide-y divide-spark-hairline">
+              {eng.topEvents.map((e) => {
+                const max = eng.topEvents[0]?.count ?? 1;
+                const pct = Math.max(4, Math.round((e.count / max) * 100));
+                return (
+                  <li key={e.event} className="px-5 py-3.5">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[13px] font-extrabold text-spark-ink tracking-tight">
+                        {EVENT_LABELS[e.event] ?? e.event}
+                      </span>
+                      <span className="text-[12px] font-mono font-extrabold text-spark-ink-70">
+                        {e.count}
+                      </span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-spark-surface-sunken overflow-hidden">
+                      <div
+                        className="h-full bg-brand-grad transition-all duration-700 ease-premium"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </Section>
+      )}
 
       {/* KPIs Produção + Catálogo lado a lado */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
@@ -386,47 +728,90 @@ export default async function AdminHome() {
         />
       </Section>
 
-      {/* Atalhos */}
-      <Section title="Atalhos" subtitle="acesso rápido às ferramentas">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          <ShortcutCard
-            href="/admin/financeiro"
-            icon={BarChart3}
-            title="Financeiro"
-            desc="MRR, ARR, churn, ticket médio e projeção 30 dias."
-          />
-          <ShortcutCard
-            href="/admin/grant"
-            icon={Gift}
-            title="Liberar acesso"
-            desc="Criar contas em lote com N dias gratuitos. Email automático."
-          />
-          <ShortcutCard
-            href="/admin/educacao"
-            icon={GraduationCap}
-            title="Gerenciar trilha"
-            desc="Módulos e aulas (vídeo, conteúdo rich, checklist)."
-          />
-          <ShortcutCard
-            href="/admin/news"
-            icon={Newspaper}
-            title="Gerenciar news"
-            desc="Criar, editar e despublicar artigos do jornal."
-          />
-          <ShortcutCard
-            href="/admin/ao-vivo"
-            icon={Radio}
-            title="Agendar lives"
-            desc="Encontros ao vivo via YouTube. Replay automático."
-          />
-          <ShortcutCard
-            href="/admin/feedback"
-            icon={Bug}
-            title="Triagem de feedback"
-            desc="Bugs e sugestões reportadas pelas alunas."
-          />
-        </div>
-      </Section>
+    </div>
+  );
+}
+
+// =================================================================
+// Funnel — barras decrescentes + taxa de conversao stage-a-stage
+// =================================================================
+
+function Funnel({ stages }: { stages: FunnelStage[] }) {
+  const max = stages[0]?.count ?? 0;
+
+  return (
+    <div className="rounded-spark-2xl bg-spark-surface border border-spark-hairline shadow-rest p-5 lg:p-6">
+      <ul className="space-y-3">
+        {stages.map((stage, i) => {
+          const Icon = stage.icon;
+          const pct = max > 0 ? Math.round((stage.count / max) * 100) : 0;
+          const prev = i > 0 ? stages[i - 1] : null;
+          const stepConversion =
+            prev && prev.count > 0 ? Math.round((stage.count / prev.count) * 100) : null;
+          const isFirst = i === 0;
+          const drop = stepConversion !== null && stepConversion < 60;
+
+          return (
+            <li key={stage.key}>
+              <div className="flex items-center gap-4">
+                {/* Numero do stage */}
+                <div className="shrink-0 w-7 text-center">
+                  <span className="text-[11px] font-mono font-extrabold text-spark-ink-35">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                </div>
+
+                {/* Conteudo do stage */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-3 mb-1.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Icon size={14} strokeWidth={2.2} className="text-spark-ink-50 shrink-0" />
+                      <span className="text-[13.5px] font-extrabold text-spark-ink tracking-tight truncate">
+                        {stage.label}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-[16px] font-mono font-extrabold text-spark-ink">
+                        {stage.count}
+                      </span>
+                      {!isFirst && (
+                        <span
+                          className={`text-[10.5px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                            drop
+                              ? "bg-warn/10 text-warn"
+                              : "bg-spark-surface-sunken text-spark-ink-50"
+                          }`}
+                        >
+                          {stepConversion}%
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="h-2 rounded-full bg-spark-surface-sunken overflow-hidden">
+                    <div
+                      className="h-full bg-brand-grad transition-all duration-700 ease-premium"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  <div className="mt-1 flex items-center justify-between gap-2">
+                    <p className="text-[11px] text-spark-ink-50 font-semibold truncate">
+                      {stage.description}
+                    </p>
+                    <span className="text-[10.5px] font-mono text-spark-ink-35 shrink-0">
+                      {pct}% do topo
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+      <div className="mt-5 pt-4 border-t border-spark-hairline text-[11px] text-spark-ink-50 font-semibold">
+        % ao lado do número = taxa de conversão entre stages.{" "}
+        <span className="text-warn font-extrabold">Vermelho</span> = caiu mais que 40% nesse stage —
+        provavel ponto de atrito.
+      </div>
     </div>
   );
 }
@@ -636,37 +1021,3 @@ function ListPanel({
   );
 }
 
-function ShortcutCard({
-  href,
-  icon: Icon,
-  title,
-  desc,
-}: {
-  href: string;
-  icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
-  title: string;
-  desc: string;
-}) {
-  return (
-    <Link
-      href={href}
-      prefetch
-      className="group rounded-spark-2xl bg-spark-surface border border-spark-hairline p-5 hover:border-spark-brand/40 hover:bg-spark-brand-soft/20 transition-all duration-300 ease-premium hover:-translate-y-0.5 hover:shadow-lift shadow-rest block"
-    >
-      <div className="flex items-start justify-between">
-        <div className="w-10 h-10 rounded-spark-lg bg-spark-surface-sunken text-spark-ink-70 group-hover:bg-brand-grad group-hover:text-white flex items-center justify-center transition-all duration-300">
-          <Icon size={18} strokeWidth={2.2} />
-        </div>
-        <ArrowRight
-          size={14}
-          strokeWidth={2.4}
-          className="text-spark-ink-35 group-hover:text-spark-brand-deep group-hover:translate-x-0.5 transition-all duration-300"
-        />
-      </div>
-      <div className="mt-4 text-[14.5px] font-extrabold tracking-tight text-spark-ink">
-        {title}
-      </div>
-      <p className="text-[12px] text-spark-ink-50 mt-1 leading-snug">{desc}</p>
-    </Link>
-  );
-}

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase-server";
+import { trackEvent } from "@/lib/track";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -60,5 +61,13 @@ export async function POST(request: Request) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  void trackEvent(user.id, "script_generate", {
+    script_id: data.id,
+    product_id: body.product_id ?? null,
+    hooks_count: Array.isArray(body.hooks) ? body.hooks.length : 0,
+    model: body.model ?? null,
+  });
+
   return NextResponse.json(data);
 }

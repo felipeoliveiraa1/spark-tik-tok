@@ -6,6 +6,7 @@ import { VideoModalProvider } from "@/components/molecules/video-modal";
 import { DialogProvider } from "@/components/molecules/dialog-provider";
 import { PlanAlert } from "@/components/molecules/plan-alert";
 import { PwaPromptCapture } from "@/components/atoms/pwa-prompt-capture";
+import { Heartbeat } from "@/components/heartbeat";
 
 /**
  * Cabinet Grotesk Variable — sans-serif moderno usado em body/UI.
@@ -94,6 +95,7 @@ export default function RootLayout({
     <html lang="pt-BR" className={`${cabinet.variable} ${tanker.variable} ${jetbrains.variable} h-full antialiased`}>
       <body className="min-h-full bg-spark-bg text-spark-ink font-sans">
         <PwaPromptCapture />
+        <Heartbeat />
         <DialogProvider>
           <PlanAlert />
           <VideoModalProvider>{children}</VideoModalProvider>
