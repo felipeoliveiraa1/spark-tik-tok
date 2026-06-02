@@ -121,6 +121,13 @@ export function RevenueCard({ metaMensalBrl }: Props) {
         )}
       </div>
 
+      {/* Explicação do que é e como funciona */}
+      <p className="text-[12px] text-spark-ink-70 leading-snug font-semibold mb-3.5">
+        Quanto você faturou no TikTok Shop <strong>nesse mês</strong>. Atualiza
+        sempre que quiser — vai entrando aos pouquinhos conforme as vendas
+        acumulam. No próximo mês vira histórico e abre o novo zerado.
+      </p>
+
       {editing ? (
         <div className="space-y-3">
           <div className="relative">

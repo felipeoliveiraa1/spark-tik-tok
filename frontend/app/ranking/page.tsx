@@ -416,6 +416,7 @@ function RankingBody({
   onReopenTour: () => void;
 }) {
   const [period, setPeriod] = React.useState<Period>("month");
+  const [helpOpen, setHelpOpen] = React.useState(false);
   const { data, loading } = useRanking(period);
 
   const top3 = (data?.ranking ?? []).slice(0, 3);
@@ -508,19 +509,22 @@ function RankingBody({
             </div>
           </SectionReveal>
 
-          {/* Stats globais */}
+          {/* Stats globais + botão Como funciona */}
           {data && data.total > 0 && (
             <SectionReveal direction="up" delay={500}>
-              <div className="mt-7 flex items-center gap-3 text-[12px] text-spark-ink-70 font-extrabold uppercase tracking-wider">
-                <span className="inline-flex items-center gap-1.5">
+              <div className="mt-7 flex items-center gap-3 flex-wrap">
+                <span className="inline-flex items-center gap-1.5 text-[12px] text-spark-ink-70 font-extrabold uppercase tracking-wider">
                   <Sparkles size={11} strokeWidth={2.5} />
                   {data.total} {data.total === 1 ? "criadora" : "criadoras"}
                 </span>
-                <span>·</span>
-                <span className="inline-flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setHelpOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-spark-ink text-white text-[11px] font-extrabold uppercase tracking-widest shadow-rest hover:-translate-y-0.5 transition-all duration-300 ease-premium"
+                >
                   <TrendingUp size={11} strokeWidth={2.5} />
-                  Score = 60% consistência + 40% faturamento
-                </span>
+                  Como funciona o score?
+                </button>
               </div>
             </SectionReveal>
           )}
@@ -575,6 +579,179 @@ function RankingBody({
           )}
         </div>
       </section>
+
+      {helpOpen && <ScoreHelpModal onClose={() => setHelpOpen(false)} />}
+    </div>
+  );
+}
+
+// =================================================================
+// SCORE HELP MODAL — explica como funciona pra quem ta confuso
+// =================================================================
+
+function ScoreHelpModal({ onClose }: { onClose: () => void }) {
+  React.useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Como funciona o score"
+      className="fixed inset-0 z-[210] flex items-end sm:items-center justify-center p-0 sm:p-4"
+      style={{ background: "rgba(20, 20, 40, 0.55)" }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div
+        className="w-full sm:max-w-[560px] bg-spark-surface rounded-t-spark-2xl sm:rounded-spark-2xl border-2 border-spark-brand/20 shadow-hero overflow-hidden flex flex-col max-h-[92dvh]"
+        style={{ animation: "score-up 280ms cubic-bezier(0.2, 0.7, 0.2, 1) both" }}
+      >
+        <div className="flex items-center justify-between px-5 py-4 border-b border-spark-hairline">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-brand-grad-soft flex items-center justify-center text-spark-brand-deep">
+              <TrendingUp size={18} strokeWidth={2.4} />
+            </div>
+            <div>
+              <div className="text-eyebrow text-spark-brand">✦ como funciona</div>
+              <h2 className="text-[15px] font-extrabold text-spark-ink tracking-tight leading-none mt-1">
+                O score do ranking
+              </h2>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Fechar"
+            className="w-9 h-9 rounded-full text-spark-ink-50 hover:text-spark-ink hover:bg-spark-surface-sunken flex items-center justify-center transition-colors"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
+          {/* Fórmula visual */}
+          <div className="rounded-spark-2xl bg-brand-grad-soft border border-spark-brand/20 p-5 text-center">
+            <div className="text-eyebrow text-spark-brand-deep mb-3">a fórmula</div>
+            <div className="flex items-center justify-center gap-2 font-display text-spark-ink leading-none flex-wrap">
+              <span className="text-[28px]">score</span>
+              <span className="text-[20px] text-spark-ink-50">=</span>
+              <span className="px-3 py-1.5 rounded-spark-xl bg-spark-ink text-white text-[14px]">
+                60% consistência
+              </span>
+              <span className="text-[20px] text-spark-ink-50">+</span>
+              <span className="px-3 py-1.5 rounded-spark-xl bg-spark-brand text-white text-[14px]">
+                40% faturamento
+              </span>
+            </div>
+            <div className="mt-3 text-[11px] text-spark-ink-70 font-mono">
+              0 a 100 pontos
+            </div>
+          </div>
+
+          {/* Consistência */}
+          <div>
+            <div className="text-eyebrow text-spark-brand mb-2.5">
+              60% · consistência (o que pesa mais)
+            </div>
+            <p className="text-[13.5px] text-spark-ink-70 leading-relaxed font-semibold">
+              É o quanto você bateu sua <strong>rotina diária</strong> no período do
+              ranking. Cada dia em que você abre a rotina e clica em "Concluir dia"
+              conta como 1 ponto na sua consistência.
+            </p>
+            <ul className="mt-3 space-y-1.5 text-[12.5px] text-spark-ink-70 font-semibold">
+              <li className="flex items-start gap-2">
+                <span className="text-spark-brand-deep mt-0.5">✓</span>
+                <span>30 dias com rotina batida no mês = consistência 100% = <strong>60 pontos</strong></span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-spark-brand-deep mt-0.5">✓</span>
+                <span>15 dias batidos = 50% = <strong>30 pontos</strong></span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-spark-ink-50 mt-0.5">✗</span>
+                <span>0 dias batidos = <strong>0 pontos</strong></span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Faturamento */}
+          <div>
+            <div className="text-eyebrow text-spark-brand mb-2.5">
+              40% · faturamento
+            </div>
+            <p className="text-[13.5px] text-spark-ink-70 leading-relaxed font-semibold">
+              Quanto você faturou no TikTok Shop no período. É <strong>relativo ao grupo</strong> —
+              se a top do ranking faturou R$10 mil e você faturou R$5 mil, ganha
+              50% dos 40 pontos. Cadastra na sua{" "}
+              <strong>Conta → Faturamento</strong>, atualiza durante o mês.
+            </p>
+            <div className="mt-3 rounded-spark-xl bg-spark-surface-sunken/60 border border-spark-hairline px-4 py-3 text-[12px] text-spark-ink-70 leading-relaxed font-semibold">
+              💡 Como o faturamento é relativo, alguém pode ter faturado pouco mas
+              ficar bem no ranking se mantém a consistência alta. E vice-versa: faturar
+              muito não basta se você não bate a rotina.
+            </div>
+          </div>
+
+          {/* Períodos */}
+          <div>
+            <div className="text-eyebrow text-spark-brand mb-2.5">
+              os 3 períodos
+            </div>
+            <ul className="space-y-2 text-[12.5px] text-spark-ink-70 font-semibold">
+              <li>
+                <strong className="text-spark-ink">Semana</strong> — últimos 7 dias
+                (movimento rápido)
+              </li>
+              <li>
+                <strong className="text-spark-ink">Mês</strong> — mês atual (padrão)
+              </li>
+              <li>
+                <strong className="text-spark-ink">Total</strong> — últimos 12 meses
+                (quem é constante de verdade)
+              </li>
+            </ul>
+          </div>
+
+          {/* Dicas */}
+          <div className="rounded-spark-xl bg-brand-grad-soft border border-spark-brand/20 px-4 py-3.5 text-[12.5px] text-spark-ink leading-relaxed font-semibold">
+            <div className="font-extrabold text-spark-brand-deep mb-1">
+              ✦ pra subir rápido
+            </div>
+            Bate a rotina <strong>todo dia</strong>. Mesmo dias que você só fez
+            o mínimo, marca e conclui. A consistência diária é o que mais pesa
+            — em 2 semanas batendo todo dia você já passa quem só faturou 💕
+          </div>
+        </div>
+
+        <div className="px-5 py-4 border-t border-spark-hairline bg-spark-surface-sunken/40 flex justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-brand-grad text-white text-[13px] font-extrabold shadow-lift-brand hover:-translate-y-0.5 transition-all duration-300 ease-premium"
+          >
+            Entendi
+          </button>
+        </div>
+
+        <style jsx>{`
+          @keyframes score-up {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+        `}</style>
+      </div>
     </div>
   );
 }
