@@ -882,7 +882,7 @@ function Funnel({ stages }: { stages: FunnelStage[] }) {
                         <span
                           className={`text-[10px] font-extrabold uppercase tracking-wider px-1.5 py-0.5 rounded-full ${
                             drop
-                              ? "bg-warn/10 text-warn"
+                              ? "bg-bad/10 text-bad"
                               : "bg-spark-surface-sunken text-spark-ink-50"
                           }`}
                         >
@@ -909,7 +909,7 @@ function Funnel({ stages }: { stages: FunnelStage[] }) {
       <div className="mt-5 pt-4 border-t border-spark-hairline text-[11px] text-spark-ink-50 font-semibold">
         Cada faixa do funil estreita conforme as alunas avançam. % ao lado do número = taxa
         de conversão entre stages.{" "}
-        <span className="text-warn font-extrabold">Vermelho</span> = caiu mais que 40% nesse
+        <span className="text-bad font-extrabold">Vermelho</span> = caiu mais que 40% nesse
         stage — ponto de atrito.
       </div>
     </div>
