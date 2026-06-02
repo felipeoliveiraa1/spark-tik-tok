@@ -25,6 +25,10 @@ import { cn } from "@/lib/cn";
 import { TutorialOverlay } from "@/components/molecules/tutorial-overlay";
 import { HelpMenu } from "@/components/molecules/help-menu";
 import { type TutorialStep } from "@/lib/tutorial";
+// Fuso do Brasil — toISOString().slice(0,10) usa UTC e fazia rotina
+// completada apos 21h BRT virar "amanha" no servidor, daí o dia
+// seguinte aparecia ja-trancado quando a aluna abria o app.
+import { todayBrazil as todayISO } from "@/lib/checkin-config";
 
 // =================================================================
 // TYPES
@@ -56,10 +60,6 @@ const CATEGORY_LABELS: Record<HabitCategory, { label: string; emoji: string }> =
   resultado: { label: "Resultado", emoji: "📈" },
   custom: { label: "Meus", emoji: "✨" },
 };
-
-function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 function fmtDateBR(iso: string): string {
   return new Date(`${iso}T12:00:00`).toLocaleDateString("pt-BR", {

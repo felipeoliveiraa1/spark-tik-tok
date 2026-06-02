@@ -3,6 +3,8 @@ import { getSupabaseServer } from "@/lib/supabase-server";
 import {
   calcAdherence,
   isActiveCheckin,
+  subtractDaysBR,
+  todayBrazil,
   type CheckinRow,
 } from "@/lib/checkin-config";
 
@@ -21,43 +23,46 @@ function parseDate(iso: string): Date {
   return new Date(iso + "T00:00:00Z");
 }
 
-function toIso(d: Date): string {
-  return d.toISOString().slice(0, 10);
+// Fuso BR — UTC fazia janelas comecarem/terminarem no dia errado pra
+// alunas que faziam check-in apos 21h BRT.
+function toIso(_d: Date): string {
+  // Mantido pra compat — mas todas as janelas usam subtractDaysBR a
+  // partir de todayBrazil() que ja vem em BR.
+  return _d.toISOString().slice(0, 10);
 }
 
 function periodWindow(period: Period): { from: string; to: string; prevFrom: string; prevTo: string } {
-  const today = new Date();
-  const to = toIso(today);
+  const to = todayBrazil();
 
   if (period === "7d") {
-    const from = new Date(today);
-    from.setDate(from.getDate() - 6); // 7 dias inclusive hoje
-    const prevTo = new Date(from);
-    prevTo.setDate(prevTo.getDate() - 1);
-    const prevFrom = new Date(prevTo);
-    prevFrom.setDate(prevFrom.getDate() - 6);
-    return { from: toIso(from), to, prevFrom: toIso(prevFrom), prevTo: toIso(prevTo) };
+    const from = subtractDaysBR(to, 6);
+    const prevTo = subtractDaysBR(from, 1);
+    const prevFrom = subtractDaysBR(prevTo, 6);
+    return { from, to, prevFrom, prevTo };
   }
 
   if (period === "30d") {
-    const from = new Date(today);
-    from.setDate(from.getDate() - 29);
-    const prevTo = new Date(from);
-    prevTo.setDate(prevTo.getDate() - 1);
-    const prevFrom = new Date(prevTo);
-    prevFrom.setDate(prevFrom.getDate() - 29);
-    return { from: toIso(from), to, prevFrom: toIso(prevFrom), prevTo: toIso(prevTo) };
+    const from = subtractDaysBR(to, 29);
+    const prevTo = subtractDaysBR(from, 1);
+    const prevFrom = subtractDaysBR(prevTo, 29);
+    return { from, to, prevFrom, prevTo };
   }
 
-  // month — mês corrente
-  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-  const prevMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
-  const prevMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+  // month — mês corrente (em BR). Derivamos do "to" pra evitar dependencia
+  // de Date local do servidor.
+  const [y, m] = to.split("-").map(Number);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const monthStart = `${y}-${pad(m)}-01`;
+  // Ultimo dia do mes anterior + primeiro dia do mes anterior
+  const prevYear = m === 1 ? y - 1 : y;
+  const prevMonth = m === 1 ? 12 : m - 1;
+  const prevMonthStart = `${prevYear}-${pad(prevMonth)}-01`;
+  const prevMonthEnd = subtractDaysBR(monthStart, 1);
   return {
-    from: toIso(monthStart),
+    from: monthStart,
     to,
-    prevFrom: toIso(prevMonthStart),
-    prevTo: toIso(prevMonthEnd),
+    prevFrom: prevMonthStart,
+    prevTo: prevMonthEnd,
   };
 }
 

@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase-server";
+// Data no fuso do Brasil — UTC fazia rotina concluida apos 21h BRT virar
+// "amanha" e travava o dia seguinte.
+import { todayBrazil as todayISO } from "@/lib/checkin-config";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,10 +16,6 @@ export const dynamic = "force-dynamic";
  * DELETE /api/rotina/checkin/complete?date=YYYY-MM-DD
  * Destranca o dia (caso aluna se arrependa) — opcional.
  */
-
-function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 export async function POST(request: Request) {
   const supabase = await getSupabaseServer();

@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase-server";
+// Data no fuso do Brasil — toISOString().slice(0,10) usa UTC e quebra
+// pra alunas que fazem check-in apos 21h BRT (vira "amanha" em UTC).
+import { todayBrazil as todayISO } from "@/lib/checkin-config";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,10 +16,6 @@ export const dynamic = "force-dynamic";
  *   Body: { habit_id, done, date? }
  *   Toggle de marcação. Bloqueado se já tem completion no dia.
  */
-
-function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 export async function GET(request: Request) {
   const supabase = await getSupabaseServer();

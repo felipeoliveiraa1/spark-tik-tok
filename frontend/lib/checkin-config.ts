@@ -147,6 +147,21 @@ export function formatDateBR(iso: string): string {
   return `${d}/${m}/${y}`;
 }
 
+/**
+ * Subtrai N dias de uma data ISO mantendo o fuso BR. Usa meio-dia UTC
+ * pra evitar problemas de borda quando a math UTC cruzaria meia-noite
+ * BR. Retorna YYYY-MM-DD em BR.
+ */
+export function subtractDaysBR(iso: string, days: number): string {
+  const t = Date.parse(`${iso}T12:00:00Z`) - days * 86_400_000;
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(t));
+}
+
 /** Formata data ISO pra "Hoje" / "Ontem" / "27/mai" */
 export function smartDateLabel(iso: string): string {
   const today = todayBrazil();
