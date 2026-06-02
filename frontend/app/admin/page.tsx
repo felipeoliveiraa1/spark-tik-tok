@@ -1,8 +1,28 @@
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
-import { HeroBlob } from "@/components/atoms/hero-blob";
-import { SparkleField } from "@/components/atoms/sparkle-field";
-import { Sticker } from "@/components/atoms/sticker";
+import {
+  Users,
+  CheckCircle2,
+  Gift,
+  PauseCircle,
+  Package,
+  PenLine,
+  AlertCircle,
+  Eye,
+  CheckCheck,
+  CircleSlash,
+  Bug,
+  Lightbulb,
+  Sparkles,
+  PhoneCall,
+  TrendingUp,
+  BookOpen,
+  GraduationCap,
+  Radio,
+  Newspaper,
+  BarChart3,
+  ArrowRight,
+} from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -140,7 +160,10 @@ async function getStats() {
     title: string;
     status: "open" | "in_review" | "resolved" | "dismissed";
     created_at: string;
-    profiles: { name: string | null; email: string } | { name: string | null; email: string }[] | null;
+    profiles:
+      | { name: string | null; email: string }
+      | { name: string | null; email: string }[]
+      | null;
   };
 
   const recent: FeedbackPreview[] = ((feedbackRecent.data as RawRecent[] | null) ?? []).map(
@@ -204,389 +227,446 @@ const STATUS_DOT: Record<FeedbackPreview["status"], { color: string; label: stri
   dismissed: { color: "bg-spark-ink-35", label: "Dispensado" },
 };
 
+const LEAD_STATUS: Record<LeadPreview["status"], { color: string; label: string }> = {
+  new: { color: "bg-warn", label: "Novo" },
+  contacted: { color: "bg-spark-brand-deep", label: "Contactado" },
+  converted: { color: "bg-good", label: "Convertido" },
+  dismissed: { color: "bg-spark-ink-35", label: "Dispensado" },
+};
+
 export default async function AdminHome() {
   const s = await getStats();
+  const dateStr = new Intl.DateTimeFormat("pt-BR", {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+  }).format(new Date());
+
   return (
-    <div className="relative">
-      {/* Hero */}
-      <section className="relative overflow-hidden hero-radial -mx-4 lg:-mx-10 px-4 lg:px-10 pt-6 lg:pt-10 pb-12 rounded-spark-3xl">
-        <HeroBlob color="rose" variant={1} className="-top-24 -left-32 w-[500px] h-[500px]" />
-        <HeroBlob color="peach" variant={2} className="top-10 -right-24 w-[460px] h-[460px]" />
-        <SparkleField count={14} seed={111} className="opacity-50" />
+    <div className="max-w-[1280px] mx-auto space-y-10">
+      {/* Page header */}
+      <header className="flex flex-col gap-2">
+        <span className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-spark-ink-35">
+          {dateStr}
+        </span>
+        <h1 className="font-display lowercase tracking-tight text-spark-ink leading-[0.95] text-[36px] lg:text-[48px]">
+          dashboard
+        </h1>
+        <p className="text-[14px] text-spark-ink-50 max-w-[60ch] font-semibold">
+          Visão geral do Método TTS em tempo real.
+        </p>
+      </header>
 
-        <div className="hidden lg:block absolute top-10 right-12 z-10">
-          <Sticker text="ADMIN · MÉTODO TTS · " size={120} />
+      {/* KPIs principais — Alunas */}
+      <Section title="Alunas" subtitle="quem está com a gente">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <Kpi
+            label="Total cadastradas"
+            value={s.alunas}
+            icon={Users}
+            tone="brand"
+          />
+          <Kpi
+            label="Plano ativo"
+            value={s.alunasAtivas}
+            icon={CheckCircle2}
+            tone="good"
+            badge={s.alunas > 0 ? `${Math.round((s.alunasAtivas / s.alunas) * 100)}%` : undefined}
+          />
+          <Kpi label="Em trial" value={s.alunasTrial} icon={Gift} tone="warn" />
+          <Kpi label="Inativas" value={s.alunasInativas} icon={PauseCircle} />
         </div>
+      </Section>
 
-        <div className="relative max-w-[1080px] mx-auto">
-          <div className="text-eyebrow text-spark-brand">✦ painel de controle</div>
-          <h1
-            className="mt-3 font-display lowercase tracking-tight text-spark-ink leading-[0.92]"
-            style={{ fontSize: "clamp(2.25rem, 6vw, 4.5rem)" }}
-          >
-            o método <span className="text-grad-brand">por dentro.</span>
-          </h1>
-          <p className="mt-5 text-fluid-lead text-spark-ink-70 max-w-[60ch] leading-snug font-semibold">
-            Visão geral em tempo real. Mudanças entram em ar instantaneamente.
-          </p>
-        </div>
-      </section>
-
-      <div className="max-w-[1080px] mx-auto mt-10 space-y-10">
-        {/* Alunas */}
-        <SectionBlock label="✦ alunas" title="quem tá com a gente">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatCard label="Total cadastradas" value={s.alunas} emoji="💖" tone="brand" />
-            <StatCard label="Plano ativo" value={s.alunasAtivas} emoji="✅" tone="good" />
-            <StatCard label="Em trial" value={s.alunasTrial} emoji="🎁" tone="warn" />
-            <StatCard label="Inativas" value={s.alunasInativas} emoji="⏸️" />
-          </div>
-        </SectionBlock>
-
-        {/* Leads (formulario publico) */}
-        <SectionBlock label="✦ leads" title="quem chegou pelo formulário">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-            <StatCard
-              label="Novos"
-              value={s.leadsNew}
-              emoji="🟠"
-              tone={s.leadsNew > 0 ? "warn" : undefined}
-            />
-            <StatCard label="Contactados" value={s.leadsContacted} emoji="🔵" />
-            <StatCard label="Convertidos" value={s.leadsConverted} emoji="🟢" tone="good" />
-            <StatCard label="Total no banco" value={s.leadsTotal} emoji="✨" />
-          </div>
-
-          <div className="rounded-spark-2xl bg-spark-surface border border-spark-hairline shadow-rest overflow-hidden">
-            <div className="px-5 py-4 border-b border-spark-hairline flex items-center justify-between">
-              <div className="text-eyebrow text-spark-brand">✦ últimos cadastros</div>
-              <Link
-                href="/admin/leads"
-                className="text-[11.5px] font-extrabold text-spark-brand-deep hover:text-spark-brand transition-colors uppercase tracking-wider"
-              >
-                Ver todos →
-              </Link>
-            </div>
-            {s.leadsRecent.length === 0 ? (
-              <div className="px-5 py-10 text-center">
-                <div className="text-[28px] mb-2">✨</div>
-                <div className="text-[13px] text-spark-ink-50 font-semibold">
-                  Nenhum lead ainda. Quando o link do form pegar tráfego, aparecem aqui.
-                </div>
-                <Link
-                  href="/formulario"
-                  target="_blank"
-                  className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-extrabold text-spark-brand-deep hover:text-spark-brand uppercase tracking-wider"
-                >
-                  abrir o formulário →
-                </Link>
-              </div>
-            ) : (
-              <ul className="divide-y divide-spark-hairline">
-                {s.leadsRecent.map((r) => (
-                  <li key={r.id}>
-                    <Link
-                      href="/admin/leads"
-                      className="group flex items-center gap-3 px-5 py-3.5 hover:bg-spark-surface-sunken/40 transition-colors"
-                    >
-                      <span className="shrink-0 w-9 h-9 rounded-full bg-brand-grad text-white flex items-center justify-center font-extrabold text-[13px]">
-                        {r.nome.charAt(0).toUpperCase()}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[13.5px] font-extrabold text-spark-ink tracking-tight truncate group-hover:text-spark-brand-deep transition-colors">
-                          {r.nome}
-                        </div>
-                        <div className="text-[11px] text-spark-ink-50 truncate mt-0.5 font-mono">
-                          @{r.tiktok_handle}
-                          <span className="mx-1.5 opacity-50">·</span>
-                          {r.already_selling ? "✅ vende" : "🌱 ainda não"}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span
-                          className={`inline-flex items-center gap-1.5 text-[10.5px] font-extrabold uppercase tracking-wider text-spark-ink-70`}
-                        >
-                          <span
-                            className={`w-1.5 h-1.5 rounded-full ${
-                              r.status === "new"
-                                ? "bg-warn"
-                                : r.status === "contacted"
-                                  ? "bg-spark-brand-deep"
-                                  : r.status === "converted"
-                                    ? "bg-good"
-                                    : "bg-spark-ink-35"
-                            }`}
-                          />
-                          {r.status === "new"
-                            ? "Novo"
-                            : r.status === "contacted"
-                              ? "Contactado"
-                              : r.status === "converted"
-                                ? "Convertido"
-                                : "Dispensado"}
-                        </span>
-                        <span className="text-[10.5px] text-spark-ink-50 font-mono w-9 text-right">
-                          {fmtRelativeShort(r.created_at)}
-                        </span>
-                      </div>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </SectionBlock>
-
-        {/* Feedback */}
-        <SectionBlock label="✦ feedback" title="o que as alunas estão reportando">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-            <StatCard
-              label="Abertos"
-              value={s.feedbackOpen}
-              emoji="🟠"
-              tone={s.feedbackOpen > 0 ? "warn" : undefined}
-            />
-            <StatCard label="Em análise" value={s.feedbackInReview} emoji="🔵" />
-            <StatCard label="Resolvidos" value={s.feedbackResolved} emoji="🟢" tone="good" />
-            <StatCard label="Dispensados" value={s.feedbackDismissed} emoji="⚪" />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            <StatCard label="Bugs abertos" value={s.feedbackBugsOpen} emoji="🐛" />
-            <StatCard label="Sugestões abertas" value={s.feedbackSuggestionsOpen} emoji="💡" />
-          </div>
-
-          {/* Recentes */}
-          <div className="rounded-spark-2xl bg-spark-surface border border-spark-hairline shadow-rest overflow-hidden">
-            <div className="px-5 py-4 border-b border-spark-hairline flex items-center justify-between">
-              <div className="text-eyebrow text-spark-brand">✦ últimos reports</div>
-              <Link
-                href="/admin/feedback"
-                className="text-[11.5px] font-extrabold text-spark-brand-deep hover:text-spark-brand transition-colors uppercase tracking-wider"
-              >
-                Ver todos →
-              </Link>
-            </div>
-            {s.feedbackRecent.length === 0 ? (
-              <div className="px-5 py-10 text-center">
-                <div className="text-[28px] mb-2">✨</div>
-                <div className="text-[13px] text-spark-ink-50 font-semibold">
-                  Nenhum report ainda. Quando uma aluna mandar bug ou sugestão, aparece aqui.
-                </div>
-              </div>
-            ) : (
-              <ul className="divide-y divide-spark-hairline">
-                {s.feedbackRecent.map((r) => (
-                  <li key={r.id}>
-                    <Link
-                      href="/admin/feedback"
-                      className="group flex items-center gap-3 px-5 py-3.5 hover:bg-spark-surface-sunken/40 transition-colors"
-                    >
-                      <span className="text-[18px] shrink-0" aria-hidden>
-                        {r.type === "bug" ? "🐛" : "💡"}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[13.5px] font-extrabold text-spark-ink tracking-tight truncate group-hover:text-spark-brand-deep transition-colors">
-                          {r.title}
-                        </div>
-                        <div className="text-[11px] text-spark-ink-50 truncate mt-0.5">
-                          {r.user_name ?? r.user_email?.split("@")[0] ?? "Aluna"}
-                          {r.user_email && (
-                            <>
-                              <span className="mx-1.5 opacity-50">·</span>
-                              <span className="font-mono">{r.user_email}</span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span
-                          className={`inline-flex items-center gap-1.5 text-[10.5px] font-extrabold uppercase tracking-wider text-spark-ink-70`}
-                        >
-                          <span
-                            className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[r.status].color}`}
-                          />
-                          {STATUS_DOT[r.status].label}
-                        </span>
-                        <span className="text-[10.5px] text-spark-ink-50 font-mono w-9 text-right">
-                          {fmtRelativeShort(r.created_at)}
-                        </span>
-                      </div>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </SectionBlock>
-
-        {/* Conteúdo gerado */}
-        <SectionBlock label="✦ produção" title="o que as alunas geraram">
+      {/* KPIs Produção + Catálogo lado a lado */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        <Section title="Produção" subtitle="o que as alunas geraram">
           <div className="grid grid-cols-2 gap-3">
-            <StatCard label="Produtos salvos" value={s.products} emoji="📦" />
-            <StatCard label="Roteiros gerados" value={s.scripts} emoji="✍️" />
+            <Kpi label="Produtos salvos" value={s.products} icon={Package} />
+            <Kpi label="Roteiros gerados" value={s.scripts} icon={PenLine} />
           </div>
-        </SectionBlock>
+        </Section>
 
-        {/* Catálogo */}
-        <SectionBlock label="✦ catálogo" title="conteúdo do método">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatCard label="Módulos" value={s.modules} emoji="📚" tone="brand" />
-            <StatCard label="Aulas" value={s.videos} emoji="🎓" />
-            <StatCard label="Lives" value={s.lives} emoji="🔴" />
-            <StatCard label="Notícias" value={s.news} emoji="📰" />
+        <Section title="Catálogo" subtitle="conteúdo do método">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <CatalogTile label="Módulos" value={s.modules} icon={BookOpen} href="/admin/educacao" />
+            <CatalogTile label="Aulas" value={s.videos} icon={GraduationCap} href="/admin/educacao" />
+            <CatalogTile label="Lives" value={s.lives} icon={Radio} href="/admin/ao-vivo" />
+            <CatalogTile label="Notícias" value={s.news} icon={Newspaper} href="/admin/news" />
           </div>
-        </SectionBlock>
-
-        {/* Ações */}
-        <SectionBlock label="✦ ações rápidas" title="o que rolar agora">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            <ActionCard
-              href="/admin/financeiro"
-              emoji="📊"
-              title="Financeiro · MRR + Churn"
-              desc="MRR, ARR, churn, ticket médio, evolução mensal, projeção 30 dias."
-            />
-            <ActionCard
-              href="/admin/grant"
-              emoji="🎁"
-              title="Liberar acesso (trial)"
-              desc="Criar contas em lote com N dias gratuitos. Email automático com senha."
-            />
-            <ActionCard
-              href="/admin/educacao"
-              emoji="🎓"
-              title="Gerenciar Trilha"
-              desc="Módulos + aulas multi-kind (vídeo, conteúdo rich, checklist)."
-            />
-            <ActionCard
-              href="/admin/news"
-              emoji="📰"
-              title="Gerenciar News"
-              desc="Criar, editar e despublicar artigos do jornal."
-            />
-            <ActionCard
-              href="/admin/ao-vivo"
-              emoji="🔴"
-              title="Agendar Lives"
-              desc="Marcar encontros ao vivo via YouTube. Replay automático."
-            />
-            <ActionCard
-              href="/admin/feedback"
-              emoji="🐛"
-              title="Feedback das alunas"
-              desc="Bugs e sugestões reportados pelas alunas. Triagem e status."
-            />
-            <ActionCard
-              href="/admin/leads"
-              emoji="✨"
-              title="Leads do formulário"
-              desc="Cadastros do /formulario (link na bio). Triagem + WhatsApp 1-click."
-            />
-          </div>
-        </SectionBlock>
+        </Section>
       </div>
+
+      {/* Leads */}
+      <Section title="Leads" subtitle="quem chegou pelo formulário público">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+          <Kpi
+            label="Novos"
+            value={s.leadsNew}
+            icon={AlertCircle}
+            tone={s.leadsNew > 0 ? "warn" : undefined}
+          />
+          <Kpi label="Contactados" value={s.leadsContacted} icon={PhoneCall} />
+          <Kpi label="Convertidos" value={s.leadsConverted} icon={TrendingUp} tone="good" />
+          <Kpi label="Total" value={s.leadsTotal} icon={Sparkles} />
+        </div>
+
+        <ListPanel
+          title="Últimos cadastros"
+          href="/admin/leads"
+          empty={{
+            label: "Nenhum lead ainda.",
+            sub: "Quando o link do formulário pegar tráfego, os cadastros aparecem aqui.",
+          }}
+          items={s.leadsRecent.map((r) => ({
+            key: r.id,
+            href: "/admin/leads",
+            avatar: r.nome.charAt(0).toUpperCase(),
+            title: r.nome,
+            subtitle: (
+              <span className="font-mono">
+                @{r.tiktok_handle}
+                <span className="mx-1.5 opacity-50">·</span>
+                {r.already_selling ? "vende" : "ainda não"}
+              </span>
+            ),
+            badgeColor: LEAD_STATUS[r.status].color,
+            badgeLabel: LEAD_STATUS[r.status].label,
+            timeLabel: fmtRelativeShort(r.created_at),
+          }))}
+        />
+      </Section>
+
+      {/* Feedback */}
+      <Section title="Feedback" subtitle="o que as alunas estão reportando">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
+          <Kpi
+            label="Abertos"
+            value={s.feedbackOpen}
+            icon={AlertCircle}
+            tone={s.feedbackOpen > 0 ? "warn" : undefined}
+          />
+          <Kpi label="Em análise" value={s.feedbackInReview} icon={Eye} />
+          <Kpi label="Resolvidos" value={s.feedbackResolved} icon={CheckCheck} tone="good" />
+          <Kpi label="Dispensados" value={s.feedbackDismissed} icon={CircleSlash} />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 mb-5">
+          <Kpi label="Bugs abertos" value={s.feedbackBugsOpen} icon={Bug} />
+          <Kpi label="Sugestões abertas" value={s.feedbackSuggestionsOpen} icon={Lightbulb} />
+        </div>
+
+        <ListPanel
+          title="Últimos reports"
+          href="/admin/feedback"
+          empty={{
+            label: "Nenhum report ainda.",
+            sub: "Quando alguém reportar bug ou sugestão, vai aparecer aqui.",
+          }}
+          items={s.feedbackRecent.map((r) => ({
+            key: r.id,
+            href: "/admin/feedback",
+            icon: r.type === "bug" ? Bug : Lightbulb,
+            title: r.title,
+            subtitle: (
+              <>
+                {r.user_name ?? r.user_email?.split("@")[0] ?? "Aluna"}
+                {r.user_email && (
+                  <>
+                    <span className="mx-1.5 opacity-50">·</span>
+                    <span className="font-mono">{r.user_email}</span>
+                  </>
+                )}
+              </>
+            ),
+            badgeColor: STATUS_DOT[r.status].color,
+            badgeLabel: STATUS_DOT[r.status].label,
+            timeLabel: fmtRelativeShort(r.created_at),
+          }))}
+        />
+      </Section>
+
+      {/* Atalhos */}
+      <Section title="Atalhos" subtitle="acesso rápido às ferramentas">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <ShortcutCard
+            href="/admin/financeiro"
+            icon={BarChart3}
+            title="Financeiro"
+            desc="MRR, ARR, churn, ticket médio e projeção 30 dias."
+          />
+          <ShortcutCard
+            href="/admin/grant"
+            icon={Gift}
+            title="Liberar acesso"
+            desc="Criar contas em lote com N dias gratuitos. Email automático."
+          />
+          <ShortcutCard
+            href="/admin/educacao"
+            icon={GraduationCap}
+            title="Gerenciar trilha"
+            desc="Módulos e aulas (vídeo, conteúdo rich, checklist)."
+          />
+          <ShortcutCard
+            href="/admin/news"
+            icon={Newspaper}
+            title="Gerenciar news"
+            desc="Criar, editar e despublicar artigos do jornal."
+          />
+          <ShortcutCard
+            href="/admin/ao-vivo"
+            icon={Radio}
+            title="Agendar lives"
+            desc="Encontros ao vivo via YouTube. Replay automático."
+          />
+          <ShortcutCard
+            href="/admin/feedback"
+            icon={Bug}
+            title="Triagem de feedback"
+            desc="Bugs e sugestões reportadas pelas alunas."
+          />
+        </div>
+      </Section>
     </div>
   );
 }
 
-function SectionBlock({
-  label,
+// =================================================================
+// Building blocks
+// =================================================================
+
+function Section({
   title,
+  subtitle,
   children,
 }: {
-  label: string;
   title: string;
+  subtitle?: string;
   children: React.ReactNode;
 }) {
   return (
     <section>
-      <div className="text-eyebrow text-spark-brand">{label}</div>
-      <h2
-        className="mt-1 font-display lowercase tracking-tight text-spark-ink leading-[0.95]"
-        style={{ fontSize: "clamp(1.5rem, 3vw, 2.25rem)" }}
-      >
-        {title}
-      </h2>
-      <div className="mt-4">{children}</div>
+      <div className="flex items-end justify-between gap-4 mb-4">
+        <div>
+          <h2 className="text-[18px] lg:text-[20px] font-extrabold tracking-tight text-spark-ink">
+            {title}
+          </h2>
+          {subtitle && (
+            <p className="text-[12px] text-spark-ink-50 mt-0.5 font-semibold">{subtitle}</p>
+          )}
+        </div>
+      </div>
+      {children}
     </section>
   );
 }
 
-type Tone = "brand" | "good" | "warn" | "bad" | "neutral";
+type Tone = "brand" | "good" | "warn" | "bad";
 
-function StatCard({
+function Kpi({
   label,
   value,
-  emoji,
+  icon: Icon,
   tone,
+  badge,
 }: {
   label: string;
   value: string | number;
-  emoji: string;
+  icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
   tone?: Tone;
+  badge?: string;
 }) {
-  const bg =
+  const iconBg =
     tone === "brand"
-      ? "bg-brand-grad-soft border-spark-brand/15"
+      ? "bg-spark-brand-soft text-spark-brand-deep"
       : tone === "good"
-        ? "bg-good/5 border-good/20"
+        ? "bg-good/10 text-good"
         : tone === "warn"
-          ? "bg-warn/5 border-warn/20"
+          ? "bg-warn/10 text-warn"
           : tone === "bad"
-            ? "bg-bad/5 border-bad/20"
-            : "bg-spark-surface border-spark-hairline";
-  const color =
-    tone === "brand"
-      ? "text-spark-brand-deep"
-      : tone === "good"
-        ? "text-good"
-        : tone === "warn"
-          ? "text-warn"
-          : tone === "bad"
-            ? "text-bad"
-            : "text-spark-ink";
+            ? "bg-bad/10 text-bad"
+            : "bg-spark-surface-sunken text-spark-ink-70";
+
   return (
-    <div
-      className={`rounded-spark-2xl border p-5 shadow-rest transition-all duration-300 ease-premium hover:-translate-y-0.5 hover:shadow-lift ${bg}`}
-    >
-      <div className="text-[22px] leading-none">{emoji}</div>
-      <div
-        className={`mt-3 font-mono tracking-tight leading-none font-extrabold ${color}`}
-        style={{ fontSize: "clamp(1.5rem, 2.4vw, 1.75rem)" }}
-      >
+    <div className="rounded-spark-2xl bg-spark-surface border border-spark-hairline p-5 shadow-rest hover:shadow-lift hover:-translate-y-0.5 transition-all duration-300 ease-premium">
+      <div className="flex items-start justify-between">
+        <div
+          className={`w-9 h-9 rounded-spark-lg flex items-center justify-center ${iconBg}`}
+        >
+          <Icon size={16} strokeWidth={2.2} />
+        </div>
+        {badge && (
+          <span className="text-[10px] font-extrabold uppercase tracking-wider text-spark-ink-50 px-2 py-1 rounded-full bg-spark-surface-sunken">
+            {badge}
+          </span>
+        )}
+      </div>
+      <div className="mt-4 font-mono tracking-tight leading-none font-extrabold text-spark-ink text-[28px]">
         {value}
       </div>
-      <div className="text-[11.5px] text-spark-ink-50 mt-2 font-extrabold uppercase tracking-wider">
+      <div className="text-[11px] text-spark-ink-50 mt-2 font-extrabold uppercase tracking-wider">
         {label}
       </div>
     </div>
   );
 }
 
-function ActionCard({
+function CatalogTile({
+  label,
+  value,
+  icon: Icon,
   href,
-  emoji,
+}: {
+  label: string;
+  value: string | number;
+  icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
+  href: string;
+}) {
+  return (
+    <Link
+      href={href}
+      prefetch
+      className="group rounded-spark-2xl bg-spark-surface border border-spark-hairline p-4 hover:border-spark-brand/30 hover:bg-spark-brand-soft/20 transition-all duration-300 ease-premium hover:-translate-y-0.5 shadow-rest hover:shadow-lift"
+    >
+      <Icon
+        size={16}
+        strokeWidth={2.2}
+        className="text-spark-ink-50 group-hover:text-spark-brand-deep transition-colors"
+      />
+      <div className="mt-3 font-mono font-extrabold text-[22px] leading-none text-spark-ink">
+        {value}
+      </div>
+      <div className="text-[10.5px] text-spark-ink-50 mt-1.5 font-extrabold uppercase tracking-wider">
+        {label}
+      </div>
+    </Link>
+  );
+}
+
+type ListItemData = {
+  key: string;
+  href: string;
+  avatar?: string;
+  icon?: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
+  title: string;
+  subtitle: React.ReactNode;
+  badgeColor: string;
+  badgeLabel: string;
+  timeLabel: string;
+};
+
+function ListPanel({
+  title,
+  href,
+  items,
+  empty,
+}: {
+  title: string;
+  href: string;
+  items: ListItemData[];
+  empty: { label: string; sub: string };
+}) {
+  return (
+    <div className="rounded-spark-2xl bg-spark-surface border border-spark-hairline shadow-rest overflow-hidden">
+      <div className="px-5 py-3.5 border-b border-spark-hairline flex items-center justify-between">
+        <h3 className="text-[12px] font-extrabold uppercase tracking-wider text-spark-ink">
+          {title}
+        </h3>
+        <Link
+          href={href}
+          prefetch
+          className="text-[11px] font-extrabold text-spark-brand-deep hover:text-spark-brand transition-colors uppercase tracking-wider inline-flex items-center gap-1"
+        >
+          Ver todos
+          <ArrowRight size={11} strokeWidth={2.5} />
+        </Link>
+      </div>
+
+      {items.length === 0 ? (
+        <div className="px-5 py-12 text-center">
+          <div className="text-[13px] font-extrabold text-spark-ink mb-1">{empty.label}</div>
+          <div className="text-[12px] text-spark-ink-50 font-semibold max-w-[40ch] mx-auto">
+            {empty.sub}
+          </div>
+        </div>
+      ) : (
+        <ul className="divide-y divide-spark-hairline">
+          {items.map((r) => {
+            const Icon = r.icon;
+            return (
+              <li key={r.key}>
+                <Link
+                  href={r.href}
+                  prefetch
+                  className="group flex items-center gap-3 px-5 py-3.5 hover:bg-spark-surface-sunken/40 transition-colors"
+                >
+                  {r.avatar ? (
+                    <span className="shrink-0 w-9 h-9 rounded-full bg-brand-grad text-white flex items-center justify-center font-extrabold text-[13px]">
+                      {r.avatar}
+                    </span>
+                  ) : Icon ? (
+                    <span className="shrink-0 w-9 h-9 rounded-full bg-spark-surface-sunken text-spark-ink-70 flex items-center justify-center">
+                      <Icon size={15} strokeWidth={2.2} />
+                    </span>
+                  ) : null}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[13.5px] font-extrabold text-spark-ink tracking-tight truncate group-hover:text-spark-brand-deep transition-colors">
+                      {r.title}
+                    </div>
+                    <div className="text-[11.5px] text-spark-ink-50 truncate mt-0.5">
+                      {r.subtitle}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="inline-flex items-center gap-1.5 text-[10.5px] font-extrabold uppercase tracking-wider text-spark-ink-70">
+                      <span className={`w-1.5 h-1.5 rounded-full ${r.badgeColor}`} />
+                      {r.badgeLabel}
+                    </span>
+                    <span className="text-[10.5px] text-spark-ink-50 font-mono w-9 text-right">
+                      {r.timeLabel}
+                    </span>
+                  </div>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function ShortcutCard({
+  href,
+  icon: Icon,
   title,
   desc,
 }: {
   href: string;
-  emoji: string;
+  icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
   title: string;
   desc: string;
 }) {
   return (
     <Link
       href={href}
-      className="group rounded-spark-2xl bg-spark-surface border border-spark-hairline p-6 hover:border-spark-brand/40 hover:bg-spark-brand-soft/30 transition-all duration-300 ease-premium hover:-translate-y-0.5 hover:shadow-lift shadow-rest block"
+      prefetch
+      className="group rounded-spark-2xl bg-spark-surface border border-spark-hairline p-5 hover:border-spark-brand/40 hover:bg-spark-brand-soft/20 transition-all duration-300 ease-premium hover:-translate-y-0.5 hover:shadow-lift shadow-rest block"
     >
-      <div className="text-[28px] transition-transform duration-300 group-hover:scale-110 origin-left">
-        {emoji}
+      <div className="flex items-start justify-between">
+        <div className="w-10 h-10 rounded-spark-lg bg-spark-surface-sunken text-spark-ink-70 group-hover:bg-brand-grad group-hover:text-white flex items-center justify-center transition-all duration-300">
+          <Icon size={18} strokeWidth={2.2} />
+        </div>
+        <ArrowRight
+          size={14}
+          strokeWidth={2.4}
+          className="text-spark-ink-35 group-hover:text-spark-brand-deep group-hover:translate-x-0.5 transition-all duration-300"
+        />
       </div>
-      <div className="mt-3 text-[15px] font-extrabold tracking-tight text-spark-ink">
+      <div className="mt-4 text-[14.5px] font-extrabold tracking-tight text-spark-ink">
         {title}
       </div>
-      <p className="text-[12.5px] text-spark-ink-50 mt-1.5 leading-snug">{desc}</p>
+      <p className="text-[12px] text-spark-ink-50 mt-1 leading-snug">{desc}</p>
     </Link>
   );
 }
