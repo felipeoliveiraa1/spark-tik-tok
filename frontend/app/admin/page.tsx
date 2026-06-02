@@ -746,8 +746,12 @@ function Funnel({ stages }: { stages: FunnelStage[] }) {
   const VB_H = stages.length * STAGE_H;
   const CENTER = VB_W / 2;
   const MAX_HALF = (VB_W - 16) / 2; // 8px de margem lateral
-  // Largura minima pra trapezio nao virar ponta e o numero caber dentro
-  const MIN_RATIO = 0.08;
+  // Largura minima pra trapezio nao virar ponta. Mesmo abaixo desse
+  // limite, o texto vai pra FORA do trapezio em cor escura (ver isThin
+  // abaixo). 0.18 garante que o numero ainda cabe centralizado.
+  const MIN_RATIO = 0.18;
+  // Threshold: se o trapezio for menor que isso, joga texto pra fora
+  const TEXT_OUTSIDE_RATIO = 0.32;
 
   return (
     <div className="rounded-spark-2xl bg-spark-surface border border-spark-hairline shadow-rest p-5 lg:p-6">
@@ -800,6 +804,17 @@ function Funnel({ stages }: { stages: FunnelStage[] }) {
               // Opacidade ascendente — topo mais claro, base mais densa
               const opacity = 0.55 + i * 0.075;
 
+              // Quando o trapezio fica muito estreito, o texto branco
+              // vaza pro fundo branco do card. Solucao: jogar texto pra
+              // fora do trapezio (lado direito) em cor escura.
+              const isThin = bottomRatio < TEXT_OUTSIDE_RATIO;
+              const textX = isThin ? CENTER + bottomHalf + 14 : CENTER;
+              const textAnchor: "start" | "middle" = isThin ? "start" : "middle";
+              const numberFill = isThin ? "oklch(0.18 0.02 345)" : "white";
+              const labelFill = isThin
+                ? "oklch(0.32 0.018 345)"
+                : "rgba(255,255,255,0.92)";
+
               return (
                 <g key={stage.key}>
                   <polygon
@@ -808,29 +823,41 @@ function Funnel({ stages }: { stages: FunnelStage[] }) {
                     opacity={opacity}
                     filter="url(#funnel-shadow)"
                   />
-                  {/* Numero grande no centro */}
+                  {/* Linha-guia conectando trapezio ao texto externo */}
+                  {isThin && (
+                    <line
+                      x1={CENTER + bottomHalf}
+                      y1={midY}
+                      x2={CENTER + bottomHalf + 10}
+                      y2={midY}
+                      stroke="oklch(0.66 0.012 345)"
+                      strokeWidth="1"
+                      strokeDasharray="2 2"
+                    />
+                  )}
+                  {/* Numero grande */}
                   <text
-                    x={CENTER}
-                    y={midY - 4}
-                    textAnchor="middle"
+                    x={textX}
+                    y={midY - (isThin ? 8 : 4)}
+                    textAnchor={textAnchor}
                     dominantBaseline="middle"
-                    fontSize="26"
+                    fontSize="24"
                     fontWeight="800"
-                    fill="white"
+                    fill={numberFill}
                     className="font-mono"
                   >
                     {stage.count}
                   </text>
                   {/* Label do stage abaixo do numero */}
                   <text
-                    x={CENTER}
-                    y={midY + 18}
-                    textAnchor="middle"
+                    x={textX}
+                    y={midY + (isThin ? 12 : 18)}
+                    textAnchor={textAnchor}
                     dominantBaseline="middle"
-                    fontSize="10.5"
+                    fontSize="10"
                     fontWeight="800"
-                    fill="rgba(255,255,255,0.92)"
-                    letterSpacing="0.12em"
+                    fill={labelFill}
+                    letterSpacing="0.1em"
                   >
                     {stage.label.toUpperCase()}
                   </text>
