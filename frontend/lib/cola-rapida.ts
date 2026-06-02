@@ -98,28 +98,75 @@ const ARRAY_FIELDS_PRODUCT = [
 ] as const;
 
 // =================================================================
-// EXTRACAO DE BLOCO
+// EXTRACAO DE BLOCO — tolerante a variacoes do agente
 // =================================================================
 
 /**
- * Extrai o JSON dentro de um bloco `===NOME===` ... `===FIM===`.
- * Tolera variações com/sem ```json fences, com texto sobrando.
+ * Encontra um heading no texto baseado num nome de bloco (ex: "FICHA TTS
+ * PRODUTO" ou "ROTEIROS TTS") e retorna o JSON {...} que vem depois dele.
+ *
+ * Aceita variacoes:
+ *  - ===FICHA TTS PRODUTO===  (formato canonico)
+ *  - Ficha TTS Produto         (sem === — case-insensitive)
+ *  - **Ficha TTS Produto**     (markdown bold)
+ *  - ## Ficha TTS Produto      (markdown heading)
+ *  - ###FICHA TTS PRODUTO      (qualquer cerca decorativa)
+ *
+ * Depois do heading, procura o primeiro `{` e retorna ate o `}` que fecha
+ * (com contagem de braces — JSON-aware, ignora chaves dentro de strings).
+ * Nao depende de `===FIM===` no fim — opcional.
  */
 function extractBlock(text: string, blockName: string): string | null {
-  // Regex flexível: aceita ```json, ``` ou nada cercando o JSON
-  const re = new RegExp(
-    `===\\s*${escapeRegex(blockName)}\\s*===([\\s\\S]*?)===\\s*FIM\\s*===`,
+  // Normaliza nome do bloco em palavras pra fazer match flexivel
+  const words = blockName.split(/\s+/).map(escapeRegex).join("\\s+");
+  // Padrao: opcionalmente cercado por =, #, *, espaco; case-insensitive
+  const headingRe = new RegExp(
+    `(?:^|\\n)[\\s=#*]*${words}[\\s=#*]*(?:\\n|$)`,
     "i",
   );
-  const m = text.match(re);
-  if (!m || !m[1]) return null;
+  const m = text.match(headingRe);
+  if (!m || m.index === undefined) return null;
 
-  let inner = m[1].trim();
-  // Remove ```json ou ``` no inicio
-  inner = inner.replace(/^```(?:json)?\s*/i, "");
-  // Remove ``` no fim
-  inner = inner.replace(/\s*```\s*$/i, "");
-  return inner.trim();
+  // Procura primeiro `{` apos o heading
+  const start = m.index + m[0].length;
+  const rest = text.slice(start);
+  const openIdx = rest.indexOf("{");
+  if (openIdx === -1) return null;
+
+  // Tambem rejeita se entre heading e o `{` ja aparecer OUTRO heading
+  // (significa que esse bloco veio vazio ou no formato errado).
+  const between = rest.slice(0, openIdx);
+  if (/===/.test(between)) return null;
+
+  // Conta braces pra achar o `}` que fecha — ignora chaves dentro de
+  // strings JSON (com suporte a escape).
+  let depth = 0;
+  let inStr = false;
+  let escape = false;
+  for (let i = openIdx; i < rest.length; i++) {
+    const ch = rest[i];
+    if (escape) {
+      escape = false;
+      continue;
+    }
+    if (ch === "\\") {
+      escape = true;
+      continue;
+    }
+    if (ch === '"') {
+      inStr = !inStr;
+      continue;
+    }
+    if (inStr) continue;
+    if (ch === "{") depth++;
+    else if (ch === "}") {
+      depth--;
+      if (depth === 0) {
+        return rest.slice(openIdx, i + 1);
+      }
+    }
+  }
+  return null;
 }
 
 function escapeRegex(s: string): string {
