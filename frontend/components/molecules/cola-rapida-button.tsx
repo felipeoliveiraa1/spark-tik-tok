@@ -4,6 +4,7 @@ import * as React from "react";
 import {
   Clipboard,
   ClipboardCheck,
+  ClipboardPaste,
   X,
   Sparkles,
   AlertCircle,
@@ -12,6 +13,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { parseColaRapida, type ParseResult } from "@/lib/cola-rapida";
+import { useToast } from "@/components/molecules/dialog-provider";
 
 /**
  * Botao + Modal "Cola Rápida do agente". Aluna copia tudo que o GPT
@@ -86,7 +88,9 @@ function ColaRapidaModal({
   const [text, setText] = React.useState("");
   const [result, setResult] = React.useState<ParseResult | null>(null);
   const [parsing, setParsing] = React.useState(false);
+  const [autoPasting, setAutoPasting] = React.useState(false);
   const taRef = React.useRef<HTMLTextAreaElement>(null);
+  const toast = useToast();
 
   // Body scroll lock + ESC
   React.useEffect(() => {
@@ -120,6 +124,36 @@ function ColaRapidaModal({
     const r = parseColaRapida(input ?? text);
     setResult(r);
     setParsing(false);
+  };
+
+  // Cola direto da area de transferencia (clipboard API) — 1 toque, sem
+  // precisar fazer long-press ou Ctrl+V. Suportado em Chrome/Safari/
+  // Edge modernos. Browser pode pedir permissao na primeira vez.
+  const handleAutoPaste = async () => {
+    setAutoPasting(true);
+    try {
+      if (!navigator.clipboard || !navigator.clipboard.readText) {
+        toast.error("Seu navegador não suporta colar automático. Cola manual com toque longo no campo abaixo.");
+        return;
+      }
+      const pasted = await navigator.clipboard.readText();
+      if (!pasted || !pasted.trim()) {
+        toast.error("Nada copiado ainda. Volta no GPT e copia a resposta primeiro.");
+        return;
+      }
+      setText(pasted);
+      // Parseia logo em seguida
+      setTimeout(() => doParse(pasted), 50);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      if (msg.toLowerCase().includes("permission") || msg.toLowerCase().includes("denied")) {
+        toast.error("Permissão negada. Permite acesso ao copiado nas configurações do navegador, ou cola manual no campo abaixo.");
+      } else {
+        toast.error("Não consegui ler o copiado. Cola manual no campo abaixo (toque longo → Colar).");
+      }
+    } finally {
+      setAutoPasting(false);
+    }
   };
 
   const handleApply = () => {
@@ -173,9 +207,41 @@ function ColaRapidaModal({
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
           <p className="text-[12.5px] text-spark-ink-70 font-semibold leading-relaxed">
             Copia <strong>tudo</strong> que o agente ({mode === "produto" ? "do nicho" : "Scripts"})
-            te respondeu e cola abaixo. O app extrai os blocos automaticamente e preenche os
-            campos do form 💕
+            te respondeu (no GPT use o ícone de copiar abaixo da resposta) e toca no botão grande
+            aqui pra colar automaticamente:
           </p>
+
+          {/* CTA grande: Colar automaticamente do clipboard */}
+          <button
+            type="button"
+            onClick={handleAutoPaste}
+            disabled={autoPasting || parsing}
+            className={cn(
+              "w-full inline-flex items-center justify-center gap-3 px-5 py-5 rounded-spark-2xl text-[15px] font-extrabold transition-all duration-300 ease-premium",
+              autoPasting || parsing
+                ? "bg-spark-surface text-spark-ink-50 border-2 border-spark-hairline cursor-not-allowed"
+                : "bg-brand-grad text-white shadow-lift-brand hover:-translate-y-0.5",
+            )}
+          >
+            {autoPasting ? (
+              <>
+                <Loader2 size={18} strokeWidth={2.5} className="animate-spin" />
+                Lendo o que você copiou...
+              </>
+            ) : (
+              <>
+                <ClipboardPaste size={18} strokeWidth={2.5} />
+                Colar automaticamente
+                <Sparkles size={14} strokeWidth={2.5} className="opacity-80" />
+              </>
+            )}
+          </button>
+
+          <div className="flex items-center gap-3 text-[11px] font-extrabold uppercase tracking-widest text-spark-ink-50">
+            <span className="flex-1 h-px bg-spark-hairline" />
+            ou cola manual abaixo
+            <span className="flex-1 h-px bg-spark-hairline" />
+          </div>
 
           <textarea
             ref={taRef}
