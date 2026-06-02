@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Camera, Trash2, Loader2 } from "lucide-react";
+import { Camera, Trash2, Loader2, Plus } from "lucide-react";
 import { useToast } from "@/components/molecules/dialog-provider";
 import { cn } from "@/lib/cn";
 
@@ -80,8 +80,10 @@ export function AvatarEditor({ email, name, initialAvatarUrl, size = "lg" }: Pro
     }
   };
 
+  const hasAvatar = !!avatarUrl;
+
   return (
-    <div className="relative shrink-0">
+    <div className="relative shrink-0 flex flex-col items-center gap-2">
       <input
         ref={fileRef}
         type="file"
@@ -90,52 +92,103 @@ export function AvatarEditor({ email, name, initialAvatarUrl, size = "lg" }: Pro
         onChange={onFile}
       />
 
-      <button
-        type="button"
-        onClick={pick}
-        disabled={uploading}
-        aria-label="Trocar foto de perfil"
-        className={cn(
-          "group relative rounded-full text-white flex items-center justify-center font-display bg-brand-grad shadow-lift-brand overflow-hidden transition-transform duration-300 ease-premium hover:scale-105 disabled:opacity-70",
-          dim,
-        )}
-      >
-        {avatarUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={avatarUrl}
-            alt={name || email}
-            className="absolute inset-0 w-full h-full object-cover"
-            loading="lazy"
-          />
-        ) : (
-          <span>{getInitial(name, email)}</span>
-        )}
-
-        {/* Overlay hover */}
-        <div
+      <div className="relative">
+        <button
+          type="button"
+          onClick={pick}
+          disabled={uploading}
+          aria-label={hasAvatar ? "Trocar foto de perfil" : "Adicionar foto de perfil"}
           className={cn(
-            "absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center transition-opacity duration-300",
-            uploading ? "opacity-100" : "opacity-0 group-hover:opacity-100",
+            "group relative rounded-full text-white flex items-center justify-center font-display overflow-hidden transition-all duration-300 ease-premium hover:scale-105 disabled:opacity-70",
+            dim,
+            hasAvatar
+              ? "bg-brand-grad shadow-lift-brand"
+              : "bg-brand-grad-soft border-[3px] border-dashed border-spark-brand/50 text-spark-brand-deep animate-pulse-soft",
           )}
         >
-          {uploading ? (
-            <Loader2 size={20} strokeWidth={2.5} className="animate-spin" />
+          {hasAvatar ? (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={avatarUrl!}
+                alt={name || email}
+                className="absolute inset-0 w-full h-full object-cover"
+                loading="lazy"
+              />
+              {/* Overlay hover/uploading */}
+              <div
+                className={cn(
+                  "absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center transition-opacity duration-300",
+                  uploading ? "opacity-100" : "opacity-0 group-hover:opacity-100",
+                )}
+              >
+                {uploading ? (
+                  <Loader2 size={20} strokeWidth={2.5} className="animate-spin" />
+                ) : (
+                  <Camera size={20} strokeWidth={2.4} />
+                )}
+              </div>
+            </>
           ) : (
-            <Camera size={20} strokeWidth={2.4} />
+            // Sem foto: mostra inicial pequena + Camera grande no centro
+            <div className="flex flex-col items-center gap-0.5">
+              {uploading ? (
+                <Loader2 size={28} strokeWidth={2.5} className="animate-spin" />
+              ) : (
+                <Camera size={28} strokeWidth={2.2} />
+              )}
+              <span className="text-[9px] font-extrabold uppercase tracking-widest opacity-80">
+                adicionar
+              </span>
+            </div>
           )}
-        </div>
-      </button>
+        </button>
 
-      {/* Remover (quando tem avatar) */}
-      {avatarUrl && !uploading && (
+        {/* Badge CAMERA sempre visivel quando tem avatar — sinaliza que da
+            pra clicar pra trocar (especialmente importante no mobile sem hover) */}
+        {hasAvatar && !uploading && (
+          <button
+            type="button"
+            onClick={pick}
+            aria-label="Trocar foto"
+            className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-spark-ink text-white border-[3px] border-spark-bg flex items-center justify-center shadow-lift hover:scale-110 transition-transform duration-300"
+          >
+            <Camera size={13} strokeWidth={2.5} />
+          </button>
+        )}
+
+        {/* Sem avatar: ainda mostra badge + pra reforçar */}
+        {!hasAvatar && !uploading && (
+          <div
+            aria-hidden
+            className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-brand-grad text-white border-[3px] border-spark-bg flex items-center justify-center shadow-lift-brand"
+          >
+            <Plus size={14} strokeWidth={2.8} />
+          </div>
+        )}
+      </div>
+
+      {/* Label visivel chamando a acao */}
+      {!hasAvatar && !uploading && (
+        <button
+          type="button"
+          onClick={pick}
+          className="text-[11px] font-extrabold uppercase tracking-widest text-spark-brand-deep hover:text-spark-brand transition-colors"
+        >
+          Adicionar foto
+        </button>
+      )}
+
+      {/* Remover (so com avatar e size lg) */}
+      {hasAvatar && !uploading && size === "lg" && (
         <button
           type="button"
           onClick={remove}
           aria-label="Remover foto"
-          className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-spark-surface border-2 border-spark-bg text-spark-ink-50 hover:text-bad hover:bg-bad/10 flex items-center justify-center shadow-lift transition-colors"
+          className="text-[10.5px] font-extrabold uppercase tracking-widest text-spark-ink-50 hover:text-bad inline-flex items-center gap-1 transition-colors"
         >
-          <Trash2 size={12} strokeWidth={2.4} />
+          <Trash2 size={10} strokeWidth={2.5} />
+          remover
         </button>
       )}
     </div>

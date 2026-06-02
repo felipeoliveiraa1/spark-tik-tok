@@ -88,7 +88,7 @@ export async function GET(request: Request) {
   // 1) Profiles que optaram pelo ranking
   const { data: profilesData, error: pErr } = await supabase
     .from("profiles")
-    .select("id, name, avatar_url, cidade_uf, meta_mensal_brl")
+    .select("id, name, avatar_url, cidade_uf, meta_mensal_brl, niche")
     .eq("ranking_opt_in", true);
 
   if (pErr) return NextResponse.json({ error: pErr.message }, { status: 500 });
@@ -144,6 +144,7 @@ export async function GET(request: Request) {
     name: string;
     avatar_url: string | null;
     cidade_uf: string | null;
+    niche: string | null;
     revenue_brl: number;
     checkins_done: number;
     days_total: number;
@@ -157,12 +158,16 @@ export async function GET(request: Request) {
     const checks = completionsByUser.get(p.id) ?? 0;
     const revenueNorm = rev / maxRevenue;
     const consistency = Math.min(1, checks / Math.max(1, daysTotal));
-    const score = revenueNorm * 0.6 + consistency * 0.4;
+    // Consistencia diaria pesa mais que faturamento — quem mantem
+    // disciplina merece o destaque. Faturamento entra como sinal
+    // secundario porque varia muito por mes/lancamento/sorte de produto.
+    const score = consistency * 0.6 + revenueNorm * 0.4;
     return {
       user_id: p.id,
       name: p.name ?? "Criadora",
       avatar_url: p.avatar_url,
       cidade_uf: p.cidade_uf,
+      niche: p.niche ?? null,
       revenue_brl: rev,
       checkins_done: checks,
       days_total: daysTotal,

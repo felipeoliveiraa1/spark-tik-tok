@@ -35,6 +35,7 @@ type RankingEntry = {
   name: string;
   avatar_url: string | null;
   cidade_uf: string | null;
+  niche: string | null;
   revenue_brl: number;
   checkins_done: number;
   days_total: number;
@@ -149,63 +150,117 @@ function RankAvatar({
 function Podium({ top3 }: { top3: RankingEntry[] }) {
   // Ordem visual: 2º (esquerda), 1º (centro), 3º (direita)
   const podium = [top3[1], top3[0], top3[2]].filter(Boolean);
-  const heights: Record<number, string> = { 1: "h-40", 2: "h-32", 3: "h-24" };
-  const sizes: Record<number, number> = { 1: 88, 2: 72, 3: 64 };
+  const heights: Record<number, string> = { 1: "h-48 lg:h-56", 2: "h-36 lg:h-44", 3: "h-28 lg:h-36" };
+  const sizes: Record<number, number> = { 1: 104, 2: 80, 3: 72 };
 
   return (
-    <div className="flex items-end justify-center gap-3 lg:gap-6">
+    <div className="flex items-end justify-center gap-2 lg:gap-5">
       {podium.map((entry) => {
         const p = entry.position;
         return (
           <SectionReveal
             key={entry.user_id}
             direction="up"
-            delay={p === 1 ? 0 : p === 2 ? 100 : 200}
-            durationMs={700}
+            delay={p === 1 ? 0 : p === 2 ? 120 : 240}
+            durationMs={800}
           >
-            <div className="flex flex-col items-center">
+            <div className="flex flex-col items-center w-[110px] lg:w-[140px]">
+              {/* Coroa no 1º */}
               {p === 1 && (
                 <Crown
-                  size={28}
-                  strokeWidth={2.2}
-                  className="text-amber-400 mb-1 animate-float"
+                  size={32}
+                  strokeWidth={2}
+                  className="text-amber-400 mb-2 animate-float drop-shadow-[0_4px_12px_rgba(245,158,11,0.6)]"
                   fill="oklch(0.85 0.18 80)"
                 />
               )}
+              {p !== 1 && <div className="h-[42px]" aria-hidden />}
+
               <RankAvatar name={entry.name} url={entry.avatar_url} size={sizes[p]} />
-              <div className="mt-2 text-center max-w-[120px]">
+
+              {/* Nome + Cidade */}
+              <div className="mt-3 text-center w-full">
                 <div
                   className={cn(
-                    "font-extrabold leading-tight truncate",
-                    p === 1 ? "text-[14px] text-spark-ink" : "text-[12.5px] text-spark-ink-70",
+                    "font-extrabold leading-tight truncate tracking-tight",
+                    p === 1 ? "text-[15px] text-spark-ink" : "text-[13px] text-spark-ink-70",
                   )}
                 >
                   {entry.name}
                 </div>
                 {entry.cidade_uf && (
-                  <div className="text-[10px] text-spark-ink-50 truncate mt-0.5">
+                  <div className="text-[10px] text-spark-ink-50 truncate mt-0.5 font-mono">
                     {entry.cidade_uf}
                   </div>
                 )}
+                {/* Nicho badge */}
+                {entry.niche && (
+                  <div className="mt-1.5 inline-flex items-center px-2 py-0.5 rounded-full bg-spark-brand-soft text-spark-brand-deep text-[9px] font-extrabold uppercase tracking-widest max-w-full truncate">
+                    {entry.niche}
+                  </div>
+                )}
               </div>
+
+              {/* Card do pódio com número + faturamento */}
               <div
                 className={cn(
-                  "mt-3 w-20 lg:w-24 rounded-t-spark-2xl flex items-center justify-center font-display text-white shadow-hero relative overflow-hidden",
+                  "mt-3 w-full rounded-t-spark-2xl flex flex-col items-center justify-end pb-3 text-white shadow-hero relative overflow-hidden",
                   heights[p],
                   p === 1
-                    ? "bg-gradient-to-b from-amber-400 to-orange-400"
+                    ? "bg-gradient-to-b from-amber-300 via-amber-400 to-orange-500"
                     : p === 2
-                      ? "bg-gradient-to-b from-spark-brand to-pink-400"
-                      : "bg-gradient-to-b from-orange-300 to-rose-300",
+                      ? "bg-gradient-to-b from-spark-brand to-pink-500"
+                      : "bg-gradient-to-b from-orange-300 to-rose-400",
                 )}
               >
-                <span
+                {/* Brilho decorativo no topo */}
+                <div
+                  aria-hidden
+                  className="absolute top-0 inset-x-0 h-8"
                   style={{
-                    fontSize: p === 1 ? "clamp(2.5rem, 6vw, 3.5rem)" : "clamp(2rem, 5vw, 2.75rem)",
+                    background:
+                      "linear-gradient(180deg, rgba(255,255,255,0.35), transparent)",
+                  }}
+                />
+                <span
+                  className="font-display leading-none"
+                  style={{
+                    fontSize: p === 1 ? "clamp(3rem, 8vw, 4.5rem)" : "clamp(2.25rem, 6vw, 3.25rem)",
                   }}
                 >
                   {p}
                 </span>
+                {/* Faturamento no card do pódio (1º destaque) */}
+                {entry.revenue_brl > 0 && (
+                  <div className="mt-1 text-center px-2">
+                    <div className="text-[9px] uppercase tracking-widest opacity-85 font-extrabold">
+                      faturou
+                    </div>
+                    <div
+                      className={cn(
+                        "font-mono font-extrabold leading-none",
+                        p === 1 ? "text-[15px]" : "text-[12px]",
+                      )}
+                    >
+                      {fmtBRL(entry.revenue_brl)}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Score embaixo do pódio */}
+              <div className="mt-2 text-center">
+                <div className="text-[9.5px] uppercase tracking-widest text-spark-ink-50 font-extrabold">
+                  score
+                </div>
+                <div
+                  className={cn(
+                    "font-display leading-none mt-0.5",
+                    p === 1 ? "text-[20px] text-spark-brand-deep" : "text-[16px] text-spark-ink",
+                  )}
+                >
+                  {(entry.score * 100).toFixed(0)}
+                </div>
               </div>
             </div>
           </SectionReveal>
@@ -231,26 +286,35 @@ function RankingList({
     <div className="rounded-spark-3xl bg-spark-surface border border-spark-hairline overflow-hidden shadow-rest">
       {entries.map((e, i) => {
         const isMe = e.user_id === meId;
+        const consistencyPct = Math.round(
+          Math.min(1, e.checkins_done / Math.max(1, e.days_total)) * 100,
+        );
         return (
           <SectionReveal key={e.user_id} delay={Math.min(i * 40, 240)}>
             <div
               className={cn(
-                "flex items-center gap-3 lg:gap-4 p-4 lg:p-5 transition-colors duration-300",
+                "flex items-center gap-3 lg:gap-4 p-4 lg:p-5 transition-all duration-300",
                 i > 0 ? "border-t border-spark-hairline" : "",
-                isMe ? "bg-brand-grad-soft/40" : "hover:bg-spark-brand-soft/20",
+                isMe
+                  ? "bg-brand-grad-soft/60 ring-2 ring-inset ring-spark-brand/30"
+                  : "hover:bg-spark-brand-soft/15",
               )}
             >
-              <div className="w-10 text-center shrink-0">
-                <span className="font-mono font-extrabold text-spark-ink text-[15px]">
-                  {String(e.position).padStart(2, "0")}
+              {/* Posição grande estilo magazine */}
+              <div className="w-12 lg:w-14 text-center shrink-0">
+                <span className="font-display text-spark-ink text-[22px] lg:text-[26px] leading-none">
+                  {e.position}
                 </span>
               </div>
-              <RankAvatar name={e.name} url={e.avatar_url} size={44} isMe={isMe} />
+
+              <RankAvatar name={e.name} url={e.avatar_url} size={52} isMe={isMe} />
+
+              {/* Bloco central: nome + nicho + meta */}
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <span
                     className={cn(
-                      "text-[14px] font-extrabold truncate",
+                      "text-[14.5px] font-extrabold truncate tracking-tight",
                       isMe ? "text-spark-brand-deep" : "text-spark-ink",
                     )}
                   >
@@ -262,26 +326,46 @@ function RankingList({
                     </span>
                   )}
                 </div>
-                <div className="mt-0.5 flex items-center gap-2 text-[10.5px] text-spark-ink-50 font-semibold">
+
+                {/* Nicho em badge brand */}
+                {e.niche && (
+                  <div className="mt-1 inline-flex items-center px-2 py-0.5 rounded-full bg-spark-brand-soft text-spark-brand-deep text-[9.5px] font-extrabold uppercase tracking-widest max-w-full truncate">
+                    {e.niche}
+                  </div>
+                )}
+
+                {/* Cidade + streak meta */}
+                <div className="mt-1.5 flex items-center gap-2 text-[10.5px] text-spark-ink-50 font-semibold flex-wrap">
                   {e.cidade_uf && (
                     <span className="inline-flex items-center gap-0.5">
                       <MapPin size={9} strokeWidth={2.5} />
                       {e.cidade_uf}
                     </span>
                   )}
-                  {e.cidade_uf && <span>·</span>}
+                  {e.cidade_uf && <span aria-hidden>·</span>}
                   <span className="inline-flex items-center gap-0.5">
                     <Flame size={9} strokeWidth={2.5} />
-                    {e.checkins_done}/{e.days_total}
+                    {e.checkins_done}/{e.days_total} ({consistencyPct}%)
                   </span>
                 </div>
               </div>
-              <div className="text-right shrink-0">
-                <div className="font-mono font-extrabold text-spark-ink text-[13.5px]">
-                  {fmtBRL(e.revenue_brl)}
+
+              {/* Bloco direito: faturamento DESTACADO + score */}
+              <div className="text-right shrink-0 min-w-[88px]">
+                <div className="text-[8.5px] uppercase tracking-widest text-spark-ink-50 font-extrabold">
+                  faturou
                 </div>
-                <div className="text-[10px] text-spark-brand-deep font-extrabold mt-0.5">
-                  score {(e.score * 100).toFixed(0)}
+                <div
+                  className={cn(
+                    "font-mono font-extrabold leading-none mt-0.5",
+                    e.revenue_brl > 0 ? "text-spark-ink text-[15px]" : "text-spark-ink-35 text-[13px]",
+                  )}
+                >
+                  {e.revenue_brl > 0 ? fmtBRL(e.revenue_brl) : "—"}
+                </div>
+                <div className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-spark-ink text-white text-[9.5px] font-extrabold uppercase tracking-widest">
+                  <Sparkles size={8} strokeWidth={2.5} />
+                  {(e.score * 100).toFixed(0)}
                 </div>
               </div>
             </div>
@@ -435,7 +519,7 @@ function RankingBody({
                 <span>·</span>
                 <span className="inline-flex items-center gap-1.5">
                   <TrendingUp size={11} strokeWidth={2.5} />
-                  Score = 60% faturamento + 40% consistência
+                  Score = 60% consistência + 40% faturamento
                 </span>
               </div>
             </SectionReveal>
