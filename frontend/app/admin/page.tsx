@@ -733,50 +733,154 @@ export default async function AdminHome() {
 }
 
 // =================================================================
-// Funnel — barras decrescentes + taxa de conversao stage-a-stage
+// Funnel — desenho SVG (trapezios afunilando) + lista lateral
 // =================================================================
 
 function Funnel({ stages }: { stages: FunnelStage[] }) {
   const max = stages[0]?.count ?? 0;
 
+  // Dimensoes do viewBox. SVG escala fluido via className.
+  const VB_W = 800;
+  const STAGE_H = 78;
+  const GAP = 4;
+  const VB_H = stages.length * STAGE_H;
+  const CENTER = VB_W / 2;
+  const MAX_HALF = (VB_W - 16) / 2; // 8px de margem lateral
+  // Largura minima pra trapezio nao virar ponta e o numero caber dentro
+  const MIN_RATIO = 0.08;
+
   return (
     <div className="rounded-spark-2xl bg-spark-surface border border-spark-hairline shadow-rest p-5 lg:p-6">
-      <ul className="space-y-3">
-        {stages.map((stage, i) => {
-          const Icon = stage.icon;
-          const pct = max > 0 ? Math.round((stage.count / max) * 100) : 0;
-          const prev = i > 0 ? stages[i - 1] : null;
-          const stepConversion =
-            prev && prev.count > 0 ? Math.round((stage.count / prev.count) * 100) : null;
-          const isFirst = i === 0;
-          const drop = stepConversion !== null && stepConversion < 60;
+      <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_1fr] gap-6 lg:gap-8 items-start">
+        {/* === SVG do funil === */}
+        <div className="relative">
+          <svg
+            viewBox={`0 0 ${VB_W} ${VB_H}`}
+            className="w-full h-auto block"
+            role="img"
+            aria-label="Funil de ativacao das alunas"
+          >
+            <defs>
+              <linearGradient id="funnel-grad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="oklch(0.65 0.20 350)" />
+                <stop offset="50%" stopColor="oklch(0.58 0.22 348)" />
+                <stop offset="100%" stopColor="oklch(0.46 0.22 345)" />
+              </linearGradient>
+              <filter id="funnel-shadow" x="-10%" y="-10%" width="120%" height="120%">
+                <feDropShadow
+                  dx="0"
+                  dy="2"
+                  stdDeviation="3"
+                  floodColor="oklch(0.50 0.22 345)"
+                  floodOpacity="0.18"
+                />
+              </filter>
+            </defs>
 
-          return (
-            <li key={stage.key}>
-              <div className="flex items-center gap-4">
-                {/* Numero do stage */}
-                <div className="shrink-0 w-7 text-center">
-                  <span className="text-[11px] font-mono font-extrabold text-spark-ink-35">
+            {stages.map((stage, i) => {
+              const yTop = i * STAGE_H + GAP / 2;
+              const yBottom = (i + 1) * STAGE_H - GAP / 2;
+
+              // Razao do topo do trapezio = count do stage anterior (ou 100% no primeiro)
+              const topCount = i === 0 ? max : stages[i - 1].count;
+              const topRatio = max > 0 ? topCount / max : 0;
+              const bottomRatio = max > 0 ? stage.count / max : 0;
+
+              const topHalf = Math.max(MIN_RATIO, topRatio) * MAX_HALF;
+              const bottomHalf = Math.max(MIN_RATIO, bottomRatio) * MAX_HALF;
+
+              const points = [
+                `${CENTER - topHalf},${yTop}`,
+                `${CENTER + topHalf},${yTop}`,
+                `${CENTER + bottomHalf},${yBottom}`,
+                `${CENTER - bottomHalf},${yBottom}`,
+              ].join(" ");
+
+              const midY = (yTop + yBottom) / 2;
+              // Opacidade ascendente — topo mais claro, base mais densa
+              const opacity = 0.55 + i * 0.075;
+
+              return (
+                <g key={stage.key}>
+                  <polygon
+                    points={points}
+                    fill="url(#funnel-grad)"
+                    opacity={opacity}
+                    filter="url(#funnel-shadow)"
+                  />
+                  {/* Numero grande no centro */}
+                  <text
+                    x={CENTER}
+                    y={midY - 4}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fontSize="26"
+                    fontWeight="800"
+                    fill="white"
+                    className="font-mono"
+                  >
+                    {stage.count}
+                  </text>
+                  {/* Label do stage abaixo do numero */}
+                  <text
+                    x={CENTER}
+                    y={midY + 18}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fontSize="10.5"
+                    fontWeight="800"
+                    fill="rgba(255,255,255,0.92)"
+                    letterSpacing="0.12em"
+                  >
+                    {stage.label.toUpperCase()}
+                  </text>
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+
+        {/* === Lista lateral com detalhes === */}
+        <ol className="space-y-2">
+          {stages.map((stage, i) => {
+            const Icon = stage.icon;
+            const pct = max > 0 ? Math.round((stage.count / max) * 100) : 0;
+            const prev = i > 0 ? stages[i - 1] : null;
+            const stepConversion =
+              prev && prev.count > 0 ? Math.round((stage.count / prev.count) * 100) : null;
+            const isFirst = i === 0;
+            const drop = stepConversion !== null && stepConversion < 60;
+
+            return (
+              <li
+                key={stage.key}
+                className="flex items-start gap-3 p-3 rounded-spark-lg hover:bg-spark-surface-sunken/40 transition-colors"
+              >
+                <div className="shrink-0 w-7 h-7 rounded-full bg-spark-surface-sunken flex items-center justify-center">
+                  <span className="text-[10px] font-mono font-extrabold text-spark-ink-50">
                     {String(i + 1).padStart(2, "0")}
                   </span>
                 </div>
 
-                {/* Conteudo do stage */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-3 mb-1.5">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Icon size={14} strokeWidth={2.2} className="text-spark-ink-50 shrink-0" />
-                      <span className="text-[13.5px] font-extrabold text-spark-ink tracking-tight truncate">
+                  <div className="flex items-center justify-between gap-2 mb-0.5">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <Icon
+                        size={13}
+                        strokeWidth={2.2}
+                        className="text-spark-ink-50 shrink-0"
+                      />
+                      <span className="text-[13px] font-extrabold text-spark-ink tracking-tight truncate">
                         {stage.label}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-[16px] font-mono font-extrabold text-spark-ink">
+                      <span className="text-[14px] font-mono font-extrabold text-spark-ink">
                         {stage.count}
                       </span>
                       {!isFirst && (
                         <span
-                          className={`text-[10.5px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                          className={`text-[10px] font-extrabold uppercase tracking-wider px-1.5 py-0.5 rounded-full ${
                             drop
                               ? "bg-warn/10 text-warn"
                               : "bg-spark-surface-sunken text-spark-ink-50"
@@ -787,30 +891,26 @@ function Funnel({ stages }: { stages: FunnelStage[] }) {
                       )}
                     </div>
                   </div>
-                  <div className="h-2 rounded-full bg-spark-surface-sunken overflow-hidden">
-                    <div
-                      className="h-full bg-brand-grad transition-all duration-700 ease-premium"
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                  <div className="mt-1 flex items-center justify-between gap-2">
+                  <div className="flex items-center justify-between gap-2">
                     <p className="text-[11px] text-spark-ink-50 font-semibold truncate">
                       {stage.description}
                     </p>
-                    <span className="text-[10.5px] font-mono text-spark-ink-35 shrink-0">
-                      {pct}% do topo
+                    <span className="text-[10px] font-mono text-spark-ink-35 shrink-0">
+                      {pct}%
                     </span>
                   </div>
                 </div>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+
       <div className="mt-5 pt-4 border-t border-spark-hairline text-[11px] text-spark-ink-50 font-semibold">
-        % ao lado do número = taxa de conversão entre stages.{" "}
-        <span className="text-warn font-extrabold">Vermelho</span> = caiu mais que 40% nesse stage —
-        provavel ponto de atrito.
+        Cada faixa do funil estreita conforme as alunas avançam. % ao lado do número = taxa
+        de conversão entre stages.{" "}
+        <span className="text-warn font-extrabold">Vermelho</span> = caiu mais que 40% nesse
+        stage — ponto de atrito.
       </div>
     </div>
   );
