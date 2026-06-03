@@ -102,6 +102,8 @@ function ContaBody({
   createdAt,
   planRenewedAt,
   stats,
+  whatsapp,
+  whatsappOptIn,
 }: {
   desktop?: boolean;
   email: string;
@@ -114,6 +116,8 @@ function ContaBody({
   cidadeUf: string | null;
   metaMensalBrl: number | null;
   rankingOptIn: boolean;
+  whatsapp: string;
+  whatsappOptIn: boolean;
   planActive: boolean;
   planStatus: string | null;
   planExpiresAt: string | null;
@@ -365,6 +369,8 @@ function ContaBody({
                   initialTiktok={tiktokHandle ?? ""}
                   initialCidade={cidadeUf ?? ""}
                   initialMeta={metaMensalBrl}
+                  initialWhatsapp={whatsapp}
+                  initialWhatsappOptIn={whatsappOptIn}
                 />
               </div>
             </SectionReveal>
@@ -517,6 +523,8 @@ export default async function ContaPage({ searchParams }: ContaPageProps) {
         profile.meta_mensal_brl != null ? Number(profile.meta_mensal_brl) : null
       }
       rankingOptIn={profile.ranking_opt_in ?? false}
+      whatsapp={profile.whatsapp ?? ""}
+      whatsappOptIn={profile.whatsapp_opt_in ?? true}
       planActive={profile.plan_active}
       planStatus={profile.plan_status ?? null}
       planExpiresAt={profile.plan_expires_at ?? null}

@@ -2,7 +2,18 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Pencil, Check, X, MapPin, Target, AtSign, Image as ImageIcon } from "lucide-react";
+import {
+  Pencil,
+  Check,
+  X,
+  MapPin,
+  Target,
+  AtSign,
+  Image as ImageIcon,
+  Phone,
+  Bell,
+  BellOff,
+} from "lucide-react";
 import { SInput } from "@/components/atoms/s-input";
 import { SButton } from "@/components/atoms/s-button";
 import { useToast } from "@/components/molecules/dialog-provider";
@@ -13,7 +24,22 @@ type Props = {
   initialTiktok: string;
   initialCidade: string;
   initialMeta: number | null;
+  initialWhatsapp: string;
+  initialWhatsappOptIn: boolean;
 };
+
+/**
+ * Formata "5511998002960" -> "(11) 99800-2960" pra exibir no input.
+ * Aceita formato cru ou ja com 55 prefix.
+ */
+function formatWhatsappDisplay(raw: string): string {
+  if (!raw) return "";
+  let d = raw.replace(/\D/g, "");
+  if (d.startsWith("55") && (d.length === 12 || d.length === 13)) d = d.slice(2);
+  if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  return raw; // formato desconhecido, mostra como veio
+}
 
 function fmtBRL(v: number | null | undefined): string {
   if (v == null) return "Não definida";
@@ -30,6 +56,8 @@ export function ProfileExtrasEditor({
   initialTiktok,
   initialCidade,
   initialMeta,
+  initialWhatsapp,
+  initialWhatsappOptIn,
 }: Props) {
   const router = useRouter();
   const toast = useToast();
@@ -41,6 +69,8 @@ export function ProfileExtrasEditor({
   const [meta, setMeta] = React.useState<string>(
     initialMeta != null ? String(initialMeta) : "",
   );
+  const [whatsapp, setWhatsapp] = React.useState(formatWhatsappDisplay(initialWhatsapp));
+  const [whatsappOptIn, setWhatsappOptIn] = React.useState(initialWhatsappOptIn);
   const [saving, setSaving] = React.useState(false);
 
   const cancel = () => {
@@ -49,6 +79,8 @@ export function ProfileExtrasEditor({
     setTiktok(initialTiktok);
     setCidade(initialCidade);
     setMeta(initialMeta != null ? String(initialMeta) : "");
+    setWhatsapp(formatWhatsappDisplay(initialWhatsapp));
+    setWhatsappOptIn(initialWhatsappOptIn);
     setEditing(false);
   };
 
@@ -61,6 +93,8 @@ export function ProfileExtrasEditor({
         tiktok_handle: tiktok,
         cidade_uf: cidade,
         meta_mensal_brl: meta.trim() === "" ? null : Number(meta),
+        whatsapp: whatsapp.trim() === "" ? null : whatsapp,
+        whatsapp_opt_in: whatsappOptIn,
       };
       const res = await fetch("/api/me", {
         method: "PATCH",
@@ -72,7 +106,8 @@ export function ProfileExtrasEditor({
         setEditing(false);
         router.refresh();
       } else {
-        toast.error("Falhou ao salvar");
+        const j = (await res.json().catch(() => ({}))) as { message?: string; error?: string };
+        toast.error(j.message ?? j.error ?? "Falhou ao salvar");
       }
     } finally {
       setSaving(false);
@@ -80,7 +115,7 @@ export function ProfileExtrasEditor({
   };
 
   if (!editing) {
-    const hasAny = bio || instagram || tiktok || cidade || initialMeta;
+    const hasAny = bio || instagram || tiktok || cidade || initialMeta || initialWhatsapp;
     return (
       <div className="bg-spark-surface rounded-spark-2xl border border-spark-hairline p-5 shadow-rest">
         <div className="flex items-start justify-between gap-3 mb-3">
@@ -134,6 +169,28 @@ export function ProfileExtrasEditor({
                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-spark-brand-soft text-spark-brand-deep font-extrabold">
                   <Target size={11} strokeWidth={2.5} />
                   Meta {fmtBRL(initialMeta)}
+                </span>
+              )}
+              {initialWhatsapp && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-spark-surface-sunken font-semibold font-mono">
+                  <Phone size={11} strokeWidth={2.5} />
+                  {formatWhatsappDisplay(initialWhatsapp)}
+                </span>
+              )}
+              {initialWhatsapp && (
+                <span
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full font-extrabold text-[11.5px] ${
+                    initialWhatsappOptIn
+                      ? "bg-good/10 text-good"
+                      : "bg-spark-ink-10 text-spark-ink-50"
+                  }`}
+                >
+                  {initialWhatsappOptIn ? (
+                    <Bell size={11} strokeWidth={2.5} />
+                  ) : (
+                    <BellOff size={11} strokeWidth={2.5} />
+                  )}
+                  {initialWhatsappOptIn ? "Mensagens ativas" : "Mensagens pausadas"}
                 </span>
               )}
             </div>
@@ -221,6 +278,70 @@ export function ProfileExtrasEditor({
               min={0}
             />
           </div>
+        </div>
+
+        {/* WhatsApp + opt-in */}
+        <div className="rounded-spark-xl bg-spark-brand-soft/50 border border-spark-brand/15 p-4 space-y-3">
+          <div>
+            <div className="flex items-center gap-2 text-[11px] font-extrabold text-spark-brand-deep uppercase tracking-wider mb-1.5">
+              <Phone size={11} strokeWidth={2.5} />
+              WhatsApp (recebe dicas da Yara)
+            </div>
+            <SInput
+              type="tel"
+              value={whatsapp}
+              onChange={(e) => setWhatsapp(e.target.value)}
+              placeholder="(11) 99999-9999"
+              Icon={Phone}
+              maxLength={20}
+            />
+            <p className="mt-1.5 text-[10.5px] text-spark-ink-50 font-semibold leading-snug">
+              Vamos te mandar mensagens motivacionais, lembretes de rotina e celebrar
+              conquistas. Sem spam, prometido.
+            </p>
+          </div>
+
+          {/* Toggle on/off */}
+          <label className="flex items-center justify-between gap-3 p-3 rounded-spark-lg bg-spark-surface border border-spark-hairline cursor-pointer hover:border-spark-brand/30 transition-colors">
+            <div className="flex items-center gap-2.5 min-w-0">
+              {whatsappOptIn ? (
+                <div className="w-8 h-8 rounded-full bg-good/10 text-good flex items-center justify-center shrink-0">
+                  <Bell size={14} strokeWidth={2.5} />
+                </div>
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-spark-ink-10 text-spark-ink-50 flex items-center justify-center shrink-0">
+                  <BellOff size={14} strokeWidth={2.5} />
+                </div>
+              )}
+              <div className="min-w-0">
+                <div className="text-[13px] font-extrabold text-spark-ink">
+                  {whatsappOptIn ? "Recebendo mensagens" : "Mensagens pausadas"}
+                </div>
+                <div className="text-[10.5px] text-spark-ink-50 font-semibold">
+                  {whatsappOptIn
+                    ? "Você recebe motivacional, lembretes e dicas"
+                    : "Você não recebe nenhuma mensagem"}
+                </div>
+              </div>
+            </div>
+            <input
+              type="checkbox"
+              checked={whatsappOptIn}
+              onChange={(e) => setWhatsappOptIn(e.target.checked)}
+              className="sr-only peer"
+            />
+            <span
+              className={`relative w-11 h-6 rounded-full transition-colors duration-300 shrink-0 ${
+                whatsappOptIn ? "bg-brand-grad" : "bg-spark-ink-20"
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-300 ${
+                  whatsappOptIn ? "translate-x-5" : "translate-x-0"
+                }`}
+              />
+            </span>
+          </label>
         </div>
 
         <div className="flex gap-2 pt-2">

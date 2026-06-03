@@ -284,10 +284,25 @@ export async function enqueueOutbox(
     scheduledAt?: Date;
     metadata?: Record<string, unknown>;
     skipWeeklyLimit?: boolean;
+    skipOptInCheck?: boolean;
   },
 ): Promise<EnqueueResult> {
   const normalizedPhone = normalizePhoneBR(args.phone);
   if (!normalizedPhone) return { ok: false, reason: "phone_invalido" };
+
+  // Defesa em profundidade: aluna optou por NAO receber mensagens?
+  // Pula sempre (mesmo blast manual respeita — admin que clica
+  // "test_admin" usa skipOptInCheck pra mandar pra qualquer numero).
+  if (!args.skipOptInCheck) {
+    const { data: prof } = await supabase
+      .from("profiles")
+      .select("whatsapp_opt_in")
+      .eq("id", args.userId)
+      .maybeSingle();
+    if (prof && prof.whatsapp_opt_in === false) {
+      return { ok: false, reason: "opt_out" };
+    }
+  }
 
   if (!args.skipWeeklyLimit) {
     const tooMany = await reachedWeeklyLimit(supabase, args.userId);
@@ -1165,6 +1180,7 @@ export async function handleBlast(body: {
       text,
       metadata: { campaign: "test_admin", theme: entry.theme },
       skipWeeklyLimit: true,
+      skipOptInCheck: true,
     });
     if (!r.ok) {
       return {
@@ -1190,6 +1206,7 @@ export async function handleBlast(body: {
       .from("profiles")
       .select("id, name, whatsapp, plan_active, role")
       .not("whatsapp", "is", null)
+      .eq("whatsapp_opt_in", true)
       .or("plan_active.eq.true,role.eq.admin");
 
     if (error) return { ok: false, error: error.message };
@@ -1239,6 +1256,7 @@ export async function handleStats() {
       .from("profiles")
       .select("id", { count: "exact", head: true })
       .not("whatsapp", "is", null)
+      .eq("whatsapp_opt_in", true)
       .or("plan_active.eq.true,role.eq.admin"),
     supabase
       .from("profiles")

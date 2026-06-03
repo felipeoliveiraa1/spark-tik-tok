@@ -5,7 +5,23 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const PROFILE_FIELDS =
-  "id, email, name, niche, plan_active, must_reset_password, role, avatar_url, bio, instagram_handle, tiktok_handle, cidade_uf, meta_mensal_brl, ranking_opt_in";
+  "id, email, name, niche, plan_active, must_reset_password, role, avatar_url, bio, instagram_handle, tiktok_handle, cidade_uf, meta_mensal_brl, ranking_opt_in, whatsapp, whatsapp_opt_in";
+
+// Normaliza telefone BR pra formato Evolution (55 + DDD + numero, so digitos)
+function normalizeWhatsapp(input: unknown): string | null {
+  if (typeof input !== "string") return null;
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+  let d = trimmed.replace(/\D/g, "");
+  if (!d) return null;
+  // Ja em formato 55XXXXXXXXXXX
+  if ((d.length === 12 || d.length === 13) && d.startsWith("55")) return d;
+  // Sem codigo pais — adiciona 55
+  if (d.length === 10 || d.length === 11) return `55${d}`;
+  // Outros tamanhos validos
+  if (d.length >= 12 && d.length <= 14) return d;
+  return null;
+}
 
 function clean(s: unknown, maxLen: number): string | null {
   if (typeof s !== "string") return null;
@@ -75,6 +91,24 @@ export async function PATCH(request: Request) {
   }
   if ("ranking_opt_in" in body) {
     patch.ranking_opt_in = !!body.ranking_opt_in;
+  }
+  if ("whatsapp" in body) {
+    const raw = body.whatsapp;
+    if (raw === null || raw === "") {
+      patch.whatsapp = null;
+    } else {
+      const normalized = normalizeWhatsapp(raw);
+      if (!normalized) {
+        return NextResponse.json(
+          { error: "invalid_whatsapp", message: "Telefone inválido. Use DDD + número, ex: (11) 99999-9999" },
+          { status: 400 },
+        );
+      }
+      patch.whatsapp = normalized;
+    }
+  }
+  if ("whatsapp_opt_in" in body) {
+    patch.whatsapp_opt_in = !!body.whatsapp_opt_in;
   }
 
   if (Object.keys(patch).length === 0) {
