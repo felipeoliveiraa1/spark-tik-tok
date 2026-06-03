@@ -29,12 +29,18 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
+  const start = Date.now();
+  console.log("[whatsapp-flush] iniciando...");
   const supabase = getServiceClient();
   const stats = await flushOutbox(supabase, 15);
+  console.log(
+    `[whatsapp-flush] done em ${Date.now() - start}ms — processed=${stats.processed} sent=${stats.sent} failed=${stats.failed} skipped=${stats.skipped}`,
+  );
 
   return NextResponse.json({
     ok: true,
     ...stats,
     ran_at: new Date().toISOString(),
+    elapsed_ms: Date.now() - start,
   });
 }
