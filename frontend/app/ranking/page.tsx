@@ -209,7 +209,7 @@ function Podium({
                 )}
                 {/* CTA pra abrir perfil */}
                 <div className="mt-1.5 inline-flex items-center gap-1 text-spark-brand-deep text-[9px] font-extrabold uppercase tracking-widest">
-                  clique ou toque pra ver mais →
+                  toque pra ver mais →
                 </div>
               </div>
 
@@ -360,7 +360,7 @@ function RankingList({
 
                 {/* CTA pra abrir perfil */}
                 <div className="mt-1 inline-flex items-center gap-1 text-spark-brand-deep text-[9.5px] font-extrabold uppercase tracking-widest">
-                  clique ou toque pra ver mais →
+                  toque pra ver mais →
                 </div>
               </div>
 
