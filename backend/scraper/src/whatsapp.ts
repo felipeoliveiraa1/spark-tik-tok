@@ -1099,25 +1099,35 @@ export function startWhatsAppWorker() {
     })();
   }, FLUSH_INTERVAL_MS);
 
-  // Triggers diarios — checa a cada 1h se chegou a hora do disparo (9h BRT)
+  // Triggers diarios — dispara 1x por dia entre 9h-10h BRT.
+  // Checa a cada 5min (em vez de 1h) pra cobrir startup em qualquer momento.
+  // Backfill: se o container subiu DEPOIS das 9h e o dia ainda nao
+  // foi processado, dispara imediato ate as 23h (limite janela envio).
   let lastTriggersDay = "";
-  triggersTimer = setInterval(() => {
-    void (async () => {
-      try {
-        const now = new Date();
-        const brtHour = (now.getUTCHours() - 3 + 24) % 24;
-        const today = brtDateString(0);
-        if (brtHour === 9 && lastTriggersDay !== today) {
-          lastTriggersDay = today;
-          log.info("[whatsapp-triggers] disparando run diario");
-          const result = await runAllTriggers();
-          log.info({ result }, "[whatsapp-triggers] done");
-        }
-      } catch (err) {
-        log.error({ err }, "[whatsapp-triggers] erro");
-      }
-    })();
-  }, 60 * 60 * 1000); // checa a cada 1h
+
+  const tickTriggers = async () => {
+    try {
+      const now = new Date();
+      const brtHour = (now.getUTCHours() - 3 + 24) % 24;
+      const today = brtDateString(0);
+      // Janela alvo: 9h BRT. Backfill: se subiu depois das 9h e ainda nao
+      // rodou hoje, roda no proximo tick (entre 9h-22h).
+      const inWindow = brtHour >= 9 && brtHour < 23;
+      const shouldRun = inWindow && lastTriggersDay !== today;
+      if (!shouldRun) return;
+      lastTriggersDay = today;
+      log.info("[whatsapp-triggers] disparando run diario");
+      const result = await runAllTriggers();
+      log.info({ result }, "[whatsapp-triggers] done");
+    } catch (err) {
+      log.error({ err }, "[whatsapp-triggers] erro");
+    }
+  };
+
+  // Tick imediato no startup (cobre o caso "subiu depois das 9h"),
+  // depois a cada 5 minutos.
+  void tickTriggers();
+  triggersTimer = setInterval(() => void tickTriggers(), 5 * 60 * 1000);
 }
 
 export function stopWhatsAppWorker() {
