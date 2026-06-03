@@ -23,9 +23,25 @@ import {
   TRIGGER_DIA1_NAO_LOGOU_KEY,
   TRIGGER_SUMIU_7D_KEY,
   TRIGGER_STREAK_3_KEY,
+  TRIGGER_PRIMEIRO_FATURAMENTO_KEY,
+  TRIGGER_STREAK_QUEBRADO_KEY,
+  TRIGGER_PRIMEIRO_PRODUTO_KEY,
+  TRIGGER_PRIMEIRO_ROTEIRO_KEY,
+  TRIGGER_BATEU_META_MENSAL_KEY,
+  TRIGGER_TOUR_COMPLETO_KEY,
+  TRIGGER_EBOOK_BAIXADO_KEY,
+  TRIGGER_ROTINA_30DIAS_KEY,
   buildTriggerDia1NaoLogou,
   buildTriggerSumiu7d,
   buildTriggerStreak3,
+  buildTriggerPrimeiroFaturamento,
+  buildTriggerStreakQuebrado,
+  buildTriggerPrimeiroProduto,
+  buildTriggerPrimeiroRoteiro,
+  buildTriggerBateuMetaMensal,
+  buildTriggerTourCompleto,
+  buildTriggerEbookBaixado,
+  buildTriggerRotina30Dias,
   type MotivationalEntry,
 } from "./whatsapp-templates.js";
 
@@ -640,14 +656,410 @@ async function runTriggerStreak3(supabase: SupabaseClient) {
   return { found: targets.length, enqueued, skipped };
 }
 
+// =================================================================
+// HELPER: "primeira vez do evento X" (primeiro_faturamento, produto, etc)
+// =================================================================
+//
+// Pra cada user, retorna os candidatos cujo PRIMEIRO evento "eventName"
+// aconteceu nas ultimas 24h. Usado por triggers que celebram marcos
+// unicos (1a venda, 1o produto, 1o roteiro, etc).
+async function runTriggerFirstEvent(
+  supabase: SupabaseClient,
+  args: {
+    eventName: string;
+    metadataFilter?: { key: string; value: string };
+    templateKey: string;
+    buildText: (input: { firstName: string }) => { text: string };
+    triggerLabel: string;
+  },
+): Promise<{ found: number; enqueued: number; skipped: number }> {
+  const last24h = new Date(Date.now() - 24 * 3600_000).toISOString();
+
+  // Eventos recentes
+  let query = supabase
+    .from("user_events")
+    .select("user_id, created_at, metadata")
+    .eq("event", args.eventName)
+    .gte("created_at", last24h);
+  if (args.metadataFilter) {
+    query = query.eq(`metadata->>${args.metadataFilter.key}`, args.metadataFilter.value);
+  }
+  const { data: recent } = await query;
+
+  type EventRow = { user_id: string; created_at: string; metadata: Record<string, unknown> };
+  const recentRows = (recent ?? []) as EventRow[];
+  if (recentRows.length === 0) return { found: 0, enqueued: 0, skipped: 0 };
+
+  // Pra cada candidato, confirma que NAO tem evento anterior (=eh o 1o)
+  const candidateIds = Array.from(new Set(recentRows.map((r) => r.user_id)));
+  const { data: earlier } = await supabase
+    .from("user_events")
+    .select("user_id, created_at")
+    .eq("event", args.eventName)
+    .in("user_id", candidateIds)
+    .lt("created_at", last24h);
+
+  const hasEarlier = new Set(
+    ((earlier ?? []) as { user_id: string }[]).map((e) => e.user_id),
+  );
+  const firstTimeIds = candidateIds.filter((id) => !hasEarlier.has(id));
+  if (firstTimeIds.length === 0) return { found: 0, enqueued: 0, skipped: 0 };
+
+  // Busca dados dos profiles
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, name, whatsapp")
+    .in("id", firstTimeIds)
+    .not("whatsapp", "is", null)
+    .or("plan_active.eq.true,plan_status.eq.trial");
+
+  const targets = (profiles ?? []) as { id: string; name: string | null; whatsapp: string }[];
+
+  let enqueued = 0;
+  let skipped = 0;
+  for (const c of targets) {
+    if (await alreadyReceivedRecently(supabase, c.id, args.templateKey, 24 * 30)) {
+      skipped++;
+      continue;
+    }
+    const { text } = args.buildText({ firstName: c.name ?? "amiga" });
+    const r = await enqueueOutbox(supabase, {
+      userId: c.id,
+      phone: c.whatsapp,
+      templateKey: args.templateKey,
+      text,
+      metadata: { trigger: args.triggerLabel },
+    });
+    if (r.ok) enqueued++;
+    else skipped++;
+  }
+  return { found: targets.length, enqueued, skipped };
+}
+
+// =================================================================
+// TRIGGER: 1o faturamento registrado (event=revenue_save)
+// =================================================================
+
+async function runTriggerPrimeiroFaturamento(supabase: SupabaseClient) {
+  return runTriggerFirstEvent(supabase, {
+    eventName: "revenue_save",
+    templateKey: TRIGGER_PRIMEIRO_FATURAMENTO_KEY,
+    buildText: buildTriggerPrimeiroFaturamento,
+    triggerLabel: "primeiro_faturamento",
+  });
+}
+
+// =================================================================
+// TRIGGER: 1o produto cadastrado (event=product_create)
+// =================================================================
+
+async function runTriggerPrimeiroProduto(supabase: SupabaseClient) {
+  return runTriggerFirstEvent(supabase, {
+    eventName: "product_create",
+    templateKey: TRIGGER_PRIMEIRO_PRODUTO_KEY,
+    buildText: buildTriggerPrimeiroProduto,
+    triggerLabel: "primeiro_produto",
+  });
+}
+
+// =================================================================
+// TRIGGER: 1o roteiro gerado (event=script_generate)
+// =================================================================
+
+async function runTriggerPrimeiroRoteiro(supabase: SupabaseClient) {
+  return runTriggerFirstEvent(supabase, {
+    eventName: "script_generate",
+    templateKey: TRIGGER_PRIMEIRO_ROTEIRO_KEY,
+    buildText: buildTriggerPrimeiroRoteiro,
+    triggerLabel: "primeiro_roteiro",
+  });
+}
+
+// =================================================================
+// TRIGGER: completou tour da home (event=tour_complete, metadata.tour=home)
+// =================================================================
+
+async function runTriggerTourCompleto(supabase: SupabaseClient) {
+  return runTriggerFirstEvent(supabase, {
+    eventName: "tour_complete",
+    metadataFilter: { key: "tour", value: "home" },
+    templateKey: TRIGGER_TOUR_COMPLETO_KEY,
+    buildText: buildTriggerTourCompleto,
+    triggerLabel: "tour_completo",
+  });
+}
+
+// =================================================================
+// TRIGGER: 1o ebook baixado (event=ebook_download)
+// =================================================================
+
+async function runTriggerEbookBaixado(supabase: SupabaseClient) {
+  return runTriggerFirstEvent(supabase, {
+    eventName: "ebook_download",
+    templateKey: TRIGGER_EBOOK_BAIXADO_KEY,
+    buildText: buildTriggerEbookBaixado,
+    triggerLabel: "ebook_baixado",
+  });
+}
+
+// =================================================================
+// TRIGGER: tinha streak >=3 dias e parou (2 dias sem bater)
+// =================================================================
+
+async function runTriggerStreakQuebrado(supabase: SupabaseClient) {
+  // Tinha 3 dias seguidos ate anteontem (d-2, d-3, d-4) E NAO bateu d-0/d-1
+  const d0 = brtDateString(0);
+  const d1 = brtDateString(-1);
+  const d2 = brtDateString(-2);
+  const d3 = brtDateString(-3);
+  const d4 = brtDateString(-4);
+
+  const { data: completions } = await supabase
+    .from("daily_completions")
+    .select("user_id, date")
+    .in("date", [d0, d1, d2, d3, d4]);
+
+  // Conta dias do streak passado (d-2, d-3, d-4) e dias recentes (d-0, d-1)
+  const pastDays = new Map<string, Set<string>>();
+  const recentDays = new Map<string, Set<string>>();
+  for (const c of (completions ?? []) as { user_id: string; date: string }[]) {
+    if ([d2, d3, d4].includes(c.date)) {
+      if (!pastDays.has(c.user_id)) pastDays.set(c.user_id, new Set());
+      pastDays.get(c.user_id)!.add(c.date);
+    }
+    if ([d0, d1].includes(c.date)) {
+      if (!recentDays.has(c.user_id)) recentDays.set(c.user_id, new Set());
+      recentDays.get(c.user_id)!.add(c.date);
+    }
+  }
+
+  // Streak = tinha 3 dias passados E nenhum dia recente
+  const quebradoIds = Array.from(pastDays.entries())
+    .filter(([uid, dates]) => dates.size === 3 && !recentDays.has(uid))
+    .map(([uid]) => uid);
+
+  if (quebradoIds.length === 0) return { found: 0, enqueued: 0, skipped: 0 };
+
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, name, whatsapp")
+    .in("id", quebradoIds)
+    .not("whatsapp", "is", null)
+    .eq("plan_active", true);
+
+  const targets = (profiles ?? []) as { id: string; name: string | null; whatsapp: string }[];
+
+  let enqueued = 0;
+  let skipped = 0;
+  for (const c of targets) {
+    if (await alreadyReceivedRecently(supabase, c.id, TRIGGER_STREAK_QUEBRADO_KEY, 24 * 30)) {
+      skipped++;
+      continue;
+    }
+    const { text } = buildTriggerStreakQuebrado({ firstName: c.name ?? "amiga" });
+    const r = await enqueueOutbox(supabase, {
+      userId: c.id,
+      phone: c.whatsapp,
+      templateKey: TRIGGER_STREAK_QUEBRADO_KEY,
+      text,
+      metadata: { trigger: "streak_quebrado" },
+    });
+    if (r.ok) enqueued++;
+    else skipped++;
+  }
+  return { found: targets.length, enqueued, skipped };
+}
+
+// =================================================================
+// TRIGGER: bateu meta mensal (faturamento >= meta_mensal_brl)
+// =================================================================
+
+async function runTriggerBateuMetaMensal(supabase: SupabaseClient) {
+  // mes atual em BRT
+  const now = new Date();
+  const brt = new Date(now.getTime() - 3 * 3600_000);
+  const ym = brt.toISOString().slice(0, 7); // YYYY-MM
+
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, name, whatsapp, meta_mensal_brl")
+    .not("whatsapp", "is", null)
+    .eq("plan_active", true)
+    .not("meta_mensal_brl", "is", null)
+    .gt("meta_mensal_brl", 0);
+
+  type ProfileRow = {
+    id: string;
+    name: string | null;
+    whatsapp: string;
+    meta_mensal_brl: number;
+  };
+  const candidates = (profiles ?? []) as ProfileRow[];
+  if (candidates.length === 0) return { found: 0, enqueued: 0, skipped: 0 };
+
+  const { data: revenues } = await supabase
+    .from("monthly_revenue")
+    .select("user_id, amount_brl")
+    .in("user_id", candidates.map((c) => c.id))
+    .eq("year_month", ym);
+
+  const revByUser = new Map<string, number>();
+  for (const r of (revenues ?? []) as { user_id: string; amount_brl: number }[]) {
+    revByUser.set(r.user_id, Number(r.amount_brl));
+  }
+
+  let enqueued = 0;
+  let skipped = 0;
+  let found = 0;
+  for (const c of candidates) {
+    const fatu = revByUser.get(c.id) ?? 0;
+    if (fatu < c.meta_mensal_brl) continue;
+    found++;
+    // Dedup por mes: nao manda 2 vezes no mesmo year_month
+    const already = await alreadyReceivedThisMonth(
+      supabase,
+      c.id,
+      TRIGGER_BATEU_META_MENSAL_KEY,
+      ym,
+    );
+    if (already) {
+      skipped++;
+      continue;
+    }
+    const { text } = buildTriggerBateuMetaMensal({
+      firstName: c.name ?? "amiga",
+      meta_brl: c.meta_mensal_brl,
+    });
+    const r = await enqueueOutbox(supabase, {
+      userId: c.id,
+      phone: c.whatsapp,
+      templateKey: TRIGGER_BATEU_META_MENSAL_KEY,
+      text,
+      metadata: { trigger: "bateu_meta_mensal", year_month: ym },
+    });
+    if (r.ok) enqueued++;
+    else skipped++;
+  }
+  return { found, enqueued, skipped };
+}
+
+async function alreadyReceivedThisMonth(
+  supabase: SupabaseClient,
+  userId: string,
+  templateKey: string,
+  yearMonth: string,
+): Promise<boolean> {
+  const { count } = await supabase
+    .from("whatsapp_outbox")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("template_key", templateKey)
+    .eq("metadata->>year_month", yearMonth);
+  return (count ?? 0) > 0;
+}
+
+// =================================================================
+// TRIGGER: bateu rotina em 30 dos ultimos 30 dias (marco)
+// =================================================================
+
+async function runTriggerRotina30Dias(supabase: SupabaseClient) {
+  // Janela: ultimos 30 dias BRT (inclui hoje)
+  const dates: string[] = [];
+  for (let i = 0; i < 30; i++) dates.push(brtDateString(-i));
+
+  const { data: completions } = await supabase
+    .from("daily_completions")
+    .select("user_id, date")
+    .in("date", dates);
+
+  const byUser = new Map<string, Set<string>>();
+  for (const c of (completions ?? []) as { user_id: string; date: string }[]) {
+    if (!byUser.has(c.user_id)) byUser.set(c.user_id, new Set());
+    byUser.get(c.user_id)!.add(c.date);
+  }
+
+  // Pega quem tem EXATAMENTE 30 dias (= marco recente)
+  const marcoIds = Array.from(byUser.entries())
+    .filter(([, ds]) => ds.size >= 30)
+    .map(([uid]) => uid);
+
+  if (marcoIds.length === 0) return { found: 0, enqueued: 0, skipped: 0 };
+
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, name, whatsapp")
+    .in("id", marcoIds)
+    .not("whatsapp", "is", null)
+    .eq("plan_active", true);
+
+  const targets = (profiles ?? []) as { id: string; name: string | null; whatsapp: string }[];
+
+  let enqueued = 0;
+  let skipped = 0;
+  for (const c of targets) {
+    // Dedup 60d — nao manda de novo logo (60d garante uma vez por marco)
+    if (await alreadyReceivedRecently(supabase, c.id, TRIGGER_ROTINA_30DIAS_KEY, 24 * 60)) {
+      skipped++;
+      continue;
+    }
+    const { text } = buildTriggerRotina30Dias({ firstName: c.name ?? "amiga" });
+    const r = await enqueueOutbox(supabase, {
+      userId: c.id,
+      phone: c.whatsapp,
+      templateKey: TRIGGER_ROTINA_30DIAS_KEY,
+      text,
+      metadata: { trigger: "rotina_30dias" },
+    });
+    if (r.ok) enqueued++;
+    else skipped++;
+  }
+  return { found: targets.length, enqueued, skipped };
+}
+
+// =================================================================
+// RUN ALL TRIGGERS
+// =================================================================
+
 export async function runAllTriggers() {
   const supabase = getSupabase();
-  const [dia1, sumiu, streak] = await Promise.all([
+  const [
+    dia1,
+    sumiu,
+    streak,
+    primeiro_faturamento,
+    streak_quebrado,
+    primeiro_produto,
+    primeiro_roteiro,
+    bateu_meta,
+    tour_completo,
+    ebook_baixado,
+    rotina_30dias,
+  ] = await Promise.all([
     runTriggerDia1NaoLogou(supabase),
     runTriggerSumiu7d(supabase),
     runTriggerStreak3(supabase),
+    runTriggerPrimeiroFaturamento(supabase),
+    runTriggerStreakQuebrado(supabase),
+    runTriggerPrimeiroProduto(supabase),
+    runTriggerPrimeiroRoteiro(supabase),
+    runTriggerBateuMetaMensal(supabase),
+    runTriggerTourCompleto(supabase),
+    runTriggerEbookBaixado(supabase),
+    runTriggerRotina30Dias(supabase),
   ]);
-  return { dia1, sumiu, streak };
+  return {
+    dia1,
+    sumiu,
+    streak,
+    primeiro_faturamento,
+    streak_quebrado,
+    primeiro_produto,
+    primeiro_roteiro,
+    bateu_meta,
+    tour_completo,
+    ebook_baixado,
+    rotina_30dias,
+  };
 }
 
 // =================================================================

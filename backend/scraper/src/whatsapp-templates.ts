@@ -573,3 +573,180 @@ export function buildTriggerStreak3(input: { firstName: string }): { text: strin
   ].join("\n");
   return { text };
 }
+
+// ============================================================
+// TRIGGER: 1o faturamento registrado
+// ============================================================
+export const TRIGGER_PRIMEIRO_FATURAMENTO_KEY = "trigger_primeiro_faturamento";
+
+export function buildTriggerPrimeiroFaturamento(input: { firstName: string }): {
+  text: string;
+} {
+  const name = firstName(input.firstName);
+  const text = [
+    `🎉 ${name}!`,
+    ``,
+    `*PRIMEIRA VENDA REGISTRADA.* Você acabou de entrar pro time de quem JÁ vende no TikTok Shop.`,
+    ``,
+    `A partir daqui é só escalar. Próximo desafio: dobrar esse número até o fim do mês.`,
+    ``,
+    `_Yara · Método TTS_`,
+  ].join("\n");
+  return { text };
+}
+
+// ============================================================
+// TRIGGER: tinha streak >=3 dias e parou (dois dias sem bater)
+// ============================================================
+export const TRIGGER_STREAK_QUEBRADO_KEY = "trigger_streak_quebrado";
+
+export function buildTriggerStreakQuebrado(input: { firstName: string }): {
+  text: string;
+} {
+  const name = firstName(input.firstName);
+  const text = [
+    `${name}, senti sua falta na rotina 💔`,
+    ``,
+    `Você tava num streak lindo. *Não larga agora* — quem volta no 1° dia perdido recupera mais rápido do que quem espera 1 semana.`,
+    ``,
+    `5 minutinhos. Abre o app.`,
+    ``,
+    `_Yara · Método TTS_`,
+  ].join("\n");
+  return { text };
+}
+
+// ============================================================
+// TRIGGER: 1o produto cadastrado
+// ============================================================
+export const TRIGGER_PRIMEIRO_PRODUTO_KEY = "trigger_primeiro_produto";
+
+export function buildTriggerPrimeiroProduto(input: { firstName: string }): {
+  text: string;
+} {
+  const name = firstName(input.firstName);
+  const text = [
+    `${name}, 1° produto cadastrado! 📦`,
+    ``,
+    `Agora a parte mais legal: *gera roteiros pra ele*. A cola rápida + o agente do app fazem em 2 minutos.`,
+    ``,
+    `Vai lá e testa.`,
+    ``,
+    `_Yara · Método TTS_`,
+  ].join("\n");
+  return { text };
+}
+
+// ============================================================
+// TRIGGER: 1o roteiro gerado
+// ============================================================
+export const TRIGGER_PRIMEIRO_ROTEIRO_KEY = "trigger_primeiro_roteiro";
+
+export function buildTriggerPrimeiroRoteiro(input: { firstName: string }): {
+  text: string;
+} {
+  const name = firstName(input.firstName);
+  const text = [
+    `${name}, 1° roteiro pronto! ✨`,
+    ``,
+    `Agora SÓ FALTA gravar. Pega o celular, lê o hook, mostra o produto, posta. *Não precisa estar perfeito.*`,
+    ``,
+    `O 1° vídeo é o mais difícil. Depois vicia.`,
+    ``,
+    `_Yara · Método TTS_`,
+  ].join("\n");
+  return { text };
+}
+
+// ============================================================
+// TRIGGER: bateu meta mensal (faturamento >= meta_mensal_brl)
+// ============================================================
+export const TRIGGER_BATEU_META_MENSAL_KEY = "trigger_bateu_meta_mensal";
+
+export function buildTriggerBateuMetaMensal(input: {
+  firstName: string;
+  meta_brl: number;
+}): { text: string } {
+  const name = firstName(input.firstName);
+  const valor = input.meta_brl.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+  const text = [
+    `${name}, META BATIDA 🔥🔥🔥`,
+    ``,
+    `Você cumpriu sua meta de *${valor}* esse mês. Isso é gente que joga pra ganhar.`,
+    ``,
+    `*Sobe a meta agora* pro próximo mês. Quem para de subir a régua, para de crescer.`,
+    ``,
+    `_Yara · Método TTS_`,
+  ].join("\n");
+  return { text };
+}
+
+// ============================================================
+// TRIGGER: completou tour da home
+// ============================================================
+export const TRIGGER_TOUR_COMPLETO_KEY = "trigger_tour_completo";
+
+export function buildTriggerTourCompleto(input: { firstName: string }): {
+  text: string;
+} {
+  const name = firstName(input.firstName);
+  const text = [
+    `${name}, terminou o tour! 🎓`,
+    ``,
+    `Agora você sabe onde tudo fica. Hora de usar de verdade:`,
+    ``,
+    `1. Bate a rotina (5min)`,
+    `2. Cadastra teu 1° produto`,
+    `3. Gera teu 1° roteiro`,
+    ``,
+    `3 passos, 30 minutos. Você consegue.`,
+    ``,
+    `_Yara · Método TTS_`,
+  ].join("\n");
+  return { text };
+}
+
+// ============================================================
+// TRIGGER: baixou 1o ebook
+// ============================================================
+export const TRIGGER_EBOOK_BAIXADO_KEY = "trigger_ebook_baixado";
+
+export function buildTriggerEbookBaixado(input: { firstName: string }): {
+  text: string;
+} {
+  const name = firstName(input.firstName);
+  const text = [
+    `${name}, baixou o ebook! 📚`,
+    ``,
+    `Dica de ouro: *lê 5 páginas por dia*. Não tudo de uma vez. 5 páginas com canetinha na mão pra anotar.`,
+    ``,
+    `Conhecimento aplicado vence conhecimento empilhado.`,
+    ``,
+    `_Yara · Método TTS_`,
+  ].join("\n");
+  return { text };
+}
+
+// ============================================================
+// TRIGGER: bateu rotina em 30 dos ultimos 30 dias
+// ============================================================
+export const TRIGGER_ROTINA_30DIAS_KEY = "trigger_rotina_30dias";
+
+export function buildTriggerRotina30Dias(input: { firstName: string }): {
+  text: string;
+} {
+  const name = firstName(input.firstName);
+  const text = [
+    `${name}, 30 DIAS DE ROTINA 💪🌹`,
+    ``,
+    `Sabe o que você acabou de construir? *IDENTIDADE.* Você agora É uma criadora consistente. Não é mais "quero ser" — É.`,
+    ``,
+    `Próxima meta: 60 dias. Quem chega aos 30 chega aos 60 fácil.`,
+    ``,
+    `_Yara · Método TTS_`,
+  ].join("\n");
+  return { text };
+}
