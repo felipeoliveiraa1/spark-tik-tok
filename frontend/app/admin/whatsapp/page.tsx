@@ -12,6 +12,7 @@ import {
   Users,
   Loader2,
   Phone,
+  Zap,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 
@@ -112,6 +113,21 @@ export default function AdminWhatsAppPage() {
     }
   };
 
+  const runFlush = async () => {
+    setBusy(true);
+    setResult(null);
+    try {
+      const res = await fetch("/api/admin/whatsapp/flush", { method: "POST" });
+      const j = (await res.json()) as BlastResult;
+      setResult({ ...j, ok: true, note: `Flush forçado: ${JSON.stringify(j)}` });
+      void fetchStats();
+    } catch (err) {
+      setResult({ ok: false, reason: err instanceof Error ? err.message : "erro" });
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const runBlast = async () => {
     setBusy(true);
     setResult(null);
@@ -180,6 +196,29 @@ export default function AdminWhatsAppPage() {
               tone={stats.failed_week > 0 ? "bad" : undefined}
             />
           </div>
+
+          {/* Forca flush manual (chama worker no VPS) */}
+          {stats.pending_now > 0 && (
+            <div className="flex items-center justify-between gap-3 p-4 rounded-spark-xl bg-warn/5 border border-warn/20">
+              <div className="min-w-0">
+                <div className="text-[13.5px] font-extrabold text-spark-ink">
+                  {stats.pending_now} {stats.pending_now === 1 ? "mensagem pendente" : "mensagens pendentes"} na fila
+                </div>
+                <div className="text-[12px] text-spark-ink-70 font-semibold mt-0.5">
+                  O worker no VPS processa automático a cada 1 min. Quer empurrar agora?
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={runFlush}
+                disabled={busy}
+                className="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-warn text-white text-[12.5px] font-extrabold hover:opacity-90 disabled:opacity-50"
+              >
+                {busy ? <Loader2 size={13} className="animate-spin" /> : <Zap size={13} strokeWidth={2.5} />}
+                Processar agora
+              </button>
+            </div>
+          )}
 
           {/* Painel teste + blast */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

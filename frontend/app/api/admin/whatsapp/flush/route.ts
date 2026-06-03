@@ -1,19 +1,20 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth-admin";
-import { callWhatsAppStats, ScraperClientError } from "@/lib/scraper-client";
+import { callWhatsAppFlushNow, ScraperClientError } from "@/lib/scraper-client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * GET /api/admin/whatsapp/stats — proxy pro backend Contabo.
+ * POST /api/admin/whatsapp/flush — forca processamento imediato da fila.
+ * Util pra nao esperar o setInterval do worker.
  */
-export async function GET() {
+export async function POST() {
   const guard = await requireAdmin();
   if (!guard.ok) return guard.response;
 
   try {
-    const result = await callWhatsAppStats();
+    const result = await callWhatsAppFlushNow();
     return NextResponse.json(result);
   } catch (err) {
     if (err instanceof ScraperClientError) {

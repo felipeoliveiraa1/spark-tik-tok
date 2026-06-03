@@ -6,6 +6,14 @@ import { verify } from "./hmac.js";
 import { enqueueJob, getJobStatus, startWorker } from "./queue.js";
 import type { ScraperJobInput } from "./types.js";
 import { ping as pingDb } from "./db.js";
+import {
+  handleBlast,
+  handleFlushNow,
+  handleStats,
+  runAllTriggers,
+  startWhatsAppWorker,
+  stopWhatsAppWorker,
+} from "./whatsapp.js";
 
 const app = express();
 app.use(express.json({ limit: "256kb" }));
@@ -123,16 +131,64 @@ app.get("/jobs/:id", hmacAuth, async (req, res) => {
 });
 
 // =================================================================
+// WhatsApp routes (Metodo TTS)
+// =================================================================
+// Todas HMAC-protected pelo mesmo middleware. Frontend chama via
+// lib/scraper-client.ts com signedFetch.
+
+app.post("/whatsapp/blast", hmacAuth, async (req, res) => {
+  try {
+    const result = await handleBlast(req.body ?? {});
+    res.json(result);
+  } catch (err) {
+    log.error({ err }, "whatsapp/blast error");
+    res.status(500).json({ ok: false, error: err instanceof Error ? err.message : "erro" });
+  }
+});
+
+app.get("/whatsapp/stats", hmacAuth, async (_req, res) => {
+  try {
+    const result = await handleStats();
+    res.json(result);
+  } catch (err) {
+    log.error({ err }, "whatsapp/stats error");
+    res.status(500).json({ ok: false, error: err instanceof Error ? err.message : "erro" });
+  }
+});
+
+app.post("/whatsapp/flush", hmacAuth, async (_req, res) => {
+  try {
+    const result = await handleFlushNow();
+    res.json(result);
+  } catch (err) {
+    log.error({ err }, "whatsapp/flush error");
+    res.status(500).json({ ok: false, error: err instanceof Error ? err.message : "erro" });
+  }
+});
+
+app.post("/whatsapp/triggers/run", hmacAuth, async (_req, res) => {
+  try {
+    const result = await runAllTriggers();
+    res.json({ ok: true, ...result });
+  } catch (err) {
+    log.error({ err }, "whatsapp/triggers error");
+    res.status(500).json({ ok: false, error: err instanceof Error ? err.message : "erro" });
+  }
+});
+
+// =================================================================
 // Boot
 // =================================================================
 
 const worker = startWorker();
+startWhatsAppWorker();
 const server = app.listen(env.PORT, () => {
   log.info({ port: env.PORT, env: env.NODE_ENV }, "spark-scraper: listening");
 });
 
 async function shutdown(signal: string) {
   log.info({ signal }, "shutting down");
+  stopWhatsAppWorker();
   await worker.close();
   server.close();
   process.exit(0);

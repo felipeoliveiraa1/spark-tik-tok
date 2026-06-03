@@ -154,4 +154,33 @@ export async function getVyralTopProducts(
   return runJob<VyralTopProductsResult>({ kind: "vyral.top-products", params }, opts);
 }
 
+// =================================================================
+// WhatsApp (Metodo TTS) — proxies pro backend Contabo
+// =================================================================
+// Endpoints sincronos (sem fila), respondem na hora. Sao chamados pelos
+// proxies em /api/admin/whatsapp/*.
+
+export type WhatsAppBlastBody = {
+  mode: "test_admin" | "all_active";
+  test_phone?: string;
+  test_name?: string;
+  admin_user_id?: string;
+};
+
+export async function callWhatsAppBlast(body: WhatsAppBlastBody): Promise<unknown> {
+  return signedFetch("/whatsapp/blast", { method: "POST", body });
+}
+
+export async function callWhatsAppStats(): Promise<unknown> {
+  return signedFetch("/whatsapp/stats", { method: "GET" });
+}
+
+export async function callWhatsAppFlushNow(): Promise<unknown> {
+  return signedFetch("/whatsapp/flush", { method: "POST" });
+}
+
+export async function callWhatsAppRunTriggers(): Promise<unknown> {
+  return signedFetch("/whatsapp/triggers/run", { method: "POST" });
+}
+
 export { ScraperClientError };

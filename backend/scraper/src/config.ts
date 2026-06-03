@@ -31,6 +31,17 @@ const schema = z.object({
     .enum(["true", "false"])
     .transform((v) => v === "true")
     .default("false"),
+
+  // WhatsApp worker (Metodo TTS)
+  SUPABASE_URL: z.preprocess(emptyToUndefined, z.string().url().optional()),
+  SUPABASE_SERVICE_ROLE_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
+  EVOLUTION_API_URL: z.preprocess(emptyToUndefined, z.string().url().optional()),
+  EVOLUTION_API_KEY: z.preprocess(emptyToUndefined, z.string().optional()),
+  NEXT_PUBLIC_SITE_URL: z.preprocess(
+    emptyToUndefined,
+    z.string().url().default("https://www.metodotts.app"),
+  ),
+  WHATSAPP_WORKER_ENABLED: z.enum(["true", "false"]).default("true"),
 });
 
 export const env = schema.parse(process.env);
