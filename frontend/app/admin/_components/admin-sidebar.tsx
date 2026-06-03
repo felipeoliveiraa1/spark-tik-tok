@@ -16,6 +16,7 @@ import {
   ArrowLeft,
   Menu,
   X,
+  MessageCircle,
 } from "lucide-react";
 import { SparkWordmark } from "@/components/atoms/spark-wordmark";
 import { cn } from "@/lib/cn";
@@ -51,6 +52,7 @@ const SECTIONS: Section[] = [
   {
     label: "Comunidade",
     items: [
+      { href: "/admin/whatsapp", label: "WhatsApp", icon: MessageCircle },
       { href: "/admin/feedback", label: "Feedback", icon: MessageSquareWarning },
       { href: "/admin/leads", label: "Leads", icon: Sparkles },
     ],
