@@ -13,6 +13,9 @@
  */
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+// Node 20 nao tem WebSocket nativo; o supabase-js precisa pra inicializar
+// o RealtimeClient mesmo quando a gente nao usa realtime. Injetamos `ws`.
+import WebSocket from "ws";
 import { log } from "./logger.js";
 import {
   MOTIVATIONAL_LIBRARY,
@@ -52,6 +55,11 @@ export function getSupabase(): SupabaseClient {
   }
   _supabase = createClient(url, key, {
     auth: { autoRefreshToken: false, persistSession: false },
+    // Sem polyfill, supabase-js explode no Node 20 (WebSocket nao eh
+    // nativo). Mesmo nao usando realtime, o construtor instancia.
+    realtime: {
+      transport: WebSocket as unknown as typeof globalThis.WebSocket,
+    },
   });
   return _supabase;
 }
