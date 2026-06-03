@@ -207,12 +207,10 @@ function Podium({
                     {entry.cidade_uf}
                   </div>
                 )}
-                {/* Nicho badge */}
-                {entry.niche && (
-                  <div className="mt-1.5 inline-flex items-center px-2 py-0.5 rounded-full bg-spark-brand-soft text-spark-brand-deep text-[9px] font-extrabold uppercase tracking-widest max-w-full truncate">
-                    {entry.niche}
-                  </div>
-                )}
+                {/* CTA pra abrir perfil */}
+                <div className="mt-1.5 inline-flex items-center gap-1 text-spark-brand-deep text-[9px] font-extrabold uppercase tracking-widest">
+                  clique ou toque pra ver mais →
+                </div>
               </div>
 
               {/* Card do pódio com número + faturamento */}
@@ -345,13 +343,6 @@ function RankingList({
                   )}
                 </div>
 
-                {/* Nicho em badge brand */}
-                {e.niche && (
-                  <div className="mt-1 inline-flex items-center px-2 py-0.5 rounded-full bg-spark-brand-soft text-spark-brand-deep text-[9.5px] font-extrabold uppercase tracking-widest max-w-full truncate">
-                    {e.niche}
-                  </div>
-                )}
-
                 {/* Cidade + streak meta */}
                 <div className="mt-1.5 flex items-center gap-2 text-[10.5px] text-spark-ink-50 font-semibold flex-wrap">
                   {e.cidade_uf && (
@@ -365,6 +356,11 @@ function RankingList({
                     <Flame size={9} strokeWidth={2.5} />
                     {e.checkins_done}/{e.days_total} ({consistencyPct}%)
                   </span>
+                </div>
+
+                {/* CTA pra abrir perfil */}
+                <div className="mt-1 inline-flex items-center gap-1 text-spark-brand-deep text-[9.5px] font-extrabold uppercase tracking-widest">
+                  clique ou toque pra ver mais →
                 </div>
               </div>
 
