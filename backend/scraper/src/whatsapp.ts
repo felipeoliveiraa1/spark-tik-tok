@@ -36,7 +36,7 @@ import {
 export const BLAST_INTERVAL_MS = 4_500;
 export const WEEKLY_MSG_LIMIT_PER_USER = 3;
 export const HOUR_OPEN_BRT = 8;
-export const HOUR_CLOSE_BRT = 22;
+export const HOUR_CLOSE_BRT = 23;
 export const FLUSH_INTERVAL_MS = 60_000; // 1 minuto
 export const FLUSH_BATCH_SIZE = 25;
 
@@ -348,9 +348,14 @@ async function markOutbox(
 export async function flushOutbox(
   supabase: SupabaseClient,
   limit = FLUSH_BATCH_SIZE,
+  options?: { bypassWindow?: boolean },
 ): Promise<{ processed: number; sent: number; failed: number; skipped: number }> {
   const now = new Date();
-  if (!canSendNow(now)) return { processed: 0, sent: 0, failed: 0, skipped: 0 };
+  // Cron respeita janela 8h-22h BRT pra nao mandar de madrugada.
+  // Admin clicando "Processar agora" passa bypassWindow=true.
+  if (!options?.bypassWindow && !canSendNow(now)) {
+    return { processed: 0, sent: 0, failed: 0, skipped: 0 };
+  }
 
   const { data: rows } = await supabase
     .from("whatsapp_outbox")
@@ -894,6 +899,7 @@ export async function handleStats() {
 
 export async function handleFlushNow() {
   const supabase = getSupabase();
-  const stats = await flushOutbox(supabase);
+  // Admin clicando "Processar agora" -> ignora janela de horario (intencional)
+  const stats = await flushOutbox(supabase, FLUSH_BATCH_SIZE, { bypassWindow: true });
   return { ok: true, ...stats, ran_at: new Date().toISOString() };
 }
