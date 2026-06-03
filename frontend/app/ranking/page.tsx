@@ -10,6 +10,10 @@ import {
   Flame,
   TrendingUp,
   Sparkles,
+  X,
+  Tag,
+  CheckCircle2,
+  Target,
 } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { FloatingMainNav } from "@/components/layout/floating-main-nav";
@@ -147,7 +151,13 @@ function RankAvatar({
 // PÓDIO TOP 3
 // =================================================================
 
-function Podium({ top3 }: { top3: RankingEntry[] }) {
+function Podium({
+  top3,
+  onSelect,
+}: {
+  top3: RankingEntry[];
+  onSelect?: (e: RankingEntry) => void;
+}) {
   // Ordem visual: 2º (esquerda), 1º (centro), 3º (direita)
   const podium = [top3[1], top3[0], top3[2]].filter(Boolean);
   const heights: Record<number, string> = { 1: "h-48 lg:h-56", 2: "h-36 lg:h-44", 3: "h-28 lg:h-36" };
@@ -164,7 +174,11 @@ function Podium({ top3 }: { top3: RankingEntry[] }) {
             delay={p === 1 ? 0 : p === 2 ? 120 : 240}
             durationMs={800}
           >
-            <div className="flex flex-col items-center w-[110px] lg:w-[140px]">
+            <button
+              type="button"
+              onClick={() => onSelect?.(entry)}
+              className="flex flex-col items-center w-[110px] lg:w-[140px] cursor-pointer hover:opacity-95 active:scale-[0.98] transition-all duration-200"
+            >
               {/* Coroa no 1º */}
               {p === 1 && (
                 <Crown
@@ -262,7 +276,7 @@ function Podium({ top3 }: { top3: RankingEntry[] }) {
                   {(entry.score * 100).toFixed(0)}
                 </div>
               </div>
-            </div>
+            </button>
           </SectionReveal>
         );
       })}
@@ -277,9 +291,11 @@ function Podium({ top3 }: { top3: RankingEntry[] }) {
 function RankingList({
   entries,
   meId,
+  onSelect,
 }: {
   entries: RankingEntry[];
   meId: string | null;
+  onSelect?: (e: RankingEntry) => void;
 }) {
   if (entries.length === 0) return null;
   return (
@@ -291,13 +307,15 @@ function RankingList({
         );
         return (
           <SectionReveal key={e.user_id} delay={Math.min(i * 40, 240)}>
-            <div
+            <button
+              type="button"
+              onClick={() => onSelect?.(e)}
               className={cn(
-                "flex items-center gap-3 lg:gap-4 p-4 lg:p-5 transition-all duration-300",
+                "w-full text-left flex items-center gap-3 lg:gap-4 p-4 lg:p-5 transition-all duration-300",
                 i > 0 ? "border-t border-spark-hairline" : "",
                 isMe
                   ? "bg-brand-grad-soft/60 ring-2 ring-inset ring-spark-brand/30"
-                  : "hover:bg-spark-brand-soft/15",
+                  : "hover:bg-spark-brand-soft/15 active:bg-spark-brand-soft/25",
               )}
             >
               {/* Posição grande estilo magazine */}
@@ -368,7 +386,7 @@ function RankingList({
                   {(e.score * 100).toFixed(0)}
                 </div>
               </div>
-            </div>
+            </button>
           </SectionReveal>
         );
       })}
@@ -417,6 +435,7 @@ function RankingBody({
 }) {
   const [period, setPeriod] = React.useState<Period>("month");
   const [helpOpen, setHelpOpen] = React.useState(false);
+  const [selectedEntry, setSelectedEntry] = React.useState<RankingEntry | null>(null);
   const { data, loading } = useRanking(period);
 
   const top3 = (data?.ranking ?? []).slice(0, 3);
@@ -548,7 +567,7 @@ function RankingBody({
               {/* Pódio */}
               {top3.length > 0 && (
                 <section>
-                  <Podium top3={top3} />
+                  <Podium top3={top3} onSelect={setSelectedEntry} />
                 </section>
               )}
 
@@ -560,7 +579,7 @@ function RankingBody({
                       ✦ posição {rest[0].position} em diante
                     </div>
                   </SectionReveal>
-                  <RankingList entries={rest} meId={meId} />
+                  <RankingList entries={rest} meId={meId} onSelect={setSelectedEntry} />
                 </section>
               )}
 
@@ -571,7 +590,7 @@ function RankingBody({
                     <div className="text-eyebrow text-spark-brand-deep mb-3">
                       ✦ sua posição
                     </div>
-                    <RankingList entries={[data.me]} meId={meId} />
+                    <RankingList entries={[data.me]} meId={meId} onSelect={setSelectedEntry} />
                   </div>
                 </SectionReveal>
               )}
@@ -581,6 +600,204 @@ function RankingBody({
       </section>
 
       {helpOpen && <ScoreHelpModal onClose={() => setHelpOpen(false)} />}
+      {selectedEntry && (
+        <ProfileSheet
+          entry={selectedEntry}
+          isMe={selectedEntry.user_id === meId}
+          onClose={() => setSelectedEntry(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+// =================================================================
+// PROFILE SHEET — modal mostrando perfil completo da aluna clicada
+// =================================================================
+
+function ProfileSheet({
+  entry,
+  isMe,
+  onClose,
+}: {
+  entry: RankingEntry;
+  isMe: boolean;
+  onClose: () => void;
+}) {
+  React.useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [onClose]);
+
+  const consistencyPct = Math.round(
+    Math.min(1, entry.checkins_done / Math.max(1, entry.days_total)) * 100,
+  );
+  const niches = (entry.niche ?? "")
+    .split(/[,;|]/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Perfil de ${entry.name}`}
+      className="fixed inset-0 z-[210] flex items-end sm:items-center justify-center p-0 sm:p-4"
+      style={{ background: "rgba(20, 20, 40, 0.55)" }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div
+        className={cn(
+          "bg-spark-surface w-full max-w-[420px] shadow-hero animate-slide-up",
+          "rounded-t-spark-3xl sm:rounded-spark-3xl",
+          "max-h-[90vh] overflow-y-auto",
+        )}
+        style={{ paddingBottom: "max(env(safe-area-inset-bottom), 16px)" }}
+      >
+        {/* Close */}
+        <div className="sticky top-0 right-0 z-10 flex justify-end p-3 pb-0">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Fechar"
+            className="w-9 h-9 rounded-full bg-spark-surface-sunken hover:bg-spark-ink-10 flex items-center justify-center text-spark-ink-70 transition-colors"
+          >
+            <X size={15} strokeWidth={2.5} />
+          </button>
+        </div>
+
+        {/* Cabecalho com avatar + posicao */}
+        <div className="px-6 -mt-1 text-center">
+          <div className="inline-flex flex-col items-center">
+            <RankAvatar
+              name={entry.name}
+              url={entry.avatar_url}
+              size={88}
+              isMe={isMe}
+            />
+            <div className="mt-3 inline-flex items-center gap-2 text-[10.5px] uppercase tracking-widest font-extrabold text-spark-ink-50">
+              <Trophy size={11} strokeWidth={2.5} />
+              posição {entry.position}
+            </div>
+            <h2 className="mt-1 font-display lowercase leading-tight text-spark-ink text-[24px]">
+              {entry.name.toLowerCase()}
+            </h2>
+            {isMe && (
+              <span className="mt-1 inline-flex items-center px-2 py-0.5 rounded-full bg-spark-brand text-white text-[9.5px] font-extrabold uppercase tracking-wider">
+                você
+              </span>
+            )}
+            {entry.cidade_uf && (
+              <div className="mt-2 inline-flex items-center gap-1 text-[12px] text-spark-ink-70 font-semibold font-mono">
+                <MapPin size={11} strokeWidth={2.5} />
+                {entry.cidade_uf}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Nichos — agora SEM cortar */}
+        <div className="px-6 mt-5">
+          <div className="text-[10px] font-extrabold uppercase tracking-widest text-spark-ink-50 mb-2 flex items-center gap-1.5">
+            <Tag size={10} strokeWidth={2.5} />
+            nichos
+          </div>
+          {niches.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">
+              {niches.map((n, idx) => (
+                <span
+                  key={`${n}-${idx}`}
+                  className="inline-flex items-center px-2.5 py-1 rounded-full bg-spark-brand-soft text-spark-brand-deep text-[11px] font-extrabold"
+                >
+                  {n}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <div className="text-[12px] text-spark-ink-50 italic">
+              Ainda não cadastrou nicho 💭
+            </div>
+          )}
+        </div>
+
+        {/* KPIs grandes: faturamento + consistência + score */}
+        <div className="px-6 mt-6 grid grid-cols-3 gap-2">
+          <div className="rounded-spark-xl bg-spark-surface-sunken p-3 text-center">
+            <div className="inline-flex items-center gap-1 text-[9.5px] uppercase tracking-widest font-extrabold text-spark-ink-50">
+              <Target size={9} strokeWidth={2.5} />
+              faturou
+            </div>
+            <div className="mt-1.5 font-mono font-extrabold text-spark-ink text-[15px] leading-none">
+              {entry.revenue_brl > 0 ? fmtBRL(entry.revenue_brl) : "—"}
+            </div>
+          </div>
+          <div className="rounded-spark-xl bg-spark-surface-sunken p-3 text-center">
+            <div className="inline-flex items-center gap-1 text-[9.5px] uppercase tracking-widest font-extrabold text-spark-ink-50">
+              <Flame size={9} strokeWidth={2.5} />
+              rotina
+            </div>
+            <div className="mt-1.5 font-mono font-extrabold text-spark-ink text-[15px] leading-none">
+              {consistencyPct}%
+            </div>
+            <div className="text-[9.5px] text-spark-ink-50 font-semibold mt-0.5">
+              {entry.checkins_done}/{entry.days_total}
+            </div>
+          </div>
+          <div className="rounded-spark-xl bg-spark-ink text-white p-3 text-center">
+            <div className="inline-flex items-center gap-1 text-[9.5px] uppercase tracking-widest font-extrabold opacity-90">
+              <Sparkles size={9} strokeWidth={2.5} />
+              score
+            </div>
+            <div className="mt-1.5 font-mono font-extrabold text-[15px] leading-none">
+              {(entry.score * 100).toFixed(0)}
+            </div>
+          </div>
+        </div>
+
+        {/* Quebra do score (60% rotina + 40% faturamento) */}
+        <div className="px-6 mt-5 mb-6">
+          <div className="text-[10px] font-extrabold uppercase tracking-widest text-spark-ink-50 mb-2 flex items-center gap-1.5">
+            <CheckCircle2 size={10} strokeWidth={2.5} />
+            como o score é calculado
+          </div>
+          <div className="rounded-spark-xl bg-spark-surface-sunken p-4 space-y-3">
+            <div>
+              <div className="flex items-center justify-between text-[11px] font-extrabold text-spark-ink-70 mb-1">
+                <span>60% Consistência de rotina</span>
+                <span className="font-mono">{(entry.checkin_consistency * 100).toFixed(0)}%</span>
+              </div>
+              <div className="h-1.5 rounded-full bg-spark-ink-10 overflow-hidden">
+                <div
+                  className="h-full bg-brand-grad transition-all duration-700"
+                  style={{ width: `${entry.checkin_consistency * 100}%` }}
+                />
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center justify-between text-[11px] font-extrabold text-spark-ink-70 mb-1">
+                <span>40% Faturamento (relativo)</span>
+                <span className="font-mono">{(entry.revenue_norm * 100).toFixed(0)}%</span>
+              </div>
+              <div className="h-1.5 rounded-full bg-spark-ink-10 overflow-hidden">
+                <div
+                  className="h-full bg-brand-grad transition-all duration-700"
+                  style={{ width: `${entry.revenue_norm * 100}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
