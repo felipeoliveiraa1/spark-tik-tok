@@ -490,6 +490,7 @@ const EVENT_LABELS: Record<string, string> = {
   tour_complete: "Completou tour",
   whatsapp_send: "Recebeu WhatsApp",
   feedback_submit: "Enviou feedback",
+  ebook_download: "Baixou ebook",
 };
 
 function fmtRelativeShort(iso: string): string {

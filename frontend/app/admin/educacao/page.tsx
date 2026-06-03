@@ -15,6 +15,7 @@ import {
   ArrowUpRight,
   Sparkles,
   AlertCircle,
+  BookOpen,
 } from "lucide-react";
 import { HeroBlob } from "@/components/atoms/hero-blob";
 import { SparkleField } from "@/components/atoms/sparkle-field";
@@ -24,7 +25,7 @@ import { SBadge } from "@/components/atoms/s-badge";
 import { useConfirm, useToast } from "@/components/molecules/dialog-provider";
 import { cn } from "@/lib/cn";
 
-type LessonKind = "video" | "rich" | "checklist";
+type LessonKind = "video" | "rich" | "checklist" | "ebook";
 
 type Lesson = {
   id: string;
@@ -62,6 +63,7 @@ function accentClasses(accent: string | null) {
 function KindIcon({ kind, size = 10 }: { kind: LessonKind; size?: number }) {
   if (kind === "video") return <PlayCircle size={size} strokeWidth={2.5} />;
   if (kind === "checklist") return <ListChecks size={size} strokeWidth={2.5} />;
+  if (kind === "ebook") return <BookOpen size={size} strokeWidth={2.5} />;
   return <FileText size={size} strokeWidth={2.5} />;
 }
 
@@ -356,6 +358,12 @@ function ModuleCard({
                 <span className="inline-flex items-center gap-1">
                   <KindIcon kind="checklist" size={11} />
                   {kindCounts.checklist}
+                </span>
+              )}
+              {kindCounts.ebook > 0 && (
+                <span className="inline-flex items-center gap-1">
+                  <KindIcon kind="ebook" size={11} />
+                  {kindCounts.ebook}
                 </span>
               )}
             </div>

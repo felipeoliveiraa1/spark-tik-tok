@@ -15,6 +15,8 @@ import {
   FileText,
   PlayCircle,
   Sparkles,
+  Download,
+  BookOpen,
 } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { FloatingMainNav } from "@/components/layout/floating-main-nav";
@@ -29,7 +31,7 @@ import { cn } from "@/lib/cn";
 // TYPES
 // =================================================================
 
-type LessonKind = "video" | "rich" | "checklist";
+type LessonKind = "video" | "rich" | "checklist" | "ebook";
 
 type ChecklistItem = { text: string };
 
@@ -47,6 +49,9 @@ type Lesson = {
   duration_seconds: number | null;
   order_index: number;
   module_id: string | null;
+  file_url: string | null;
+  file_name: string | null;
+  file_size_bytes: number | null;
 };
 
 type ModuleInfo = {
@@ -324,6 +329,118 @@ function VideoPlayer({ youtubeId, title }: { youtubeId: string; title: string })
 }
 
 // =================================================================
+// EBOOK CARD
+// =================================================================
+
+function fmtFileSize(bytes: number): string {
+  if (!bytes) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${kb.toFixed(1)} KB`;
+  const mb = kb / 1024;
+  return `${mb.toFixed(1)} MB`;
+}
+
+function EbookCard({
+  fileUrl,
+  fileName,
+  fileSize,
+  lessonId,
+  title,
+}: {
+  fileUrl: string | null;
+  fileName: string;
+  fileSize: number;
+  lessonId: string;
+  title: string;
+}) {
+  const handleDownload = () => {
+    // Fire-and-forget: registra que essa aluna baixou esse ebook
+    void fetch("/api/track/ebook-download", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ lesson_id: lessonId, file_name: fileName }),
+    }).catch(() => {});
+  };
+
+  if (!fileUrl) {
+    return (
+      <div className="p-10 rounded-spark-3xl bg-spark-surface border border-spark-hairline shadow-rest text-center">
+        <BookOpen size={32} strokeWidth={2.2} className="mx-auto text-spark-brand-deep mb-3" />
+        <h3 className="font-display lowercase text-spark-ink text-[22px] leading-tight">
+          ebook em preparação.
+        </h3>
+        <p className="mt-2 text-[13.5px] text-spark-ink-70">
+          O PDF ainda não foi anexado. Volta em breve.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative overflow-hidden rounded-spark-3xl bg-brand-grad text-white shadow-hero p-8 lg:p-10">
+      <div className="absolute -top-12 -right-8 w-48 h-48 rounded-full bg-white/10 blur-2xl" />
+      <div className="absolute -bottom-16 -left-10 w-56 h-56 rounded-full bg-white/10 blur-2xl" />
+
+      <div className="relative flex flex-col lg:flex-row items-center gap-6 lg:gap-8">
+        {/* Capa simbolica do PDF */}
+        <div className="shrink-0 w-32 h-40 lg:w-36 lg:h-48 rounded-spark-xl bg-white/15 backdrop-blur-sm border border-white/20 flex flex-col items-center justify-center shadow-lift">
+          <BookOpen size={42} strokeWidth={2} className="text-white/90 mb-2" />
+          <span className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-white/80">
+            PDF
+          </span>
+        </div>
+
+        <div className="flex-1 min-w-0 text-center lg:text-left">
+          <span className="inline-flex items-center gap-1.5 text-[10.5px] font-extrabold uppercase tracking-[0.18em] text-white/80 mb-2">
+            <BookOpen size={11} strokeWidth={2.5} />
+            ebook
+          </span>
+          <h3 className="font-display lowercase text-[28px] lg:text-[34px] leading-tight">
+            {title}
+          </h3>
+          <p className="mt-2 text-[13.5px] text-white/85 font-semibold">
+            {fileName}
+            {fileSize > 0 && (
+              <>
+                <span className="mx-1.5 opacity-60">·</span>
+                <span className="font-mono">{fmtFileSize(fileSize)}</span>
+              </>
+            )}
+          </p>
+
+          <div className="mt-5 flex flex-wrap justify-center lg:justify-start gap-2.5">
+            <a
+              href={fileUrl}
+              download={fileName}
+              onClick={handleDownload}
+              className="group inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-white text-spark-brand-deep text-[14px] font-extrabold shadow-lift hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 ease-premium"
+            >
+              <Download size={15} strokeWidth={2.5} />
+              Baixar PDF
+            </a>
+            <a
+              href={fileUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={handleDownload}
+              className="inline-flex items-center gap-2 px-5 py-3.5 rounded-full bg-white/15 backdrop-blur-sm border border-white/25 text-white text-[13.5px] font-extrabold hover:bg-white/25 transition-all duration-300"
+            >
+              <ArrowUpRight size={14} strokeWidth={2.5} />
+              Abrir em nova aba
+            </a>
+          </div>
+
+          <p className="mt-4 text-[11.5px] text-white/70 font-semibold">
+            No celular o ebook abre no seu leitor de PDF padrão (Files, Drive, Adobe).
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =================================================================
 // CHECKLIST
 // =================================================================
 
@@ -592,6 +709,23 @@ function LessonBody({ idOrSlug, desktop = false }: { idOrSlug: string; desktop?:
                     bodyMd={lesson.body_md}
                   />
                 </article>
+              )}
+
+              {lesson.kind === "ebook" && (
+                <div className="space-y-8">
+                  <EbookCard
+                    fileUrl={lesson.file_url}
+                    fileName={lesson.file_name ?? `${lesson.slug}.pdf`}
+                    fileSize={lesson.file_size_bytes ?? 0}
+                    lessonId={lesson.id}
+                    title={lesson.title}
+                  />
+                  {lesson.body_md && (
+                    <div className="p-6 lg:p-8 rounded-spark-2xl bg-spark-surface border border-spark-hairline shadow-rest">
+                      <EditorialMarkdown source={lesson.body_md} />
+                    </div>
+                  )}
+                </div>
               )}
 
               {lesson.kind === "rich" && !lesson.body_md && (

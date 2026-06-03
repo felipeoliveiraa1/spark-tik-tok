@@ -19,6 +19,10 @@ import {
   Plus,
   X,
   GripVertical,
+  BookOpen,
+  Upload,
+  Loader2,
+  FileDown,
 } from "lucide-react";
 import { HeroBlob } from "@/components/atoms/hero-blob";
 import { SparkleField } from "@/components/atoms/sparkle-field";
@@ -32,7 +36,7 @@ import { cn } from "@/lib/cn";
 // TYPES
 // =================================================================
 
-type LessonKind = "video" | "rich" | "checklist";
+type LessonKind = "video" | "rich" | "checklist" | "ebook";
 
 type ChecklistItem = { text: string };
 
@@ -52,6 +56,9 @@ export type LessonFormData = {
   order_index: number;
   is_published: boolean;
   module_id: string | null;
+  file_url: string;
+  file_name: string;
+  file_size_bytes: number;
 };
 
 const EMPTY: LessonFormData = {
@@ -68,7 +75,19 @@ const EMPTY: LessonFormData = {
   order_index: 0,
   is_published: true,
   module_id: null,
+  file_url: "",
+  file_name: "",
+  file_size_bytes: 0,
 };
+
+function fmtFileSize(bytes: number): string {
+  if (!bytes) return "0 KB";
+  if (bytes < 1024) return `${bytes} B`;
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${kb.toFixed(1)} KB`;
+  const mb = kb / 1024;
+  return `${mb.toFixed(1)} MB`;
+}
 
 function slugify(s: string) {
   return s
@@ -93,6 +112,7 @@ const KIND_OPTIONS: Array<{
   { kind: "video", Icon: PlayCircle, label: "Vídeo", desc: "YouTube embed" },
   { kind: "rich", Icon: FileText, label: "Conteúdo Rich", desc: "Markdown editorial" },
   { kind: "checklist", Icon: ListChecks, label: "Checklist", desc: "Itens interativos" },
+  { kind: "ebook", Icon: BookOpen, label: "Ebook", desc: "PDF pra baixar" },
 ];
 
 function KindSwitcher({
@@ -103,7 +123,7 @@ function KindSwitcher({
   onChange: (k: LessonKind) => void;
 }) {
   return (
-    <div className="grid grid-cols-3 gap-2 p-1.5 rounded-spark-xl bg-spark-surface-sunken border border-spark-hairline">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 p-1.5 rounded-spark-xl bg-spark-surface-sunken border border-spark-hairline">
       {KIND_OPTIONS.map((opt) => {
         const active = value === opt.kind;
         return (
@@ -294,6 +314,160 @@ function ChecklistBuilder({
 }
 
 // =================================================================
+// EBOOK UPLOADER (PDF -> /api/admin/upload-ebook)
+// =================================================================
+
+function EbookUploader({
+  fileUrl,
+  fileName,
+  fileSize,
+  onChange,
+}: {
+  fileUrl: string;
+  fileName: string;
+  fileSize: number;
+  onChange: (url: string, name: string, size: number) => void;
+}) {
+  const fileRef = React.useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = React.useState(false);
+  const [err, setErr] = React.useState<string | null>(null);
+
+  const pick = () => fileRef.current?.click();
+
+  const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setErr(null);
+
+    if (file.type !== "application/pdf") {
+      setErr("Só aceita PDF (.pdf).");
+      e.target.value = "";
+      return;
+    }
+    if (file.size > 100 * 1024 * 1024) {
+      setErr("Arquivo passa de 100MB. Tenta comprimir o PDF antes.");
+      e.target.value = "";
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/admin/upload-ebook", { method: "POST", body: fd });
+      const j = (await res.json()) as {
+        ok?: boolean;
+        url?: string;
+        file_name?: string;
+        file_size_bytes?: number;
+        error?: string;
+      };
+      if (!res.ok || !j.ok || !j.url) {
+        setErr(j.error ?? "Falhou o upload");
+        return;
+      }
+      onChange(j.url, j.file_name ?? file.name, j.file_size_bytes ?? file.size);
+    } catch (caught) {
+      setErr(caught instanceof Error ? caught.message : "erro_upload");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  const clear = () => {
+    onChange("", "", 0);
+    setErr(null);
+  };
+
+  return (
+    <div className="space-y-3">
+      <input
+        ref={fileRef}
+        type="file"
+        accept="application/pdf,.pdf"
+        className="hidden"
+        onChange={onFile}
+      />
+
+      {fileUrl ? (
+        <div className="flex items-center gap-3 p-4 rounded-spark-xl bg-good/5 border border-good/20">
+          <div className="w-12 h-14 rounded-spark-lg bg-bad/10 text-bad flex items-center justify-center shrink-0">
+            <FileDown size={22} strokeWidth={2.2} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 text-[12px] font-extrabold text-good mb-0.5">
+              <CheckCircle2 size={12} strokeWidth={2.5} />
+              PDF enviado
+            </div>
+            <div className="text-[13.5px] font-extrabold text-spark-ink truncate">
+              {fileName || "arquivo.pdf"}
+            </div>
+            <div className="text-[11px] text-spark-ink-50 font-mono mt-0.5">
+              {fmtFileSize(fileSize)}
+              <span className="mx-1.5 opacity-50">·</span>
+              <a
+                href={fileUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-spark-brand-deep hover:text-spark-brand font-semibold"
+              >
+                abrir
+              </a>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={pick}
+            disabled={uploading}
+            className="px-3 py-2 rounded-full bg-spark-surface border border-spark-hairline text-[11.5px] font-extrabold text-spark-ink-70 hover:text-spark-ink hover:bg-spark-surface-sunken disabled:opacity-50 transition-colors"
+          >
+            Trocar
+          </button>
+          <button
+            type="button"
+            onClick={clear}
+            aria-label="Remover PDF"
+            className="w-9 h-9 rounded-full text-spark-ink-50 hover:text-bad hover:bg-bad/10 flex items-center justify-center transition-colors"
+          >
+            <X size={14} strokeWidth={2.5} />
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={pick}
+          disabled={uploading}
+          className="w-full p-6 rounded-spark-xl border-2 border-dashed border-spark-brand/40 hover:border-spark-brand/70 hover:bg-spark-brand-soft/30 transition-all duration-300 flex flex-col items-center gap-2 text-spark-brand-deep disabled:opacity-60"
+        >
+          {uploading ? (
+            <>
+              <Loader2 size={28} strokeWidth={2.2} className="animate-spin" />
+              <span className="text-[13px] font-extrabold">Enviando PDF…</span>
+            </>
+          ) : (
+            <>
+              <Upload size={28} strokeWidth={2.2} />
+              <span className="text-[13.5px] font-extrabold">Selecionar PDF (até 100MB)</span>
+              <span className="text-[11px] text-spark-ink-50 font-semibold">
+                Aceita só .pdf. Sobe pro bucket lesson-ebooks.
+              </span>
+            </>
+          )}
+        </button>
+      )}
+
+      {err && (
+        <div className="inline-flex items-center gap-1.5 text-[11.5px] text-bad font-extrabold">
+          <AlertCircle size={12} strokeWidth={2.5} />
+          {err}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// =================================================================
 // FORM
 // =================================================================
 
@@ -346,6 +520,10 @@ export function LessonForm({
       setError("Adiciona pelo menos 1 item no checklist.");
       return;
     }
+    if (data.kind === "ebook" && !data.file_url) {
+      setError("Sobe o PDF do ebook antes de salvar.");
+      return;
+    }
 
     setSaving(true);
 
@@ -366,14 +544,31 @@ export function LessonForm({
       payload.youtube_id = detectedYoutubeId;
       payload.body_md = data.body_md || null;
       payload.checklist_items = null;
+      payload.file_url = null;
+      payload.file_name = null;
+      payload.file_size_bytes = null;
     } else if (data.kind === "rich") {
       payload.youtube_id = null;
       payload.body_md = data.body_md;
       payload.checklist_items = null;
-    } else {
+      payload.file_url = null;
+      payload.file_name = null;
+      payload.file_size_bytes = null;
+    } else if (data.kind === "checklist") {
       payload.youtube_id = null;
       payload.body_md = data.body_md || null;
       payload.checklist_items = data.checklist_items.filter((it) => it.text.trim());
+      payload.file_url = null;
+      payload.file_name = null;
+      payload.file_size_bytes = null;
+    } else {
+      // ebook
+      payload.youtube_id = null;
+      payload.body_md = data.body_md || null;
+      payload.checklist_items = null;
+      payload.file_url = data.file_url;
+      payload.file_name = data.file_name || null;
+      payload.file_size_bytes = data.file_size_bytes || null;
     }
 
     const url = mode === "create" ? "/api/educacao" : `/api/educacao/${originalId ?? data.slug}`;
@@ -530,6 +725,7 @@ export function LessonForm({
               {data.kind === "video" && "(vídeo)"}
               {data.kind === "rich" && "(rich · markdown)"}
               {data.kind === "checklist" && "(checklist)"}
+              {data.kind === "ebook" && "(ebook · PDF)"}
             </div>
 
             {data.kind === "video" && (
@@ -608,6 +804,31 @@ export function LessonForm({
                   <ChecklistBuilder
                     items={data.checklist_items}
                     onChange={(items) => update("checklist_items", items)}
+                  />
+                </Field>
+              </>
+            )}
+
+            {data.kind === "ebook" && (
+              <>
+                <Field label="Arquivo PDF" required>
+                  <EbookUploader
+                    fileUrl={data.file_url}
+                    fileName={data.file_name}
+                    fileSize={data.file_size_bytes}
+                    onChange={(url, name, size) => {
+                      update("file_url", url);
+                      update("file_name", name);
+                      update("file_size_bytes", size);
+                    }}
+                  />
+                </Field>
+                <Field label="Texto complementar (Markdown, opcional)">
+                  <MarkdownEditor
+                    value={data.body_md}
+                    onChange={(v) => update("body_md", v)}
+                    placeholder="Resumo do ebook, o que tem dentro, pra quem é..."
+                    rows={8}
                   />
                 </Field>
               </>

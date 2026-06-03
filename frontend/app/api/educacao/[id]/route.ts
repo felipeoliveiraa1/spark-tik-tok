@@ -78,6 +78,9 @@ const EDITABLE_FIELDS = [
   "order_index",
   "is_published",
   "module_id",
+  "file_url",
+  "file_name",
+  "file_size_bytes",
 ] as const;
 
 export async function PATCH(request: Request, { params }: Params) {

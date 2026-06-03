@@ -12,7 +12,7 @@ type LessonRow = {
   title: string;
   description: string | null;
   category: string | null;
-  kind: "video" | "rich" | "checklist";
+  kind: "video" | "rich" | "checklist" | "ebook";
   youtube_id: string | null;
   body_md: string | null;
   checklist_items: unknown;
@@ -22,6 +22,9 @@ type LessonRow = {
   is_published: boolean;
   module_id: string | null;
   created_at: string;
+  file_url: string | null;
+  file_name: string | null;
+  file_size_bytes: number | null;
 };
 
 type ModuleRow = {
@@ -66,7 +69,7 @@ export async function GET(request: Request) {
   let lessonQuery = supabase
     .from("education_videos")
     .select(
-      "id, slug, title, description, category, kind, youtube_id, body_md, checklist_items, cover_url, duration_seconds, order_index, is_published, module_id, created_at",
+      "id, slug, title, description, category, kind, youtube_id, body_md, checklist_items, cover_url, duration_seconds, order_index, is_published, module_id, created_at, file_url, file_name, file_size_bytes",
     )
     .order("order_index", { ascending: true })
     .order("created_at", { ascending: false });
@@ -142,8 +145,9 @@ export async function POST(request: Request) {
   const kind = (typeof body.kind === "string" ? body.kind : "video") as
     | "video"
     | "rich"
-    | "checklist";
-  if (!["video", "rich", "checklist"].includes(kind)) {
+    | "checklist"
+    | "ebook";
+  if (!["video", "rich", "checklist", "ebook"].includes(kind)) {
     return NextResponse.json({ error: "invalid_kind" }, { status: 400 });
   }
 
@@ -155,6 +159,15 @@ export async function POST(request: Request) {
     if (!youtubeId) {
       return NextResponse.json(
         { error: "invalid_youtube", message: "youtube_url ou youtube_id válido é obrigatório pra aula video" },
+        { status: 400 },
+      );
+    }
+  }
+
+  if (kind === "ebook") {
+    if (typeof body.file_url !== "string" || !body.file_url.trim()) {
+      return NextResponse.json(
+        { error: "missing_file", message: "ebook precisa de file_url (faz upload em /api/admin/upload-ebook antes)" },
         { status: 400 },
       );
     }
@@ -174,6 +187,9 @@ export async function POST(request: Request) {
     order_index: typeof body.order_index === "number" ? body.order_index : 0,
     is_published: typeof body.is_published === "boolean" ? body.is_published : true,
     module_id: typeof body.module_id === "string" ? body.module_id : null,
+    file_url: typeof body.file_url === "string" ? body.file_url : null,
+    file_name: typeof body.file_name === "string" ? body.file_name : null,
+    file_size_bytes: typeof body.file_size_bytes === "number" ? body.file_size_bytes : null,
     created_by: user.id,
   };
 

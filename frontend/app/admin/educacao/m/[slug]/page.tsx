@@ -14,6 +14,7 @@ import {
   Layers,
   Sparkles,
   GripVertical,
+  BookOpen,
 } from "lucide-react";
 import { HeroBlob } from "@/components/atoms/hero-blob";
 import { SparkleField } from "@/components/atoms/sparkle-field";
@@ -23,7 +24,7 @@ import { SBadge } from "@/components/atoms/s-badge";
 import { useConfirm, useToast } from "@/components/molecules/dialog-provider";
 import { cn } from "@/lib/cn";
 
-type LessonKind = "video" | "rich" | "checklist";
+type LessonKind = "video" | "rich" | "checklist" | "ebook";
 
 type Lesson = {
   id: string;
@@ -61,12 +62,14 @@ const ACCENT_BLOBS: Record<string, { c1: "rose" | "peach" | "lilac"; c2: "rose" 
 function KindIcon({ kind, size = 16 }: { kind: LessonKind; size?: number }) {
   if (kind === "video") return <PlayCircle size={size} strokeWidth={2.2} />;
   if (kind === "checklist") return <ListChecks size={size} strokeWidth={2.2} />;
+  if (kind === "ebook") return <BookOpen size={size} strokeWidth={2.2} />;
   return <FileText size={size} strokeWidth={2.2} />;
 }
 
 function kindLabel(k: LessonKind): string {
   if (k === "video") return "Vídeo";
   if (k === "checklist") return "Checklist";
+  if (k === "ebook") return "Ebook";
   return "Rich";
 }
 

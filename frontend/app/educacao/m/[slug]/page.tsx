@@ -12,6 +12,7 @@ import {
   FileText,
   Sparkles,
   ArrowRight,
+  BookOpen,
 } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { FloatingMainNav } from "@/components/layout/floating-main-nav";
@@ -21,7 +22,7 @@ import { SectionReveal } from "@/components/atoms/section-reveal";
 import { LoadingSplash } from "@/components/atoms/loading-splash";
 import { cn } from "@/lib/cn";
 
-type LessonKind = "video" | "rich" | "checklist";
+type LessonKind = "video" | "rich" | "checklist" | "ebook";
 
 type Lesson = {
   id: string;
@@ -61,12 +62,14 @@ const ACCENT_BLOBS: Record<string, { c1: "rose" | "peach" | "lilac"; c2: "rose" 
 function KindIcon({ kind, size = 16 }: { kind: LessonKind; size?: number }) {
   if (kind === "video") return <PlayCircle size={size} strokeWidth={2.2} />;
   if (kind === "checklist") return <ListChecks size={size} strokeWidth={2.2} />;
+  if (kind === "ebook") return <BookOpen size={size} strokeWidth={2.2} />;
   return <FileText size={size} strokeWidth={2.2} />;
 }
 
 function kindLabel(kind: LessonKind): string {
   if (kind === "video") return "Vídeo";
   if (kind === "checklist") return "Checklist";
+  if (kind === "ebook") return "Ebook";
   return "Aula";
 }
 
