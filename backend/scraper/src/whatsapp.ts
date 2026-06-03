@@ -1266,7 +1266,7 @@ export async function handleStats() {
     supabase
       .from("whatsapp_outbox")
       .select(
-        "id, user_id, template_key, status, phone, sent_at, created_at, error, message_text:text, profiles!whatsapp_outbox_user_id_fkey(name, email)",
+        "id, user_id, template_key, status, phone, sent_at, created_at, error, message_text:text",
       )
       .order("created_at", { ascending: false })
       .limit(30),
@@ -1286,14 +1286,25 @@ export async function handleStats() {
     created_at: string;
     error: string | null;
     message_text: string;
-    profiles:
-      | { name: string | null; email: string }
-      | { name: string | null; email: string }[]
-      | null;
   };
 
-  const recentRows = ((recent.data as RawRecent[] | null) ?? []).map((r) => {
-    const p = Array.isArray(r.profiles) ? r.profiles[0] : r.profiles;
+  const rawRecent = (recent.data as RawRecent[] | null) ?? [];
+
+  // Busca dados dos profiles em query separada (mais robusto que JOIN)
+  const userIds = Array.from(new Set(rawRecent.map((r) => r.user_id)));
+  const profilesById = new Map<string, { name: string | null; email: string }>();
+  if (userIds.length > 0) {
+    const { data: profs } = await supabase
+      .from("profiles")
+      .select("id, name, email")
+      .in("id", userIds);
+    for (const p of (profs ?? []) as { id: string; name: string | null; email: string }[]) {
+      profilesById.set(p.id, { name: p.name, email: p.email });
+    }
+  }
+
+  const recentRows = rawRecent.map((r) => {
+    const p = profilesById.get(r.user_id);
     return {
       id: r.id,
       user_id: r.user_id,
