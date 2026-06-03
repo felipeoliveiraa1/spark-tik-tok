@@ -13,6 +13,8 @@ import {
   Loader2,
   Phone,
   Zap,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 
@@ -36,6 +38,7 @@ type RecentRow = {
   sent_at: string | null;
   created_at: string;
   error: string | null;
+  text: string;
   user_name: string | null;
   user_email: string | null;
 };
@@ -74,6 +77,7 @@ export default function AdminWhatsAppPage() {
   const [busy, setBusy] = React.useState(false);
   const [result, setResult] = React.useState<BlastResult | null>(null);
   const [confirmBlast, setConfirmBlast] = React.useState(false);
+  const [expandedRow, setExpandedRow] = React.useState<string | null>(null);
 
   const fetchStats = React.useCallback(async () => {
     const res = await fetch("/api/admin/whatsapp/stats");
@@ -453,28 +457,73 @@ export default function AdminWhatsAppPage() {
                 </div>
               ) : (
                 <ul className="divide-y divide-spark-hairline">
-                  {stats.recent.map((r) => (
-                    <li key={r.id} className="px-5 py-3 flex items-center gap-3">
-                      <StatusDot status={r.status} />
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[13px] font-extrabold text-spark-ink truncate">
-                          {r.user_name ?? r.user_email?.split("@")[0] ?? "—"}
-                          <span className="ml-2 text-[11px] font-mono text-spark-ink-50">
-                            {r.phone}
-                          </span>
-                        </div>
-                        <div className="text-[11px] text-spark-ink-50 font-mono mt-0.5 truncate">
-                          {r.template_key}
-                          {r.error && (
-                            <span className="ml-2 text-bad">· {r.error}</span>
+                  {stats.recent.map((r) => {
+                    const open = expandedRow === r.id;
+                    return (
+                      <li key={r.id}>
+                        <button
+                          type="button"
+                          onClick={() => setExpandedRow(open ? null : r.id)}
+                          className="w-full px-5 py-3 flex items-center gap-3 hover:bg-spark-surface-sunken/40 transition-colors text-left"
+                        >
+                          {open ? (
+                            <ChevronDown size={12} className="text-spark-ink-50 shrink-0" />
+                          ) : (
+                            <ChevronRight size={12} className="text-spark-ink-50 shrink-0" />
                           )}
-                        </div>
-                      </div>
-                      <span className="text-[10.5px] text-spark-ink-50 font-mono shrink-0">
-                        {fmtRelative(r.sent_at ?? r.created_at)}
-                      </span>
-                    </li>
-                  ))}
+                          <StatusDot status={r.status} />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[13px] font-extrabold text-spark-ink truncate">
+                              {r.user_name ?? r.user_email?.split("@")[0] ?? "—"}
+                              <span className="ml-2 text-[11px] font-mono text-spark-ink-50">
+                                {r.phone}
+                              </span>
+                            </div>
+                            <div className="text-[11px] text-spark-ink-50 font-mono mt-0.5 truncate">
+                              {r.template_key}
+                              {r.error && (
+                                <span className="ml-2 text-bad">· {r.error}</span>
+                              )}
+                            </div>
+                          </div>
+                          <span className="text-[10.5px] text-spark-ink-50 font-mono shrink-0">
+                            {fmtRelative(r.sent_at ?? r.created_at)}
+                          </span>
+                        </button>
+                        {open && (
+                          <div className="px-5 pb-4 pt-1 bg-spark-bg/50">
+                            <div className="ml-9 text-[11px] text-spark-ink-50 mb-2 grid grid-cols-2 gap-x-4 gap-y-0.5">
+                              <span>
+                                <strong className="text-spark-ink-70">Email:</strong>{" "}
+                                <span className="font-mono">{r.user_email ?? "—"}</span>
+                              </span>
+                              <span>
+                                <strong className="text-spark-ink-70">Enviada:</strong>{" "}
+                                {r.sent_at
+                                  ? new Date(r.sent_at).toLocaleString("pt-BR")
+                                  : "—"}
+                              </span>
+                              <span>
+                                <strong className="text-spark-ink-70">Criada:</strong>{" "}
+                                {new Date(r.created_at).toLocaleString("pt-BR")}
+                              </span>
+                              <span>
+                                <strong className="text-spark-ink-70">Status:</strong> {r.status}
+                              </span>
+                            </div>
+                            <pre className="ml-9 mt-2 p-4 rounded-spark-lg bg-spark-surface border border-spark-hairline text-[12.5px] whitespace-pre-wrap font-sans leading-relaxed text-spark-ink">
+                              {r.text}
+                            </pre>
+                            {r.error && (
+                              <div className="ml-9 mt-2 p-3 rounded-spark-lg bg-bad/5 border border-bad/20 text-[11.5px] text-bad font-mono">
+                                {r.error}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </div>

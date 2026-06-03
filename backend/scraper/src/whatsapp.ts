@@ -1266,7 +1266,7 @@ export async function handleStats() {
     supabase
       .from("whatsapp_outbox")
       .select(
-        "id, user_id, template_key, status, phone, sent_at, created_at, error, profiles!whatsapp_outbox_user_id_fkey(name, email)",
+        "id, user_id, template_key, status, phone, sent_at, created_at, error, text, profiles!whatsapp_outbox_user_id_fkey(name, email)",
       )
       .order("created_at", { ascending: false })
       .limit(30),
@@ -1285,6 +1285,7 @@ export async function handleStats() {
     sent_at: string | null;
     created_at: string;
     error: string | null;
+    text: string;
     profiles:
       | { name: string | null; email: string }
       | { name: string | null; email: string }[]
@@ -1302,6 +1303,7 @@ export async function handleStats() {
       sent_at: r.sent_at,
       created_at: r.created_at,
       error: r.error,
+      text: r.text,
       user_name: p?.name ?? null,
       user_email: p?.email ?? null,
     };
