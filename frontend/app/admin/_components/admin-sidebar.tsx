@@ -17,6 +17,7 @@ import {
   Menu,
   X,
   MessageCircle,
+  Hourglass,
 } from "lucide-react";
 import { SparkWordmark } from "@/components/atoms/spark-wordmark";
 import { cn } from "@/lib/cn";
@@ -39,6 +40,7 @@ const SECTIONS: Section[] = [
     items: [
       { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
       { href: "/admin/financeiro", label: "Financeiro", icon: BarChart3 },
+      { href: "/admin/trials", label: "Trials", icon: Hourglass },
     ],
   },
   {
