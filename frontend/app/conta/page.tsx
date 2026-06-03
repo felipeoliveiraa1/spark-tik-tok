@@ -26,6 +26,7 @@ import { ProfileExtrasEditor } from "./profile-extras-editor";
 import { RevenueCard } from "./revenue-card";
 import { RankingOptInCard } from "./ranking-opt-in-card";
 import { ContaTour } from "./conta-tour";
+import { CompleteProfileBanner } from "./complete-profile-banner";
 
 const KIWIFY_PORTAL_URL =
   process.env.NEXT_PUBLIC_KIWIFY_PORTAL_URL ?? "https://dashboard.kiwify.com.br";
@@ -255,6 +256,15 @@ function ContaBody({
             </SectionReveal>
           )}
 
+          {/* Banner: complete o perfil (meta + ranking). Some sozinho
+              quando os 2 estiverem feitos. */}
+          {!showReset && (
+            <CompleteProfileBanner
+              metaCadastrada={metaMensalBrl != null && metaMensalBrl > 0}
+              rankingAtivado={rankingOptIn}
+            />
+          )}
+
           {/* Stats em grid */}
           <SectionReveal direction="up">
             <div data-tutorial-id="conta-stats" className="grid grid-cols-3 gap-3">
@@ -348,13 +358,15 @@ function ContaBody({
 
             {/* Sobre mim (bio + redes + cidade + meta) */}
             <SectionReveal direction="up" delay={220}>
-              <ProfileExtrasEditor
-                initialBio={bio ?? ""}
-                initialInstagram={instagramHandle ?? ""}
-                initialTiktok={tiktokHandle ?? ""}
-                initialCidade={cidadeUf ?? ""}
-                initialMeta={metaMensalBrl}
-              />
+              <div id="meta-mensal-anchor" className="transition-shadow duration-500 rounded-spark-2xl">
+                <ProfileExtrasEditor
+                  initialBio={bio ?? ""}
+                  initialInstagram={instagramHandle ?? ""}
+                  initialTiktok={tiktokHandle ?? ""}
+                  initialCidade={cidadeUf ?? ""}
+                  initialMeta={metaMensalBrl}
+                />
+              </div>
             </SectionReveal>
           </div>
 
@@ -366,7 +378,9 @@ function ContaBody({
 
             {/* Ranking opt-in */}
             <SectionReveal direction="up" delay={260}>
-              <RankingOptInCard initialOptIn={rankingOptIn} />
+              <div id="ranking-anchor" className="transition-shadow duration-500 rounded-spark-2xl">
+                <RankingOptInCard initialOptIn={rankingOptIn} />
+              </div>
             </SectionReveal>
           </div>
 
