@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowUpRight, Radio, PlayCircle } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Radio, PlayCircle, CheckCircle2 } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { FloatingMainNav } from "@/components/layout/floating-main-nav";
 import { HeroBlob } from "@/components/atoms/hero-blob";
@@ -40,15 +40,25 @@ function fmtDate(iso: string): string {
 function useLives() {
   const [events, setEvents] = React.useState<LiveEvent[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [watched, setWatched] = React.useState<Set<string>>(new Set());
 
   React.useEffect(() => {
     let cancelled = false;
     (async () => {
-      const res = await fetch("/api/ao-vivo", { cache: "no-store" });
+      const [evRes, prRes] = await Promise.all([
+        fetch("/api/ao-vivo", { cache: "no-store" }),
+        fetch("/api/ao-vivo/progress", { cache: "no-store" }),
+      ]);
       if (cancelled) return;
-      if (res.ok) {
-        const data = (await res.json()) as { events: LiveEvent[] };
+      if (evRes.ok) {
+        const data = (await evRes.json()) as { events: LiveEvent[] };
         setEvents(data.events);
+      }
+      if (prRes.ok) {
+        const data = (await prRes.json()) as {
+          progress: { live_id: string; completed: boolean }[];
+        };
+        setWatched(new Set(data.progress.filter((p) => p.completed).map((p) => p.live_id)));
       }
       setLoading(false);
     })().catch(() => setLoading(false));
@@ -73,7 +83,7 @@ function useLives() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [events]);
 
-  return { events, groups, loading };
+  return { events, groups, loading, watched };
 }
 
 // =================================================================
@@ -163,10 +173,12 @@ function LiveCard({
   event,
   status,
   index,
+  watched = false,
 }: {
   event: LiveEvent;
   status: "live" | "upcoming" | "replay";
   index: number;
+  watched?: boolean;
 }) {
   const countdown =
     status === "upcoming" ? formatCountdown(minutesUntil(event.starts_at)) : null;
@@ -210,6 +222,16 @@ function LiveCard({
               )}
             </div>
           </div>
+
+          {/* Badge "assistida" top-right */}
+          {watched && (
+            <div className="absolute top-3 right-3">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-good text-white text-[10.5px] font-extrabold uppercase tracking-widest shadow-lift">
+                <CheckCircle2 size={11} strokeWidth={2.5} />
+                Assistida
+              </span>
+            </div>
+          )}
 
           {/* Badge top-left */}
           <div className="absolute top-3 left-3">
@@ -341,7 +363,7 @@ function EmptyLives({ desktop }: { desktop: boolean }) {
 // =================================================================
 
 function AoVivoBody({ desktop = false }: { desktop?: boolean }) {
-  const { events, groups, loading } = useLives();
+  const { events, groups, loading, watched } = useLives();
   const total = events.length;
 
   return (
@@ -364,7 +386,7 @@ function AoVivoBody({ desktop = false }: { desktop?: boolean }) {
               {groups.live.length > 0 && (
                 <GroupSection emoji="🔴" title="ao vivo agora" tone="brand" desktop={desktop}>
                   {groups.live.map((e, i) => (
-                    <LiveCard key={e.id} event={e} status="live" index={i} />
+                    <LiveCard key={e.id} event={e} status="live" index={i} watched={watched.has(e.id)} />
                   ))}
                 </GroupSection>
               )}
@@ -372,7 +394,7 @@ function AoVivoBody({ desktop = false }: { desktop?: boolean }) {
               {groups.upcoming.length > 0 && (
                 <GroupSection emoji="📅" title="próximos encontros" desktop={desktop}>
                   {groups.upcoming.map((e, i) => (
-                    <LiveCard key={e.id} event={e} status="upcoming" index={i} />
+                    <LiveCard key={e.id} event={e} status="upcoming" index={i} watched={watched.has(e.id)} />
                   ))}
                 </GroupSection>
               )}
@@ -380,7 +402,7 @@ function AoVivoBody({ desktop = false }: { desktop?: boolean }) {
               {groups.replays.length > 0 && (
                 <GroupSection emoji="📼" title="replays" desktop={desktop}>
                   {groups.replays.map((e, i) => (
-                    <LiveCard key={e.id} event={e} status="replay" index={i} />
+                    <LiveCard key={e.id} event={e} status="replay" index={i} watched={watched.has(e.id)} />
                   ))}
                 </GroupSection>
               )}

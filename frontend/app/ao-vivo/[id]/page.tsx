@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Calendar, Radio } from "lucide-react";
+import { ArrowLeft, Calendar, Radio, CheckCircle2 } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { FloatingMainNav } from "@/components/layout/floating-main-nav";
 import { HeroBlob } from "@/components/atoms/hero-blob";
@@ -126,11 +126,46 @@ function CountdownCover({ event }: { event: LiveEvent }) {
 function LiveBody({ idOrSlug, desktop = false }: { idOrSlug: string; desktop?: boolean }) {
   const { event, loading, error } = useLive(idOrSlug);
   const [tick, setTick] = React.useState(0);
+  const [marking, setMarking] = React.useState(false);
+  const [marked, setMarked] = React.useState(false);
 
   React.useEffect(() => {
     const i = setInterval(() => setTick((t) => t + 1), 30_000);
     return () => clearInterval(i);
   }, []);
+
+  // Carrega estado "ja assistiu?" do servidor pra hidratar o botao
+  React.useEffect(() => {
+    if (!event?.id) return;
+    let cancelled = false;
+    (async () => {
+      const res = await fetch("/api/ao-vivo/progress", { cache: "no-store" });
+      if (!res.ok || cancelled) return;
+      const data = (await res.json()) as {
+        progress: { live_id: string; completed: boolean }[];
+      };
+      const hit = data.progress.find((p) => p.live_id === event.id);
+      if (hit?.completed && !cancelled) setMarked(true);
+    })().catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [event?.id]);
+
+  const handleMarkWatched = async () => {
+    if (!event) return;
+    setMarking(true);
+    try {
+      const res = await fetch("/api/ao-vivo/progress", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ live_id: event.id, completed: true }),
+      });
+      if (res.ok) setMarked(true);
+    } finally {
+      setMarking(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -284,6 +319,41 @@ function LiveBody({ idOrSlug, desktop = false }: { idOrSlug: string; desktop?: b
                 <p className="text-fluid-body text-spark-ink-70 leading-relaxed whitespace-pre-wrap">
                   {event.description}
                 </p>
+              </div>
+            </SectionReveal>
+          )}
+
+          {/* Botao "Marcar como assistida" — so faz sentido em live ou replay */}
+          {(status === "live" || status === "replay") && (
+            <SectionReveal direction="up" delay={500}>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={handleMarkWatched}
+                  disabled={marking || marked}
+                  className={cn(
+                    "group inline-flex items-center gap-2 px-7 py-4 rounded-full text-[14px] font-extrabold shadow-lift transition-all duration-300 ease-premium",
+                    "hover:-translate-y-0.5 active:translate-y-0",
+                    "disabled:opacity-70 disabled:hover:translate-y-0",
+                    marked
+                      ? "bg-good text-white"
+                      : "bg-spark-ink text-white hover:bg-spark-brand-deep",
+                  )}
+                >
+                  <CheckCircle2
+                    size={15}
+                    strokeWidth={2.5}
+                    className={cn(
+                      "transition-transform duration-300",
+                      marked ? "scale-110" : "group-hover:scale-110",
+                    )}
+                  />
+                  {marking
+                    ? "Marcando..."
+                    : marked
+                      ? "Live assistida"
+                      : "Marcar como assistida"}
+                </button>
               </div>
             </SectionReveal>
           )}
