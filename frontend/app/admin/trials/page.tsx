@@ -10,7 +10,9 @@ import {
   Loader2,
   Phone,
   PhoneOff,
-  Users,
+  TrendingUp,
+  XCircle,
+  Hourglass,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 
@@ -38,7 +40,16 @@ type Kpis = {
   com_whatsapp: number;
 };
 
-type Resp = { trials: Trial[]; kpis: Kpis };
+type Funnel = {
+  total_que_passou_trial: number;
+  ativos_agora: number;
+  expirados_total: number;
+  converteram_pagante: number;
+  cancelaram_ou_reembolso: number;
+  conversion_rate_pct: number;
+};
+
+type Resp = { trials: Trial[]; kpis: Kpis; funnel: Funnel };
 
 const URGENCY_META: Record<
   Trial["urgency"],
@@ -164,6 +175,77 @@ export default function AdminTrialsPage() {
         />
       </div>
 
+      {/* Funil histórico de conversão */}
+      <section>
+        <div className="mb-3">
+          <h2 className="text-[16px] font-extrabold tracking-tight text-spark-ink">
+            Funil de conversão
+          </h2>
+          <p className="text-[12px] text-spark-ink-50 mt-0.5 font-semibold">
+            Total que passou por trial · convertidas em pagantes · perderam ao longo do tempo
+          </p>
+        </div>
+
+        <div className="rounded-spark-2xl bg-spark-surface border border-spark-hairline shadow-rest p-5 lg:p-6">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
+            <FunnelKpi
+              label="Já passaram por trial"
+              value={data.funnel.total_que_passou_trial}
+              icon={Hourglass}
+              tone="brand"
+            />
+            <FunnelKpi
+              label="Em trial agora"
+              value={data.funnel.ativos_agora}
+              icon={Clock}
+            />
+            <FunnelKpi
+              label="Trials expirados"
+              value={data.funnel.expirados_total}
+              icon={AlertCircle}
+              tone={data.funnel.expirados_total > 0 ? "warn" : undefined}
+            />
+            <FunnelKpi
+              label="Viraram pagantes"
+              value={data.funnel.converteram_pagante}
+              icon={TrendingUp}
+              tone="good"
+            />
+            <FunnelKpi
+              label="Cancelaram/reembolso"
+              value={data.funnel.cancelaram_ou_reembolso}
+              icon={XCircle}
+              tone={data.funnel.cancelaram_ou_reembolso > 0 ? "bad" : undefined}
+            />
+          </div>
+
+          {/* Conversion rate destacada */}
+          <div className="rounded-spark-xl bg-brand-grad text-white p-4 lg:p-5 flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
+              <TrendingUp size={20} strokeWidth={2.4} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[11px] font-extrabold uppercase tracking-widest opacity-90">
+                Taxa de conversão
+              </div>
+              <div className="text-[10.5px] font-semibold opacity-85 mt-0.5">
+                {data.funnel.converteram_pagante} de {data.funnel.total_que_passou_trial}{" "}
+                alunas que passaram por trial viraram pagantes
+              </div>
+            </div>
+            <div className="font-mono font-extrabold text-[36px] leading-none">
+              {data.funnel.conversion_rate_pct}%
+            </div>
+          </div>
+
+          <p className="mt-3 text-[11px] text-spark-ink-50 font-semibold">
+            💡 Trials expirados que ainda não compraram caem em <code>/plano-inativo</code> ao
+            abrir o app. Pode mandar lembrete WhatsApp manual pra elas pelo painel{" "}
+            <code>/admin/whatsapp</code>.
+          </p>
+        </div>
+      </section>
+
       {/* Lista */}
       <section>
         <div className="flex items-end justify-between mb-3">
@@ -271,6 +353,42 @@ export default function AdminTrialsPage() {
           Posso adicionar um trigger automático <code>trial_expirando_3d</code> se quiser.
         </p>
       </section>
+    </div>
+  );
+}
+
+function FunnelKpi({
+  label,
+  value,
+  icon: Icon,
+  tone,
+}: {
+  label: string;
+  value: number;
+  icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
+  tone?: "brand" | "good" | "warn" | "bad";
+}) {
+  const iconBg =
+    tone === "brand"
+      ? "bg-spark-brand-soft text-spark-brand-deep"
+      : tone === "good"
+        ? "bg-good/10 text-good"
+        : tone === "warn"
+          ? "bg-warn/10 text-warn"
+          : tone === "bad"
+            ? "bg-bad/10 text-bad"
+            : "bg-spark-surface-sunken text-spark-ink-70";
+  return (
+    <div className="rounded-spark-xl bg-spark-bg border border-spark-hairline p-3">
+      <div className={`w-7 h-7 rounded-spark-lg flex items-center justify-center mb-2 ${iconBg}`}>
+        <Icon size={12} strokeWidth={2.2} />
+      </div>
+      <div className="font-mono font-extrabold text-spark-ink text-[20px] leading-none">
+        {value}
+      </div>
+      <div className="text-[9.5px] text-spark-ink-50 mt-1 font-extrabold uppercase tracking-wider leading-tight">
+        {label}
+      </div>
     </div>
   );
 }

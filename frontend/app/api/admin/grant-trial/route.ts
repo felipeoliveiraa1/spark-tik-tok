@@ -93,6 +93,7 @@ export async function POST(request: Request) {
             plan_active: true,
             plan_status: "trial",
             plan_expires_at: expiresAt,
+            had_trial: true,
             updated_at: new Date().toISOString(),
           })
           .eq("id", existing.id);
@@ -127,6 +128,7 @@ export async function POST(request: Request) {
           plan_active: true,
           plan_status: "trial",
           plan_expires_at: expiresAt,
+          had_trial: true,
           must_reset_password: true,
           updated_at: new Date().toISOString(),
         })
