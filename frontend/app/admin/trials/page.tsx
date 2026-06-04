@@ -15,6 +15,7 @@ import {
   Hourglass,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { ProfileHistoryModal } from "./profile-history-modal";
 
 type Trial = {
   id: string;
@@ -115,6 +116,7 @@ function fmtRelativePast(iso: string | null): string {
 export default function AdminTrialsPage() {
   const [data, setData] = React.useState<Resp | null>(null);
   const [loading, setLoading] = React.useState(true);
+  const [historyUserId, setHistoryUserId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -271,7 +273,8 @@ export default function AdminTrialsPage() {
                 return (
                   <li
                     key={t.id}
-                    className="px-5 py-3.5 flex items-center gap-3 hover:bg-spark-surface-sunken/40 transition-colors"
+                    onClick={() => setHistoryUserId(t.id)}
+                    className="px-5 py-3.5 flex items-center gap-3 hover:bg-spark-surface-sunken/40 active:bg-spark-surface-sunken transition-colors cursor-pointer"
                   >
                     {/* Avatar inicial */}
                     <div className="shrink-0 w-9 h-9 rounded-full bg-spark-brand-soft text-spark-brand-deep flex items-center justify-center font-extrabold text-[13px]">
@@ -352,7 +355,18 @@ export default function AdminTrialsPage() {
           uma mensagem WhatsApp pra lembrar de assinar antes do prazo acabar.
           Posso adicionar um trigger automático <code>trial_expirando_3d</code> se quiser.
         </p>
+        <p className="mt-2 text-[11.5px] text-spark-ink-50 font-semibold">
+          💡 <strong>Toque/clique em qualquer aluna</strong> da lista pra ver o histórico
+          completo de mudanças de plano dela.
+        </p>
       </section>
+
+      {historyUserId && (
+        <ProfileHistoryModal
+          userId={historyUserId}
+          onClose={() => setHistoryUserId(null)}
+        />
+      )}
     </div>
   );
 }
