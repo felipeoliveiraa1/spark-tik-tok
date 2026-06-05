@@ -1122,7 +1122,9 @@ export async function runAllTriggers() {
 
 let flushTimer: NodeJS.Timeout | null = null;
 let triggersTimer: NodeJS.Timeout | null = null;
+let expireTrialsTimer: NodeJS.Timeout | null = null;
 let flushRunning = false;
+let expireRunning = false;
 
 export function startWhatsAppWorker() {
   if (process.env.WHATSAPP_WORKER_ENABLED === "false") {
@@ -1170,13 +1172,6 @@ export function startWhatsAppWorker() {
       const shouldRun = inWindow && lastTriggersDay !== today;
       if (!shouldRun) return;
       lastTriggersDay = today;
-      // Expira trials vencidos ANTES dos triggers — assim o filtro
-      // plan_active=true nao pega mais trial expirado, e ela nao recebe
-      // mensagem motivacional sem ter acesso ao app.
-      const expireResult = await expireTrials();
-      if (expireResult.expired > 0) {
-        log.info({ expired: expireResult.expired }, "[expire-trials] desativou trials vencidos");
-      }
       log.info("[whatsapp-triggers] disparando run diario");
       const result = await runAllTriggers();
       log.info({ result }, "[whatsapp-triggers] done");
@@ -1189,13 +1184,37 @@ export function startWhatsAppWorker() {
   // depois a cada 5 minutos.
   void tickTriggers();
   triggersTimer = setInterval(() => void tickTriggers(), 5 * 60 * 1000);
+
+  // Expira trials a cada 30 minutos (independente dos triggers diarios).
+  // Mantem dashboard, blast e KPIs sempre sincronizados — assim que um
+  // trial vence, em ate 30min ele cai pra inactive automaticamente.
+  // Anti-overlap: se ainda esta rodando da iteracao anterior, pula.
+  const tickExpireTrials = async () => {
+    if (expireRunning) return;
+    expireRunning = true;
+    try {
+      const result = await expireTrials();
+      if (result.expired > 0) {
+        log.info({ expired: result.expired }, "[expire-trials] desativou trials vencidos");
+      }
+    } catch (err) {
+      log.error({ err }, "[expire-trials] erro");
+    } finally {
+      expireRunning = false;
+    }
+  };
+  // Tick imediato no startup pra limpar qualquer atraso, depois cada 30min
+  void tickExpireTrials();
+  expireTrialsTimer = setInterval(() => void tickExpireTrials(), 30 * 60 * 1000);
 }
 
 export function stopWhatsAppWorker() {
   if (flushTimer) clearInterval(flushTimer);
   if (triggersTimer) clearInterval(triggersTimer);
+  if (expireTrialsTimer) clearInterval(expireTrialsTimer);
   flushTimer = null;
   triggersTimer = null;
+  expireTrialsTimer = null;
 }
 
 // =================================================================
