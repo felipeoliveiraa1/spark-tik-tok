@@ -520,12 +520,19 @@ export function LessonForm({
       setError("Adiciona pelo menos 1 item no checklist.");
       return;
     }
-    if (data.kind === "ebook" && !data.file_url) {
+    // Criar aula ebook precisa de PDF. Em edicao, deixa salvar sem PDF
+    // (auto-despublica logo abaixo) — assim admin pode trocar o tipo ou
+    // limpar e voltar depois sem ficar travada.
+    if (mode === "create" && data.kind === "ebook" && !data.file_url) {
       setError("Sobe o PDF do ebook antes de salvar.");
       return;
     }
 
     setSaving(true);
+
+    // Edit + ebook sem PDF -> despublica pra aluna nao ver aula vazia.
+    const ebookSemPdf = data.kind === "ebook" && !data.file_url;
+    const effectivePublished = ebookSemPdf ? false : data.is_published;
 
     const payload: Record<string, unknown> = {
       slug: data.slug,
@@ -536,7 +543,7 @@ export function LessonForm({
       cover_url: data.cover_url || null,
       duration_seconds: data.duration_seconds || null,
       order_index: data.order_index,
-      is_published: data.is_published,
+      is_published: effectivePublished,
       module_id: data.module_id,
     };
 
@@ -562,11 +569,11 @@ export function LessonForm({
       payload.file_name = null;
       payload.file_size_bytes = null;
     } else {
-      // ebook
+      // ebook (file_url null quando admin removeu o PDF — auto-despublica)
       payload.youtube_id = null;
       payload.body_md = data.body_md || null;
       payload.checklist_items = null;
-      payload.file_url = data.file_url;
+      payload.file_url = data.file_url || null;
       payload.file_name = data.file_name || null;
       payload.file_size_bytes = data.file_size_bytes || null;
     }
