@@ -750,3 +750,77 @@ export function buildTriggerRotina30Dias(input: { firstName: string }): {
   ].join("\n");
   return { text };
 }
+
+// ============================================================
+// TRIGGER: pagante com assinatura encerrando em 1-3 dias
+// ============================================================
+// Dispara pra alunas com plan_status='active'/'late' cujo
+// plan_expires_at cai nas proximas 72h. Lembra de renovar com
+// MESMO email pra nao perder dados/historico.
+export const TRIGGER_PLANO_ENCERRANDO_3D_KEY = "trigger_plano_encerrando_3d";
+
+export function buildTriggerPlanoEncerrando3d(input: {
+  firstName: string;
+  diasRestantes: number;
+  email: string;
+  checkoutUrl: string;
+}): { text: string } {
+  const name = firstName(input.firstName);
+  const diasTxt =
+    input.diasRestantes <= 1
+      ? "*amanhã*"
+      : input.diasRestantes === 2
+        ? "em *2 dias*"
+        : "em *3 dias*";
+  const text = [
+    `Oi ${name} 💕`,
+    ``,
+    `Sua assinatura do *Método TTS* encerra ${diasTxt}. Renova antes pra não perder acesso aos agentes, rotina e seu histórico no app.`,
+    ``,
+    `🔗 ${input.checkoutUrl}`,
+    ``,
+    `⚠️ *IMPORTANTE:* compra com o MESMO email da sua conta (*${input.email}*). Se usar outro, sua nova compra vai criar conta nova e você perde tudo o que construiu aqui.`,
+    ``,
+    `Se já renovou, ignora essa mensagem 🌹`,
+    ``,
+    `_Yara · Método TTS_`,
+  ].join("\n");
+  return { text };
+}
+
+// ============================================================
+// TRIGGER: aluna em trial expirando em 1-3 dias
+// ============================================================
+// Pega quem ta usando trial e tem expires nas proximas 72h.
+// CTA pra virar pagante mantendo MESMO email (preserva todo
+// historico/rotina/produtos cadastrados no trial).
+export const TRIGGER_TRIAL_EXPIRANDO_3D_KEY = "trigger_trial_expirando_3d";
+
+export function buildTriggerTrialExpirando3d(input: {
+  firstName: string;
+  diasRestantes: number;
+  email: string;
+  checkoutUrl: string;
+}): { text: string } {
+  const name = firstName(input.firstName);
+  const diasTxt =
+    input.diasRestantes <= 1
+      ? "*amanhã*"
+      : input.diasRestantes === 2
+        ? "*em 2 dias*"
+        : "*em 3 dias*";
+  const text = [
+    `Oi ${name} 💕`,
+    ``,
+    `Seu período de teste do *Método TTS* termina ${diasTxt}. Pra não perder acesso aos agentes, rotina e tudo que você já cadastrou aqui — assina agora:`,
+    ``,
+    `🔗 ${input.checkoutUrl}`,
+    ``,
+    `⚠️ *IMPORTANTE:* compra com o MESMO email do seu trial (*${input.email}*). Assim sua conta é reativada na hora e você mantém TUDO. Email diferente = conta nova zerada.`,
+    ``,
+    `Se tiver dúvida me chama 🌹`,
+    ``,
+    `_Yara · Método TTS_`,
+  ].join("\n");
+  return { text };
+}

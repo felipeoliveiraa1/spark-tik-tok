@@ -31,6 +31,8 @@ import {
   TRIGGER_TOUR_COMPLETO_KEY,
   TRIGGER_EBOOK_BAIXADO_KEY,
   TRIGGER_ROTINA_30DIAS_KEY,
+  TRIGGER_PLANO_ENCERRANDO_3D_KEY,
+  TRIGGER_TRIAL_EXPIRANDO_3D_KEY,
   buildTriggerDia1NaoLogou,
   buildTriggerSumiu7d,
   buildTriggerStreak3,
@@ -42,6 +44,8 @@ import {
   buildTriggerTourCompleto,
   buildTriggerEbookBaixado,
   buildTriggerRotina30Dias,
+  buildTriggerPlanoEncerrando3d,
+  buildTriggerTrialExpirando3d,
   type MotivationalEntry,
 } from "./whatsapp-templates.js";
 
@@ -252,6 +256,12 @@ export async function alreadyReceivedRecently(
   return (count ?? 0) > 0;
 }
 
+/**
+ * Limite semanal aplica APENAS pros motivacionais (template_key
+ * comecando com 'motivacional_'). Triggers (welcome, dia1_nao_logou,
+ * sumiu_7d, primeiro_faturamento, etc) NAO contam — sao eventos
+ * pontuais raros, podem passar livres.
+ */
 export async function reachedWeeklyLimit(
   supabase: SupabaseClient,
   userId: string,
@@ -262,6 +272,7 @@ export async function reachedWeeklyLimit(
     .select("id", { count: "exact", head: true })
     .eq("user_id", userId)
     .in("status", ["pending", "sent"])
+    .like("template_key", "motivacional_%")
     .gte("created_at", since);
   return (count ?? 0) >= WEEKLY_MSG_LIMIT_PER_USER;
 }
@@ -304,7 +315,10 @@ export async function enqueueOutbox(
     }
   }
 
-  if (!args.skipWeeklyLimit) {
+  // Weekly limit aplica SO pros motivacionais. Triggers (1a venda,
+  // sumiu_7d, etc) passam livres — sao eventos raros pontuais.
+  const isMotivacional = args.templateKey.startsWith("motivacional_");
+  if (isMotivacional && !args.skipWeeklyLimit) {
     const tooMany = await reachedWeeklyLimit(supabase, args.userId);
     if (tooMany) return { ok: false, reason: "weekly_limit_reached" };
   }
@@ -1074,6 +1088,119 @@ export async function expireTrials(): Promise<{ expired: number }> {
   return { expired: (data ?? []).length };
 }
 
+// =================================================================
+// TRIGGER: pagante com assinatura encerrando em 1-3 dias
+// =================================================================
+async function runTriggerPlanoEncerrando3d(supabase: SupabaseClient) {
+  const checkoutUrl =
+    process.env.NEXT_PUBLIC_KIWIFY_CHECKOUT_URL ?? "https://pay.kiwify.com.br/YOR83Pu";
+  const now = new Date();
+  const in72h = new Date(now.getTime() + 72 * 3600_000);
+
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, name, email, whatsapp, plan_expires_at, plan_status")
+    .not("whatsapp", "is", null)
+    .in("plan_status", ["active", "late"])
+    .not("plan_expires_at", "is", null)
+    .gte("plan_expires_at", now.toISOString())
+    .lte("plan_expires_at", in72h.toISOString());
+
+  type Row = {
+    id: string;
+    name: string | null;
+    email: string;
+    whatsapp: string;
+    plan_expires_at: string;
+  };
+  const targets = (profiles ?? []) as Row[];
+  let enqueued = 0;
+  let skipped = 0;
+  for (const c of targets) {
+    if (await alreadyReceivedRecently(supabase, c.id, TRIGGER_PLANO_ENCERRANDO_3D_KEY, 24 * 4)) {
+      skipped++;
+      continue;
+    }
+    const diasRestantes = Math.max(
+      1,
+      Math.ceil((new Date(c.plan_expires_at).getTime() - now.getTime()) / 86400_000),
+    );
+    const { text } = buildTriggerPlanoEncerrando3d({
+      firstName: c.name ?? "amiga",
+      diasRestantes,
+      email: c.email,
+      checkoutUrl,
+    });
+    const r = await enqueueOutbox(supabase, {
+      userId: c.id,
+      phone: c.whatsapp,
+      templateKey: TRIGGER_PLANO_ENCERRANDO_3D_KEY,
+      text,
+      metadata: { trigger: "plano_encerrando_3d", dias_restantes: diasRestantes },
+    });
+    if (r.ok) enqueued++;
+    else skipped++;
+  }
+  return { found: targets.length, enqueued, skipped };
+}
+
+// =================================================================
+// TRIGGER: aluna em trial expirando em 1-3 dias
+// =================================================================
+async function runTriggerTrialExpirando3d(supabase: SupabaseClient) {
+  const checkoutUrl =
+    process.env.NEXT_PUBLIC_KIWIFY_CHECKOUT_URL ?? "https://pay.kiwify.com.br/YOR83Pu";
+  const now = new Date();
+  const in72h = new Date(now.getTime() + 72 * 3600_000);
+
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, name, email, whatsapp, plan_expires_at")
+    .not("whatsapp", "is", null)
+    .eq("plan_status", "trial")
+    .eq("plan_active", true)
+    .not("plan_expires_at", "is", null)
+    .gte("plan_expires_at", now.toISOString())
+    .lte("plan_expires_at", in72h.toISOString());
+
+  type Row = {
+    id: string;
+    name: string | null;
+    email: string;
+    whatsapp: string;
+    plan_expires_at: string;
+  };
+  const targets = (profiles ?? []) as Row[];
+  let enqueued = 0;
+  let skipped = 0;
+  for (const c of targets) {
+    if (await alreadyReceivedRecently(supabase, c.id, TRIGGER_TRIAL_EXPIRANDO_3D_KEY, 24 * 4)) {
+      skipped++;
+      continue;
+    }
+    const diasRestantes = Math.max(
+      1,
+      Math.ceil((new Date(c.plan_expires_at).getTime() - now.getTime()) / 86400_000),
+    );
+    const { text } = buildTriggerTrialExpirando3d({
+      firstName: c.name ?? "amiga",
+      diasRestantes,
+      email: c.email,
+      checkoutUrl,
+    });
+    const r = await enqueueOutbox(supabase, {
+      userId: c.id,
+      phone: c.whatsapp,
+      templateKey: TRIGGER_TRIAL_EXPIRANDO_3D_KEY,
+      text,
+      metadata: { trigger: "trial_expirando_3d", dias_restantes: diasRestantes },
+    });
+    if (r.ok) enqueued++;
+    else skipped++;
+  }
+  return { found: targets.length, enqueued, skipped };
+}
+
 export async function runAllTriggers() {
   const supabase = getSupabase();
   const [
@@ -1088,6 +1215,8 @@ export async function runAllTriggers() {
     tour_completo,
     ebook_baixado,
     rotina_30dias,
+    plano_encerrando,
+    trial_expirando,
   ] = await Promise.all([
     runTriggerDia1NaoLogou(supabase),
     runTriggerSumiu7d(supabase),
@@ -1100,6 +1229,8 @@ export async function runAllTriggers() {
     runTriggerTourCompleto(supabase),
     runTriggerEbookBaixado(supabase),
     runTriggerRotina30Dias(supabase),
+    runTriggerPlanoEncerrando3d(supabase),
+    runTriggerTrialExpirando3d(supabase),
   ]);
   return {
     dia1,
@@ -1113,6 +1244,8 @@ export async function runAllTriggers() {
     tour_completo,
     ebook_baixado,
     rotina_30dias,
+    plano_encerrando,
+    trial_expirando,
   };
 }
 
