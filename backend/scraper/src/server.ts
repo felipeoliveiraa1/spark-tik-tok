@@ -13,6 +13,7 @@ import {
   handleStats,
   runAllTriggers,
   runDailyMotivationalBlast,
+  runLembreteCheckin,
   startWhatsAppWorker,
   stopWhatsAppWorker,
 } from "./whatsapp.js";
@@ -196,6 +197,17 @@ app.post("/whatsapp/daily-motivational/run", hmacAuth, async (_req, res) => {
     res.json({ ok: true, ...result });
   } catch (err) {
     log.error({ err }, "whatsapp/daily-motivational error");
+    res.status(500).json({ ok: false, error: err instanceof Error ? err.message : "erro" });
+  }
+});
+
+// Forca disparar lembrete noturno de checkin manualmente
+app.post("/whatsapp/lembrete-checkin/run", hmacAuth, async (_req, res) => {
+  try {
+    const result = await runLembreteCheckin();
+    res.json({ ok: true, ...result });
+  } catch (err) {
+    log.error({ err }, "whatsapp/lembrete-checkin error");
     res.status(500).json({ ok: false, error: err instanceof Error ? err.message : "erro" });
   }
 });

@@ -36,6 +36,8 @@ import {
   TRIGGER_TRIAL_EXPIROU_KEY,
   TRIGGER_PLANO_CANCELOU_KEY,
   TRIGGER_PLANO_REATIVADO_KEY,
+  TRIGGER_LEMBRETE_CHECKIN_KEY,
+  buildLembreteCheckin,
   buildTriggerDia1NaoLogou,
   buildTriggerSumiu7d,
   buildTriggerStreak3,
@@ -59,7 +61,7 @@ import {
 // CONFIG
 // =================================================================
 
-export const BLAST_INTERVAL_MS = 4_500;
+export const BLAST_INTERVAL_MS = 15_000;
 export const WEEKLY_MSG_LIMIT_PER_USER = 5;
 export const HOUR_OPEN_BRT = 8;
 export const HOUR_CLOSE_BRT = 23;
@@ -1374,6 +1376,69 @@ async function runTriggerPlanoReativado(supabase: SupabaseClient) {
   return { found: targets.length, enqueued, skipped };
 }
 
+// =================================================================
+// LEMBRETE NOTURNO DE CHECKIN (20:30 BRT)
+// =================================================================
+//
+// Pega alunas opt_in + plan_active/admin que NAO bateram daily_completions
+// de hoje (BRT) e manda lembrete carinhoso pra fechar o dia.
+// Dedup 20h garante 1x/dia mesmo se cron rodar 2 vezes.
+//
+// NAO conta no weekly limit (motivacional eh outro fluxo; isso aqui eh
+// utilidade noturna especifica que so dispara pra quem esqueceu).
+export async function runLembreteCheckin(): Promise<{
+  found: number;
+  enqueued: number;
+  skipped: number;
+}> {
+  const supabase = getSupabase();
+  const today = brtDateString(0);
+
+  const { data: completed } = await supabase
+    .from("daily_completions")
+    .select("user_id")
+    .eq("date", today);
+
+  const completedIds = new Set(
+    ((completed ?? []) as { user_id: string }[]).map((r) => r.user_id),
+  );
+
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, name, whatsapp")
+    .not("whatsapp", "is", null)
+    .eq("whatsapp_opt_in", true)
+    .or("plan_active.eq.true,role.eq.admin");
+
+  const candidates = ((profiles ?? []) as Array<{
+    id: string;
+    name: string | null;
+    whatsapp: string;
+  }>).filter((p) => !completedIds.has(p.id));
+
+  if (candidates.length === 0) return { found: 0, enqueued: 0, skipped: 0 };
+
+  let enqueued = 0;
+  let skipped = 0;
+  for (const c of candidates) {
+    if (await alreadyReceivedRecently(supabase, c.id, TRIGGER_LEMBRETE_CHECKIN_KEY, 20)) {
+      skipped++;
+      continue;
+    }
+    const { text } = buildLembreteCheckin({ firstName: c.name ?? "amiga" });
+    const r = await enqueueOutbox(supabase, {
+      userId: c.id,
+      phone: c.whatsapp,
+      templateKey: TRIGGER_LEMBRETE_CHECKIN_KEY,
+      text,
+      metadata: { trigger: "lembrete_checkin", date: today },
+    });
+    if (r.ok) enqueued++;
+    else skipped++;
+  }
+  return { found: candidates.length, enqueued, skipped };
+}
+
 export async function runAllTriggers() {
   const supabase = getSupabase();
   const [
@@ -1436,7 +1501,7 @@ export async function runAllTriggers() {
 // =================================================================
 // Roda 1x/dia as 8h BRT. Pega TODAS as alunas plan_active=true OU admin,
 // com whatsapp_opt_in=true, e enfileira proximo motivacional (rotation
-// 365) pra cada uma. Cadencia 4.5s entre envios via scheduled_at.
+// 365) pra cada uma. Cadencia 15s entre envios via scheduled_at.
 //
 // Mesma logica do botao "Disparar pra todas" do painel, mas automatica.
 // Dedup garante que aluna nao recebe motivacional repetido (rotation
@@ -1484,6 +1549,7 @@ let flushTimer: NodeJS.Timeout | null = null;
 let triggersTimer: NodeJS.Timeout | null = null;
 let expireTrialsTimer: NodeJS.Timeout | null = null;
 let motivationalTimer: NodeJS.Timeout | null = null;
+let checkinReminderTimer: NodeJS.Timeout | null = null;
 let flushRunning = false;
 let expireRunning = false;
 
@@ -1547,7 +1613,7 @@ export function startWhatsAppWorker() {
   triggersTimer = setInterval(() => void tickTriggers(), 5 * 60 * 1000);
 
   // Blast motivacional diario as 8h BRT. Mesma logica de "1x/dia entre 8h-23h
-  // com backfill" dos triggers. Pega TODAS opt_in alunas, escalonado 4.5s.
+  // com backfill" dos triggers. Pega TODAS opt_in alunas, escalonado 15s.
   let lastMotivationalDay = "";
   const tickMotivational = async () => {
     try {
@@ -1567,6 +1633,32 @@ export function startWhatsAppWorker() {
   };
   void tickMotivational();
   motivationalTimer = setInterval(() => void tickMotivational(), 5 * 60 * 1000);
+
+  // Lembrete noturno de checkin: dispara a partir das 20:30 BRT, 1x/dia.
+  // Pega quem opt_in + plan_active e NAO bateu daily_completions de hoje.
+  // Backfill: se subiu depois das 20:30, roda no proximo tick (limite 23h).
+  let lastCheckinReminderDay = "";
+  const tickCheckinReminder = async () => {
+    try {
+      const now = new Date();
+      const brtHour = (now.getUTCHours() - 3 + 24) % 24;
+      const brtMinutes = now.getUTCMinutes();
+      const minutesPastMidnight = brtHour * 60 + brtMinutes;
+      const today = brtDateString(0);
+      // Janela: 20:30 BRT em diante ate 22:55 (queremos parar antes de 23h)
+      const inWindow = minutesPastMidnight >= 20 * 60 + 30 && brtHour < 23;
+      const shouldRun = inWindow && lastCheckinReminderDay !== today;
+      if (!shouldRun) return;
+      lastCheckinReminderDay = today;
+      log.info("[lembrete-checkin] disparando lembrete noturno");
+      const result = await runLembreteCheckin();
+      log.info({ result }, "[lembrete-checkin] done");
+    } catch (err) {
+      log.error({ err }, "[lembrete-checkin] erro");
+    }
+  };
+  void tickCheckinReminder();
+  checkinReminderTimer = setInterval(() => void tickCheckinReminder(), 5 * 60 * 1000);
 
   // Expira trials a cada 30 minutos (independente dos triggers diarios).
   // Mantem dashboard, blast e KPIs sempre sincronizados — assim que um
@@ -1596,10 +1688,12 @@ export function stopWhatsAppWorker() {
   if (triggersTimer) clearInterval(triggersTimer);
   if (expireTrialsTimer) clearInterval(expireTrialsTimer);
   if (motivationalTimer) clearInterval(motivationalTimer);
+  if (checkinReminderTimer) clearInterval(checkinReminderTimer);
   flushTimer = null;
   triggersTimer = null;
   expireTrialsTimer = null;
   motivationalTimer = null;
+  checkinReminderTimer = null;
 }
 
 // =================================================================
@@ -1675,7 +1769,7 @@ export async function handleBlast(body: {
       campaign,
       total_users: users.length,
       ...result,
-      note: `${result.enqueued} mensagens enfileiradas. Worker processa em background com cadência de 4.5s.`,
+      note: `${result.enqueued} mensagens enfileiradas. Worker processa em background com cadência de 15s.`,
     };
   }
 

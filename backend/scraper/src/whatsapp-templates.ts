@@ -886,6 +886,29 @@ export function buildTriggerPlanoCancelou(input: {
 // ============================================================
 export const TRIGGER_PLANO_REATIVADO_KEY = "trigger_plano_reativado";
 
+// ============================================================
+// TRIGGER: lembrete noturno de checkin (20:30 BRT)
+// ============================================================
+export const TRIGGER_LEMBRETE_CHECKIN_KEY = "trigger_lembrete_checkin";
+
+export function buildLembreteCheckin(input: { firstName: string }): { text: string } {
+  const name = firstName(input.firstName);
+  const text = [
+    `${name} 🌙`,
+    ``,
+    `Lembrete carinhoso: você ainda não bateu sua *rotina de hoje* no *Método TTS*.`,
+    ``,
+    `São 5 minutinhos. Fecha o dia em ordem, mantém o ritmo, e amanhã você já acorda em frente.`,
+    ``,
+    `🔗 https://www.metodotts.app`,
+    ``,
+    `Boa noite 💕`,
+    ``,
+    `_Yara · Método TTS_`,
+  ].join("\n");
+  return { text };
+}
+
 export function buildTriggerPlanoReativado(input: {
   firstName: string;
 }): { text: string } {

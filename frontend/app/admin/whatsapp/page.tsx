@@ -164,7 +164,7 @@ export default function AdminWhatsAppPage() {
         </h1>
         <p className="text-[14px] text-spark-ink-50 max-w-[60ch] font-semibold">
           Dispara blast motivacional e acompanha triggers automáticos. Mensagens são
-          escalonadas (1 a cada ~4.5s) pra não derrubar o número.
+          escalonadas (1 a cada ~15s) pra não derrubar o número.
         </p>
       </header>
 
