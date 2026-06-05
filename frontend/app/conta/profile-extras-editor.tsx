@@ -267,7 +267,7 @@ export function ProfileExtrasEditor({
           </div>
           <div>
             <div className="text-[11px] font-extrabold text-spark-ink-50 uppercase tracking-wider mb-1.5">
-              Meta mensal (R$)
+              Meta de GMV mensal (R$)
             </div>
             <SInput
               type="number"

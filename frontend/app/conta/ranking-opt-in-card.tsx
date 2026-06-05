@@ -53,7 +53,7 @@ export function RankingOptInCard({ initialOptIn }: Props) {
           </div>
           <p className="mt-1.5 text-[12.5px] text-spark-ink-70 leading-relaxed">
             Seu nome, foto e cidade ficam visíveis pra outras alunas. Score é calculado por
-            <strong> faturamento + consistência</strong> da rotina.
+            <strong> GMV + consistência</strong> da rotina.
           </p>
         </div>
 

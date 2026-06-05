@@ -242,11 +242,11 @@ function Podium({
                 >
                   {p}
                 </span>
-                {/* Faturamento no card do pódio (1º destaque) */}
+                {/* GMV no card do pódio (1º destaque) */}
                 {entry.revenue_brl > 0 && (
                   <div className="mt-1 text-center px-2">
                     <div className="text-[9px] uppercase tracking-widest opacity-85 font-extrabold">
-                      faturou
+                      gmv
                     </div>
                     <div
                       className={cn(
@@ -364,10 +364,10 @@ function RankingList({
                 </div>
               </div>
 
-              {/* Bloco direito: faturamento DESTACADO + score */}
+              {/* Bloco direito: GMV DESTACADO + score */}
               <div className="text-right shrink-0 min-w-[88px]">
                 <div className="text-[8.5px] uppercase tracking-widest text-spark-ink-50 font-extrabold">
-                  faturou
+                  gmv
                 </div>
                 <div
                   className={cn(
@@ -479,7 +479,7 @@ function RankingBody({
                   ✦ ranking de criadoras
                 </div>
                 <p className="mt-3 text-fluid-lead text-spark-ink-70 max-w-[40ch] font-semibold">
-                  Faturamento + consistência viraram um score só. Bora pra cima.
+                  GMV + consistência viraram um score só. Bora pra cima.
                 </p>
               </div>
             </SectionReveal>
@@ -726,12 +726,12 @@ function ProfileSheet({
           )}
         </div>
 
-        {/* KPIs grandes: faturamento + consistência + score */}
+        {/* KPIs grandes: GMV + consistência + score */}
         <div className="px-6 mt-6 grid grid-cols-3 gap-2">
           <div className="rounded-spark-xl bg-spark-surface-sunken p-3 text-center">
             <div className="inline-flex items-center gap-1 text-[9.5px] uppercase tracking-widest font-extrabold text-spark-ink-50">
               <Target size={9} strokeWidth={2.5} />
-              faturou
+              gmv
             </div>
             <div className="mt-1.5 font-mono font-extrabold text-spark-ink text-[15px] leading-none">
               {entry.revenue_brl > 0 ? fmtBRL(entry.revenue_brl) : "—"}
@@ -781,7 +781,7 @@ function ProfileSheet({
             </div>
             <div>
               <div className="flex items-center justify-between text-[11px] font-extrabold text-spark-ink-70 mb-1">
-                <span>40% Faturamento (relativo)</span>
+                <span>40% GMV (relativo)</span>
                 <span className="font-mono">{(entry.revenue_norm * 100).toFixed(0)}%</span>
               </div>
               <div className="h-1.5 rounded-full bg-spark-ink-10 overflow-hidden">
@@ -865,7 +865,7 @@ function ScoreHelpModal({ onClose }: { onClose: () => void }) {
               </span>
               <span className="text-[20px] text-spark-ink-50">+</span>
               <span className="px-3 py-1.5 rounded-spark-xl bg-spark-brand text-white text-[14px]">
-                40% faturamento
+                40% gmv
               </span>
             </div>
             <div className="mt-3 text-[11px] text-spark-ink-70 font-mono">
@@ -899,21 +899,22 @@ function ScoreHelpModal({ onClose }: { onClose: () => void }) {
             </ul>
           </div>
 
-          {/* Faturamento */}
+          {/* GMV */}
           <div>
             <div className="text-eyebrow text-spark-brand mb-2.5">
-              40% · faturamento
+              40% · gmv (vendas brutas)
             </div>
             <p className="text-[13.5px] text-spark-ink-70 leading-relaxed font-semibold">
-              Quanto você faturou no TikTok Shop no período. É <strong>relativo ao grupo</strong> —
-              se a top do ranking faturou R$10 mil e você faturou R$5 mil, ganha
-              50% dos 40 pontos. Cadastra na sua{" "}
-              <strong>Conta → Faturamento</strong>, atualiza durante o mês.
+              <strong>GMV é quanto você vendeu</strong> no TikTok Shop no período
+              — o valor bruto, antes de taxas e comissões (não é o lucro líquido).
+              É <strong>relativo ao grupo</strong> — se a top do ranking vendeu
+              R$10 mil e você vendeu R$5 mil, ganha 50% dos 40 pontos. Cadastra
+              na sua <strong>Conta → GMV</strong>, atualiza durante o mês.
             </p>
             <div className="mt-3 rounded-spark-xl bg-spark-surface-sunken/60 border border-spark-hairline px-4 py-3 text-[12px] text-spark-ink-70 leading-relaxed font-semibold">
-              💡 Como o faturamento é relativo, alguém pode ter faturado pouco mas
-              ficar bem no ranking se mantém a consistência alta. E vice-versa: faturar
-              muito não basta se você não bate a rotina.
+              💡 Como o GMV é relativo, alguém pode ter vendido pouco mas
+              ficar bem no ranking se mantém a consistência alta. E vice-versa:
+              vender muito não basta se você não bate a rotina.
             </div>
           </div>
 
@@ -944,7 +945,7 @@ function ScoreHelpModal({ onClose }: { onClose: () => void }) {
             </div>
             Bate a rotina <strong>todo dia</strong>. Mesmo dias que você só fez
             o mínimo, marca e conclui. A consistência diária é o que mais pesa
-            — em 2 semanas batendo todo dia você já passa quem só faturou 💕
+            — em 2 semanas batendo todo dia você já passa quem só vendeu 💕
           </div>
         </div>
 
@@ -1004,14 +1005,14 @@ function buildRankingSteps(desktop: boolean): TutorialStep[] {
       id: "welcome",
       title: "bem-vinda ao ranking!",
       description:
-        "Aqui você vê quem tá no topo. Score combina faturamento (60%) e consistência da rotina (40%) — não adianta só vender, tem que manter o hábito. Em 20s te mostro tudo.",
+        "Aqui você vê quem tá no topo. Score combina consistência da rotina (60%) e GMV — quanto vendeu no TikTok Shop (40%). Não adianta só vender, tem que manter o hábito. Em 20s te mostro tudo.",
     },
     {
       id: "intro",
       target: "ranking-intro",
-      title: "Score: dinheiro + hábito",
+      title: "Score: hábito + vendas",
       description:
-        "Não é só quem fatura mais que ganha. O score equilibra faturamento mensal e consistência da rotina diária. Você precisa optar por aparecer (opt-in em Conta).",
+        "Não é só quem vende mais que ganha. O score equilibra consistência da rotina diária (60%) e GMV mensal (40%). Você precisa optar por aparecer (opt-in em Conta).",
     },
     {
       id: "tabs",
@@ -1032,7 +1033,7 @@ function buildRankingSteps(desktop: boolean): TutorialStep[] {
       id: "done",
       title: "pronto! agora é subir 💕",
       description:
-        "Pra entrar no ranking, ativa o opt-in em Conta e registra teu faturamento mensal. Pra refazer o tour, clica no ✨ Tour no canto.",
+        "Pra entrar no ranking, ativa o opt-in em Conta e registra teu GMV mensal (vendas brutas). Pra refazer o tour, clica no ✨ Tour no canto.",
     },
   ];
 }

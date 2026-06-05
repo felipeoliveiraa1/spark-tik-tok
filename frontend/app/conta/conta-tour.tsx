@@ -38,7 +38,7 @@ function buildContaSteps(desktop: boolean): TutorialStep[] {
       id: "welcome",
       title: "bem-vinda à sua conta!",
       description:
-        "Aqui você ajusta seu perfil, controla seu plano, registra faturamento e decide se entra ou não no ranking. Em 30s te mostro tudo.",
+        "Aqui você ajusta seu perfil, controla seu plano, registra GMV (vendas brutas) e decide se entra ou não no ranking. Em 30s te mostro tudo.",
     },
     {
       id: "avatar",
@@ -71,9 +71,9 @@ function buildContaSteps(desktop: boolean): TutorialStep[] {
     {
       id: "revenue",
       target: "conta-revenue",
-      title: "Faturamento + ranking",
+      title: "GMV + ranking",
       description:
-        "Registra teu faturamento mensal aqui e decide se quer aparecer no ranking de criadoras. Sem ativar o opt-in, ninguém vê teus números.",
+        "Registra teu GMV mensal aqui (valor bruto das vendas, antes de taxas) e decide se quer aparecer no ranking. Sem opt-in, ninguém vê teus números.",
     },
     {
       id: "logout",
@@ -87,7 +87,7 @@ function buildContaSteps(desktop: boolean): TutorialStep[] {
       id: "done",
       title: "pronto! teu cantinho 💕",
       description:
-        "Mantém o perfil atualizado e o faturamento em dia. Pra refazer o tour, clica no ✨ Tour no canto superior.",
+        "Mantém o perfil atualizado e o GMV em dia. Pra refazer o tour, clica no ✨ Tour no canto superior.",
     },
   ];
 }

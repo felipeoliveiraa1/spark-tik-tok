@@ -82,7 +82,7 @@ export function RevenueCard({ metaMensalBrl }: Props) {
         body: JSON.stringify({ year_month: ym, amount_brl: num }),
       });
       if (res.ok) {
-        toast.success("Faturamento salvo 💸");
+        toast.success("GMV salvo 💸");
         const updated = revenue.filter((r) => r.year_month !== ym);
         setRevenue([{ year_month: ym, amount_brl: num, notes: null }, ...updated]);
         setEditing(false);
@@ -131,7 +131,7 @@ export function RevenueCard({ metaMensalBrl }: Props) {
   if (loading) {
     return (
       <div className="p-5 rounded-spark-2xl bg-spark-surface border border-spark-hairline shadow-rest">
-        <div className="text-eyebrow text-spark-brand">✦ faturamento</div>
+        <div className="text-eyebrow text-spark-brand">✦ gmv (vendas brutas)</div>
         <div className="mt-3 h-6 w-32 rounded bg-spark-surface-sunken animate-pulse" />
       </div>
     );
@@ -142,7 +142,7 @@ export function RevenueCard({ metaMensalBrl }: Props) {
       <div className="flex items-center justify-between mb-3">
         <div className="text-eyebrow text-spark-brand flex items-center gap-1.5">
           <TrendingUp size={11} strokeWidth={2.5} />
-          ✦ faturamento · {fmtMonth(ym)}
+          ✦ gmv (vendas brutas) · {fmtMonth(ym)}
         </div>
         {!editing && (
           <button
@@ -156,11 +156,12 @@ export function RevenueCard({ metaMensalBrl }: Props) {
         )}
       </div>
 
-      {/* Explicação do que é e como funciona */}
+      {/* Explicação do que é e como funciona — GMV pra não confundir com lucro */}
       <p className="text-[12px] text-spark-ink-70 leading-snug font-semibold mb-3.5">
-        Quanto você faturou no TikTok Shop <strong>nesse mês</strong>. Atualiza
-        sempre que quiser — vai entrando aos pouquinhos conforme as vendas
-        acumulam. No próximo mês vira histórico e abre o novo zerado.
+        <strong>GMV</strong> é quanto você <strong>vendeu</strong> no TikTok Shop
+        nesse mês — o valor bruto, antes de taxas e comissões (não é o lucro
+        no seu bolso). Atualiza sempre que quiser, vai acumulando. No próximo
+        mês vira histórico e abre o novo zerado.
       </p>
 
       {editing ? (
