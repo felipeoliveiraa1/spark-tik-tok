@@ -38,7 +38,7 @@ export default async function EditarAulaPage({
         title: data.title,
         description: data.description ?? "",
         category: data.category ?? "",
-        kind: (data.kind ?? "video") as "video" | "rich" | "checklist",
+        kind: (data.kind ?? "video") as "video" | "rich" | "checklist" | "ebook",
         youtube_url: data.youtube_id ? youtubeWatchUrl(data.youtube_id) : "",
         body_md: data.body_md ?? "",
         checklist_items: checklistItems,
@@ -47,6 +47,9 @@ export default async function EditarAulaPage({
         order_index: data.order_index ?? 0,
         is_published: data.is_published,
         module_id: data.module_id ?? null,
+        file_url: data.file_url ?? "",
+        file_name: data.file_name ?? "",
+        file_size_bytes: data.file_size_bytes ?? 0,
       }}
     />
   );
