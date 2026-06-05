@@ -101,14 +101,34 @@ export async function PATCH(request: Request, { params }: Params) {
     if (k in body) patch[k] = body[k];
   }
 
-  // youtube_url ou youtube_id também podem ser atualizados
+  // youtube_url ou youtube_id sao opcionais — validacao depende do kind.
+  // Aula 'video' exige youtube_id valido; outros kinds (rich/checklist/ebook)
+  // aceitam null/vazio pra limpar o campo quando troca o tipo da aula.
   if ("youtube_url" in body || "youtube_id" in body) {
     const raw = (body.youtube_url ?? body.youtube_id) as string | null | undefined;
     const yid = extractYoutubeId(raw ?? null);
-    if (!yid) {
-      return NextResponse.json({ error: "invalid_youtube" }, { status: 400 });
+
+    // Descobre kind efetivo: o do patch tem prioridade, senao busca o atual
+    const column = UUID_RE.test(id) ? "id" : "slug";
+    let effectiveKind = typeof body.kind === "string" ? body.kind : null;
+    if (!effectiveKind) {
+      const { data: current } = await supabase
+        .from("education_videos")
+        .select("kind")
+        .eq(column, id)
+        .maybeSingle();
+      effectiveKind = (current?.kind as string | null) ?? null;
     }
-    patch.youtube_id = yid;
+
+    if (effectiveKind === "video") {
+      if (!yid) {
+        return NextResponse.json({ error: "invalid_youtube" }, { status: 400 });
+      }
+      patch.youtube_id = yid;
+    } else {
+      // Nao-video: aceita null pra limpar, ou valor valido se trocar pra video depois
+      patch.youtube_id = yid ?? null;
+    }
   }
 
   if (typeof body.slug === "string" && body.slug.trim()) {
