@@ -33,6 +33,9 @@ import {
   TRIGGER_ROTINA_30DIAS_KEY,
   TRIGGER_PLANO_ENCERRANDO_3D_KEY,
   TRIGGER_TRIAL_EXPIRANDO_3D_KEY,
+  TRIGGER_TRIAL_EXPIROU_KEY,
+  TRIGGER_PLANO_CANCELOU_KEY,
+  TRIGGER_PLANO_REATIVADO_KEY,
   buildTriggerDia1NaoLogou,
   buildTriggerSumiu7d,
   buildTriggerStreak3,
@@ -46,6 +49,9 @@ import {
   buildTriggerRotina30Dias,
   buildTriggerPlanoEncerrando3d,
   buildTriggerTrialExpirando3d,
+  buildTriggerTrialExpirou,
+  buildTriggerPlanoCancelou,
+  buildTriggerPlanoReativado,
   type MotivationalEntry,
 } from "./whatsapp-templates.js";
 
@@ -1201,6 +1207,173 @@ async function runTriggerTrialExpirando3d(supabase: SupabaseClient) {
   return { found: targets.length, enqueued, skipped };
 }
 
+// =================================================================
+// TRIGGERS via plan_status_history (eventos pós-transição)
+// =================================================================
+//
+// A tabela plan_status_history é alimentada por TRIGGER no UPDATE da
+// profiles, então cada mudança de status fica registrada com from/to.
+// Usamos last 24h pra capturar transições recentes — o cron de triggers
+// roda 1x/dia, então 24h cobre a janela.
+//
+// Em todos: profile precisa ter whatsapp + opt_in. Dedup 7d pra não
+// mandar várias mensagens se houver bounce + retomada na mesma semana.
+
+type HistoryRow = {
+  user_id: string;
+  from_status: string | null;
+  to_status: string | null;
+  created_at: string;
+};
+
+async function fetchProfilesById(
+  supabase: SupabaseClient,
+  ids: string[],
+): Promise<Array<{ id: string; name: string | null; email: string; whatsapp: string }>> {
+  if (ids.length === 0) return [];
+  const { data } = await supabase
+    .from("profiles")
+    .select("id, name, email, whatsapp")
+    .in("id", ids)
+    .not("whatsapp", "is", null);
+  return ((data ?? []) as Array<{
+    id: string;
+    name: string | null;
+    email: string;
+    whatsapp: string;
+  }>);
+}
+
+// TRIGGER: trial recém-expirou (transição trial -> inactive nas últimas 24h)
+async function runTriggerTrialExpirou(supabase: SupabaseClient) {
+  const checkoutUrl =
+    process.env.NEXT_PUBLIC_KIWIFY_CHECKOUT_URL ?? "https://pay.kiwify.com.br/YOR83Pu";
+  const since = new Date(Date.now() - 24 * 3600_000).toISOString();
+
+  const { data: history } = await supabase
+    .from("plan_status_history")
+    .select("user_id, from_status, to_status, created_at")
+    .eq("from_status", "trial")
+    .eq("to_status", "inactive")
+    .gte("created_at", since);
+
+  const rows = (history ?? []) as HistoryRow[];
+  if (rows.length === 0) return { found: 0, enqueued: 0, skipped: 0 };
+
+  const ids = Array.from(new Set(rows.map((r) => r.user_id)));
+  const targets = await fetchProfilesById(supabase, ids);
+
+  let enqueued = 0;
+  let skipped = 0;
+  for (const c of targets) {
+    if (await alreadyReceivedRecently(supabase, c.id, TRIGGER_TRIAL_EXPIROU_KEY, 24 * 7)) {
+      skipped++;
+      continue;
+    }
+    const { text } = buildTriggerTrialExpirou({
+      firstName: c.name ?? "amiga",
+      email: c.email,
+      checkoutUrl,
+    });
+    const r = await enqueueOutbox(supabase, {
+      userId: c.id,
+      phone: c.whatsapp,
+      templateKey: TRIGGER_TRIAL_EXPIROU_KEY,
+      text,
+      metadata: { trigger: "trial_expirou" },
+    });
+    if (r.ok) enqueued++;
+    else skipped++;
+  }
+  return { found: targets.length, enqueued, skipped };
+}
+
+// TRIGGER: pagante teve plano cancelado/refundado/desativado
+// (transição active/late -> canceled/refunded/inactive nas últimas 24h)
+async function runTriggerPlanoCancelou(supabase: SupabaseClient) {
+  const checkoutUrl =
+    process.env.NEXT_PUBLIC_KIWIFY_CHECKOUT_URL ?? "https://pay.kiwify.com.br/YOR83Pu";
+  const since = new Date(Date.now() - 24 * 3600_000).toISOString();
+
+  const { data: history } = await supabase
+    .from("plan_status_history")
+    .select("user_id, from_status, to_status, created_at")
+    .in("from_status", ["active", "late"])
+    .in("to_status", ["canceled", "refunded", "inactive"])
+    .gte("created_at", since);
+
+  const rows = (history ?? []) as HistoryRow[];
+  if (rows.length === 0) return { found: 0, enqueued: 0, skipped: 0 };
+
+  const ids = Array.from(new Set(rows.map((r) => r.user_id)));
+  const targets = await fetchProfilesById(supabase, ids);
+
+  let enqueued = 0;
+  let skipped = 0;
+  for (const c of targets) {
+    if (await alreadyReceivedRecently(supabase, c.id, TRIGGER_PLANO_CANCELOU_KEY, 24 * 7)) {
+      skipped++;
+      continue;
+    }
+    const { text } = buildTriggerPlanoCancelou({
+      firstName: c.name ?? "amiga",
+      email: c.email,
+      checkoutUrl,
+    });
+    const r = await enqueueOutbox(supabase, {
+      userId: c.id,
+      phone: c.whatsapp,
+      templateKey: TRIGGER_PLANO_CANCELOU_KEY,
+      text,
+      metadata: { trigger: "plano_cancelou" },
+    });
+    if (r.ok) enqueued++;
+    else skipped++;
+  }
+  return { found: targets.length, enqueued, skipped };
+}
+
+// TRIGGER: aluna reativou conta (qualquer estado inativo/cancelado -> active)
+// Cobre: voltou após trial, renovou após refund/cancel, voltou após late.
+async function runTriggerPlanoReativado(supabase: SupabaseClient) {
+  const since = new Date(Date.now() - 24 * 3600_000).toISOString();
+
+  const { data: history } = await supabase
+    .from("plan_status_history")
+    .select("user_id, from_status, to_status, created_at")
+    .in("from_status", ["inactive", "canceled", "refunded", "trial", "late"])
+    .eq("to_status", "active")
+    .gte("created_at", since);
+
+  const rows = (history ?? []) as HistoryRow[];
+  if (rows.length === 0) return { found: 0, enqueued: 0, skipped: 0 };
+
+  // Só queremos REATIVAÇÕES, não primeira ativação após trial.
+  // Trial -> active = renovou um trial pagando, conta como reativação.
+  const ids = Array.from(new Set(rows.map((r) => r.user_id)));
+  const targets = await fetchProfilesById(supabase, ids);
+
+  let enqueued = 0;
+  let skipped = 0;
+  for (const c of targets) {
+    if (await alreadyReceivedRecently(supabase, c.id, TRIGGER_PLANO_REATIVADO_KEY, 24 * 7)) {
+      skipped++;
+      continue;
+    }
+    const { text } = buildTriggerPlanoReativado({ firstName: c.name ?? "amiga" });
+    const r = await enqueueOutbox(supabase, {
+      userId: c.id,
+      phone: c.whatsapp,
+      templateKey: TRIGGER_PLANO_REATIVADO_KEY,
+      text,
+      metadata: { trigger: "plano_reativado" },
+    });
+    if (r.ok) enqueued++;
+    else skipped++;
+  }
+  return { found: targets.length, enqueued, skipped };
+}
+
 export async function runAllTriggers() {
   const supabase = getSupabase();
   const [
@@ -1217,6 +1390,9 @@ export async function runAllTriggers() {
     rotina_30dias,
     plano_encerrando,
     trial_expirando,
+    trial_expirou,
+    plano_cancelou,
+    plano_reativado,
   ] = await Promise.all([
     runTriggerDia1NaoLogou(supabase),
     runTriggerSumiu7d(supabase),
@@ -1231,6 +1407,9 @@ export async function runAllTriggers() {
     runTriggerRotina30Dias(supabase),
     runTriggerPlanoEncerrando3d(supabase),
     runTriggerTrialExpirando3d(supabase),
+    runTriggerTrialExpirou(supabase),
+    runTriggerPlanoCancelou(supabase),
+    runTriggerPlanoReativado(supabase),
   ]);
   return {
     dia1,
@@ -1246,6 +1425,9 @@ export async function runAllTriggers() {
     rotina_30dias,
     plano_encerrando,
     trial_expirando,
+    trial_expirou,
+    plano_cancelou,
+    plano_reativado,
   };
 }
 

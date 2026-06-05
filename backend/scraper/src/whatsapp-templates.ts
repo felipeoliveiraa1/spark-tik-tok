@@ -824,3 +824,86 @@ export function buildTriggerTrialExpirando3d(input: {
   ].join("\n");
   return { text };
 }
+
+// ============================================================
+// TRIGGER: trial expirou (acabou de cair pra inactive)
+// ============================================================
+export const TRIGGER_TRIAL_EXPIROU_KEY = "trigger_trial_expirou";
+
+export function buildTriggerTrialExpirou(input: {
+  firstName: string;
+  email: string;
+  checkoutUrl: string;
+}): { text: string } {
+  const name = firstName(input.firstName);
+  const text = [
+    `Oi ${name} 😔`,
+    ``,
+    `Seu *teste do Método TTS acabou*. Seu acesso ao app foi pausado, mas seus dados (produtos, rotina, score, histórico) continuam guardadinhos aqui esperando você voltar.`,
+    ``,
+    `Pra retomar de onde parou, é só assinar:`,
+    `🔗 ${input.checkoutUrl}`,
+    ``,
+    `⚠️ *COMPRE COM O MESMO EMAIL* (*${input.email}*). Aí sua conta reativa na hora e você não perde NADA. Email diferente = conta nova zerada.`,
+    ``,
+    `Tô aqui se precisar 🌹`,
+    ``,
+    `_Yara · Método TTS_`,
+  ].join("\n");
+  return { text };
+}
+
+// ============================================================
+// TRIGGER: pagante teve plano cancelado/reembolsado
+// ============================================================
+export const TRIGGER_PLANO_CANCELOU_KEY = "trigger_plano_cancelou";
+
+export function buildTriggerPlanoCancelou(input: {
+  firstName: string;
+  email: string;
+  checkoutUrl: string;
+}): { text: string } {
+  const name = firstName(input.firstName);
+  const text = [
+    `Oi ${name} 💔`,
+    ``,
+    `Vimos que sua assinatura do *Método TTS* foi encerrada. Sentimos sua falta de verdade — sua conta fica guardada por aqui por enquanto, caso queira voltar.`,
+    ``,
+    `Se quiser retomar, é simples:`,
+    `🔗 ${input.checkoutUrl}`,
+    ``,
+    `⚠️ *USA O MESMO EMAIL* (*${input.email}*) na nova compra. Aí sua conta reativa com tudo onde você parou — agentes, produtos, rotina, score, histórico.`,
+    ``,
+    `E se foi algo que poderíamos ter feito melhor, responde aqui — quero entender 🌹`,
+    ``,
+    `_Yara · Método TTS_`,
+  ].join("\n");
+  return { text };
+}
+
+// ============================================================
+// TRIGGER: aluna reativou conta (voltou a ser pagante)
+// ============================================================
+export const TRIGGER_PLANO_REATIVADO_KEY = "trigger_plano_reativado";
+
+export function buildTriggerPlanoReativado(input: {
+  firstName: string;
+}): { text: string } {
+  const name = firstName(input.firstName);
+  const text = [
+    `${name} 🎉`,
+    ``,
+    `BEM VINDA DE VOLTA! Sua conta no *Método TTS* foi reativada e seu acesso já tá liberado.`,
+    ``,
+    `Tudo que você tinha continua aqui: produtos, rotina, score, histórico. Bora retomar de onde parou:`,
+    ``,
+    `1. Abre o app e bate a rotina de hoje (5min)`,
+    `2. Confere os agentes — sempre tem coisa nova`,
+    `3. Marca teu próximo objetivo`,
+    ``,
+    `Que bom te ver de volta 💕`,
+    ``,
+    `_Yara · Método TTS_`,
+  ].join("\n");
+  return { text };
+}
