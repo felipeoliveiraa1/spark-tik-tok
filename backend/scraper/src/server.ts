@@ -12,6 +12,7 @@ import {
   handleFlushNow,
   handleStats,
   runAllTriggers,
+  runDailyMotivationalBlast,
   startWhatsAppWorker,
   stopWhatsAppWorker,
 } from "./whatsapp.js";
@@ -184,6 +185,17 @@ app.post("/whatsapp/expire-trials", hmacAuth, async (_req, res) => {
     res.json({ ok: true, ...result });
   } catch (err) {
     log.error({ err }, "whatsapp/expire-trials error");
+    res.status(500).json({ ok: false, error: err instanceof Error ? err.message : "erro" });
+  }
+});
+
+// Forca disparar blast motivacional diario manualmente
+app.post("/whatsapp/daily-motivational/run", hmacAuth, async (_req, res) => {
+  try {
+    const result = await runDailyMotivationalBlast();
+    res.json({ ok: true, ...result });
+  } catch (err) {
+    log.error({ err }, "whatsapp/daily-motivational error");
     res.status(500).json({ ok: false, error: err instanceof Error ? err.message : "erro" });
   }
 });

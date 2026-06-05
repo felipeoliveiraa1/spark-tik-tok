@@ -1117,12 +1117,58 @@ export async function runAllTriggers() {
 }
 
 // =================================================================
+// BLAST MOTIVACIONAL DIARIO
+// =================================================================
+// Roda 1x/dia as 8h BRT. Pega TODAS as alunas plan_active=true OU admin,
+// com whatsapp_opt_in=true, e enfileira proximo motivacional (rotation
+// 365) pra cada uma. Cadencia 4.5s entre envios via scheduled_at.
+//
+// Mesma logica do botao "Disparar pra todas" do painel, mas automatica.
+// Dedup garante que aluna nao recebe motivacional repetido (rotation
+// pega o proximo template_key que ela ainda nao viu).
+
+export async function runDailyMotivationalBlast(): Promise<{
+  total_users: number;
+  enqueued: number;
+  skipped_no_phone: number;
+  skipped_weekly: number;
+  skipped_other: number;
+}> {
+  const supabase = getSupabase();
+  const { data: profiles, error } = await supabase
+    .from("profiles")
+    .select("id, name, whatsapp, plan_active, role")
+    .not("whatsapp", "is", null)
+    .eq("whatsapp_opt_in", true)
+    .or("plan_active.eq.true,role.eq.admin");
+
+  if (error) {
+    log.error({ err: error }, "[daily-motivational] erro buscando profiles");
+    return { total_users: 0, enqueued: 0, skipped_no_phone: 0, skipped_weekly: 0, skipped_other: 0 };
+  }
+
+  const users = (profiles ?? []).map((p) => ({
+    id: p.id as string,
+    name: p.name as string | null,
+    whatsapp: p.whatsapp as string | null,
+  }));
+
+  const today = brtDateString(0);
+  const result = await enqueueMotivationalBlast(supabase, users, {
+    campaignKey: `daily_${today}`,
+  });
+
+  return { total_users: users.length, ...result };
+}
+
+// =================================================================
 // WORKER (setInterval)
 // =================================================================
 
 let flushTimer: NodeJS.Timeout | null = null;
 let triggersTimer: NodeJS.Timeout | null = null;
 let expireTrialsTimer: NodeJS.Timeout | null = null;
+let motivationalTimer: NodeJS.Timeout | null = null;
 let flushRunning = false;
 let expireRunning = false;
 
@@ -1185,6 +1231,28 @@ export function startWhatsAppWorker() {
   void tickTriggers();
   triggersTimer = setInterval(() => void tickTriggers(), 5 * 60 * 1000);
 
+  // Blast motivacional diario as 8h BRT. Mesma logica de "1x/dia entre 8h-23h
+  // com backfill" dos triggers. Pega TODAS opt_in alunas, escalonado 4.5s.
+  let lastMotivationalDay = "";
+  const tickMotivational = async () => {
+    try {
+      const now = new Date();
+      const brtHour = (now.getUTCHours() - 3 + 24) % 24;
+      const today = brtDateString(0);
+      const inWindow = brtHour >= 8 && brtHour < 23;
+      const shouldRun = inWindow && lastMotivationalDay !== today;
+      if (!shouldRun) return;
+      lastMotivationalDay = today;
+      log.info("[daily-motivational] disparando blast diario");
+      const result = await runDailyMotivationalBlast();
+      log.info({ result }, "[daily-motivational] done");
+    } catch (err) {
+      log.error({ err }, "[daily-motivational] erro");
+    }
+  };
+  void tickMotivational();
+  motivationalTimer = setInterval(() => void tickMotivational(), 5 * 60 * 1000);
+
   // Expira trials a cada 30 minutos (independente dos triggers diarios).
   // Mantem dashboard, blast e KPIs sempre sincronizados — assim que um
   // trial vence, em ate 30min ele cai pra inactive automaticamente.
@@ -1212,9 +1280,11 @@ export function stopWhatsAppWorker() {
   if (flushTimer) clearInterval(flushTimer);
   if (triggersTimer) clearInterval(triggersTimer);
   if (expireTrialsTimer) clearInterval(expireTrialsTimer);
+  if (motivationalTimer) clearInterval(motivationalTimer);
   flushTimer = null;
   triggersTimer = null;
   expireTrialsTimer = null;
+  motivationalTimer = null;
 }
 
 // =================================================================
