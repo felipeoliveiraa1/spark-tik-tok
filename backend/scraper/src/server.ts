@@ -7,6 +7,7 @@ import { enqueueJob, getJobStatus, startWorker } from "./queue.js";
 import type { ScraperJobInput } from "./types.js";
 import { ping as pingDb } from "./db.js";
 import {
+  expireTrials,
   handleBlast,
   handleFlushNow,
   handleStats,
@@ -172,6 +173,17 @@ app.post("/whatsapp/triggers/run", hmacAuth, async (_req, res) => {
     res.json({ ok: true, ...result });
   } catch (err) {
     log.error({ err }, "whatsapp/triggers error");
+    res.status(500).json({ ok: false, error: err instanceof Error ? err.message : "erro" });
+  }
+});
+
+// Forca expirar trials manualmente (debugging / one-off)
+app.post("/whatsapp/expire-trials", hmacAuth, async (_req, res) => {
+  try {
+    const result = await expireTrials();
+    res.json({ ok: true, ...result });
+  } catch (err) {
+    log.error({ err }, "whatsapp/expire-trials error");
     res.status(500).json({ ok: false, error: err instanceof Error ? err.message : "erro" });
   }
 });

@@ -1035,6 +1035,45 @@ async function runTriggerRotina30Dias(supabase: SupabaseClient) {
 // RUN ALL TRIGGERS
 // =================================================================
 
+// =================================================================
+// EXPIRE TRIALS — desativa contas com trial vencido
+// =================================================================
+//
+// Sem isso, trial expirado mantem plan_active=true no banco e:
+//   - Dashboard admin mostra contagem inflada de "ativas"
+//   - Blast WhatsApp manda mensagem motivacional pra quem ja perdeu
+//     acesso (gera frustracao — recebe "bora bater rotina" sem app)
+//
+// O middleware (proxy.ts) ja bloqueia acesso via hasActiveAccess() que
+// checa plan_expires_at, entao aluna NAO consegue entrar — mas o banco
+// fica desincronizado.
+//
+// Este job roda 1x/dia e sincroniza:
+//   UPDATE plan_active=false, plan_status='inactive'
+//   WHERE plan_status='trial' AND plan_expires_at <= now()
+//
+// Trigger plan_status_history captura cada mudanca automaticamente.
+export async function expireTrials(): Promise<{ expired: number }> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("profiles")
+    .update({
+      plan_active: false,
+      plan_status: "inactive",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("plan_status", "trial")
+    .eq("plan_active", true)
+    .lt("plan_expires_at", new Date().toISOString())
+    .select("id");
+
+  if (error) {
+    log.error({ err: error }, "[expire-trials] erro");
+    return { expired: 0 };
+  }
+  return { expired: (data ?? []).length };
+}
+
 export async function runAllTriggers() {
   const supabase = getSupabase();
   const [
@@ -1131,6 +1170,13 @@ export function startWhatsAppWorker() {
       const shouldRun = inWindow && lastTriggersDay !== today;
       if (!shouldRun) return;
       lastTriggersDay = today;
+      // Expira trials vencidos ANTES dos triggers — assim o filtro
+      // plan_active=true nao pega mais trial expirado, e ela nao recebe
+      // mensagem motivacional sem ter acesso ao app.
+      const expireResult = await expireTrials();
+      if (expireResult.expired > 0) {
+        log.info({ expired: expireResult.expired }, "[expire-trials] desativou trials vencidos");
+      }
       log.info("[whatsapp-triggers] disparando run diario");
       const result = await runAllTriggers();
       log.info({ result }, "[whatsapp-triggers] done");
