@@ -1,8 +1,24 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase-server";
+import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+/**
+ * Cliente com service_role pra bypassar RLS. Usado SO pra ler dados de
+ * outras alunas pro ranking publico — campos sao restritos via SELECT
+ * (sem email/whatsapp/CPF). Necessario porque a policy aberta em
+ * profiles/monthly_revenue foi removida (vazava dados sensiveis).
+ */
+function getServiceClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) throw new Error("SUPABASE envs ausentes pro ranking");
+  return createClient(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
 
 /**
  * GET /api/ranking?period=month|week|all
@@ -71,11 +87,18 @@ function periodBounds(period: Period): {
 }
 
 export async function GET(request: Request) {
-  const supabase = await getSupabaseServer();
+  // anon client APENAS pra autenticar — garante que so aluna logada acessa
+  const authClient = await getSupabaseServer();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await authClient.auth.getUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+
+  // service_role client pra ler dados de OUTRAS alunas (bypassa RLS).
+  // Selects sao restritos a colunas publicas (sem email/whatsapp/CPF).
+  // Antes usava anon com cookie do user — RLS bloqueava daily_completions
+  // de outras alunas, todas apareciam com 0% consistencia no ranking.
+  const supabase = getServiceClient();
 
   const { searchParams } = new URL(request.url);
   const periodRaw = (searchParams.get("period") ?? "month") as Period;
@@ -85,7 +108,7 @@ export async function GET(request: Request) {
 
   const { ymList, dateFrom, dateTo, daysTotal } = periodBounds(period);
 
-  // 1) Profiles que optaram pelo ranking
+  // 1) Profiles que optaram pelo ranking (so colunas publicas)
   const { data: profilesData, error: pErr } = await supabase
     .from("profiles")
     .select("id, name, avatar_url, cidade_uf, meta_mensal_brl, niche")
@@ -103,7 +126,7 @@ export async function GET(request: Request) {
   }
   const userIds = profiles.map((p) => p.id);
 
-  // 2) Revenue do periodo
+  // 2) Revenue do periodo (so valor, sem notes)
   let revenueQuery = supabase
     .from("monthly_revenue")
     .select("user_id, year_month, amount_brl")
