@@ -50,7 +50,7 @@ import {
 // =================================================================
 
 export const BLAST_INTERVAL_MS = 4_500;
-export const WEEKLY_MSG_LIMIT_PER_USER = 3;
+export const WEEKLY_MSG_LIMIT_PER_USER = 5;
 export const HOUR_OPEN_BRT = 8;
 export const HOUR_CLOSE_BRT = 23;
 export const FLUSH_INTERVAL_MS = 60_000; // 1 minuto
