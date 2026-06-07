@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Plus,
@@ -64,8 +65,31 @@ function EditarBody({ desktop = false }: { desktop?: boolean }) {
   const [newEmoji, setNewEmoji] = React.useState("✨");
   const [newCat, setNewCat] = React.useState<HabitCategory>("custom");
   const [newTime, setNewTime] = React.useState("");
+  const [inflight, setInflight] = React.useState(0);
+  const [navPending, setNavPending] = React.useState(false);
+  const inflightRef = React.useRef(0);
   const confirm = useConfirm();
   const toast = useToast();
+  const router = useRouter();
+
+  const bumpInflight = React.useCallback((delta: 1 | -1) => {
+    inflightRef.current = Math.max(0, inflightRef.current + delta);
+    setInflight(inflightRef.current);
+  }, []);
+
+  // Aguarda PATCHes em flight terminarem (counter local, sem rede).
+  // Garantia pro botao "Pronto": se aluna mexeu no horario e clicou
+  // Pronto antes do PATCH terminar, esperamos finalizar.
+  const waitInflight = React.useCallback(
+    async (timeoutMs = 6000): Promise<void> => {
+      const start = Date.now();
+      while (Date.now() - start < timeoutMs) {
+        if (inflightRef.current === 0) return;
+        await new Promise((r) => setTimeout(r, 100));
+      }
+    },
+    [],
+  );
 
   const refresh = React.useCallback(async () => {
     try {
@@ -100,6 +124,7 @@ function EditarBody({ desktop = false }: { desktop?: boolean }) {
         snapshot = arr;
         return arr.map((h) => (h.id === id ? { ...h, ...patch } : h));
       });
+      bumpInflight(1);
       try {
         const res = await fetch(`/api/rotina/habits/${id}`, {
           method: "PATCH",
@@ -126,9 +151,11 @@ function EditarBody({ desktop = false }: { desktop?: boolean }) {
         toast.error("Sem conexão. Tenta de novo.");
         setHabits(snapshot);
         return false;
+      } finally {
+        bumpInflight(-1);
       }
     },
-    [toast],
+    [toast, bumpInflight],
   );
 
   const toggleActive = (h: Habit) => void updateHabit(h.id, { is_active: !h.is_active });
@@ -319,8 +346,14 @@ function EditarBody({ desktop = false }: { desktop?: boolean }) {
           </SectionReveal>
 
           <SectionReveal direction="up" delay={100} durationMs={800}>
-            <div className="mt-6 text-eyebrow text-spark-brand">
-              ✦ minha rotina · {activeCount} ativos
+            <div className="mt-6 text-eyebrow text-spark-brand inline-flex items-center gap-2 flex-wrap">
+              <span>✦ minha rotina · {activeCount} ativos</span>
+              {inflight > 0 && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-spark-brand/15 text-spark-brand-deep text-[10px] font-extrabold normal-case tracking-normal">
+                  <Loader2 size={9} strokeWidth={2.5} className="animate-spin" />
+                  Salvando…
+                </span>
+              )}
             </div>
             <h1
               className="mt-3 font-display lowercase tracking-tight text-spark-ink leading-[0.92]"
@@ -507,19 +540,41 @@ function EditarBody({ desktop = false }: { desktop?: boolean }) {
             </div>
           </SectionReveal>
 
-          {/* CTA voltar */}
+          {/* CTA voltar — aguarda PATCHes em flight terminarem antes de
+              navegar. Bug Android: aluna editava horario, fechava time
+              picker e clicava aqui sem apertar Check. Auto-save no blur
+              ja dispara o PATCH; aqui garantimos que ele termina antes
+              de sair da pagina. */}
           <SectionReveal direction="up">
-            <Link
-              href="/rotina/hoje"
-              className="group inline-flex items-center justify-center w-full gap-2 px-5 py-4 rounded-full bg-brand-grad text-white text-[14px] font-extrabold shadow-lift-brand hover:-translate-y-0.5 transition-all duration-300 ease-premium"
+            <button
+              type="button"
+              disabled={navPending}
+              onClick={async () => {
+                setNavPending(true);
+                try {
+                  await waitInflight();
+                } finally {
+                  router.push("/rotina/hoje");
+                }
+              }}
+              className="group inline-flex items-center justify-center w-full gap-2 px-5 py-4 rounded-full bg-brand-grad text-white text-[14px] font-extrabold shadow-lift-brand hover:-translate-y-0.5 transition-all duration-300 ease-premium disabled:opacity-75 disabled:hover:translate-y-0"
             >
-              Pronto · ver minha rotina
-              <ArrowRight
-                size={14}
-                strokeWidth={2.5}
-                className="transition-transform duration-300 group-hover:translate-x-0.5"
-              />
-            </Link>
+              {navPending || inflight > 0 ? (
+                <>
+                  <Loader2 size={14} strokeWidth={2.5} className="animate-spin" />
+                  Salvando…
+                </>
+              ) : (
+                <>
+                  Pronto · ver minha rotina
+                  <ArrowRight
+                    size={14}
+                    strokeWidth={2.5}
+                    className="transition-transform duration-300 group-hover:translate-x-0.5"
+                  />
+                </>
+              )}
+            </button>
           </SectionReveal>
         </div>
       </section>
@@ -555,6 +610,8 @@ function HabitEditRow({
   const [tmpTime, setTmpTime] = React.useState(habit.scheduled_time ?? "");
   const [saving, setSaving] = React.useState(false);
   const [savingTime, setSavingTime] = React.useState(false);
+  // Flags pra evitar double-fire (Check/Cancel + onBlur disparam juntos)
+  const skipBlurRef = React.useRef(false);
 
   // Quando o habit chega novo (apos PATCH bem-sucedido), reseta os tmps
   // pra refletir o estado canonical do servidor.
@@ -614,6 +671,31 @@ function HabitEditRow({
     setEditingTime(false);
   };
 
+  // Auto-save quando perde foco. Caso real: aluna mexe no horario no
+  // time picker do Android, fecha o picker e clica direto em "Pronto"
+  // sem apertar o Check. Sem isso, perde a edicao. Use setTimeout 0
+  // pra deixar o evento de Check/Cancel (que setam skipBlurRef) rodar
+  // primeiro.
+  const onLabelBlur = () => {
+    setTimeout(() => {
+      if (skipBlurRef.current) {
+        skipBlurRef.current = false;
+        return;
+      }
+      void saveEdit();
+    }, 0);
+  };
+
+  const onTimeBlur = () => {
+    setTimeout(() => {
+      if (skipBlurRef.current) {
+        skipBlurRef.current = false;
+        return;
+      }
+      void saveTime();
+    }, 0);
+  };
+
   return (
     <div
       className={cn(
@@ -664,6 +746,7 @@ function HabitEditRow({
               if (e.key === "Enter") void saveEdit();
               if (e.key === "Escape") cancelEdit();
             }}
+            onBlur={onLabelBlur}
             disabled={saving}
             className="flex-1 px-3 py-2 rounded-spark-lg bg-spark-bg border border-spark-brand/40 focus:ring-2 focus:ring-spark-brand/15 outline-none text-[14px] font-semibold transition-all disabled:opacity-60"
             autoFocus
@@ -671,6 +754,9 @@ function HabitEditRow({
           />
           <button
             type="button"
+            onPointerDown={() => {
+              skipBlurRef.current = true;
+            }}
             onClick={() => void saveEdit()}
             disabled={saving}
             className="w-9 h-9 rounded-full bg-good text-white flex items-center justify-center shadow-lift disabled:opacity-70"
@@ -684,6 +770,9 @@ function HabitEditRow({
           </button>
           <button
             type="button"
+            onPointerDown={() => {
+              skipBlurRef.current = true;
+            }}
             onClick={cancelEdit}
             disabled={saving}
             className="w-9 h-9 rounded-full text-spark-ink-50 hover:bg-spark-surface-sunken flex items-center justify-center disabled:opacity-50"
@@ -717,12 +806,16 @@ function HabitEditRow({
                 type="time"
                 value={tmpTime}
                 onChange={(e) => setTmpTime(e.target.value)}
+                onBlur={onTimeBlur}
                 autoFocus
                 disabled={savingTime}
                 className="px-2 py-1.5 rounded-spark-lg bg-spark-bg border border-spark-brand/40 focus:ring-2 focus:ring-spark-brand/15 outline-none text-[12.5px] font-extrabold text-spark-ink font-mono w-[92px] disabled:opacity-60"
               />
               <button
                 type="button"
+                onPointerDown={() => {
+                  skipBlurRef.current = true;
+                }}
                 onClick={() => void saveTime()}
                 disabled={savingTime}
                 className="w-8 h-8 rounded-full bg-good text-white flex items-center justify-center shadow-lift disabled:opacity-70"
@@ -736,6 +829,9 @@ function HabitEditRow({
               </button>
               <button
                 type="button"
+                onPointerDown={() => {
+                  skipBlurRef.current = true;
+                }}
                 onClick={cancelTime}
                 disabled={savingTime}
                 className="w-8 h-8 rounded-full text-spark-ink-50 hover:bg-spark-surface-sunken flex items-center justify-center disabled:opacity-50"
