@@ -4,6 +4,15 @@ import { getSupabaseServer } from "@/lib/supabase-server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const NO_CACHE_HEADERS = {
+  "cache-control": "no-store, no-cache, must-revalidate",
+  pragma: "no-cache",
+} as const;
+
+function json(body: unknown, init?: { status?: number }) {
+  return NextResponse.json(body, { status: init?.status, headers: NO_CACHE_HEADERS });
+}
+
 /**
  * GET /api/rotina/habits → lista os hábitos da aluna logada
  * POST /api/rotina/habits → cria novo hábito custom
@@ -27,7 +36,7 @@ export async function GET() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!user) return json({ error: "unauthorized" }, { status: 401 });
 
   const { data, error } = await supabase
     .from("user_habits")
@@ -35,8 +44,8 @@ export async function GET() {
     .eq("user_id", user.id)
     .order("order_index", { ascending: true });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ habits: data ?? [] });
+  if (error) return json({ error: error.message }, { status: 500 });
+  return json({ habits: data ?? [] });
 }
 
 export async function POST(request: Request) {
@@ -44,17 +53,17 @@ export async function POST(request: Request) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!user) return json({ error: "unauthorized" }, { status: 401 });
 
   let body: Record<string, unknown>;
   try {
     body = (await request.json()) as Record<string, unknown>;
   } catch {
-    return NextResponse.json({ error: "invalid_json" }, { status: 400 });
+    return json({ error: "invalid_json" }, { status: 400 });
   }
 
   if (typeof body.label !== "string" || !body.label.trim()) {
-    return NextResponse.json({ error: "missing_label" }, { status: 400 });
+    return json({ error: "missing_label" }, { status: 400 });
   }
 
   const label = String(body.label).trim();
@@ -66,7 +75,7 @@ export async function POST(request: Request) {
     | "resultado"
     | "custom";
   if (!["trabalho", "pessoal", "resultado", "custom"].includes(category)) {
-    return NextResponse.json({ error: "invalid_category" }, { status: 400 });
+    return json({ error: "invalid_category" }, { status: 400 });
   }
 
   // Próximo order_index
@@ -83,7 +92,7 @@ export async function POST(request: Request) {
   let scheduled_time: string | null = null;
   if (body.scheduled_time !== undefined && body.scheduled_time !== null && body.scheduled_time !== "") {
     if (typeof body.scheduled_time !== "string" || !/^[0-2][0-9]:[0-5][0-9]$/.test(body.scheduled_time)) {
-      return NextResponse.json({ error: "invalid_scheduled_time" }, { status: 400 });
+      return json({ error: "invalid_scheduled_time" }, { status: 400 });
     }
     scheduled_time = body.scheduled_time;
   }
@@ -106,7 +115,7 @@ export async function POST(request: Request) {
     .single();
   if (error) {
     const status = error.message.includes("duplicate") ? 409 : 500;
-    return NextResponse.json({ error: error.message }, { status });
+    return json({ error: error.message }, { status });
   }
-  return NextResponse.json({ ok: true, habit: data });
+  return json({ ok: true, habit: data });
 }

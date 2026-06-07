@@ -15,6 +15,7 @@ import {
   RotateCcw,
   Sparkles,
   ArrowRight,
+  Loader2,
 } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { FloatingMainNav } from "@/components/layout/floating-main-nav";
@@ -67,33 +68,70 @@ function EditarBody({ desktop = false }: { desktop?: boolean }) {
   const toast = useToast();
 
   const refresh = React.useCallback(async () => {
-    const res = await fetch("/api/rotina/habits", { cache: "no-store" });
-    if (res.ok) {
-      const data = (await res.json()) as { habits: Habit[] };
-      setHabits(data.habits);
+    try {
+      const res = await fetch("/api/rotina/habits", {
+        cache: "no-store",
+        headers: { "cache-control": "no-cache", pragma: "no-cache" },
+      });
+      if (res.ok) {
+        const data = (await res.json()) as { habits: Habit[] };
+        setHabits(data.habits);
+      }
+    } catch {
+      // Sem net: mantem estado atual, nao quebra a UI
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   React.useEffect(() => {
     void refresh();
   }, [refresh]);
 
-  const updateHabit = async (id: string, patch: Partial<Habit>) => {
-    // Optimistic
-    setHabits((arr) => arr.map((h) => (h.id === id ? { ...h, ...patch } : h)));
-    const res = await fetch(`/api/rotina/habits/${id}`, {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(patch),
-    });
-    if (!res.ok) {
-      toast.error("Não consegui salvar");
-      void refresh();
-    }
-  };
+  // PATCH com snapshot-revert local em erro (NUNCA refetch — refetch
+  // racing com PATCHes em flight era o bug Android: GET trazia estado
+  // do banco SEM as edicoes pendentes e sobrescrevia tudo).
+  // Quando OK, reconcilia SO o habit retornado pelo server (sem mexer
+  // nos outros que podem ter PATCH em flight tambem).
+  const updateHabit = React.useCallback(
+    async (id: string, patch: Partial<Habit>): Promise<boolean> => {
+      let snapshot: Habit[] = [];
+      setHabits((arr) => {
+        snapshot = arr;
+        return arr.map((h) => (h.id === id ? { ...h, ...patch } : h));
+      });
+      try {
+        const res = await fetch(`/api/rotina/habits/${id}`, {
+          method: "PATCH",
+          headers: {
+            "content-type": "application/json",
+            "cache-control": "no-cache",
+            pragma: "no-cache",
+          },
+          cache: "no-store",
+          body: JSON.stringify(patch),
+        });
+        if (!res.ok) {
+          toast.error("Não consegui salvar. Tenta de novo.");
+          setHabits(snapshot);
+          return false;
+        }
+        const j = (await res.json().catch(() => null)) as { habit?: Habit } | null;
+        if (j?.habit) {
+          // Reconcilia SO esse habit — preserva PATCHes em flight nos outros
+          setHabits((arr) => arr.map((h) => (h.id === id ? { ...h, ...j.habit! } : h)));
+        }
+        return true;
+      } catch {
+        toast.error("Sem conexão. Tenta de novo.");
+        setHabits(snapshot);
+        return false;
+      }
+    },
+    [toast],
+  );
 
-  const toggleActive = (h: Habit) => updateHabit(h.id, { is_active: !h.is_active });
+  const toggleActive = (h: Habit) => void updateHabit(h.id, { is_active: !h.is_active });
 
   const removeHabit = async (h: Habit) => {
     const ok = await confirm({
@@ -103,13 +141,26 @@ function EditarBody({ desktop = false }: { desktop?: boolean }) {
       destructive: true,
     });
     if (!ok) return;
-    setHabits((arr) => arr.filter((x) => x.id !== h.id));
-    const res = await fetch(`/api/rotina/habits/${h.id}`, { method: "DELETE" });
-    if (!res.ok) {
-      toast.error("Não consegui remover");
-      void refresh();
-    } else {
-      toast.success("Hábito removido");
+    let snapshot: Habit[] = [];
+    setHabits((arr) => {
+      snapshot = arr;
+      return arr.filter((x) => x.id !== h.id);
+    });
+    try {
+      const res = await fetch(`/api/rotina/habits/${h.id}`, {
+        method: "DELETE",
+        headers: { "cache-control": "no-cache", pragma: "no-cache" },
+        cache: "no-store",
+      });
+      if (!res.ok) {
+        toast.error("Não consegui remover");
+        setHabits(snapshot);
+      } else {
+        toast.success("Hábito removido");
+      }
+    } catch {
+      toast.error("Sem conexão");
+      setHabits(snapshot);
     }
   };
 
@@ -119,51 +170,88 @@ function EditarBody({ desktop = false }: { desktop?: boolean }) {
     const cur = habits[idx];
     const oth = habits[target];
 
-    const newArr = [...habits];
-    newArr[idx] = { ...oth, order_index: cur.order_index };
-    newArr[target] = { ...cur, order_index: oth.order_index };
-    newArr.sort((a, b) => a.order_index - b.order_index);
-    setHabits(newArr);
+    let snapshot: Habit[] = [];
+    setHabits((arr) => {
+      snapshot = arr;
+      const newArr = [...arr];
+      newArr[idx] = { ...oth, order_index: cur.order_index };
+      newArr[target] = { ...cur, order_index: oth.order_index };
+      newArr.sort((a, b) => a.order_index - b.order_index);
+      return newArr;
+    });
 
-    await Promise.all([
-      fetch(`/api/rotina/habits/${cur.id}`, {
+    try {
+      // Sequencial pra evitar race (Android lento pode comutar ordem das
+      // requisicoes em paralelo). Se 1a falha, 2a nem dispara.
+      const res1 = await fetch(`/api/rotina/habits/${cur.id}`, {
         method: "PATCH",
-        headers: { "content-type": "application/json" },
+        headers: {
+          "content-type": "application/json",
+          "cache-control": "no-cache",
+          pragma: "no-cache",
+        },
+        cache: "no-store",
         body: JSON.stringify({ order_index: oth.order_index }),
-      }),
-      fetch(`/api/rotina/habits/${oth.id}`, {
+      });
+      if (!res1.ok) throw new Error("move_fail_1");
+      const res2 = await fetch(`/api/rotina/habits/${oth.id}`, {
         method: "PATCH",
-        headers: { "content-type": "application/json" },
+        headers: {
+          "content-type": "application/json",
+          "cache-control": "no-cache",
+          pragma: "no-cache",
+        },
+        cache: "no-store",
         body: JSON.stringify({ order_index: cur.order_index }),
-      }),
-    ]);
+      });
+      if (!res2.ok) throw new Error("move_fail_2");
+    } catch {
+      toast.error("Não consegui reordenar");
+      setHabits(snapshot);
+    }
   };
 
   const addHabit = async () => {
     const label = newLabel.trim();
-    if (!label) return;
+    if (!label || savingNew) return;
     setSavingNew(true);
-    const res = await fetch("/api/rotina/habits", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        label,
-        emoji: newEmoji,
-        category: newCat,
-        scheduled_time: newTime || null,
-      }),
-    });
-    setSavingNew(false);
-    if (res.ok) {
-      setNewLabel("");
-      setNewEmoji("✨");
-      setNewCat("custom");
-      setNewTime("");
-      toast.success("Hábito adicionado 💕");
-      await refresh();
-    } else {
-      const j = (await res.json().catch(() => ({}))) as { error?: string };
-      toast.error(j.error === "duplicate" ? "Já existe esse hábito" : "Não consegui adicionar");
+    try {
+      const res = await fetch("/api/rotina/habits", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "cache-control": "no-cache",
+          pragma: "no-cache",
+        },
+        cache: "no-store",
+        body: JSON.stringify({
+          label,
+          emoji: newEmoji,
+          category: newCat,
+          scheduled_time: newTime || null,
+        }),
+      });
+      if (res.ok) {
+        const j = (await res.json().catch(() => null)) as { habit?: Habit } | null;
+        if (j?.habit) {
+          // Push direto em vez de refresh — mantem outras edicoes em flight intactas
+          setHabits((arr) => [...arr, j.habit!]);
+        }
+        setNewLabel("");
+        setNewEmoji("✨");
+        setNewCat("custom");
+        setNewTime("");
+        toast.success("Hábito adicionado 💕");
+      } else {
+        const j = (await res.json().catch(() => ({}))) as { error?: string };
+        toast.error(
+          j.error === "duplicate" ? "Já existe esse hábito" : "Não consegui adicionar",
+        );
+      }
+    } catch {
+      toast.error("Sem conexão");
+    } finally {
+      setSavingNew(false);
     }
   };
 
@@ -385,11 +473,7 @@ function EditarBody({ desktop = false }: { desktop?: boolean }) {
                             ? () => moveHabit(habits.indexOf(h), 1)
                             : undefined
                         }
-                        onLabelChange={(label) => updateHabit(h.id, { label })}
-                        onEmojiChange={(emoji) => updateHabit(h.id, { emoji })}
-                        onTimeChange={(scheduled_time) =>
-                          updateHabit(h.id, { scheduled_time })
-                        }
+                        onPatch={(patch) => updateHabit(h.id, patch)}
                       />
                     ))}
                   </div>
@@ -454,9 +538,7 @@ function HabitEditRow({
   onRemove,
   onMoveUp,
   onMoveDown,
-  onLabelChange,
-  onEmojiChange,
-  onTimeChange,
+  onPatch,
 }: {
   habit: Habit;
   showBorder: boolean;
@@ -464,36 +546,70 @@ function HabitEditRow({
   onRemove: () => void;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
-  onLabelChange: (label: string) => void;
-  onEmojiChange: (emoji: string) => void;
-  onTimeChange: (time: string | null) => void;
+  onPatch: (patch: Partial<Habit>) => Promise<boolean>;
 }) {
   const [editing, setEditing] = React.useState(false);
   const [editingTime, setEditingTime] = React.useState(false);
   const [tmpLabel, setTmpLabel] = React.useState(habit.label);
   const [tmpEmoji, setTmpEmoji] = React.useState(habit.emoji);
   const [tmpTime, setTmpTime] = React.useState(habit.scheduled_time ?? "");
+  const [saving, setSaving] = React.useState(false);
+  const [savingTime, setSavingTime] = React.useState(false);
 
-  const saveEdit = () => {
+  // Quando o habit chega novo (apos PATCH bem-sucedido), reseta os tmps
+  // pra refletir o estado canonical do servidor.
+  React.useEffect(() => {
+    if (!editing) {
+      setTmpLabel(habit.label);
+      setTmpEmoji(habit.emoji);
+    }
+  }, [habit.label, habit.emoji, editing]);
+
+  React.useEffect(() => {
+    if (!editingTime) setTmpTime(habit.scheduled_time ?? "");
+  }, [habit.scheduled_time, editingTime]);
+
+  // Combina label+emoji em 1 PATCH so. Dois fetches paralelos em
+  // Android lento causavam race (segundo PATCH usava state stale).
+  const saveEdit = async () => {
+    if (saving) return;
     const next = tmpLabel.trim();
-    if (next && next !== habit.label) onLabelChange(next);
-    if (tmpEmoji !== habit.emoji) onEmojiChange(tmpEmoji);
-    setEditing(false);
+    const patch: Partial<Habit> = {};
+    if (next && next !== habit.label) patch.label = next;
+    if (tmpEmoji !== habit.emoji) patch.emoji = tmpEmoji;
+    if (Object.keys(patch).length === 0) {
+      setEditing(false);
+      return;
+    }
+    setSaving(true);
+    const ok = await onPatch(patch);
+    setSaving(false);
+    if (ok) setEditing(false);
+    // Se falhou, mantem em editing pra ela tentar de novo sem perder o texto
   };
 
   const cancelEdit = () => {
+    if (saving) return;
     setTmpLabel(habit.label);
     setTmpEmoji(habit.emoji);
     setEditing(false);
   };
 
-  const saveTime = () => {
+  const saveTime = async () => {
+    if (savingTime) return;
     const next = tmpTime || null;
-    if (next !== habit.scheduled_time) onTimeChange(next);
-    setEditingTime(false);
+    if (next === habit.scheduled_time) {
+      setEditingTime(false);
+      return;
+    }
+    setSavingTime(true);
+    const ok = await onPatch({ scheduled_time: next });
+    setSavingTime(false);
+    if (ok) setEditingTime(false);
   };
 
   const cancelTime = () => {
+    if (savingTime) return;
     setTmpTime(habit.scheduled_time ?? "");
     setEditingTime(false);
   };
@@ -545,25 +661,32 @@ function HabitEditRow({
             value={tmpLabel}
             onChange={(e) => setTmpLabel(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") saveEdit();
+              if (e.key === "Enter") void saveEdit();
               if (e.key === "Escape") cancelEdit();
             }}
-            className="flex-1 px-3 py-2 rounded-spark-lg bg-spark-bg border border-spark-brand/40 focus:ring-2 focus:ring-spark-brand/15 outline-none text-[14px] font-semibold transition-all"
+            disabled={saving}
+            className="flex-1 px-3 py-2 rounded-spark-lg bg-spark-bg border border-spark-brand/40 focus:ring-2 focus:ring-spark-brand/15 outline-none text-[14px] font-semibold transition-all disabled:opacity-60"
             autoFocus
             maxLength={80}
           />
           <button
             type="button"
-            onClick={saveEdit}
-            className="w-9 h-9 rounded-full bg-good text-white flex items-center justify-center shadow-lift"
+            onClick={() => void saveEdit()}
+            disabled={saving}
+            className="w-9 h-9 rounded-full bg-good text-white flex items-center justify-center shadow-lift disabled:opacity-70"
             aria-label="Salvar"
           >
-            <Check size={15} strokeWidth={2.5} />
+            {saving ? (
+              <Loader2 size={15} strokeWidth={2.5} className="animate-spin" />
+            ) : (
+              <Check size={15} strokeWidth={2.5} />
+            )}
           </button>
           <button
             type="button"
             onClick={cancelEdit}
-            className="w-9 h-9 rounded-full text-spark-ink-50 hover:bg-spark-surface-sunken flex items-center justify-center"
+            disabled={saving}
+            className="w-9 h-9 rounded-full text-spark-ink-50 hover:bg-spark-surface-sunken flex items-center justify-center disabled:opacity-50"
             aria-label="Cancelar"
           >
             <X size={15} strokeWidth={2.5} />
@@ -595,20 +718,27 @@ function HabitEditRow({
                 value={tmpTime}
                 onChange={(e) => setTmpTime(e.target.value)}
                 autoFocus
-                className="px-2 py-1.5 rounded-spark-lg bg-spark-bg border border-spark-brand/40 focus:ring-2 focus:ring-spark-brand/15 outline-none text-[12.5px] font-extrabold text-spark-ink font-mono w-[92px]"
+                disabled={savingTime}
+                className="px-2 py-1.5 rounded-spark-lg bg-spark-bg border border-spark-brand/40 focus:ring-2 focus:ring-spark-brand/15 outline-none text-[12.5px] font-extrabold text-spark-ink font-mono w-[92px] disabled:opacity-60"
               />
               <button
                 type="button"
-                onClick={saveTime}
-                className="w-8 h-8 rounded-full bg-good text-white flex items-center justify-center shadow-lift"
+                onClick={() => void saveTime()}
+                disabled={savingTime}
+                className="w-8 h-8 rounded-full bg-good text-white flex items-center justify-center shadow-lift disabled:opacity-70"
                 aria-label="Salvar horário"
               >
-                <Check size={13} strokeWidth={2.5} />
+                {savingTime ? (
+                  <Loader2 size={13} strokeWidth={2.5} className="animate-spin" />
+                ) : (
+                  <Check size={13} strokeWidth={2.5} />
+                )}
               </button>
               <button
                 type="button"
                 onClick={cancelTime}
-                className="w-8 h-8 rounded-full text-spark-ink-50 hover:bg-spark-surface-sunken flex items-center justify-center"
+                disabled={savingTime}
+                className="w-8 h-8 rounded-full text-spark-ink-50 hover:bg-spark-surface-sunken flex items-center justify-center disabled:opacity-50"
                 aria-label="Cancelar"
               >
                 <X size={13} strokeWidth={2.5} />
