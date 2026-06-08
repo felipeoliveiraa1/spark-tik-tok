@@ -20,14 +20,17 @@ alter table public.profiles
 -- 2) Status expandido — fluxo: novo -> contactado -> em_conversa -> agendado
 --    -> convertido / perdido (qualquer momento)
 -- ---------------------------------------------------------------------------
--- Migra valores antigos pros novos (PT) ANTES de trocar o check constraint
+-- IMPORTANTE: drop constraint ANTES do update — senao UPDATE setando 'novo'
+-- viola o check antigo que so aceita ('new','contacted','converted','dismissed').
+
+alter table public.leads
+  drop constraint if exists leads_status_check;
+
+-- Migra valores antigos pros novos (PT) — sem constraint, qualquer valor passa
 update public.leads set status = 'novo' where status = 'new';
 update public.leads set status = 'contactado' where status = 'contacted';
 update public.leads set status = 'convertido' where status = 'converted';
 update public.leads set status = 'perdido' where status = 'dismissed';
-
-alter table public.leads
-  drop constraint if exists leads_status_check;
 
 alter table public.leads
   alter column status set default 'novo';
