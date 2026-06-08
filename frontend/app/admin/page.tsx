@@ -57,7 +57,13 @@ type LeadPreview = {
   nome: string;
   tiktok_handle: string;
   already_selling: boolean;
-  status: "new" | "contacted" | "converted" | "dismissed";
+  status:
+    | "novo"
+    | "contactado"
+    | "em_conversa"
+    | "agendado"
+    | "convertido"
+    | "perdido";
   created_at: string;
 };
 
@@ -143,15 +149,15 @@ async function getStats() {
     supabase
       .from("leads")
       .select("id", { count: "exact", head: true })
-      .eq("status", "new"),
+      .eq("status", "novo"),
     supabase
       .from("leads")
       .select("id", { count: "exact", head: true })
-      .eq("status", "contacted"),
+      .eq("status", "contactado"),
     supabase
       .from("leads")
       .select("id", { count: "exact", head: true })
-      .eq("status", "converted"),
+      .eq("status", "convertido"),
     supabase
       .from("leads")
       .select("id", { count: "exact", head: true }),
@@ -512,10 +518,12 @@ const STATUS_DOT: Record<FeedbackPreview["status"], { color: string; label: stri
 };
 
 const LEAD_STATUS: Record<LeadPreview["status"], { color: string; label: string }> = {
-  new: { color: "bg-warn", label: "Novo" },
-  contacted: { color: "bg-spark-brand-deep", label: "Contactado" },
-  converted: { color: "bg-good", label: "Convertido" },
-  dismissed: { color: "bg-spark-ink-35", label: "Dispensado" },
+  novo: { color: "bg-warn", label: "Novo" },
+  contactado: { color: "bg-spark-brand-deep", label: "Contactado" },
+  em_conversa: { color: "bg-spark-brand-deep", label: "Em conversa" },
+  agendado: { color: "bg-warn", label: "Agendado" },
+  convertido: { color: "bg-good", label: "Convertido" },
+  perdido: { color: "bg-spark-ink-35", label: "Perdido" },
 };
 
 export default async function AdminHome() {
