@@ -735,10 +735,14 @@ function AgentesFeed({
   // Calcula lock status pra cada agente. Se aluna for gated, reordena
   // pra mostrar unlocked primeiro (General + Suporte) — assim ela nao
   // precisa scrollar ate o fim pra achar o que ja pode usar.
+  // Em preview mode, ignora o check de cutoff (admin testando antes
+  // de chegar a data de corte real).
   const orderedWithLock = React.useMemo(() => {
     const annotated = VISIBLE_AGENTS_CATALOG.map((agent) => ({
       agent,
-      lock: getAgentLockStatus(profile, agent.slug),
+      lock: getAgentLockStatus(profile, agent.slug, undefined, {
+        skipCutoff: previewMode,
+      }),
     }));
     const someLocked = annotated.some((a) => a.lock.locked);
     if (!someLocked) return annotated;
@@ -746,7 +750,7 @@ function AgentesFeed({
     const unlocked = annotated.filter((a) => !a.lock.locked);
     const locked = annotated.filter((a) => a.lock.locked);
     return [...unlocked, ...locked];
-  }, [profile]);
+  }, [profile, previewMode]);
 
   const count = React.useMemo(
     () =>

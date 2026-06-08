@@ -43,15 +43,21 @@ export function getAgentLockStatus(
   profile: ProfileForGate | null | undefined,
   agentSlug: string,
   now: Date = new Date(),
+  options?: { skipCutoff?: boolean },
 ): AgentLockStatus {
   if (!profile?.created_at) return { locked: false };
   if (profile.role === "admin") return { locked: false };
   if (ALWAYS_FREE_SLUGS.has(agentSlug)) return { locked: false };
 
-  const cutoff = new Date(AGENT_LOCK_CUTOFF_ISO);
   const createdAt = new Date(profile.created_at);
   if (Number.isNaN(createdAt.getTime())) return { locked: false };
-  if (createdAt.getTime() < cutoff.getTime()) return { locked: false };
+
+  // skipCutoff: usado pelo preview mode admin pra simular a regra
+  // antes da data de corte chegar pra alunas reais.
+  if (!options?.skipCutoff) {
+    const cutoff = new Date(AGENT_LOCK_CUTOFF_ISO);
+    if (createdAt.getTime() < cutoff.getTime()) return { locked: false };
+  }
 
   const elapsedMs = now.getTime() - createdAt.getTime();
   const elapsedDays = elapsedMs / 86_400_000;
