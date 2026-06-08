@@ -14,7 +14,7 @@
  * Pra atualizar: edita esse arquivo. A página /agentes lê direto daqui.
  */
 
-export type AgentCategory = "info" | "scripts" | "suporte";
+export type AgentCategory = "info" | "scripts" | "ferramentas" | "suporte";
 
 export type AgentCatalogItem = {
   /** Slug usado em URLs e tracking */
@@ -214,6 +214,53 @@ export const AGENTS_CATALOG: AgentCatalogItem[] = [
     accent: "from-sky-500 to-cyan-400",
   },
 
+  // ─── FERRAMENTAS (utilitarios transversais) ──────────────────────
+  {
+    slug: "radar",
+    chip: "Radar",
+    name: "Radar de Produtos",
+    category: "ferramentas",
+    emoji: "🔎",
+    shortDescription: "Te ajuda a encontrar produtos com potencial de venda pra cadastrar.",
+    howItWorks:
+      "Conta o que você quer vender (nicho, ticket, perfil de público) e a Radar mapeia produtos com potencial — analisa concorrência, tendências, sazonalidade e devolve uma lista priorizada pra você testar.",
+    chatgptUrl:
+      "https://chatgpt.com/g/g-6a2703bb82b88191bf8ece56f832acdb-radar-metodo-tts",
+    geminiUrl: null,
+    imageUrl: "/radar.png",
+    accent: "from-teal-500 to-cyan-400",
+  },
+  {
+    slug: "headline",
+    chip: "Headline",
+    name: "Headline Viral",
+    category: "ferramentas",
+    emoji: "📝",
+    shortDescription: "Gera títulos e ganchos pra prender nos 3 primeiros segundos.",
+    howItWorks:
+      "Cola o produto ou o tema do vídeo e a Headline devolve 10 opções de gancho/título testados no Método TTS — variando entre dor, curiosidade, transformação e antes/depois. Você escolhe o que mais combina com o seu vídeo.",
+    chatgptUrl:
+      "https://chatgpt.com/g/g-6a26fcc284f48191a077b568f26596c8-headline-metodo-tts",
+    geminiUrl: null,
+    imageUrl: "/headline.png",
+    accent: "from-violet-500 to-purple-400",
+  },
+  {
+    slug: "ideias",
+    chip: "Ideias",
+    name: "Ideias de Conteúdo",
+    category: "ferramentas",
+    emoji: "💡",
+    shortDescription: "Brainstorm de conteúdo quando bater bloqueio criativo.",
+    howItWorks:
+      "Travada sem saber o que postar? Conta o produto e o tipo de vídeo que quer (review, tutorial, antes/depois, lifestyle) e a Ideias devolve 10 ideias de conteúdo no formato do Método TTS — prontas pra você gravar.",
+    chatgptUrl:
+      "https://chatgpt.com/g/g-6a27044663cc8191934f9435c7f60a0a-ideias-metodo-tts",
+    geminiUrl: null,
+    imageUrl: "/ideias.png",
+    accent: "from-orange-400 to-pink-300",
+  },
+
   // ─── SUPORTE (geral, 1 agente) ───────────────────────────────────
   {
     slug: "suporte",
@@ -248,6 +295,7 @@ export function groupByCategory(items: AgentCatalogItem[]): Record<AgentCategory
   const groups: Record<AgentCategory, AgentCatalogItem[]> = {
     info: [],
     scripts: [],
+    ferramentas: [],
     suporte: [],
   };
   for (const item of items) groups[item.category].push(item);
@@ -262,6 +310,10 @@ export const CATEGORY_LABELS: Record<AgentCategory, { label: string; description
   scripts: {
     label: "Roteiros por Nicho",
     description: "Escolha o nicho do seu produto. Cada agente é uma especialista.",
+  },
+  ferramentas: {
+    label: "Ferramentas",
+    description: "Utilitários pra encontrar produto, ideia e gancho de vídeo.",
   },
   suporte: {
     label: "Suporte",

@@ -811,7 +811,7 @@ export default function LandingPage() {
           </SectionReveal>
 
           {/* Grid editorial com TODOS os agentes visiveis */}
-          {(["info", "scripts", "suporte"] as const).map((cat, catIdx) => {
+          {(["info", "scripts", "ferramentas", "suporte"] as const).map((cat, catIdx) => {
             const items = VISIBLE_AGENTS_CATALOG.filter((a) => a.category === cat);
             if (items.length === 0) return null;
             const meta = CATEGORY_LABELS[cat];
