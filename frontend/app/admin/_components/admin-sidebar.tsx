@@ -18,6 +18,8 @@ import {
   X,
   MessageCircle,
   Hourglass,
+  Users,
+  TrendingUp,
 } from "lucide-react";
 import { SparkWordmark } from "@/components/atoms/spark-wordmark";
 import { cn } from "@/lib/cn";
@@ -56,7 +58,8 @@ const SECTIONS: Section[] = [
     items: [
       { href: "/admin/whatsapp", label: "WhatsApp", icon: MessageCircle },
       { href: "/admin/feedback", label: "Feedback", icon: MessageSquareWarning },
-      { href: "/admin/leads", label: "Leads", icon: Sparkles },
+      { href: "/crm-metodotts", label: "CRM (leads)", icon: Sparkles },
+      { href: "/admin/crm-stats", label: "CRM (métricas)", icon: TrendingUp },
     ],
   },
   {
@@ -64,6 +67,7 @@ const SECTIONS: Section[] = [
     items: [
       { href: "/admin/grant", label: "Liberar acesso", icon: Gift },
       { href: "/admin/processar-compra", label: "Processar compra", icon: ShoppingBag },
+      { href: "/admin/team", label: "Time", icon: Users },
     ],
   },
 ];

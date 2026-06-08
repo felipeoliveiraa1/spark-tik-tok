@@ -20,6 +20,10 @@ export async function loginAction(formData: FormData): Promise<AuthError | void>
   }
 
   const profile = await getCurrentProfile();
+  // Atendentes CRM nao tem perfil de aluna (niche/etc) — vao direto pro CRM
+  if (profile?.role === "crm_agent") {
+    redirect("/crm-metodotts");
+  }
   if (profile?.must_reset_password) {
     redirect("/conta?reset=1");
   }

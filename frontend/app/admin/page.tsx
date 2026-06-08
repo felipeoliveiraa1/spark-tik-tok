@@ -656,14 +656,14 @@ export default async function AdminHome() {
 
         <ListPanel
           title="Últimos cadastros"
-          href="/admin/leads"
+          href="/crm-metodotts"
           empty={{
             label: "Nenhum lead ainda.",
             sub: "Quando o link do formulário pegar tráfego, os cadastros aparecem aqui.",
           }}
           items={s.leadsRecent.map((r) => ({
             key: r.id,
-            href: "/admin/leads",
+            href: "/crm-metodotts",
             avatar: r.nome.charAt(0).toUpperCase(),
             title: r.nome,
             subtitle: (

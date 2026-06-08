@@ -126,6 +126,20 @@ export async function proxy(request: NextRequest) {
 
     // Admin tem acesso a tudo, ignora guards de onboarding e plano.
     const isAdmin = profile?.role === "admin";
+    // crm_agent eh membro interno (atendente de vendas): nao tem plano,
+    // nao tem perfil de aluna. Acesso restrito a /crm-metodotts.
+    const isCrmAgent = profile?.role === "crm_agent";
+
+    // crm_agent: confina em /crm-metodotts (tentou outra coisa, redireciona)
+    if (isCrmAgent) {
+      const allowedForCrm =
+        pathname === "/crm-metodotts" || pathname.startsWith("/crm-metodotts/");
+      if (!allowedForCrm) {
+        return NextResponse.redirect(new URL("/crm-metodotts", request.url));
+      }
+      // Dentro do CRM — passa direto (pula reset/onboarding/plano)
+      return response;
+    }
 
     // Senha temporaria → /conta?reset=1 (prioridade maxima, admin pula tb)
     // Bloqueia tudo exceto /conta + APIs essenciais ate ela trocar.
