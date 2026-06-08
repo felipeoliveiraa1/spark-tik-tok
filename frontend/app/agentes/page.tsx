@@ -64,11 +64,34 @@ function usePersistedPlatform(): [Platform, (p: Platform) => void] {
  * Carrega profile da aluna logada pra decidir agentes bloqueados.
  * Retorna null enquanto carrega — neste estado, nada eh bloqueado
  * (defensivo, ate sabermos quem ela eh).
+ *
+ * Preview mode pra admin testar como fica: passa ?preview=lock na URL.
+ * Forca profile fake recem-criada (faltam 7 dias). Opcional &day=N
+ * (1-6) simula a aluna no dia N do cadastro — day=6 mostra "1 dia".
  */
-function useProfile(): ProfileForGate | null {
+function useProfile(): { profile: ProfileForGate | null; previewMode: boolean } {
   const [profile, setProfile] = React.useState<ProfileForGate | null>(null);
+  const [previewMode, setPreviewMode] = React.useState(false);
+
   React.useEffect(() => {
     let cancelled = false;
+
+    // Detecta preview ?preview=lock na URL (so client-side)
+    if (typeof window !== "undefined") {
+      const sp = new URLSearchParams(window.location.search);
+      if (sp.get("preview") === "lock") {
+        const dayParam = Number(sp.get("day"));
+        const day = Number.isFinite(dayParam) && dayParam >= 1 && dayParam <= 6 ? dayParam : 1;
+        // Simula created_at de (day-1) dias atras pra "estar no dia N"
+        // day=1 → created hoje → faltam 7
+        // day=6 → created 5 dias atras → faltam ~2 (Math.ceil(7-5)=2)
+        const fakeCreated = new Date(Date.now() - (day - 1) * 86_400_000);
+        setProfile({ created_at: fakeCreated.toISOString(), role: "user" });
+        setPreviewMode(true);
+        return;
+      }
+    }
+
     fetch("/api/me", {
       cache: "no-store",
       headers: { "cache-control": "no-cache", pragma: "no-cache" },
@@ -86,7 +109,7 @@ function useProfile(): ProfileForGate | null {
       cancelled = true;
     };
   }, []);
-  return profile;
+  return { profile, previewMode };
 }
 
 /**
@@ -707,7 +730,7 @@ function AgentesFeed({
   onReopenTour: () => void;
 }) {
   const scrollRef = React.useRef<HTMLDivElement>(null);
-  const profile = useProfile();
+  const { profile, previewMode } = useProfile();
 
   // Calcula lock status pra cada agente. Se aluna for gated, reordena
   // pra mostrar unlocked primeiro (General + Suporte) — assim ela nao
@@ -742,6 +765,15 @@ function AgentesFeed({
 
   return (
     <>
+      {previewMode && (
+        <div
+          className="fixed left-1/2 -translate-x-1/2 z-50 inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-spark-ink text-white text-[11px] font-extrabold tracking-widest uppercase shadow-lift pointer-events-none"
+          style={{ top: "calc(env(safe-area-inset-top) + 12px)" }}
+          aria-hidden
+        >
+          🔍 Preview de bloqueio · admin
+        </div>
+      )}
       <div
         ref={scrollRef}
         className="flex-1 overflow-y-auto snap-y snap-mandatory overscroll-contain scroll-smooth"
