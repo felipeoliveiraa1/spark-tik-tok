@@ -47,7 +47,24 @@ export type AgentCatalogItem = {
 };
 
 export const AGENTS_CATALOG: AgentCatalogItem[] = [
-  // ─── INFO (geral, 1 agente) ───────────────────────────────────────
+  // ─── GERAL (porta de entrada — sempre primeiro) ───────────────────
+  {
+    slug: "general",
+    chip: "Geral",
+    name: "General Método TTS",
+    category: "info",
+    emoji: "🧭",
+    shortDescription: "Pra começar. Tira qualquer dúvida sobre produto, conteúdo, método.",
+    howItWorks:
+      "Agente generalista do Método TTS — quando não souber qual usar, comece aqui. Entende de produto, conteúdo, vendas e do método. Ideal pra validar uma ideia inicial, decidir pra qual agente especialista ir, ou tirar dúvida ampla sem precisar abrir vários GPTs.",
+    chatgptUrl:
+      "https://chatgpt.com/g/g-6a270e92d2c88191aa30fa7f9a51b4c7-general-metodo-tts",
+    geminiUrl: null,
+    imageUrl: "/general.png",
+    accent: "from-blue-600 to-indigo-500",
+  },
+
+  // ─── INFO (legacy — pausado) ──────────────────────────────────────
   {
     slug: "info",
     chip: "Info",
@@ -61,9 +78,8 @@ export const AGENTS_CATALOG: AgentCatalogItem[] = [
     geminiUrl: null,
     imageUrl: "/info.png",
     accent: "from-pink-500 to-rose-400",
-    // Pausado por enquanto — Felipe vai decidir se ressuscita com GPT/Gem proprio
-    // ou se fica embutido nos agentes de Scripts. Mantemos no catalogo pra
-    // conversas existentes nao quebrarem.
+    // Pausado — substituido pelo General Metodo TTS acima. Mantemos no catalogo
+    // pra conversas existentes nao quebrarem.
     hidden: true,
   },
 
@@ -304,8 +320,8 @@ export function groupByCategory(items: AgentCatalogItem[]): Record<AgentCategory
 
 export const CATEGORY_LABELS: Record<AgentCategory, { label: string; description: string }> = {
   info: {
-    label: "Análise de Produto",
-    description: "Monta a ficha rica que vira base pros roteiros.",
+    label: "Visão Geral",
+    description: "Comece aqui. Agente generalista que cobre qualquer dúvida do método.",
   },
   scripts: {
     label: "Roteiros por Nicho",
