@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ArrowUpRight, ChevronDown, ChevronsDown, ExternalLink, Sparkles } from "lucide-react";
+import { ArrowUpRight, ChevronDown, ChevronsDown, ExternalLink, Lock, Sparkles } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { FloatingMainNav } from "@/components/layout/floating-main-nav";
 import { SplashScreen } from "@/components/atoms/splash-screen";
@@ -12,6 +12,12 @@ import { SectionReveal } from "@/components/atoms/section-reveal";
 import { CharacterReveal } from "@/components/atoms/character-reveal";
 import { cn } from "@/lib/cn";
 import { VISIBLE_AGENTS_CATALOG, type AgentCatalogItem } from "@/lib/agents-catalog";
+import {
+  getAgentLockStatus,
+  formatDaysRemaining,
+  type AgentLockStatus,
+  type ProfileForGate,
+} from "@/lib/agent-lock";
 import { TutorialOverlay } from "@/components/molecules/tutorial-overlay";
 import { HelpMenu } from "@/components/molecules/help-menu";
 import { type TutorialStep } from "@/lib/tutorial";
@@ -52,6 +58,35 @@ function usePersistedPlatform(): [Platform, (p: Platform) => void] {
     }
   }, []);
   return [platform, update];
+}
+
+/**
+ * Carrega profile da aluna logada pra decidir agentes bloqueados.
+ * Retorna null enquanto carrega — neste estado, nada eh bloqueado
+ * (defensivo, ate sabermos quem ela eh).
+ */
+function useProfile(): ProfileForGate | null {
+  const [profile, setProfile] = React.useState<ProfileForGate | null>(null);
+  React.useEffect(() => {
+    let cancelled = false;
+    fetch("/api/me", {
+      cache: "no-store",
+      headers: { "cache-control": "no-cache", pragma: "no-cache" },
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        if (cancelled) return;
+        const p = (j?.profile ?? null) as ProfileForGate | null;
+        setProfile(p);
+      })
+      .catch(() => {
+        // Silencioso: sem profile, nao bloqueia
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  return profile;
 }
 
 /**
@@ -403,6 +438,7 @@ function AgentSlide({
   total,
   desktop,
   isActive,
+  lock,
 }: {
   agent: AgentCatalogItem;
   platform: Platform;
@@ -411,10 +447,16 @@ function AgentSlide({
   total: number;
   desktop: boolean;
   isActive: boolean;
+  lock: AgentLockStatus;
 }) {
   const [expanded, setExpanded] = React.useState(false);
-  const url = platform === "chatgpt" ? agent.chatgptUrl : agent.geminiUrl;
-  const otherUrl = platform === "chatgpt" ? agent.geminiUrl : agent.chatgptUrl;
+  const isLocked = lock.locked;
+  const url = isLocked ? null : platform === "chatgpt" ? agent.chatgptUrl : agent.geminiUrl;
+  const otherUrl = isLocked
+    ? null
+    : platform === "chatgpt"
+      ? agent.geminiUrl
+      : agent.chatgptUrl;
   const hasLinkAtAll = !!agent.chatgptUrl || !!agent.geminiUrl;
 
   return (
@@ -466,8 +508,9 @@ function AgentSlide({
                 src={agent.imageUrl}
                 alt={agent.name}
                 className={cn(
-                  "absolute inset-0 w-full h-full object-cover transition-transform duration-1000 ease-premium",
+                  "absolute inset-0 w-full h-full object-cover transition-all duration-1000 ease-premium",
                   isActive ? "scale-100" : "scale-105",
+                  isLocked && "grayscale brightness-75",
                 )}
               />
             ) : (
@@ -508,12 +551,26 @@ function AgentSlide({
               </span>
             </div>
 
-            {!hasLinkAtAll && (
+            {!hasLinkAtAll && !isLocked && (
               <div className="absolute bottom-5 right-5">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-spark-ink/85 backdrop-blur text-white text-[10.5px] font-extrabold tracking-widest uppercase">
                   Em breve
                 </span>
               </div>
+            )}
+
+            {isLocked && lock.locked && (
+              <>
+                <div className="absolute inset-0 bg-spark-ink/35 backdrop-blur-[2px]" />
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center">
+                  <div className="w-14 h-14 rounded-full bg-white/95 shadow-lift flex items-center justify-center">
+                    <Lock size={22} strokeWidth={2.5} className="text-spark-ink" />
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-spark-ink/85 backdrop-blur text-white text-[11.5px] font-extrabold tracking-tight">
+                    {formatDaysRemaining(lock.daysRemaining)}
+                  </span>
+                </div>
+              </>
             )}
           </div>
         </div>
@@ -564,9 +621,28 @@ function AgentSlide({
             </SectionReveal>
           )}
 
-          {/* CTA */}
-          <div className="mt-8 sm:mt-10 max-w-[320px]">
-            <PlatformCta url={url} otherUrl={otherUrl} platform={platform} large />
+          {/* CTA — bloqueado pra alunas em gating, normal pras demais */}
+          <div className="mt-8 sm:mt-10 max-w-[420px]">
+            {isLocked && lock.locked ? (
+              <div className="rounded-spark-xl border border-spark-hairline bg-spark-surface/80 backdrop-blur-sm p-5">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-spark-ink text-white text-[11.5px] font-extrabold">
+                  <Lock size={12} strokeWidth={2.5} />
+                  {formatDaysRemaining(lock.daysRemaining)}
+                </div>
+                <p className="mt-3 text-[13.5px] text-spark-ink-70 leading-snug max-w-[44ch] font-semibold">
+                  Pra você aprender o método primeiro, esse agente libera em{" "}
+                  <strong className="text-spark-ink">
+                    {lock.daysRemaining === 1
+                      ? "1 dia"
+                      : `${lock.daysRemaining} dias`}
+                  </strong>
+                  . Por enquanto usa o <strong className="text-spark-ink">General</strong> e o{" "}
+                  <strong className="text-spark-ink">Suporte</strong> 💕
+                </p>
+              </div>
+            ) : (
+              <PlatformCta url={url} otherUrl={otherUrl} platform={platform} large />
+            )}
           </div>
         </div>
       </div>
@@ -631,18 +707,36 @@ function AgentesFeed({
   onReopenTour: () => void;
 }) {
   const scrollRef = React.useRef<HTMLDivElement>(null);
+  const profile = useProfile();
+
+  // Calcula lock status pra cada agente. Se aluna for gated, reordena
+  // pra mostrar unlocked primeiro (General + Suporte) — assim ela nao
+  // precisa scrollar ate o fim pra achar o que ja pode usar.
+  const orderedWithLock = React.useMemo(() => {
+    const annotated = VISIBLE_AGENTS_CATALOG.map((agent) => ({
+      agent,
+      lock: getAgentLockStatus(profile, agent.slug),
+    }));
+    const someLocked = annotated.some((a) => a.lock.locked);
+    if (!someLocked) return annotated;
+    // Unlocked primeiro, locked depois — preservando ordem relativa
+    const unlocked = annotated.filter((a) => !a.lock.locked);
+    const locked = annotated.filter((a) => a.lock.locked);
+    return [...unlocked, ...locked];
+  }, [profile]);
+
   const count = React.useMemo(
     () =>
-      VISIBLE_AGENTS_CATALOG.reduce((acc, a) => {
-        const url = platform === "chatgpt" ? a.chatgptUrl : a.geminiUrl;
+      orderedWithLock.reduce((acc, { agent }) => {
+        const url = platform === "chatgpt" ? agent.chatgptUrl : agent.geminiUrl;
         return url ? acc + 1 : acc;
       }, 0),
-    [platform],
+    [orderedWithLock, platform],
   );
 
   const slugsWithIntro = React.useMemo(
-    () => ["__intro", ...VISIBLE_AGENTS_CATALOG.map((a) => a.slug)],
-    [],
+    () => ["__intro", ...orderedWithLock.map(({ agent }) => agent.slug)],
+    [orderedWithLock],
   );
   const { active, setRef } = useActiveSlide(slugsWithIntro, scrollRef);
 
@@ -655,22 +749,23 @@ function AgentesFeed({
         <IntroSlide
           platform={platform}
           onChangePlatform={onChangePlatform}
-          totalAgents={VISIBLE_AGENTS_CATALOG.length}
+          totalAgents={orderedWithLock.length}
           count={count}
           setRef={setRef("__intro")}
           desktop={desktop}
           onReopenTour={onReopenTour}
         />
-        {VISIBLE_AGENTS_CATALOG.map((agent, idx) => (
+        {orderedWithLock.map(({ agent, lock }, idx) => (
           <AgentSlide
             key={agent.slug}
             agent={agent}
             platform={platform}
             setRef={setRef(agent.slug)}
             index={idx}
-            total={VISIBLE_AGENTS_CATALOG.length}
+            total={orderedWithLock.length}
             desktop={desktop}
             isActive={active === agent.slug}
+            lock={lock}
           />
         ))}
       </div>
