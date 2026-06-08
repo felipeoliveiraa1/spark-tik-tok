@@ -5,7 +5,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const PROFILE_FIELDS =
-  "id, email, name, niche, plan_active, must_reset_password, role, avatar_url, bio, instagram_handle, tiktok_handle, cidade_uf, meta_mensal_brl, ranking_opt_in, whatsapp, whatsapp_opt_in, created_at";
+  "id, email, name, niche, plan_active, plan_status, must_reset_password, role, avatar_url, bio, instagram_handle, tiktok_handle, cidade_uf, meta_mensal_brl, ranking_opt_in, whatsapp, whatsapp_opt_in, created_at";
 
 // Normaliza telefone BR pra formato Evolution (55 + DDD + numero, so digitos)
 function normalizeWhatsapp(input: unknown): string | null {

@@ -27,7 +27,15 @@ export type AgentLockStatus =
 export type ProfileForGate = {
   created_at: string | null | undefined;
   role?: string | null | undefined;
+  // Quando 'active' ou 'late', aluna eh pagante (ja renovou a partir do
+  // trial). Nesse caso libera tudo, mesmo dentro dos 7 dias.
+  plan_status?: string | null | undefined;
 };
+
+// plan_status que conta como "pagante" — libera o gate sem esperar 7 dias.
+// 'late' tambem entra porque ela ja pagou em algum momento (so atrasou),
+// nao eh aluna nova de trial.
+const PAYING_STATUSES = new Set<string>(["active", "late"]);
 
 /**
  * Retorna se a aluna ainda tem o agente bloqueado e quantos dias faltam.
@@ -48,6 +56,11 @@ export function getAgentLockStatus(
   if (!profile?.created_at) return { locked: false };
   if (profile.role === "admin") return { locked: false };
   if (ALWAYS_FREE_SLUGS.has(agentSlug)) return { locked: false };
+
+  // Pagantes (renovaram a partir do trial) liberam tudo sem esperar 7 dias.
+  if (profile.plan_status && PAYING_STATUSES.has(profile.plan_status)) {
+    return { locked: false };
+  }
 
   const createdAt = new Date(profile.created_at);
   if (Number.isNaN(createdAt.getTime())) return { locked: false };
