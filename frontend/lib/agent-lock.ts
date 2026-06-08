@@ -32,10 +32,16 @@ export type ProfileForGate = {
   plan_status?: string | null | undefined;
 };
 
-// plan_status que conta como "pagante" — libera o gate sem esperar 7 dias.
-// 'late' tambem entra porque ela ja pagou em algum momento (so atrasou),
-// nao eh aluna nova de trial.
-const PAYING_STATUSES = new Set<string>(["active", "late"]);
+// plan_status que ja conta como "cliente que pagou" — libera o gate.
+// - trial: comprou o curso na Kiwify e ganhou trial do app, ja eh cliente
+// - active: pagante renovado
+// - late: pagante com pagamento atrasado (ja pagou em algum momento)
+//
+// Na pratica, hoje TODA aluna com acesso ao app cai em um desses 3
+// (inactive/canceled/refunded perdem acesso pelo hasActiveAccess), entao
+// o gate de 7 dias fica reservado pra cenarios futuros (ex: leads que
+// entrem sem pagar, contas convidadas, etc).
+const PAYING_STATUSES = new Set<string>(["trial", "active", "late"]);
 
 /**
  * Retorna se a aluna ainda tem o agente bloqueado e quantos dias faltam.
