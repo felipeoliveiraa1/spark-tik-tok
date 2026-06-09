@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Package, ArrowUpRight, Plus } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { FloatingMainNav } from "@/components/layout/floating-main-nav";
@@ -86,6 +87,7 @@ function HeroSection({
   desktop: boolean;
   onReopenTour: () => void;
 }) {
+  const t = useTranslations("produtos");
   return (
     <section
       className="relative overflow-hidden hero-radial"
@@ -120,10 +122,10 @@ function HeroSection({
           <SectionReveal direction="down" durationMs={600}>
             <div data-tutorial-id="produtos-intro">
               <div className="text-eyebrow text-spark-brand-deep">
-                ✦ catálogo TTS
+                {t("header.eyebrow")}
               </div>
               <div className="mt-3 text-fluid-lead text-spark-ink-70 max-w-[30ch] font-semibold">
-                Cada ficha que você cadastra vira fonte pra um roteiro novo.
+                {t("header.subtitle")}
               </div>
             </div>
           </SectionReveal>
@@ -151,7 +153,7 @@ function HeroSection({
               staggerMs={28}
               className="block text-spark-ink"
             >
-              seus produtos
+              {t("hero.headlineLine1")}
             </CharacterReveal>
             <CharacterReveal
               as="span"
@@ -161,7 +163,7 @@ function HeroSection({
               className="block"
               charClassName="text-grad-brand"
             >
-              em destaque.
+              {t("hero.headlineHighlight")}
             </CharacterReveal>
           </h1>
         </SectionReveal>
@@ -178,14 +180,14 @@ function HeroSection({
                 strokeWidth={2.5}
                 className="transition-transform duration-300 group-hover:rotate-90"
               />
-              Adicionar produto
+              {t("hero.ctaAdd")}
             </Link>
 
             <div className="inline-flex items-center gap-2 text-[13px] text-spark-ink-70 font-semibold">
               <span className="font-extrabold text-fluid-title text-spark-ink leading-none">
                 <CountUp value={count} durationMs={1100} />
               </span>
-              {count === 1 ? "produto cadastrado" : "produtos cadastrados"}
+              {count === 1 ? t("hero.countSingular") : t("hero.countPlural")}
             </div>
           </div>
         </SectionReveal>
@@ -199,6 +201,7 @@ function HeroSection({
 // =================================================================
 
 function ProductCard({ p, index }: { p: ProductRow; index: number }) {
+  const t = useTranslations("produtos");
   return (
     <SectionReveal delay={Math.min(index * 70, 360)}>
       <Link
@@ -261,7 +264,7 @@ function ProductCard({ p, index }: { p: ProductRow; index: number }) {
           )}
           <div className="mt-3 flex items-center justify-between gap-2">
             <span className="text-[11.5px] text-spark-brand font-extrabold tracking-tight">
-              {p.price_range ?? "preço n/d"}
+              {p.price_range ?? t("grid.priceUnavailable")}
             </span>
             <span className="text-[10.5px] text-spark-ink-50 font-mono">
               {timeAgo(p.created_at)}
@@ -274,6 +277,7 @@ function ProductCard({ p, index }: { p: ProductRow; index: number }) {
 }
 
 function AddProductCard({ delay }: { delay: number }) {
+  const t = useTranslations("produtos.grid");
   return (
     <SectionReveal delay={delay}>
       <Link
@@ -284,10 +288,10 @@ function AddProductCard({ delay }: { delay: number }) {
           <Plus size={28} strokeWidth={2.5} />
         </div>
         <div className="mt-5 text-[14px] font-extrabold text-spark-brand-deep tracking-tight">
-          Adicionar novo
+          {t("addNewLabel")}
         </div>
         <div className="mt-1.5 text-[12px] text-spark-ink-50">
-          Cole a ficha do agente Info
+          {t("addNewHint")}
         </div>
       </Link>
     </SectionReveal>
@@ -295,6 +299,7 @@ function AddProductCard({ delay }: { delay: number }) {
 }
 
 function ProductsGrid({ products, desktop }: { products: ProductRow[]; desktop: boolean }) {
+  const t = useTranslations("produtos.grid");
   return (
     <section className={`relative ${desktop ? "py-16 px-12" : "py-12 px-5"}`}>
       <div className={desktop ? "max-w-[1200px] mx-auto" : ""}>
@@ -302,10 +307,12 @@ function ProductsGrid({ products, desktop }: { products: ProductRow[]; desktop: 
           <div className="flex items-end justify-between gap-4 mb-10">
             <div>
               <div className="text-eyebrow text-spark-brand mb-3">
-                ✦ {products.length} {products.length === 1 ? "item" : "itens"}
+                {products.length === 1
+                  ? t("eyebrowSingular", { count: 1 })
+                  : t("eyebrowPlural", { count: products.length })}
               </div>
               <h2 className="text-fluid-display font-display lowercase text-spark-ink leading-[0.9] tracking-tight max-w-[14ch]">
-                sua vitrine
+                {t("title")}
               </h2>
             </div>
           </div>
@@ -327,6 +334,7 @@ function ProductsGrid({ products, desktop }: { products: ProductRow[]; desktop: 
 // =================================================================
 
 function EmptyProducts({ desktop }: { desktop: boolean }) {
+  const t = useTranslations("produtos.empty");
   return (
     <section
       className={cn(
@@ -350,8 +358,8 @@ function EmptyProducts({ desktop }: { desktop: boolean }) {
             className="font-display lowercase leading-[0.95] tracking-tight text-spark-ink"
             style={{ fontSize: "clamp(2rem, 6vw, 4rem)" }}
           >
-            sem produto<br />
-            <span className="text-grad-brand">por aqui ainda.</span>
+            {t("headlineLine1")}<br />
+            <span className="text-grad-brand">{t("headlineHighlight")}</span>
           </h2>
         </SectionReveal>
 
@@ -362,28 +370,19 @@ function EmptyProducts({ desktop }: { desktop: boolean }) {
                 <span className="shrink-0 w-7 h-7 rounded-full bg-brand-grad text-white text-[12px] font-extrabold flex items-center justify-center shadow-lift-brand">
                   1
                 </span>
-                <span>
-                  Abre o agente <strong className="text-spark-ink">Info</strong> em{" "}
-                  <Link href="/agentes" className="text-spark-brand-deep font-extrabold hover:underline">
-                    Agentes ✨
-                  </Link>
-                </span>
+                <span>{t("step1")}</span>
               </li>
               <li className="flex items-start gap-3">
                 <span className="shrink-0 w-7 h-7 rounded-full bg-brand-grad text-white text-[12px] font-extrabold flex items-center justify-center shadow-lift-brand">
                   2
                 </span>
-                <span>
-                  Cola foto, nome ou link do produto. Recebe a ficha completa em segundos.
-                </span>
+                <span>{t("step2")}</span>
               </li>
               <li className="flex items-start gap-3">
                 <span className="shrink-0 w-7 h-7 rounded-full bg-brand-grad text-white text-[12px] font-extrabold flex items-center justify-center shadow-lift-brand">
                   3
                 </span>
-                <span>
-                  Volta aqui e cadastra a ficha em <strong className="text-spark-ink">+ adicionar produto</strong> 💕
-                </span>
+                <span>{t("step3")}</span>
               </li>
             </ol>
           </div>
@@ -395,7 +394,7 @@ function EmptyProducts({ desktop }: { desktop: boolean }) {
               href="/agentes"
               className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-full glass border border-spark-hairline text-spark-ink text-[14px] font-extrabold shadow-rest transition-all duration-300 ease-premium hover:-translate-y-1 hover:shadow-lift"
             >
-              Ver agentes
+              {t("ctaAgents")}
               <ArrowUpRight size={15} strokeWidth={2.5} />
             </Link>
             <Link
@@ -407,7 +406,7 @@ function EmptyProducts({ desktop }: { desktop: boolean }) {
                 strokeWidth={2.5}
                 className="transition-transform duration-300 group-hover:rotate-90"
               />
-              Cadastrar agora
+              {t("ctaRegister")}
             </Link>
           </div>
         </SectionReveal>
@@ -428,6 +427,7 @@ function ProductsBody({
   onReopenTour: () => void;
 }) {
   const { products, loading } = useProducts();
+  const t = useTranslations("produtos");
 
   return (
     <div
@@ -439,7 +439,7 @@ function ProductsBody({
       <div data-tutorial-id="produtos-vitrine">
         {loading ? (
           <section className="py-24 flex justify-center">
-            <LoadingSplash message="Carregando produtos" />
+            <LoadingSplash message={t("loading")} />
           </section>
         ) : products.length === 0 ? (
           <EmptyProducts desktop={desktop} />
