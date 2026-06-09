@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Lock, ArrowRight, AlertCircle, Check } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { SparkMark } from "@/components/atoms/spark-mark";
@@ -22,6 +23,7 @@ function getSupabaseBrowser() {
 }
 
 function ResetForm() {
+  const t = useTranslations("auth.reset");
   const router = useRouter();
   const [password, setPassword] = React.useState("");
   const [confirm, setConfirm] = React.useState("");
@@ -48,11 +50,11 @@ function ResetForm() {
     e.preventDefault();
     setError(null);
     if (password.length < 8) {
-      setError("Senha precisa ter no mínimo 8 caracteres.");
+      setError(t("errorMinLength"));
       return;
     }
     if (password !== confirm) {
-      setError("As senhas não batem.");
+      setError(t("errorMismatch"));
       return;
     }
     setPending(true);
@@ -60,7 +62,7 @@ function ResetForm() {
     const { error: updateErr } = await supabase.auth.updateUser({ password });
     setPending(false);
     if (updateErr) {
-      setError(updateErr.message || "Não consegui salvar. Tenta de novo.");
+      setError(updateErr.message || t("errorGeneric"));
       return;
     }
     setDone(true);
@@ -72,15 +74,15 @@ function ResetForm() {
       <div className="rounded-spark-2xl bg-bad/5 border border-bad/20 p-6 shadow-rest">
         <div className="flex items-center gap-2 text-[14px] font-extrabold text-bad">
           <AlertCircle size={16} strokeWidth={2.5} />
-          Link inválido ou expirado
+          {t("errorExpired")}
         </div>
         <p className="mt-3 text-[13px] text-spark-ink-70 leading-relaxed">
-          Esse link de recuperação não funciona mais. Pede um novo abaixo.
+          {t("errorExpiredBody")}
         </p>
         <div className="mt-5">
           <Link href="/forgot-password" className="block">
             <SButton variant="primary" size="md" full IconRight={ArrowRight}>
-              Pedir um novo link
+              {t("requestNewLink")}
             </SButton>
           </Link>
         </div>
@@ -95,10 +97,10 @@ function ResetForm() {
           <Check size={22} strokeWidth={2.5} />
         </div>
         <div className="mt-4 font-display lowercase text-spark-ink leading-tight text-[26px]">
-          senha alterada 💕
+          {t("successTitle")}
         </div>
         <p className="mt-2 text-[13.5px] text-spark-ink-70 leading-relaxed">
-          Sua senha foi atualizada com sucesso. Te levando pro app...
+          {t("successBody")}
         </p>
       </div>
     );
@@ -106,12 +108,12 @@ function ResetForm() {
 
   return (
     <form onSubmit={onSubmit}>
-      <div className="text-eyebrow text-spark-ink-50 mb-2">Nova senha</div>
+      <div className="text-eyebrow text-spark-ink-50 mb-2">{t("passwordLabel")}</div>
       <SInput
         name="password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        placeholder="Mínimo 8 caracteres"
+        placeholder={t("passwordPlaceholder")}
         Icon={Lock}
         type="password"
         autoComplete="new-password"
@@ -119,12 +121,12 @@ function ResetForm() {
         minLength={8}
       />
       <div className="h-3" />
-      <div className="text-eyebrow text-spark-ink-50 mb-2">Confirma a nova senha</div>
+      <div className="text-eyebrow text-spark-ink-50 mb-2">{t("confirmLabel")}</div>
       <SInput
         name="confirm"
         value={confirm}
         onChange={(e) => setConfirm(e.target.value)}
-        placeholder="Digita de novo"
+        placeholder={t("confirmPlaceholder")}
         Icon={Lock}
         type="password"
         autoComplete="new-password"
@@ -146,13 +148,27 @@ function ResetForm() {
         IconRight={ArrowRight}
         disabled={pending || hasSession === null}
       >
-        {pending ? "Salvando..." : hasSession === null ? "Validando link..." : "Salvar nova senha"}
+        {pending ? t("submitting") : hasSession === null ? t("validatingLink") : t("submit")}
       </SButton>
     </form>
   );
 }
 
+function FooterLinks() {
+  const t = useTranslations("auth.login.footer");
+  return (
+    <div className="pb-10 pt-8 text-[11px] text-spark-ink-50 text-center flex justify-center gap-3.5 font-extrabold uppercase tracking-wider">
+      <span>{t("terms")}</span>
+      <span>·</span>
+      <span>{t("privacy")}</span>
+      <span>·</span>
+      <span>{t("support")}</span>
+    </div>
+  );
+}
+
 function Mobile() {
+  const t = useTranslations("auth.reset");
   return (
     <div className="flex flex-col flex-1 relative overflow-auto hero-radial">
       <HeroBlob color="rose" variant={1} className="-top-24 -left-32 w-[460px] h-[460px]" />
@@ -166,17 +182,17 @@ function Mobile() {
             <SparkMark size={100} />
           </SectionReveal>
           <SectionReveal direction="up" delay={150} durationMs={800}>
-            <div className="mt-8 text-eyebrow text-spark-brand">✦ nova senha</div>
+            <div className="mt-8 text-eyebrow text-spark-brand">{t("eyebrowMobile")}</div>
             <h1
               className="mt-2 font-display lowercase tracking-tight text-spark-ink leading-[0.95]"
               style={{ fontSize: "clamp(2.25rem, 9vw, 3rem)" }}
             >
-              cria sua <span className="text-grad-brand">nova senha.</span>
+              {t("headlineMobile1")} <span className="text-grad-brand">{t("headlineMobileHighlight")}</span>
             </h1>
           </SectionReveal>
           <SectionReveal direction="up" delay={300}>
             <p className="mt-4 text-fluid-lead text-spark-ink-70 max-w-[28ch] leading-snug font-semibold">
-              Escolhe uma senha que você lembre fácil — mínimo 8 caracteres.
+              {t("subtitleMobile")}
             </p>
           </SectionReveal>
 
@@ -186,19 +202,14 @@ function Mobile() {
             </div>
           </SectionReveal>
         </div>
-        <div className="pb-10 pt-8 text-[11px] text-spark-ink-50 text-center flex justify-center gap-3.5 font-extrabold uppercase tracking-wider">
-          <span>Termos</span>
-          <span>·</span>
-          <span>Privacidade</span>
-          <span>·</span>
-          <span>Suporte</span>
-        </div>
+        <FooterLinks />
       </div>
     </div>
   );
 }
 
 function Desktop() {
+  const t = useTranslations("auth.reset");
   return (
     <div className="flex-1 min-h-dvh flex w-full">
       <div className="flex-1 p-14 relative overflow-hidden text-white bg-brand-grad-hero flex flex-col justify-between">
@@ -209,20 +220,20 @@ function Desktop() {
         <div className="relative">
           <SectionReveal direction="up" durationMs={700}>
             <div className="text-[12px] font-extrabold opacity-90 uppercase tracking-widest">
-              ✦ nova senha
+              {t("eyebrowSideLeft")}
             </div>
             <h1
               className="font-display lowercase tracking-tight leading-[0.92] mt-4 max-w-[600px]"
               style={{ fontSize: "clamp(3rem, 5vw, 4.5rem)" }}
             >
-              quase
+              {t("headlineSideLeft1")}
               <br />
-              <span className="opacity-95">lá.</span>
+              <span className="opacity-95">{t("headlineSideLeft2")}</span>
             </h1>
           </SectionReveal>
           <SectionReveal direction="up" delay={200}>
             <p className="mt-6 text-fluid-lead opacity-90 max-w-[460px] leading-snug font-semibold">
-              Escolhe uma senha forte que você consiga lembrar. Depois você entra direto.
+              {t("subtitleSideLeft")}
             </p>
           </SectionReveal>
         </div>
@@ -237,19 +248,19 @@ function Desktop() {
 
         <div className="relative">
           <SectionReveal direction="down" durationMs={500}>
-            <div className="text-eyebrow text-spark-brand">✦ redefinir senha</div>
+            <div className="text-eyebrow text-spark-brand">{t("eyebrowSideRight")}</div>
           </SectionReveal>
           <SectionReveal direction="up" delay={100} durationMs={700}>
             <h2
               className="mt-2 font-display lowercase tracking-tight text-spark-ink leading-[0.92]"
               style={{ fontSize: "clamp(2rem, 3vw, 2.75rem)" }}
             >
-              cria sua <span className="text-grad-brand">nova senha.</span>
+              {t("headlineSideRight1")} <span className="text-grad-brand">{t("headlineSideRightHighlight")}</span>
             </h2>
           </SectionReveal>
           <SectionReveal direction="up" delay={250}>
             <p className="text-[14px] text-spark-ink-70 mt-3 font-semibold leading-snug">
-              Mínimo 8 caracteres. Depois você entra direto no app.
+              {t("subtitleSideRight")}
             </p>
           </SectionReveal>
 
