@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Mail, ArrowRight, AlertCircle, Check, ArrowLeft } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { SparkMark } from "@/components/atoms/spark-mark";
@@ -14,6 +15,7 @@ import { SButton } from "@/components/atoms/s-button";
 import { forgotPasswordAction } from "@/lib/auth";
 
 function ForgotPasswordForm() {
+  const t = useTranslations("auth.forgot");
   const [error, setError] = React.useState<string | null>(null);
   const [pending, setPending] = React.useState(false);
   const [sent, setSent] = React.useState(false);
@@ -37,16 +39,15 @@ function ForgotPasswordForm() {
           <Check size={22} strokeWidth={2.5} />
         </div>
         <div className="mt-4 font-display lowercase text-spark-ink leading-tight text-[26px]">
-          email enviado 💕
+          {t("successTitle")}
         </div>
         <p className="mt-2 text-[13.5px] text-spark-ink-70 leading-relaxed">
-          Se esse email tiver uma conta no Método TTS, você recebe em alguns segundos com o link
-          pra redefinir sua senha. Olha a caixa de entrada (e o spam, só por garantia).
+          {t("successBody")}
         </p>
         <div className="mt-5">
           <Link href="/login" className="block">
             <SButton variant="ghost" size="md" full Icon={ArrowLeft}>
-              Voltar pro login
+              {t("back")}
             </SButton>
           </Link>
         </div>
@@ -56,10 +57,10 @@ function ForgotPasswordForm() {
 
   return (
     <form action={onSubmit}>
-      <div className="text-eyebrow text-spark-ink-50 mb-2">Email da sua conta</div>
+      <div className="text-eyebrow text-spark-ink-50 mb-2">{t("emailLabel")}</div>
       <SInput
         name="email"
-        placeholder="seu@email.com"
+        placeholder={t("emailPlaceholder")}
         Icon={Mail}
         type="email"
         autoComplete="email"
@@ -81,11 +82,11 @@ function ForgotPasswordForm() {
         IconRight={ArrowRight}
         loading={pending}
       >
-        {pending ? "Enviando o email..." : "Enviar link de recuperação"}
+        {pending ? t("submitting") : t("submit")}
       </SButton>
       {pending && (
         <div className="mt-3 text-center text-[12.5px] text-spark-ink-50 font-semibold">
-          ✦ pode levar uns segundinhos — não fecha a tela
+          {t("submittingHint")}
         </div>
       )}
       <div className="mt-4 text-center">
@@ -94,14 +95,28 @@ function ForgotPasswordForm() {
           className="text-[12.5px] font-extrabold text-spark-ink-50 hover:text-spark-ink inline-flex items-center gap-1.5 transition-colors duration-300"
         >
           <ArrowLeft size={14} strokeWidth={2.5} />
-          Voltar pro login
+          {t("back")}
         </Link>
       </div>
     </form>
   );
 }
 
+function FooterLinks() {
+  const t = useTranslations("auth.login.footer");
+  return (
+    <div className="pb-10 pt-8 text-[11px] text-spark-ink-50 text-center flex justify-center gap-3.5 font-extrabold uppercase tracking-wider">
+      <span>{t("terms")}</span>
+      <span>·</span>
+      <span>{t("privacy")}</span>
+      <span>·</span>
+      <span>{t("support")}</span>
+    </div>
+  );
+}
+
 function Mobile() {
+  const t = useTranslations("auth.forgot");
   return (
     <div className="flex flex-col flex-1 relative overflow-auto hero-radial">
       <HeroBlob color="rose" variant={1} className="-top-24 -left-32 w-[460px] h-[460px]" />
@@ -115,18 +130,17 @@ function Mobile() {
             <SparkMark size={100} />
           </SectionReveal>
           <SectionReveal direction="up" delay={150} durationMs={800}>
-            <div className="mt-8 text-eyebrow text-spark-brand">✦ recuperar acesso</div>
+            <div className="mt-8 text-eyebrow text-spark-brand">{t("eyebrowMobile")}</div>
             <h1
               className="mt-2 font-display lowercase tracking-tight text-spark-ink leading-[0.95]"
               style={{ fontSize: "clamp(2.25rem, 9vw, 3rem)" }}
             >
-              esqueceu a <span className="text-grad-brand">senha?</span>
+              {t("headlineMobile1")} <span className="text-grad-brand">{t("headlineMobileHighlight")}</span>
             </h1>
           </SectionReveal>
           <SectionReveal direction="up" delay={300}>
             <p className="mt-4 text-fluid-lead text-spark-ink-70 max-w-[28ch] leading-snug font-semibold">
-              Sem stress. Coloca seu email aqui que mandamos um link pra você criar uma senha
-              nova.
+              {t("subtitleMobile")}
             </p>
           </SectionReveal>
 
@@ -136,19 +150,14 @@ function Mobile() {
             </div>
           </SectionReveal>
         </div>
-        <div className="pb-10 pt-8 text-[11px] text-spark-ink-50 text-center flex justify-center gap-3.5 font-extrabold uppercase tracking-wider">
-          <span>Termos</span>
-          <span>·</span>
-          <span>Privacidade</span>
-          <span>·</span>
-          <span>Suporte</span>
-        </div>
+        <FooterLinks />
       </div>
     </div>
   );
 }
 
 function Desktop() {
+  const t = useTranslations("auth.forgot");
   return (
     <div className="flex-1 min-h-dvh flex w-full">
       <div className="flex-1 p-14 relative overflow-hidden text-white bg-brand-grad-hero flex flex-col justify-between">
@@ -159,21 +168,20 @@ function Desktop() {
         <div className="relative">
           <SectionReveal direction="up" durationMs={700}>
             <div className="text-[12px] font-extrabold opacity-90 uppercase tracking-widest">
-              ✦ recuperação
+              {t("eyebrowSideLeft")}
             </div>
             <h1
               className="font-display lowercase tracking-tight leading-[0.92] mt-4 max-w-[600px]"
               style={{ fontSize: "clamp(3rem, 5vw, 4.5rem)" }}
             >
-              sem stress,
+              {t("headlineSideLeft1")}
               <br />
-              <span className="opacity-95">fofa.</span>
+              <span className="opacity-95">{t("headlineSideLeft2")}</span>
             </h1>
           </SectionReveal>
           <SectionReveal direction="up" delay={200}>
             <p className="mt-6 text-fluid-lead opacity-90 max-w-[460px] leading-snug font-semibold">
-              Em segundos você recebe um link no seu email pra criar uma senha nova e continuar
-              criando seus roteiros que vendem.
+              {t("subtitleSideLeft")}
             </p>
           </SectionReveal>
         </div>
@@ -188,19 +196,19 @@ function Desktop() {
 
         <div className="relative">
           <SectionReveal direction="down" durationMs={500}>
-            <div className="text-eyebrow text-spark-brand">✦ recuperar senha</div>
+            <div className="text-eyebrow text-spark-brand">{t("eyebrowSideRight")}</div>
           </SectionReveal>
           <SectionReveal direction="up" delay={100} durationMs={700}>
             <h2
               className="mt-2 font-display lowercase tracking-tight text-spark-ink leading-[0.92]"
               style={{ fontSize: "clamp(2rem, 3vw, 2.75rem)" }}
             >
-              vamos criar <span className="text-grad-brand">uma nova.</span>
+              {t("headlineSideRight1")} <span className="text-grad-brand">{t("headlineSideRightHighlight")}</span>
             </h2>
           </SectionReveal>
           <SectionReveal direction="up" delay={250}>
             <p className="text-[14px] text-spark-ink-70 mt-3 font-semibold leading-snug">
-              Coloca o email da sua conta e te mandamos o link.
+              {t("subtitleSideRight")}
             </p>
           </SectionReveal>
 
