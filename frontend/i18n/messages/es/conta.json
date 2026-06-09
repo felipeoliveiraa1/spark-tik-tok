@@ -1,1 +1,36 @@
-{}
+{
+  "header": {
+    "eyebrow": "✦ mi perfil",
+    "title": "mi cuenta."
+  },
+  "resetBanner": {
+    "eyebrow": "✦ acción obligatoria",
+    "title": "cambia tu contraseña para continuar",
+    "subtitle": "Entraste con la contraseña temporal. Antes de usar el app, define tu propia contraseña abajo ↓"
+  },
+  "resetForm": {
+    "sectionTitle": "Define tu contraseña",
+    "description": "Elige una contraseña que solo tú sepas. Mínimo 8 caracteres."
+  },
+  "stats": {
+    "products": "Productos",
+    "scripts": "Guiones",
+    "lessons": "Clases"
+  },
+  "profile": {
+    "sectionTitle": "✦ tu cuenta",
+    "memberSince": "Miembro desde",
+    "lastRenewal": "Última renovación"
+  },
+  "plan": {
+    "sectionTitle": "✦ plan",
+    "nextPayment": "Próximo cobro",
+    "latePaymentWarning": "⚠️ El último cobro quedó pendiente. Actualiza tu tarjeta en Kiwify para no perder acceso.",
+    "accessUntil": "Acceso hasta",
+    "canceledAt": "Cancelado el",
+    "kiwifyButton": "Gestionar en Kiwify"
+  },
+  "buttons": {
+    "logout": "Salir"
+  }
+}

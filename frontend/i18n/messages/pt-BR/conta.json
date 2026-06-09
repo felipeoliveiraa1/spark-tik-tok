@@ -1,1 +1,36 @@
-{}
+{
+  "header": {
+    "eyebrow": "✦ meu perfil",
+    "title": "minha conta."
+  },
+  "resetBanner": {
+    "eyebrow": "✦ ação obrigatória",
+    "title": "troque sua senha pra continuar",
+    "subtitle": "Você entrou com a senha temporária. Antes de usar o app, defina uma senha sua logo abaixo ↓"
+  },
+  "resetForm": {
+    "sectionTitle": "Defina uma senha sua",
+    "description": "Cria uma senha que só você conhece. Mínimo 8 caracteres."
+  },
+  "stats": {
+    "products": "Produtos",
+    "scripts": "Scripts",
+    "lessons": "Aulas"
+  },
+  "profile": {
+    "sectionTitle": "✦ sua conta",
+    "memberSince": "Membro desde",
+    "lastRenewal": "Última renovação"
+  },
+  "plan": {
+    "sectionTitle": "✦ plano",
+    "nextPayment": "Próxima cobrança",
+    "latePaymentWarning": "⚠️ A última cobrança ficou pendente. Atualize seu cartão pelo Kiwify pra não perder acesso.",
+    "accessUntil": "Acesso até",
+    "canceledAt": "Cancelado em",
+    "kiwifyButton": "Gerenciar pelo Kiwify"
+  },
+  "buttons": {
+    "logout": "Sair"
+  }
+}

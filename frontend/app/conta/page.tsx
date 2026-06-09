@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import {
   LogOut,
   KeyRound,
@@ -82,7 +83,7 @@ async function getStats(userId: string): Promise<Stats> {
   };
 }
 
-function ContaBody({
+async function ContaBody({
   desktop = false,
   email,
   name,
@@ -138,6 +139,8 @@ function ContaBody({
   const badgeTone: "good" | "warn" | "neutral" =
     statusTone === "good" ? "good" : statusTone === "neutral" ? "neutral" : "warn";
 
+  const t = await getTranslations("conta");
+
   return (
     <div
       className="flex-1 overflow-auto relative"
@@ -157,7 +160,7 @@ function ContaBody({
 
         <div className={`relative ${desktop ? "px-12 max-w-[720px] mx-auto" : "px-5"}`}>
           <SectionReveal direction="down" durationMs={500}>
-            <div className="text-eyebrow text-spark-brand">✦ meu perfil</div>
+            <div className="text-eyebrow text-spark-brand">{t("header.eyebrow")}</div>
           </SectionReveal>
 
           <SectionReveal direction="up" delay={100} durationMs={800}>
@@ -167,7 +170,7 @@ function ContaBody({
                 fontSize: desktop ? "clamp(2.5rem, 5vw, 4rem)" : "clamp(2rem, 8vw, 3rem)",
               }}
             >
-              minha <span className="text-grad-brand">conta.</span>
+              {t("header.title")}
             </h1>
           </SectionReveal>
 
@@ -225,17 +228,16 @@ function ContaBody({
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-[10.5px] font-extrabold uppercase tracking-widest opacity-90">
-                      ✦ ação obrigatória
+                      {t("resetBanner.eyebrow")}
                     </div>
                     <div
                       className="mt-1 font-display lowercase leading-tight tracking-tight"
                       style={{ fontSize: "clamp(1.25rem, 3vw, 1.625rem)" }}
                     >
-                      troque sua senha pra continuar
+                      {t("resetBanner.title")}
                     </div>
                     <p className="mt-2 text-[13px] leading-relaxed opacity-95 font-semibold">
-                      Você entrou com a senha temporária. Antes de usar o app, defina uma senha
-                      sua logo abaixo ↓
+                      {t("resetBanner.subtitle")}
                     </p>
                   </div>
                 </div>
@@ -249,10 +251,10 @@ function ContaBody({
               <div className="p-6 rounded-spark-2xl bg-brand-grad-soft border border-spark-brand/20 shadow-lift-brand">
                 <div className="flex items-center gap-2 text-[14px] font-extrabold text-spark-brand-deep">
                   <KeyRound size={16} strokeWidth={2.2} />
-                  Defina uma senha sua
+                  {t("resetForm.sectionTitle")}
                 </div>
                 <p className="text-[12.5px] text-spark-ink-70 mt-2 leading-relaxed">
-                  Cria uma senha que só você conhece. Mínimo 8 caracteres.
+                  {t("resetForm.description")}
                 </p>
                 <div className="mt-4">
                   <ResetPasswordForm />
@@ -273,30 +275,30 @@ function ContaBody({
           {/* Stats em grid */}
           <SectionReveal direction="up">
             <div data-tutorial-id="conta-stats" className="grid grid-cols-3 gap-3">
-              <StatCard emoji="📦" Icon={Package} value={stats.products} label="Produtos" />
-              <StatCard emoji="✍️" Icon={Pen} value={stats.scripts} label="Scripts" />
+              <StatCard emoji="📦" Icon={Package} value={stats.products} label={t("stats.products")} />
+              <StatCard emoji="✍️" Icon={Pen} value={stats.scripts} label={t("stats.scripts")} />
               <StatCard
                 emoji="🎓"
                 Icon={GraduationCap}
                 value={stats.aulasVistas}
-                label="Aulas"
+                label={t("stats.lessons")}
               />
             </div>
           </SectionReveal>
 
           {/* Conta info */}
           <SectionReveal direction="up" delay={100}>
-            <InfoCard label="✦ sua conta">
+            <InfoCard label={t("profile.sectionTitle")}>
               <div className="space-y-3">
                 <InfoRow
                   Icon={Calendar}
-                  label="Membro desde"
+                  label={t("profile.memberSince")}
                   value={`${formatDate(createdAt)} (${daysSince(createdAt)} dias)`}
                 />
                 {planRenewedAt && (
                   <InfoRow
                     Icon={Calendar}
-                    label="Última renovação"
+                    label={t("profile.lastRenewal")}
                     value={formatDate(planRenewedAt)}
                   />
                 )}
@@ -308,34 +310,33 @@ function ContaBody({
           <SectionReveal direction="up" delay={150}>
             <div data-tutorial-id="conta-plano">
             <InfoCard
-              label="✦ plano"
+              label={t("plan.sectionTitle")}
               trailing={<SBadge tone={badgeTone}>{statusBadgeLabel}</SBadge>}
             >
               <div className="space-y-3">
                 {status === "active" && planNextPayment && (
                   <InfoRow
                     Icon={CreditCard}
-                    label="Próxima cobrança"
+                    label={t("plan.nextPayment")}
                     value={formatDate(planNextPayment)}
                   />
                 )}
                 {status === "late" && (
                   <div className="p-3.5 rounded-spark-xl bg-warn/8 border border-warn/20 text-[13px] text-warn leading-snug font-semibold">
-                    ⚠️ A última cobrança ficou pendente. Atualize seu cartão pelo Kiwify pra
-                    não perder acesso.
+                    {t("plan.latePaymentWarning")}
                   </div>
                 )}
                 {status === "canceled" && planExpiresAt && (
                   <>
                     <InfoRow
                       Icon={Calendar}
-                      label="Acesso até"
+                      label={t("plan.accessUntil")}
                       value={formatDate(planExpiresAt)}
                     />
                     {planCanceledAt && (
                       <InfoRow
                         Icon={Calendar}
-                        label="Cancelado em"
+                        label={t("plan.canceledAt")}
                         value={formatDate(planCanceledAt)}
                       />
                     )}
@@ -348,7 +349,7 @@ function ContaBody({
                 rel="noreferrer"
                 className="mt-4 w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-full bg-spark-surface-sunken hover:bg-spark-brand-soft text-[13px] font-extrabold text-spark-ink hover:text-spark-brand-deep transition-all duration-300 ease-premium hover:-translate-y-0.5"
               >
-                Gerenciar pelo Kiwify
+                {t("plan.kiwifyButton")}
                 <ExternalLink size={12} strokeWidth={2.5} />
               </a>
             </InfoCard>
@@ -421,7 +422,7 @@ function ContaBody({
                     className="flex-1 text-[14px] font-extrabold"
                     style={{ color: "oklch(0.6 0.22 25)" }}
                   >
-                    Sair
+                    {t("buttons.logout")}
                   </div>
                 </button>
               </form>

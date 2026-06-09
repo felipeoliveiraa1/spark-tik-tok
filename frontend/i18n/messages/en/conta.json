@@ -1,1 +1,36 @@
-{}
+{
+  "header": {
+    "eyebrow": "✦ my profile",
+    "title": "my account."
+  },
+  "resetBanner": {
+    "eyebrow": "✦ action required",
+    "title": "change your password to continue",
+    "subtitle": "You signed in with a temporary password. Before using the app, set your own password below ↓"
+  },
+  "resetForm": {
+    "sectionTitle": "Set your password",
+    "description": "Pick a password only you know. Minimum 8 characters."
+  },
+  "stats": {
+    "products": "Products",
+    "scripts": "Scripts",
+    "lessons": "Lessons"
+  },
+  "profile": {
+    "sectionTitle": "✦ your account",
+    "memberSince": "Member since",
+    "lastRenewal": "Last renewal"
+  },
+  "plan": {
+    "sectionTitle": "✦ plan",
+    "nextPayment": "Next charge",
+    "latePaymentWarning": "⚠️ The last charge is pending. Update your card on Kiwify to avoid losing access.",
+    "accessUntil": "Access until",
+    "canceledAt": "Canceled on",
+    "kiwifyButton": "Manage on Kiwify"
+  },
+  "buttons": {
+    "logout": "Log out"
+  }
+}
