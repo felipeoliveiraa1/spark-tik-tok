@@ -1,0 +1,29 @@
+{
+  "bottomBar": {
+    "home": "Home",
+    "agents": "Agents",
+    "products": "Products",
+    "scripts": "Scripts",
+    "routine": "Routine",
+    "lessons": "Lessons",
+    "account": "Account",
+    "more": "More"
+  },
+  "labels": {
+    "home": "Home",
+    "chat": "Chat",
+    "agents": "Agents",
+    "products": "Products",
+    "scripts": "Scripts",
+    "routine": "Routine",
+    "lessons": "Lessons",
+    "news": "News",
+    "live": "Live",
+    "ranking": "Ranking",
+    "account": "Account"
+  },
+  "menu": {
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
+  }
+}

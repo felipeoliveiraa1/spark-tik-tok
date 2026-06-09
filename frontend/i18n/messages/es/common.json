@@ -1,0 +1,43 @@
+{
+  "meta": {
+    "title": "Método TTS · IA para TikTok Shop",
+    "description": "Tu IA personal para analizar productos, encontrar virales y escribir hooks que convierten. Pensado para creadoras de TikTok Shop."
+  },
+  "actions": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "close": "Cerrar",
+    "back": "Volver",
+    "next": "Siguiente",
+    "previous": "Anterior",
+    "open": "Abrir",
+    "copy": "Copiar",
+    "share": "Compartir",
+    "send": "Enviar",
+    "search": "Buscar",
+    "refresh": "Actualizar",
+    "retry": "Intentar de nuevo",
+    "continue": "Continuar",
+    "done": "Listo",
+    "logout": "Salir"
+  },
+  "states": {
+    "loading": "Cargando…",
+    "saving": "Guardando…",
+    "sending": "Enviando…",
+    "uploading": "Subiendo archivo…"
+  },
+  "language": {
+    "label": "Idioma",
+    "description": "Define el idioma de la interfaz. Los mensajes externos (WhatsApp, correos) siguen en portugués."
+  },
+  "feedback": {
+    "saved": "Guardado",
+    "error": "Algo salió mal",
+    "noConnection": "Sin conexión",
+    "tryAgain": "Intentar de nuevo"
+  }
+}

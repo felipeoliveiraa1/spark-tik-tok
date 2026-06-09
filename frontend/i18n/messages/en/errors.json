@@ -1,0 +1,15 @@
+{
+  "generic": "Something went wrong. Try again.",
+  "noConnection": "No connection",
+  "notFound": "Not found",
+  "unauthorized": "You need to sign in to see this",
+  "forbidden": "You don't have access",
+  "validation": {
+    "required": "This field is required",
+    "invalidEmail": "Invalid email",
+    "invalidPhone": "Invalid phone. Use country code + number",
+    "tooShort": "Too short",
+    "tooLong": "Too long",
+    "passwordMin": "Password needs at least {min} characters"
+  }
+}

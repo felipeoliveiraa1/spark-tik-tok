@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase-server";
+import { isLocale, LOCALE_COOKIE } from "@/i18n/config";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const PROFILE_FIELDS =
-  "id, email, name, niche, plan_active, plan_status, must_reset_password, role, avatar_url, bio, instagram_handle, tiktok_handle, cidade_uf, meta_mensal_brl, ranking_opt_in, whatsapp, whatsapp_opt_in, created_at";
+  "id, email, name, niche, plan_active, plan_status, must_reset_password, role, avatar_url, bio, instagram_handle, tiktok_handle, cidade_uf, meta_mensal_brl, ranking_opt_in, whatsapp, whatsapp_opt_in, created_at, language";
 
 // Normaliza telefone BR pra formato Evolution (55 + DDD + numero, so digitos)
 function normalizeWhatsapp(input: unknown): string | null {
@@ -110,6 +111,12 @@ export async function PATCH(request: Request) {
   if ("whatsapp_opt_in" in body) {
     patch.whatsapp_opt_in = !!body.whatsapp_opt_in;
   }
+  if ("language" in body) {
+    if (!isLocale(body.language)) {
+      return NextResponse.json({ error: "invalid_language" }, { status: 400 });
+    }
+    patch.language = body.language;
+  }
 
   if (Object.keys(patch).length === 0) {
     return NextResponse.json({ error: "nothing_to_update" }, { status: 400 });
@@ -124,5 +131,17 @@ export async function PATCH(request: Request) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ profile: data });
+
+  const response = NextResponse.json({ profile: data });
+  // Sincroniza cookie quando aluna muda idioma — efeito instantaneo no
+  // proximo render (router.refresh() do client puxa SSR com novo locale)
+  if (typeof patch.language === "string") {
+    response.cookies.set(LOCALE_COOKIE, patch.language, {
+      path: "/",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 365, // 1 ano
+      secure: process.env.NODE_ENV === "production",
+    });
+  }
+  return response;
 }

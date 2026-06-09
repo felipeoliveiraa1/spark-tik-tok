@@ -1,0 +1,15 @@
+{
+  "generic": "Algo salió mal. Intenta de nuevo.",
+  "noConnection": "Sin conexión",
+  "notFound": "No encontrado",
+  "unauthorized": "Necesitas iniciar sesión para ver esto",
+  "forbidden": "No tienes acceso",
+  "validation": {
+    "required": "Este campo es obligatorio",
+    "invalidEmail": "Correo inválido",
+    "invalidPhone": "Teléfono inválido. Usa código de país + número",
+    "tooShort": "Demasiado corto",
+    "tooLong": "Demasiado largo",
+    "passwordMin": "La contraseña necesita al menos {min} caracteres"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "generic": "Algo deu errado. Tenta de novo.",
+  "noConnection": "Sem conexão",
+  "notFound": "Não encontrado",
+  "unauthorized": "Você precisa entrar pra ver isso",
+  "forbidden": "Você não tem acesso",
+  "validation": {
+    "required": "Esse campo é obrigatório",
+    "invalidEmail": "Email inválido",
+    "invalidPhone": "Telefone inválido. Use DDD + número",
+    "tooShort": "Curto demais",
+    "tooLong": "Longo demais",
+    "passwordMin": "Senha precisa ter no mínimo {min} caracteres"
+  }
+}

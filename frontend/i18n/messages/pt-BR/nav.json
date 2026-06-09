@@ -1,0 +1,29 @@
+{
+  "bottomBar": {
+    "home": "Início",
+    "agents": "Agentes",
+    "products": "Produtos",
+    "scripts": "Scripts",
+    "routine": "Rotina",
+    "lessons": "Aulas",
+    "account": "Conta",
+    "more": "Mais"
+  },
+  "labels": {
+    "home": "Início",
+    "chat": "Chat",
+    "agents": "Agentes",
+    "products": "Produtos",
+    "scripts": "Scripts",
+    "routine": "Rotina",
+    "lessons": "Aulas",
+    "news": "News",
+    "live": "Ao vivo",
+    "ranking": "Ranking",
+    "account": "Conta"
+  },
+  "menu": {
+    "openMenu": "Abrir menu",
+    "closeMenu": "Fechar menu"
+  }
+}

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { hasActiveAccess } from "@/lib/plan-access";
+import { isLocale, LOCALE_COOKIE } from "@/i18n/config";
 
 /**
  * Proxy do Next 16 (era middleware nas versões anteriores). Cobre 3 guards:
@@ -119,10 +120,27 @@ export async function proxy(request: NextRequest) {
     const { data: profile } = await supabase
       .from("profiles")
       .select(
-        "name, niche, plan_active, plan_status, plan_expires_at, role, must_reset_password",
+        "name, niche, plan_active, plan_status, plan_expires_at, role, must_reset_password, language",
       )
       .eq("id", user.id)
       .maybeSingle();
+
+    // Sync cookie NEXT_LOCALE com profile.language quando divergirem.
+    // Caso de uso: aluna troca idioma em outro device, ao voltar aqui
+    // queremos refletir a preferencia atual sem mudar codigo i18n/request.
+    const currentCookieLocale = request.cookies.get(LOCALE_COOKIE)?.value;
+    if (
+      profile?.language &&
+      isLocale(profile.language) &&
+      currentCookieLocale !== profile.language
+    ) {
+      response.cookies.set(LOCALE_COOKIE, profile.language, {
+        path: "/",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 365,
+        secure: process.env.NODE_ENV === "production",
+      });
+    }
 
     // Admin tem acesso a tudo, ignora guards de onboarding e plano.
     const isAdmin = profile?.role === "admin";
