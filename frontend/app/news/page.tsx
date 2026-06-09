@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { ArrowLeft, ArrowUpRight, Newspaper, Clock } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { FloatingMainNav } from "@/components/layout/floating-main-nav";
@@ -69,6 +70,7 @@ function HeroSection({
   desktop: boolean;
   onReopenTour: () => void;
 }) {
+  const t = useTranslations("news.hero");
   return (
     <section
       className="relative overflow-hidden hero-radial"
@@ -90,7 +92,7 @@ function HeroSection({
               className="inline-flex items-center gap-1.5 px-3 py-2 -ml-3 rounded-full text-spark-ink-70 hover:text-spark-ink hover:bg-spark-surface-sunken/60 text-[12.5px] font-extrabold transition-colors duration-300"
             >
               <ArrowLeft size={14} strokeWidth={2.5} />
-              Voltar pra home
+              {t("back")}
             </Link>
             <HelpMenu onReopenTour={onReopenTour} />
           </div>
@@ -100,10 +102,10 @@ function HeroSection({
           <SectionReveal direction="down" delay={100} durationMs={600}>
             <div data-tutorial-id="news-intro">
               <div className="text-eyebrow text-spark-brand-deep">
-                ✦ jornal da yara
+                {t("eyebrow")}
               </div>
               <div className="mt-3 text-fluid-lead text-spark-ink-70 max-w-[34ch] font-semibold">
-                Atualizações, dicas e movimentos do TikTok Shop direto da redação.
+                {t("subtitle")}
               </div>
             </div>
           </SectionReveal>
@@ -120,8 +122,8 @@ function HeroSection({
             className="mt-6 font-display lowercase leading-[0.9] tracking-tight max-w-[14ch]"
             style={{ fontSize: "clamp(2.5rem, 8vw, 7rem)" }}
           >
-            <span className="block text-spark-ink">o que tá</span>
-            <span className="block text-grad-brand">acontecendo.</span>
+            <span className="block text-spark-ink">{t("headlineLine1")}</span>
+            <span className="block text-grad-brand">{t("headlineHighlight")}</span>
           </h1>
         </SectionReveal>
 
@@ -131,7 +133,7 @@ function HeroSection({
               <span className="font-extrabold text-fluid-title text-spark-ink leading-none">
                 <CountUp value={total} durationMs={900} />
               </span>
-              {total === 1 ? "publicação" : "publicações"}
+              {total === 1 ? t("publicationsSingular") : t("publicationsPlural")}
             </div>
           </SectionReveal>
         )}
@@ -145,6 +147,7 @@ function HeroSection({
 // =================================================================
 
 function FeaturedCard({ item }: { item: NewsRow }) {
+  const t = useTranslations("news.featured");
   return (
     <SectionReveal direction="up">
       <Link
@@ -170,11 +173,11 @@ function FeaturedCard({ item }: { item: NewsRow }) {
 
             <div className="absolute top-4 left-4 flex items-center gap-2">
               <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-spark-ink text-white text-[10.5px] font-extrabold uppercase tracking-widest shadow-lift">
-                ✦ destaque
+                {t("badgeHighlight")}
               </span>
               {item.is_new && (
                 <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-good text-white text-[10.5px] font-extrabold uppercase tracking-widest shadow-sm">
-                  novo
+                  {t("badgeNew")}
                 </span>
               )}
             </div>
@@ -205,7 +208,7 @@ function FeaturedCard({ item }: { item: NewsRow }) {
               <span className="first-letter:capitalize">{fmtDate(item.published_at)}</span>
             </div>
             <div className="mt-6 inline-flex items-center gap-1.5 text-[13px] font-extrabold text-spark-brand-deep group-hover:text-spark-brand transition-colors duration-300">
-              ler matéria
+              {t("ctaRead")}
               <ArrowUpRight
                 size={14}
                 strokeWidth={2.5}
@@ -224,6 +227,7 @@ function FeaturedCard({ item }: { item: NewsRow }) {
 // =================================================================
 
 function NewsCard({ item, index }: { item: NewsRow; index: number }) {
+  const t = useTranslations("news.card");
   return (
     <SectionReveal delay={Math.min(index * 70, 360)}>
       <Link
@@ -251,7 +255,7 @@ function NewsCard({ item, index }: { item: NewsRow; index: number }) {
             </span>
             {item.is_new && (
               <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-good text-white text-[10.5px] font-extrabold uppercase tracking-widest shadow-sm">
-                novo
+                {t("badgeNew")}
               </span>
             )}
           </div>
@@ -285,6 +289,7 @@ function NewsCard({ item, index }: { item: NewsRow; index: number }) {
 // =================================================================
 
 function EmptyNews({ desktop }: { desktop: boolean }) {
+  const t = useTranslations("news.empty");
   return (
     <section className={cn("relative overflow-hidden", desktop ? "py-24 px-12" : "py-16 px-5")}>
       <HeroBlob color="rose" variant={2} className="-top-10 -left-20 w-[400px] h-[400px]" />
@@ -303,14 +308,14 @@ function EmptyNews({ desktop }: { desktop: boolean }) {
             className="font-display lowercase leading-[0.95] tracking-tight text-spark-ink"
             style={{ fontSize: "clamp(2rem, 6vw, 4rem)" }}
           >
-            sem novidades<br />
-            <span className="text-grad-brand">por aqui ainda.</span>
+            {t("headlineLine1")}<br />
+            <span className="text-grad-brand">{t("headlineHighlight")}</span>
           </h2>
         </SectionReveal>
 
         <SectionReveal direction="up" delay={350}>
           <p className="mt-6 text-fluid-body text-spark-ink-70 leading-snug max-w-[42ch] mx-auto">
-            Quando a Yara publicar uma nota, ela aparece aqui. Bora trazer a primeira em breve ✨
+            {t("description")}
           </p>
         </SectionReveal>
       </div>
@@ -332,6 +337,7 @@ function NewsBody({
   const { news, loading } = useNews();
   const featured = news[0];
   const rest = news.slice(1);
+  const t = useTranslations("news");
 
   return (
     <div
@@ -342,7 +348,7 @@ function NewsBody({
 
       {loading ? (
         <section className="py-24 flex justify-center">
-          <LoadingSplash message="Carregando o jornal" />
+          <LoadingSplash message={t("loading")} />
         </section>
       ) : news.length === 0 ? (
         <EmptyNews desktop={desktop} />
@@ -360,10 +366,11 @@ function NewsBody({
                 <div className="mb-6 flex items-end justify-between gap-4 flex-wrap">
                   <div>
                     <div className="text-eyebrow text-spark-brand mb-2">
-                      ✦ {rest.length} {rest.length === 1 ? "outra" : "outras"}
+                      ✦ {rest.length}{" "}
+                      {rest.length === 1 ? t("others.eyebrowSingular") : t("others.eyebrowPlural")}
                     </div>
                     <h2 className="text-fluid-display font-display lowercase text-spark-ink leading-[0.9] tracking-tight">
-                      mais matérias
+                      {t("others.title")}
                     </h2>
                   </div>
                 </div>
