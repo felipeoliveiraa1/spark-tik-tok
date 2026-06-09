@@ -1,1 +1,35 @@
-{}
+{
+  "header": {
+    "eyebrow": "✦ script library",
+    "subtitle": "Hook, body, benefit, and CTA. Ready to record."
+  },
+  "hero": {
+    "headlineLine1": "every script",
+    "headlineHighlight": "a sale.",
+    "ctaAdd": "Add scripts",
+    "countSingular": "set saved",
+    "countPlural": "sets saved"
+  },
+  "card": {
+    "full": "scripts",
+    "partial": "hooks",
+    "footer": "✦ open"
+  },
+  "grid": {
+    "eyebrowSingular": "✦ 1 set",
+    "eyebrowPlural": "✦ {count} sets",
+    "title": "your collection",
+    "addCardTitle": "Add scripts",
+    "addCardSubtitle": "Paste what the Scripts agent generated"
+  },
+  "empty": {
+    "headlineLine1": "no scripts",
+    "headlineHighlight": "here yet.",
+    "step1": "Go to Agents ✨ and open the Scripts agent for your niche.",
+    "step2": "Generate the full scripts there on ChatGPT or Gemini.",
+    "step3": "Come back here and register them via + add scripts 💕",
+    "ctaAgents": "See agents",
+    "ctaAdd": "Add now"
+  },
+  "loading": "Fetching your scripts"
+}

@@ -1,1 +1,35 @@
-{}
+{
+  "header": {
+    "eyebrow": "✦ biblioteca de scripts",
+    "subtitle": "Gancho, desenvolvimento, benefício e CTA. Prontos pra gravar."
+  },
+  "hero": {
+    "headlineLine1": "cada roteiro",
+    "headlineHighlight": "uma venda.",
+    "ctaAdd": "Adicionar roteiros",
+    "countSingular": "conjunto salvo",
+    "countPlural": "conjuntos salvos"
+  },
+  "card": {
+    "full": "roteiros",
+    "partial": "hooks",
+    "footer": "✦ abrir"
+  },
+  "grid": {
+    "eyebrowSingular": "✦ 1 conjunto",
+    "eyebrowPlural": "✦ {count} conjuntos",
+    "title": "seu acervo",
+    "addCardTitle": "Adicionar roteiros",
+    "addCardSubtitle": "Cola o que gerou no agente Scripts"
+  },
+  "empty": {
+    "headlineLine1": "sem roteiros",
+    "headlineHighlight": "por aqui ainda.",
+    "step1": "Vai em Agentes ✨ e abre o agente Scripts do seu nicho.",
+    "step2": "Gera os roteiros completos lá no ChatGPT ou Gemini.",
+    "step3": "Volta aqui e cadastra em + adicionar roteiros 💕",
+    "ctaAgents": "Ver agentes",
+    "ctaAdd": "Cadastrar agora"
+  },
+  "loading": "Buscando seus scripts"
+}

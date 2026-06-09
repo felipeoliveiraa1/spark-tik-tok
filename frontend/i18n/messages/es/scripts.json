@@ -1,1 +1,35 @@
-{}
+{
+  "header": {
+    "eyebrow": "✦ biblioteca de guiones",
+    "subtitle": "Hook, desarrollo, beneficio y CTA. Listos para grabar."
+  },
+  "hero": {
+    "headlineLine1": "cada guión",
+    "headlineHighlight": "una venta.",
+    "ctaAdd": "Agregar guiones",
+    "countSingular": "set guardado",
+    "countPlural": "sets guardados"
+  },
+  "card": {
+    "full": "guiones",
+    "partial": "hooks",
+    "footer": "✦ abrir"
+  },
+  "grid": {
+    "eyebrowSingular": "✦ 1 set",
+    "eyebrowPlural": "✦ {count} sets",
+    "title": "tu colección",
+    "addCardTitle": "Agregar guiones",
+    "addCardSubtitle": "Pega lo que generó el agente Scripts"
+  },
+  "empty": {
+    "headlineLine1": "sin guiones",
+    "headlineHighlight": "aún por aquí.",
+    "step1": "Ve a Agentes ✨ y abre el agente Scripts de tu nicho.",
+    "step2": "Genera los guiones completos en ChatGPT o Gemini.",
+    "step3": "Vuelve aquí y regístralos en + agregar guiones 💕",
+    "ctaAgents": "Ver agentes",
+    "ctaAdd": "Registrar ahora"
+  },
+  "loading": "Buscando tus guiones"
+}

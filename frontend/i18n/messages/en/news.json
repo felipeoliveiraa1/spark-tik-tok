@@ -1,1 +1,30 @@
-{}
+{
+  "hero": {
+    "back": "Back to home",
+    "eyebrow": "✦ yara's journal",
+    "subtitle": "Updates, tips, and TikTok Shop moves straight from the newsroom.",
+    "headlineLine1": "what's",
+    "headlineHighlight": "happening.",
+    "publicationsSingular": "publication",
+    "publicationsPlural": "publications"
+  },
+  "featured": {
+    "badgeHighlight": "✦ featured",
+    "badgeNew": "new",
+    "ctaRead": "read article"
+  },
+  "card": {
+    "badgeNew": "new"
+  },
+  "empty": {
+    "headlineLine1": "no news",
+    "headlineHighlight": "here yet.",
+    "description": "When Yara posts an update, it shows up here. The first one is coming soon ✨"
+  },
+  "others": {
+    "eyebrowSingular": "another",
+    "eyebrowPlural": "more",
+    "title": "more articles"
+  },
+  "loading": "Loading the journal"
+}

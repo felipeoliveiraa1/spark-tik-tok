@@ -1,1 +1,30 @@
-{}
+{
+  "hero": {
+    "back": "Volver al inicio",
+    "eyebrow": "✦ diario de yara",
+    "subtitle": "Actualizaciones, tips y movimientos de TikTok Shop directo desde la redacción.",
+    "headlineLine1": "qué está",
+    "headlineHighlight": "pasando.",
+    "publicationsSingular": "publicación",
+    "publicationsPlural": "publicaciones"
+  },
+  "featured": {
+    "badgeHighlight": "✦ destacado",
+    "badgeNew": "nuevo",
+    "ctaRead": "leer artículo"
+  },
+  "card": {
+    "badgeNew": "nuevo"
+  },
+  "empty": {
+    "headlineLine1": "sin novedades",
+    "headlineHighlight": "aún por aquí.",
+    "description": "Cuando Yara publique una nota, aparecerá aquí. La primera viene pronto ✨"
+  },
+  "others": {
+    "eyebrowSingular": "otra",
+    "eyebrowPlural": "más",
+    "title": "más artículos"
+  },
+  "loading": "Cargando el diario"
+}

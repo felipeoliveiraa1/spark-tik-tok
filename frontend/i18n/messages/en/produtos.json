@@ -1,1 +1,38 @@
-{}
+{
+  "header": {
+    "eyebrow": "✦ TTS catalog",
+    "subtitle": "Every sheet you register becomes the source for a new script.",
+    "sticker": "PRODUCTS · 2026 ·"
+  },
+  "hero": {
+    "headlineLine1": "your products",
+    "headlineHighlight": "in focus.",
+    "ctaAdd": "Add product",
+    "countSingular": "product registered",
+    "countPlural": "products registered"
+  },
+  "grid": {
+    "eyebrowSingular": "✦ {count} item",
+    "eyebrowPlural": "✦ {count} items",
+    "title": "your showcase",
+    "addNewLabel": "Add new",
+    "addNewHint": "Paste the sheet from the Info agent",
+    "priceUnavailable": "price n/a"
+  },
+  "empty": {
+    "headlineLine1": "no products",
+    "headlineHighlight": "here yet.",
+    "step1": "Open the Info agent in Agents ✨",
+    "step2": "Paste a photo, name, or link of the product. Get a full sheet in seconds.",
+    "step3": "Come back here and register the sheet via + add product 💕",
+    "ctaAgents": "See agents",
+    "ctaRegister": "Add now"
+  },
+  "loading": "Loading products",
+  "timeAgo": {
+    "today": "today",
+    "yesterday": "yesterday",
+    "days": "{count}d ago",
+    "months": "{count}mo ago"
+  }
+}

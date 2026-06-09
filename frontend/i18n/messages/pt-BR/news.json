@@ -1,1 +1,30 @@
-{}
+{
+  "hero": {
+    "back": "Voltar pra home",
+    "eyebrow": "✦ jornal da yara",
+    "subtitle": "Atualizações, dicas e movimentos do TikTok Shop direto da redação.",
+    "headlineLine1": "o que tá",
+    "headlineHighlight": "acontecendo.",
+    "publicationsSingular": "publicação",
+    "publicationsPlural": "publicações"
+  },
+  "featured": {
+    "badgeHighlight": "✦ destaque",
+    "badgeNew": "novo",
+    "ctaRead": "ler matéria"
+  },
+  "card": {
+    "badgeNew": "novo"
+  },
+  "empty": {
+    "headlineLine1": "sem novidades",
+    "headlineHighlight": "por aqui ainda.",
+    "description": "Quando a Yara publicar uma nota, ela aparece aqui. Bora trazer a primeira em breve ✨"
+  },
+  "others": {
+    "eyebrowSingular": "outra",
+    "eyebrowPlural": "outras",
+    "title": "mais matérias"
+  },
+  "loading": "Carregando o jornal"
+}

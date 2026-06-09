@@ -1,1 +1,38 @@
-{}
+{
+  "header": {
+    "eyebrow": "✦ catálogo TTS",
+    "subtitle": "Cada ficha que você cadastra vira fonte pra um roteiro novo.",
+    "sticker": "PRODUTOS · 2026 ·"
+  },
+  "hero": {
+    "headlineLine1": "seus produtos",
+    "headlineHighlight": "em destaque.",
+    "ctaAdd": "Adicionar produto",
+    "countSingular": "produto cadastrado",
+    "countPlural": "produtos cadastrados"
+  },
+  "grid": {
+    "eyebrowSingular": "✦ {count} item",
+    "eyebrowPlural": "✦ {count} itens",
+    "title": "sua vitrine",
+    "addNewLabel": "Adicionar novo",
+    "addNewHint": "Cole a ficha do agente Info",
+    "priceUnavailable": "preço n/d"
+  },
+  "empty": {
+    "headlineLine1": "sem produto",
+    "headlineHighlight": "por aqui ainda.",
+    "step1": "Abre o agente Info em Agentes ✨",
+    "step2": "Cola foto, nome ou link do produto. Recebe a ficha completa em segundos.",
+    "step3": "Volta aqui e cadastra a ficha em + adicionar produto 💕",
+    "ctaAgents": "Ver agentes",
+    "ctaRegister": "Cadastrar agora"
+  },
+  "loading": "Carregando produtos",
+  "timeAgo": {
+    "today": "hoje",
+    "yesterday": "ontem",
+    "days": "{count}d atrás",
+    "months": "{count}m atrás"
+  }
+}
