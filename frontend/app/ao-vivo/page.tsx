@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { ArrowLeft, ArrowUpRight, Radio, PlayCircle, CheckCircle2 } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { FloatingMainNav } from "@/components/layout/floating-main-nav";
@@ -91,6 +92,7 @@ function useLives() {
 // =================================================================
 
 function HeroSection({ liveCount, totalCount, desktop }: { liveCount: number; totalCount: number; desktop: boolean }) {
+  const t = useTranslations("ao-vivo.hero");
   return (
     <section
       className="relative overflow-hidden hero-radial"
@@ -111,7 +113,7 @@ function HeroSection({ liveCount, totalCount, desktop }: { liveCount: number; to
             className="inline-flex items-center gap-1.5 px-3 py-2 -ml-3 rounded-full text-spark-ink-70 hover:text-spark-ink hover:bg-spark-surface-sunken/60 text-[12.5px] font-extrabold transition-colors duration-300"
           >
             <ArrowLeft size={14} strokeWidth={2.5} />
-            Voltar pra Educação
+            {t("backLink")}
           </Link>
         </SectionReveal>
 
@@ -124,10 +126,10 @@ function HeroSection({ liveCount, totalCount, desktop }: { liveCount: number; to
                   <span className="relative w-2 h-2 rounded-full bg-bad" />
                 </span>
               )}
-              ✦ encontros com a yara
+              {t("eyebrow")}
             </div>
             <div className="mt-3 text-fluid-lead text-spark-ink-70 max-w-[34ch] font-semibold">
-              Lives, plantões e Q&amp;As. Assiste tudo dentro do app.
+              {t("subtitle")}
             </div>
           </SectionReveal>
 
@@ -143,9 +145,11 @@ function HeroSection({ liveCount, totalCount, desktop }: { liveCount: number; to
             className="mt-6 font-display lowercase leading-[0.9] tracking-tight max-w-[16ch]"
             style={{ fontSize: "clamp(2.5rem, 8vw, 7rem)" }}
           >
-            <span className="block text-spark-ink">{liveCount > 0 ? "rolando" : "ao vivo"}</span>
+            <span className="block text-spark-ink">
+              {liveCount > 0 ? t("titleActive") : t("titleInactive")}
+            </span>
             <span className="block text-grad-brand">
-              {liveCount > 0 ? "agora." : "com a yara."}
+              {liveCount > 0 ? t("titleActiveAccent") : t("titleInactiveAccent")}
             </span>
           </h1>
         </SectionReveal>
@@ -156,7 +160,7 @@ function HeroSection({ liveCount, totalCount, desktop }: { liveCount: number; to
               <span className="font-extrabold text-fluid-title text-spark-ink leading-none">
                 <CountUp value={totalCount} durationMs={900} />
               </span>
-              {totalCount === 1 ? "encontro disponível" : "encontros disponíveis"}
+              {totalCount === 1 ? t("countSingular") : t("countPlural")}
             </div>
           </SectionReveal>
         )}
@@ -180,6 +184,7 @@ function LiveCard({
   index: number;
   watched?: boolean;
 }) {
+  const t = useTranslations("ao-vivo.card");
   const countdown =
     status === "upcoming" ? formatCountdown(minutesUntil(event.starts_at)) : null;
 
@@ -228,7 +233,7 @@ function LiveCard({
             <div className="absolute top-3 right-3">
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-good text-white text-[10.5px] font-extrabold uppercase tracking-widest shadow-lift">
                 <CheckCircle2 size={11} strokeWidth={2.5} />
-                Assistida
+                {t("badgeWatched")}
               </span>
             </div>
           )}
@@ -241,7 +246,7 @@ function LiveCard({
                   <span className="absolute inset-0 rounded-full bg-white animate-pulse" />
                   <span className="relative w-2 h-2 rounded-full bg-white" />
                 </span>
-                AO VIVO
+                {t("badgeLive")}
               </span>
             )}
             {status === "upcoming" && (
@@ -251,7 +256,7 @@ function LiveCard({
             )}
             {status === "replay" && (
               <span className="inline-flex items-center px-3 py-1.5 rounded-full glass text-spark-ink text-[10.5px] font-extrabold uppercase tracking-widest">
-                ◉ replay
+                ◉ {t("badgeReplay")}
               </span>
             )}
           </div>
@@ -324,6 +329,7 @@ function GroupSection({
 // =================================================================
 
 function EmptyLives({ desktop }: { desktop: boolean }) {
+  const t = useTranslations("ao-vivo.empty");
   return (
     <section className={cn("relative overflow-hidden", desktop ? "py-24 px-12" : "py-16 px-5")}>
       <HeroBlob color="rose" variant={2} className="-top-10 -left-20 w-[400px] h-[400px]" />
@@ -342,15 +348,14 @@ function EmptyLives({ desktop }: { desktop: boolean }) {
             className="font-display lowercase leading-[0.95] tracking-tight text-spark-ink"
             style={{ fontSize: "clamp(2rem, 6vw, 4rem)" }}
           >
-            sem lives<br />
-            <span className="text-grad-brand">agendadas ainda.</span>
+            {t("title")}<br />
+            <span className="text-grad-brand">{t("titleAccent")}</span>
           </h2>
         </SectionReveal>
 
         <SectionReveal direction="up" delay={350}>
           <p className="mt-6 text-fluid-body text-spark-ink-70 leading-snug max-w-[42ch] mx-auto">
-            Quando a Yara marcar um encontro, você vai ver aqui. Replays anteriores também aparecem
-            nesta aba 💕
+            {t("description")} 💕
           </p>
         </SectionReveal>
       </div>
@@ -365,6 +370,7 @@ function EmptyLives({ desktop }: { desktop: boolean }) {
 function AoVivoBody({ desktop = false }: { desktop?: boolean }) {
   const { events, groups, loading, watched } = useLives();
   const total = events.length;
+  const t = useTranslations("ao-vivo");
 
   return (
     <div
@@ -375,7 +381,7 @@ function AoVivoBody({ desktop = false }: { desktop?: boolean }) {
 
       {loading ? (
         <section className="py-24 flex justify-center">
-          <LoadingSplash message="Carregando lives" />
+          <LoadingSplash message={t("loading")} />
         </section>
       ) : events.length === 0 ? (
         <EmptyLives desktop={desktop} />
@@ -384,7 +390,7 @@ function AoVivoBody({ desktop = false }: { desktop?: boolean }) {
           <div className={desktop ? "max-w-[1100px] mx-auto" : ""}>
             <div className="space-y-12">
               {groups.live.length > 0 && (
-                <GroupSection emoji="🔴" title="ao vivo agora" tone="brand" desktop={desktop}>
+                <GroupSection emoji="🔴" title={t("section.liveTitle")} tone="brand" desktop={desktop}>
                   {groups.live.map((e, i) => (
                     <LiveCard key={e.id} event={e} status="live" index={i} watched={watched.has(e.id)} />
                   ))}
@@ -392,7 +398,7 @@ function AoVivoBody({ desktop = false }: { desktop?: boolean }) {
               )}
 
               {groups.upcoming.length > 0 && (
-                <GroupSection emoji="📅" title="próximos encontros" desktop={desktop}>
+                <GroupSection emoji="📅" title={t("section.upcomingTitle")} desktop={desktop}>
                   {groups.upcoming.map((e, i) => (
                     <LiveCard key={e.id} event={e} status="upcoming" index={i} watched={watched.has(e.id)} />
                   ))}
@@ -400,7 +406,7 @@ function AoVivoBody({ desktop = false }: { desktop?: boolean }) {
               )}
 
               {groups.replays.length > 0 && (
-                <GroupSection emoji="📼" title="replays" desktop={desktop}>
+                <GroupSection emoji="📼" title={t("section.replaysTitle")} desktop={desktop}>
                   {groups.replays.map((e, i) => (
                     <LiveCard key={e.id} event={e} status="replay" index={i} watched={watched.has(e.id)} />
                   ))}
