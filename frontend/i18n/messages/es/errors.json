@@ -11,5 +11,54 @@
     "tooShort": "Demasiado corto",
     "tooLong": "Demasiado largo",
     "passwordMin": "La contraseña necesita al menos {min} caracteres"
+  },
+  "planInactive": {
+    "status": {
+      "active": "Plan activo ✨",
+      "trial": "Periodo de prueba ✨",
+      "late": "Pago atrasado",
+      "canceled": "Cancelado (acceso hasta la fecha)",
+      "refunded": "Reembolsado",
+      "chargeback": "Contracargo",
+      "inactive": "Plan inactivo"
+    },
+    "inactive": {
+      "title": "tu suscripción está",
+      "titleHighlight": "inactiva.",
+      "description": "Para acceder a Método TTS necesitas una suscripción activa. ¿Lista para reactivar?"
+    },
+    "trial": {
+      "title": "tu prueba",
+      "titleHighlight": "terminó 💕",
+      "description": "Tus días de prueba se acabaron. Para seguir, solo suscríbete — toda tu cuenta (productos, guiones, rutina) queda guardada y vuelve en el momento."
+    },
+    "canceled": {
+      "title": "tu plan fue",
+      "titleHighlight": "cancelado.",
+      "description": "El período pagado terminó. Tus fichas de producto y guiones siguen guardados — cuando renueves, todo vuelve como estaba."
+    },
+    "refunded": {
+      "title": "tu plan fue",
+      "titleHighlight": "reembolsado.",
+      "description": "Procesamos tu reembolso y el acceso al app fue cerrado. Si cambiaste de opinión, puedes suscribirte de nuevo en cualquier momento."
+    },
+    "chargeback": {
+      "title": "acceso",
+      "titleHighlight": "bloqueado.",
+      "description": "Detectamos un contracargo bancario en tu compra. Para resolver, contáctanos respondiendo cualquier correo de Método TTS."
+    },
+    "comeback": {
+      "eyebrow": "✦ lo que vuelve contigo",
+      "products": "📦 Tus fichas de producto completas",
+      "scripts": "✍️ Todos los guiones generados",
+      "history": "💬 Historial de chats con las IAs",
+      "lessons": "🎓 Progreso en las clases"
+    },
+    "actions": {
+      "reactivate": "Reactivar por Kiwify",
+      "myAccount": "Mi cuenta",
+      "logout": "Salir",
+      "refresh": "Acabo de pagar — actualizar"
+    }
   }
 }

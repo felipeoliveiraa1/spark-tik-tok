@@ -11,5 +11,54 @@
     "tooShort": "Too short",
     "tooLong": "Too long",
     "passwordMin": "Password needs at least {min} characters"
+  },
+  "planInactive": {
+    "status": {
+      "active": "Plan active ✨",
+      "trial": "Trial period ✨",
+      "late": "Payment overdue",
+      "canceled": "Canceled (access until end date)",
+      "refunded": "Refunded",
+      "chargeback": "Chargeback",
+      "inactive": "Plan inactive"
+    },
+    "inactive": {
+      "title": "your subscription is",
+      "titleHighlight": "inactive.",
+      "description": "To use Método TTS you need an active subscription. Ready to reactivate?"
+    },
+    "trial": {
+      "title": "your trial",
+      "titleHighlight": "ended 💕",
+      "description": "Your trial days are over. To continue, just subscribe — your full account (products, scripts, routine) stays saved and comes right back."
+    },
+    "canceled": {
+      "title": "your plan was",
+      "titleHighlight": "canceled.",
+      "description": "Your paid period ended. Your product sheets and scripts are still safe — when you renew, everything is exactly where you left it."
+    },
+    "refunded": {
+      "title": "your plan was",
+      "titleHighlight": "refunded.",
+      "description": "We processed your refund and your app access was closed. If you changed your mind, you can subscribe again any time."
+    },
+    "chargeback": {
+      "title": "access",
+      "titleHighlight": "blocked.",
+      "description": "We detected a bank chargeback on your purchase. To resolve, reply to any Método TTS email."
+    },
+    "comeback": {
+      "eyebrow": "✦ what comes back with you",
+      "products": "📦 Your full product sheets",
+      "scripts": "✍️ All generated scripts",
+      "history": "💬 Chat history with the AIs",
+      "lessons": "🎓 Lesson progress"
+    },
+    "actions": {
+      "reactivate": "Reactivate via Kiwify",
+      "myAccount": "My account",
+      "logout": "Log out",
+      "refresh": "I just paid — refresh"
+    }
   }
 }

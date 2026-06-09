@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { getCurrentProfile } from "@/lib/supabase-server";
 import { logoutAction } from "@/lib/auth";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
@@ -16,53 +17,19 @@ export const dynamic = "force-dynamic";
 const KIWIFY_CHECKOUT_URL =
   process.env.NEXT_PUBLIC_KIWIFY_CHECKOUT_URL ?? "https://pay.kiwify.com.br/YOR83Pu";
 
-const STATUS_COPY: Record<string, { title: React.ReactNode; description: string }> = {
-  inactive: {
-    title: (
-      <>
-        sua assinatura tá <span className="text-grad-brand">inativa.</span>
-      </>
-    ),
-    description:
-      "Pra acessar o Método TTS você precisa de uma assinatura ativa. Bora reativar?",
-  },
-  trial: {
-    title: (
-      <>
-        seu trial <span className="text-grad-brand">acabou 💕</span>
-      </>
-    ),
-    description:
-      "Os dias de teste terminaram. Pra continuar, é só assinar — toda sua conta (produtos, scripts, rotina) fica salva e volta na hora.",
-  },
-  canceled: {
-    title: (
-      <>
-        seu plano foi <span className="text-grad-brand">cancelado.</span>
-      </>
-    ),
-    description:
-      "O período pago acabou. Suas fichas de produto e scripts continuam guardadinhos — quando renovar, tudo volta como estava.",
-  },
-  refunded: {
-    title: (
-      <>
-        seu plano foi <span className="text-grad-brand">reembolsado.</span>
-      </>
-    ),
-    description:
-      "Processamos seu reembolso e o acesso ao app foi encerrado. Se mudou de ideia, pode assinar de novo a qualquer momento.",
-  },
-  chargeback: {
-    title: (
-      <>
-        acesso <span className="text-grad-brand">bloqueado.</span>
-      </>
-    ),
-    description:
-      "Identificamos uma contestação bancária na sua compra. Pra resolver, fala com a gente respondendo qualquer email do Método TTS.",
-  },
-};
+const STATUS_KEYS = [
+  "inactive",
+  "trial",
+  "canceled",
+  "refunded",
+  "chargeback",
+] as const;
+
+type StatusKey = (typeof STATUS_KEYS)[number];
+
+function isStatusKey(s: string): s is StatusKey {
+  return (STATUS_KEYS as readonly string[]).includes(s);
+}
 
 export default async function PlanoInativoPage() {
   const profile = await getCurrentProfile();
@@ -75,8 +42,24 @@ export default async function PlanoInativoPage() {
   }
 
   const status = getDisplayStatus(profile);
-  const copy = STATUS_COPY[status] ?? STATUS_COPY.inactive;
-  const { label, tone } = statusLabel(status);
+  const tNs = await getTranslations("errors.planInactive");
+  const tA = await getTranslations("errors.planInactive.actions");
+  const tStatus = await getTranslations("errors.planInactive.status");
+
+  // Status pode vir como qualquer string — mapeia 'late' pra 'inactive' (sem
+  // copia propria) e tudo que nao for um dos 5 cai em 'inactive' tambem.
+  const copyKey: StatusKey = isStatusKey(status) ? status : "inactive";
+  const tStatusCopy = await getTranslations(`errors.planInactive.${copyKey}`);
+
+  const title = tStatusCopy("title");
+  const titleHighlight = tStatusCopy("titleHighlight");
+  const description = tStatusCopy("description");
+
+  const { tone } = statusLabel(status);
+  // Label vem do nosso i18n (mesmo nome de status que statusLabel usa)
+  const label = isStatusKey(status) || status === "active" || status === "late"
+    ? tStatus(status)
+    : tStatus("inactive");
 
   const toneBg =
     tone === "bad"
@@ -97,9 +80,19 @@ export default async function PlanoInativoPage() {
             status={status}
             label={label}
             toneBg={toneBg}
-            title={copy.title}
-            description={copy.description}
+            title={title}
+            titleHighlight={titleHighlight}
+            description={description}
             email={profile.email}
+            comebackEyebrow={tNs("comeback.eyebrow")}
+            comebackProducts={tNs("comeback.products")}
+            comebackScripts={tNs("comeback.scripts")}
+            comebackHistory={tNs("comeback.history")}
+            comebackLessons={tNs("comeback.lessons")}
+            actReactivate={tA("reactivate")}
+            actMyAccount={tA("myAccount")}
+            actLogout={tA("logout")}
+            actRefresh={tA("refresh")}
           />
         </div>
       }
@@ -113,9 +106,19 @@ export default async function PlanoInativoPage() {
               status={status}
               label={label}
               toneBg={toneBg}
-              title={copy.title}
-              description={copy.description}
+              title={title}
+              titleHighlight={titleHighlight}
+              description={description}
               email={profile.email}
+              comebackEyebrow={tNs("comeback.eyebrow")}
+              comebackProducts={tNs("comeback.products")}
+              comebackScripts={tNs("comeback.scripts")}
+              comebackHistory={tNs("comeback.history")}
+              comebackLessons={tNs("comeback.lessons")}
+              actReactivate={tA("reactivate")}
+              actMyAccount={tA("myAccount")}
+              actLogout={tA("logout")}
+              actRefresh={tA("refresh")}
             />
           </div>
         </div>
@@ -129,15 +132,35 @@ function PlanoInativoBody({
   label,
   toneBg,
   title,
+  titleHighlight,
   description,
   email,
+  comebackEyebrow,
+  comebackProducts,
+  comebackScripts,
+  comebackHistory,
+  comebackLessons,
+  actReactivate,
+  actMyAccount,
+  actLogout,
+  actRefresh,
 }: {
   status: string;
   label: string;
   toneBg: string;
-  title: React.ReactNode;
+  title: string;
+  titleHighlight: string;
   description: string;
   email: string;
+  comebackEyebrow: string;
+  comebackProducts: string;
+  comebackScripts: string;
+  comebackHistory: string;
+  comebackLessons: string;
+  actReactivate: string;
+  actMyAccount: string;
+  actLogout: string;
+  actRefresh: string;
 }) {
   return (
     <div
@@ -165,7 +188,7 @@ function PlanoInativoBody({
             className="mt-4 font-display lowercase tracking-tight text-spark-ink leading-[0.95]"
             style={{ fontSize: "clamp(2rem, 6vw, 3.25rem)" }}
           >
-            {title}
+            {title} <span className="text-grad-brand">{titleHighlight}</span>
           </h1>
         </SectionReveal>
 
@@ -178,12 +201,12 @@ function PlanoInativoBody({
         {status !== "chargeback" && (
           <SectionReveal direction="up" delay={550}>
             <div className="mt-7 p-5 rounded-spark-2xl bg-brand-grad-soft border border-spark-brand/20 shadow-lift-brand">
-              <div className="text-eyebrow text-spark-brand">✦ o que volta com você</div>
+              <div className="text-eyebrow text-spark-brand">{comebackEyebrow}</div>
               <ul className="mt-3 space-y-2 text-[13.5px] text-spark-ink-70 font-semibold">
-                <li>📦 Suas fichas de produto completas</li>
-                <li>✍️ Todos os roteiros gerados</li>
-                <li>💬 Histórico de conversas com as IAs</li>
-                <li>🎓 Progresso nas aulas</li>
+                <li>{comebackProducts}</li>
+                <li>{comebackScripts}</li>
+                <li>{comebackHistory}</li>
+                <li>{comebackLessons}</li>
               </ul>
             </div>
           </SectionReveal>
@@ -204,20 +227,20 @@ function PlanoInativoBody({
               className="block w-full"
             >
               <SButton variant="primary" size="lg" full IconRight={ExternalLink}>
-                Reativar pelo Kiwify
+                {actReactivate}
               </SButton>
             </a>
           )}
 
           <Link href="/conta" className="block w-full">
             <SButton variant="ghost" size="md" full Icon={KeyRound}>
-              Minha conta
+              {actMyAccount}
             </SButton>
           </Link>
 
           <form action={logoutAction}>
             <SButton type="submit" variant="ghost" size="md" full Icon={LogOut}>
-              Sair
+              {actLogout}
             </SButton>
           </form>
 
@@ -227,7 +250,7 @@ function PlanoInativoBody({
               className="inline-flex items-center gap-1.5 text-[12px] text-spark-ink-50 hover:text-spark-ink-70 font-extrabold uppercase tracking-wider transition-colors duration-300"
             >
               <RefreshCw size={11} strokeWidth={2.5} />
-              Acabei de pagar — atualizar
+              {actRefresh}
             </Link>
           </div>
         </div>

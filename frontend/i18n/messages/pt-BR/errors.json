@@ -11,5 +11,54 @@
     "tooShort": "Curto demais",
     "tooLong": "Longo demais",
     "passwordMin": "Senha precisa ter no mínimo {min} caracteres"
+  },
+  "planInactive": {
+    "status": {
+      "active": "Plano ativo ✨",
+      "trial": "Período de teste ✨",
+      "late": "Pagamento atrasado",
+      "canceled": "Cancelado (acesso até a data)",
+      "refunded": "Reembolsado",
+      "chargeback": "Chargeback",
+      "inactive": "Plano inativo"
+    },
+    "inactive": {
+      "title": "sua assinatura tá",
+      "titleHighlight": "inativa.",
+      "description": "Pra acessar o Método TTS você precisa de uma assinatura ativa. Bora reativar?"
+    },
+    "trial": {
+      "title": "seu trial",
+      "titleHighlight": "acabou 💕",
+      "description": "Os dias de teste terminaram. Pra continuar, é só assinar — toda sua conta (produtos, scripts, rotina) fica salva e volta na hora."
+    },
+    "canceled": {
+      "title": "seu plano foi",
+      "titleHighlight": "cancelado.",
+      "description": "O período pago acabou. Suas fichas de produto e scripts continuam guardadinhos — quando renovar, tudo volta como estava."
+    },
+    "refunded": {
+      "title": "seu plano foi",
+      "titleHighlight": "reembolsado.",
+      "description": "Processamos seu reembolso e o acesso ao app foi encerrado. Se mudou de ideia, pode assinar de novo a qualquer momento."
+    },
+    "chargeback": {
+      "title": "acesso",
+      "titleHighlight": "bloqueado.",
+      "description": "Identificamos uma contestação bancária na sua compra. Pra resolver, fala com a gente respondendo qualquer email do Método TTS."
+    },
+    "comeback": {
+      "eyebrow": "✦ o que volta com você",
+      "products": "📦 Suas fichas de produto completas",
+      "scripts": "✍️ Todos os roteiros gerados",
+      "history": "💬 Histórico de conversas com as IAs",
+      "lessons": "🎓 Progresso nas aulas"
+    },
+    "actions": {
+      "reactivate": "Reativar pelo Kiwify",
+      "myAccount": "Minha conta",
+      "logout": "Sair",
+      "refresh": "Acabei de pagar — atualizar"
+    }
   }
 }
