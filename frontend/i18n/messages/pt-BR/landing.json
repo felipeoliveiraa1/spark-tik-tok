@@ -1,1 +1,218 @@
-{}
+{
+  "header": {
+    "login": "Entrar",
+    "cta": "Quero entrar"
+  },
+  "hero": {
+    "edition": "edição inaugural · vol. 01",
+    "topic1": "tiktok shop",
+    "topic2": "criadoras br",
+    "topic3": "método",
+    "headlineLine1": "uma rotina.",
+    "headlineLine2": "mil roteiros.",
+    "headlineHighlight": "um método.",
+    "subtitle": "Pra criadora que cansou de IA gringa, planilha bagunçada e palpite de guru. Sistema integrado de agentes, catálogo, scripts, rotina, aulas e lives — feito por mulher pra mulher, com método.",
+    "ctaPrimary": "Quero o método · R$ 49/mês",
+    "guarantee": "7 dias de garantia · cancela quando quiser",
+    "testimonialCount": "+500 criadoras · 4.9 ★"
+  },
+  "mockup": {
+    "routineTitle": "rotina hoje",
+    "routineLabel": "aderência semanal",
+    "routineBadge": "streak: 12d",
+    "greeting": "boa tarde, maria",
+    "headlineLine1": "chega de postar",
+    "headlineHighlight": "no escuro.",
+    "kpiProducts": "produtos",
+    "kpiScripts": "scripts",
+    "kpiLessons": "aulas",
+    "chatLabel": "conversa agora",
+    "chatAgent": "scripts skincare",
+    "chatMessage": "Já tá com 5 hooks prontos do sérum…",
+    "agentsLabel": "10 agentes",
+    "yaraLabel": "yara · live",
+    "yaraMessage": "Live ao vivo hoje 19h",
+    "trendingBadge": "bombou hoje"
+  },
+  "marquee": {
+    "line1": "MÉTODO TTS",
+    "line2": "PRA QUEM VENDE",
+    "line3": "NÃO PRA QUEM CHUTA",
+    "line4": "FEITO POR MULHER",
+    "line5": "PRA MULHER"
+  },
+  "chapterMarker": "cap.",
+  "chapter01": {
+    "marker": "o diagnóstico",
+    "headline": "o jeito antigo de vender no tiktok shop",
+    "headlineHighlight": "já era.",
+    "subtitle": "A gente cansou de planilha caindo, IA fria de gringo e palpite de guru. O Método TTS nasceu pra ser o oposto disso — sistema, não improviso.",
+    "antesSection": "antes",
+    "depoisSection": "com método tts"
+  },
+  "antesDepois": {
+    "0": { "antes": "Planilha bagunçada de produto", "depois": "Catálogo organizado no app" },
+    "1": { "antes": "IA gringa que escreve igual robô", "depois": "Agente com tom de amiga" },
+    "2": { "antes": "Postar no escuro sem método", "depois": "Rotina diária com aderência mensurável" },
+    "3": { "antes": "Tirar dúvida no DM do Insta", "depois": "Tira-dúvida no chat, 24/7" },
+    "4": { "antes": "Aula em PDF de 2 anos atrás", "depois": "Aula em vídeo + live ao vivo no app" },
+    "5": { "antes": "Roteiro perdido no bloco de notas", "depois": "Biblioteca de scripts salvos" }
+  },
+  "quote": {
+    "line1": "criadora não chuta.",
+    "line2": "criadora vende com método.",
+    "credit": "manifesto · método tts"
+  },
+  "chapter02": {
+    "marker": "o sistema",
+    "headline": "tudo no",
+    "headlineHighlight": "mesmo app.",
+    "subtitle": "Não é mais ferramenta isolada. É sistema integrado: você cadastra um produto e ele aparece nos agentes, nas referências, na sua rotina. Tudo conversa."
+  },
+  "pilares": {
+    "0": { "title": "agentes ia", "description": "10 especialistas: 9 nichos de scripts e tira-dúvida." },
+    "1": { "title": "catálogo", "description": "Seus produtos cadastrados, prontos pra usar nos agentes." },
+    "2": { "title": "scripts", "description": "Biblioteca dos seus roteiros salvos. Você escolhe o que vai." },
+    "3": { "title": "rotina", "description": "Aderência semanal, evolução e referências num lugar só." },
+    "4": { "title": "aulas", "description": "Trilha completa do Método TTS, em vídeo." },
+    "5": { "title": "ao vivo", "description": "Encontros com a Yara pra tirar dúvida em tempo real." },
+    "6": { "title": "news", "description": "Atualizações do TikTok Shop direto no seu feed." },
+    "7": { "title": "tom de amiga", "description": "Doce, brasileira, sem inglês forçado nem robôzice." }
+  },
+  "agents": {
+    "0": { "title": "análise", "description": "Sobe a foto. A IA devolve público, dor, gatilho, hook e objeção. Em 30 segundos você sabe pra quem vender e como." },
+    "1": { "title": "roteiro", "description": "5 estilos por produto. Gancho 3s, desenvolvimento, benefício real, CTA leve. Você escolhe o que salva." },
+    "2": { "title": "tira-dúvida", "description": "Regra do TikTok Shop, conta de criador, comissão, frete, política. Pergunta no chat — resposta na hora." }
+  },
+  "agentsSection": {
+    "eyebrow": "os agentes",
+    "headline": "10 especialistas.",
+    "headlineHighlight": "uma pra cada nicho.",
+    "subtitle": "Cada agente resolve uma parte do funil. Você pergunta no chat — eles entregam. Sem prompt complicado, sem inglês forçado.",
+    "countSingular": "{count} agente",
+    "countPlural": "{count} agentes"
+  },
+  "chapter03": {
+    "marker": "a virada",
+    "headline": "hábito",
+    "headlineHighlight": "> inspiração.",
+    "subtitle": "A diferença entre quem posta 1 vídeo por semana e quem posta 5 por dia não é talento — é rotina. O Método TTS te dá um anel de aderência, gráfico de evolução e acervo de referências, tudo dentro do app.",
+    "features": {
+      "0": { "title": "Aderência semanal", "description": "Anel de progresso bate olho e mostra se a semana fluiu." },
+      "1": { "title": "Evolução mensal", "description": "Gráfico mostra sua trajetória — sem chute, com dado." },
+      "2": { "title": "Referências curadas", "description": "Vídeos virais do nicho pra inspirar sem buscar." }
+    },
+    "ringLabel": "aderência",
+    "ringText": "Bateu meta em 6 dos 7 dias dessa semana.",
+    "ringBadge": "streak: 12 dias"
+  },
+  "chapter04": {
+    "marker": "como começa",
+    "headline": "4 passos.",
+    "headlineHighlight": "do produto à postagem.",
+    "subtitle": "Você no controle do começo ao fim. A IA é consultora — quem decide é você.",
+    "cta": "Quero gravar meu primeiro vídeo"
+  },
+  "steps": {
+    "0": { "title": "cadastra produto", "description": "Foto, link, print ou texto. A IA analisa em segundos." },
+    "1": { "title": "pede roteiro", "description": "5 estilos, fórmula validada. Você escolhe o que combina." },
+    "2": { "title": "salva o bom", "description": "Roteiro que curtiu vai pra biblioteca. Nada salva sem você." },
+    "3": { "title": "grava e marca", "description": "Posta o vídeo, marca a rotina, vê a aderência subir." }
+  },
+  "features": {
+    "0": "10 agentes IA · 9 especialistas por nicho + 1 suporte",
+    "1": "Catálogo ilimitado dos seus produtos",
+    "2": "Biblioteca ilimitada dos seus roteiros",
+    "3": "Análise de produto com foto, link ou texto — sem limite",
+    "4": "5 estilos por roteiro com fórmula validada",
+    "5": "Templates pra +12 nichos · você pode adicionar o seu",
+    "6": "Rotina diária com aderência semanal e evolução",
+    "7": "Aulas em vídeo · trilha Método TTS completa",
+    "8": "Lives ao vivo periódicas com Q&A",
+    "9": "News do TikTok Shop direto no app",
+    "10": "Você no controle: nada salva sem o seu clique",
+    "11": "App no celular (PWA) · offline em algumas telas",
+    "12": "Atualizações constantes e novos templates"
+  },
+  "stats": {
+    "0": { "label": "criadoras ativas" },
+    "1": { "label": "roteiros gerados" },
+    "2": { "label": "nota média" },
+    "3": { "label": "tira-dúvida" }
+  },
+  "testimonialFeatured": {
+    "name": "Camila S.",
+    "role": "Começou faz 3 meses · faturou R$ 2k em 30 dias",
+    "quote": "Eu nunca tinha vendido nada online. As aulas me ensinaram o método, a rotina me deu disciplina, os agentes me deram roteiro. Em 30 dias bati R$ 2 mil. E o app é tão lindo que eu abro só pra olhar."
+  },
+  "testimonialsSection": {
+    "eyebrow": "histórias reais",
+    "headline": "criadoras que",
+    "headlineHighlight": "viraram",
+    "headlineRest": "a chave."
+  },
+  "testimonials": {
+    "0": { "name": "Marcela R.", "role": "Skincare · 8 meses", "quote": "Antes 1 vídeo por semana. Hoje 4-5 por dia. Venda triplicou." },
+    "1": { "name": "Bia M.", "role": "R$ 8k/mês", "quote": "Os roteiros não parecem IA. Hook que prende, CTA que não força." },
+    "2": { "name": "Aline F.", "role": "Mãe empreendedora", "quote": "Primeira IA que parece eu falando. E o app é o mais bonito que já usei." }
+  },
+  "guarantee": {
+    "eyebrow": "promessa",
+    "headline": "7 dias pra testar. se não rolar,",
+    "headlineHighlight": "o risco é nosso.",
+    "subtitle": "Sem pergunta, sem burocracia, sem letra miúda. Você testa o método inteiro e, se achar que não é pra você, pede o dinheiro de volta pela Kiwify."
+  },
+  "pricing": {
+    "eyebrow": "investimento",
+    "headline": "um plano.",
+    "headlineHighlight": "tudo incluído.",
+    "subtitle": "Acesso ao método completo. Sem upsell, sem feature bloqueada, sem pegadinha.",
+    "cardTitle": "método tts · acesso completo",
+    "badge": "Promo lançamento",
+    "oldPrice": "De R$ 97,00",
+    "cardSubtitle": "Menos que um lanche por mês.",
+    "featuresLabel": "tudo incluso",
+    "cta": "Quero o método agora",
+    "security": "Pagamento seguro pela Kiwify",
+    "guarantee": "7 dias de garantia · devolução 100%"
+  },
+  "faqs": {
+    "0": { "question": "Preciso entender de IA pra usar?", "answer": "Não. Você conversa com os agentes como conversa com uma amiga — em português, sem termo técnico." },
+    "1": { "question": "A IA salva tudo automático? Vou perder controle?", "answer": "Não. Aqui a IA é consultora, não autora. Você decide o que salva no seu catálogo e na biblioteca de scripts. Nada vai pro seu repositório sem você clicar." },
+    "2": { "question": "Quanto tempo até o primeiro resultado?", "answer": "Primeiro roteiro: 30 segundos. Primeira venda: depende do seu funil, mas a maioria das alunas vê diferença na primeira semana usando a rotina." },
+    "3": { "question": "Funciona pro meu nicho?", "answer": "Sim. Temos templates pra skincare, makeup, suplementos, cabelo, perfumaria, casa, moda, maternidade, eletrônicos, acessórios, pet, calçados — e você pode adicionar o seu." },
+    "4": { "question": "É só pra quem já vende?", "answer": "Não. A maior parte das alunas tá começando. As aulas ensinam o método do zero." },
+    "5": { "question": "Posso usar no celular?", "answer": "Sim, foi feito pra celular primeiro. Instala como app no iPhone ou Android." },
+    "6": { "question": "Tem limite de uso?", "answer": "Não. Ilimitado em tudo — análise, roteiro, salvamento, perguntas." },
+    "7": { "question": "Como funciona a garantia?", "answer": "7 dias pra testar. Se não rolar, reembolso 100% pela Kiwify. Sem pergunta." },
+    "8": { "question": "Posso cancelar quando quiser?", "answer": "Sim. 2 cliques pelo painel da Kiwify. Sem multa, sem fidelidade." }
+  },
+  "faqSection": {
+    "eyebrow": "perguntas frequentes",
+    "headline": "ainda com dúvida?",
+    "headlineHighlight": "aqui tá a resposta."
+  },
+  "finalCta": {
+    "badge": "primeiro roteiro em 30 segundos",
+    "headline": "vem pro",
+    "headlineHighlight": "método.",
+    "subtitle": "R$ 49/mês · acesso completo · 7 dias de garantia · cancela quando quiser",
+    "primary": "Quero entrar agora",
+    "secondary": "Já tenho acesso",
+    "security": "Pagamento seguro via Kiwify · sem fidelidade"
+  },
+  "footer": {
+    "description": "Sistema completo pra criadoras de TikTok Shop. Feito por mulher, em português, com método.",
+    "productEyebrow": "produto",
+    "productBuy": "Comprar",
+    "productLogin": "Entrar",
+    "productFeatures": "Funcionalidades",
+    "supportEyebrow": "suporte",
+    "supportHelp": "Central de ajuda",
+    "legalEyebrow": "legal",
+    "legalTerms": "Termos de uso",
+    "legalPrivacy": "Política de privacidade",
+    "copyright": "Método TTS · Todos os direitos reservados",
+    "security": "Pagamento seguro Kiwify"
+  }
+}

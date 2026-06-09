@@ -1,1 +1,218 @@
-{}
+{
+  "header": {
+    "login": "Sign in",
+    "cta": "Get access"
+  },
+  "hero": {
+    "edition": "inaugural edition · vol. 01",
+    "topic1": "tiktok shop",
+    "topic2": "creators",
+    "topic3": "method",
+    "headlineLine1": "one routine.",
+    "headlineLine2": "a thousand scripts.",
+    "headlineHighlight": "one method.",
+    "subtitle": "For the creator tired of foreign AI, messy spreadsheets, and guru guesses. Integrated system of agents, catalog, scripts, routine, lessons, and lives — built by a woman for women, with method.",
+    "ctaPrimary": "I want the method · $9/mo",
+    "guarantee": "7-day guarantee · cancel any time",
+    "testimonialCount": "+500 creators · 4.9 ★"
+  },
+  "mockup": {
+    "routineTitle": "today's routine",
+    "routineLabel": "weekly adherence",
+    "routineBadge": "streak: 12d",
+    "greeting": "good afternoon, maria",
+    "headlineLine1": "no more posting",
+    "headlineHighlight": "in the dark.",
+    "kpiProducts": "products",
+    "kpiScripts": "scripts",
+    "kpiLessons": "lessons",
+    "chatLabel": "live chat",
+    "chatAgent": "skincare scripts",
+    "chatMessage": "Got 5 ready hooks for the serum…",
+    "agentsLabel": "10 agents",
+    "yaraLabel": "yara · live",
+    "yaraMessage": "Live today at 7pm",
+    "trendingBadge": "trending today"
+  },
+  "marquee": {
+    "line1": "MÉTODO TTS",
+    "line2": "FOR THOSE WHO SELL",
+    "line3": "NOT FOR THOSE WHO GUESS",
+    "line4": "BUILT BY WOMEN",
+    "line5": "FOR WOMEN"
+  },
+  "chapterMarker": "ch.",
+  "chapter01": {
+    "marker": "the diagnosis",
+    "headline": "the old way of selling on tiktok shop",
+    "headlineHighlight": "is over.",
+    "subtitle": "We're done with broken spreadsheets, cold foreign AI, and guru hot takes. Método TTS was born to be the opposite — a system, not improvisation.",
+    "antesSection": "before",
+    "depoisSection": "with método tts"
+  },
+  "antesDepois": {
+    "0": { "antes": "Messy product spreadsheet", "depois": "Organized catalog in the app" },
+    "1": { "antes": "Foreign AI that writes like a robot", "depois": "Agent with a friend's tone" },
+    "2": { "antes": "Posting in the dark without a method", "depois": "Daily routine with measurable adherence" },
+    "3": { "antes": "Asking questions in Instagram DMs", "depois": "Live chat support, 24/7" },
+    "4": { "antes": "PDF lesson from 2 years ago", "depois": "Video lesson + live in-app" },
+    "5": { "antes": "Script lost in notes app", "depois": "Library of saved scripts" }
+  },
+  "quote": {
+    "line1": "creators don't guess.",
+    "line2": "creators sell with method.",
+    "credit": "manifesto · método tts"
+  },
+  "chapter02": {
+    "marker": "the system",
+    "headline": "everything in the",
+    "headlineHighlight": "same app.",
+    "subtitle": "No more isolated tools. It's an integrated system: register a product and it shows up in the agents, references, and your routine. Everything talks."
+  },
+  "pilares": {
+    "0": { "title": "ai agents", "description": "10 specialists: 9 niche script agents and a Q&A one." },
+    "1": { "title": "catalog", "description": "Your registered products, ready to use with the agents." },
+    "2": { "title": "scripts", "description": "Library of your saved scripts. You pick what goes." },
+    "3": { "title": "routine", "description": "Weekly adherence, progress, and references in one place." },
+    "4": { "title": "lessons", "description": "Complete Método TTS track, on video." },
+    "5": { "title": "live", "description": "Meetups with Yara to solve questions in real time." },
+    "6": { "title": "news", "description": "TikTok Shop updates straight to your feed." },
+    "7": { "title": "friendly tone", "description": "Warm, fluent, no forced English or robotic talk." }
+  },
+  "agents": {
+    "0": { "title": "analysis", "description": "Upload a photo. The AI returns audience, pain point, trigger, hook, and objection. In 30 seconds you know who to sell to and how." },
+    "1": { "title": "script", "description": "5 styles per product. 3s hook, body, real benefit, soft CTA. You choose what to save." },
+    "2": { "title": "q&a", "description": "TikTok Shop rules, creator account, commission, shipping, policy. Ask in chat — instant answer." }
+  },
+  "agentsSection": {
+    "eyebrow": "the agents",
+    "headline": "10 specialists.",
+    "headlineHighlight": "one for each niche.",
+    "subtitle": "Each agent solves part of the funnel. You ask in the chat — they deliver. No complicated prompt, no forced English.",
+    "countSingular": "{count} agent",
+    "countPlural": "{count} agents"
+  },
+  "chapter03": {
+    "marker": "the shift",
+    "headline": "habit",
+    "headlineHighlight": "> inspiration.",
+    "subtitle": "The difference between posting 1 video a week and 5 a day isn't talent — it's routine. Método TTS gives you an adherence ring, a progress graph, and a reference library, all in the app.",
+    "features": {
+      "0": { "title": "Weekly adherence", "description": "Progress ring shows at a glance if the week flowed." },
+      "1": { "title": "Monthly progress", "description": "Graph shows your trajectory — no guessing, just data." },
+      "2": { "title": "Curated references", "description": "Niche viral videos to inspire without searching." }
+    },
+    "ringLabel": "adherence",
+    "ringText": "Hit the goal in 6 of 7 days this week.",
+    "ringBadge": "streak: 12 days"
+  },
+  "chapter04": {
+    "marker": "how it starts",
+    "headline": "4 steps.",
+    "headlineHighlight": "from product to posting.",
+    "subtitle": "You're in control from start to finish. The AI is a consultant — you decide.",
+    "cta": "I want to record my first video"
+  },
+  "steps": {
+    "0": { "title": "add product", "description": "Photo, link, screenshot, or text. AI analyzes in seconds." },
+    "1": { "title": "request script", "description": "5 styles, validated formula. You pick what fits." },
+    "2": { "title": "save the good", "description": "Scripts you like go to the library. Nothing saves without you." },
+    "3": { "title": "record & track", "description": "Post the video, mark your routine, watch adherence rise." }
+  },
+  "features": {
+    "0": "10 AI agents · 9 niche specialists + 1 support",
+    "1": "Unlimited catalog of your products",
+    "2": "Unlimited library of your scripts",
+    "3": "Product analysis with photo, link, or text — no limit",
+    "4": "5 styles per script with a validated formula",
+    "5": "Templates for 12+ niches · add your own",
+    "6": "Daily routine with weekly adherence and progress",
+    "7": "Video lessons · full Método TTS track",
+    "8": "Periodic live Q&A sessions",
+    "9": "TikTok Shop news in-app",
+    "10": "You in control: nothing saves without your click",
+    "11": "Mobile app (PWA) · some screens offline",
+    "12": "Constant updates and new templates"
+  },
+  "stats": {
+    "0": { "label": "active creators" },
+    "1": { "label": "scripts generated" },
+    "2": { "label": "average rating" },
+    "3": { "label": "q&a support" }
+  },
+  "testimonialFeatured": {
+    "name": "Camila S.",
+    "role": "Started 3 months ago · made $2k in 30 days",
+    "quote": "I had never sold anything online. The lessons taught me the method, the routine gave me discipline, the agents gave me scripts. In 30 days I hit $2k. And the app is so beautiful I open it just to look at it."
+  },
+  "testimonialsSection": {
+    "eyebrow": "real stories",
+    "headline": "creators who",
+    "headlineHighlight": "flipped",
+    "headlineRest": "the switch."
+  },
+  "testimonials": {
+    "0": { "name": "Marcela R.", "role": "Skincare · 8 months", "quote": "Before: 1 video a week. Today: 4-5 a day. Sales tripled." },
+    "1": { "name": "Bia M.", "role": "$1.5k/mo", "quote": "Scripts don't sound like AI. Hook that holds, CTA that doesn't push." },
+    "2": { "name": "Aline F.", "role": "Mom entrepreneur", "quote": "First AI that sounds like me. And the prettiest app I've used." }
+  },
+  "guarantee": {
+    "eyebrow": "promise",
+    "headline": "7 days to try. if it doesn't work,",
+    "headlineHighlight": "the risk is ours.",
+    "subtitle": "No questions, no red tape, no fine print. You try the whole method and, if it's not for you, get your money back via Kiwify."
+  },
+  "pricing": {
+    "eyebrow": "investment",
+    "headline": "one plan.",
+    "headlineHighlight": "everything included.",
+    "subtitle": "Full access to the method. No upsells, no locked features, no catches.",
+    "cardTitle": "método tts · full access",
+    "badge": "Launch promo",
+    "oldPrice": "Was $18.00",
+    "cardSubtitle": "Less than a coffee a month.",
+    "featuresLabel": "all included",
+    "cta": "I want the method now",
+    "security": "Secure payment via Kiwify",
+    "guarantee": "7-day guarantee · 100% refund"
+  },
+  "faqs": {
+    "0": { "question": "Do I need to understand AI to use this?", "answer": "No. You chat with the agents like you'd chat with a friend — in your language, no technical jargon." },
+    "1": { "question": "Does the AI save everything automatically? Will I lose control?", "answer": "No. Here AI is a consultant, not an author. You decide what goes to your catalog and script library. Nothing reaches your repo without your click." },
+    "2": { "question": "How long until the first result?", "answer": "First script: 30 seconds. First sale: depends on your funnel, but most students see a difference within the first week of routine use." },
+    "3": { "question": "Will it work for my niche?", "answer": "Yes. We have templates for skincare, makeup, supplements, hair, fragrance, home, fashion, motherhood, electronics, accessories, pet, shoes — and you can add your own." },
+    "4": { "question": "Is this just for those already selling?", "answer": "No. Most students are starting out. The lessons teach the method from scratch." },
+    "5": { "question": "Can I use it on mobile?", "answer": "Yes, it was built mobile-first. Install as an app on iPhone or Android." },
+    "6": { "question": "Are there usage limits?", "answer": "No. Unlimited across the board — analysis, scripts, saves, questions." },
+    "7": { "question": "How does the guarantee work?", "answer": "7 days to try. If it doesn't work, 100% refund via Kiwify. No questions asked." },
+    "8": { "question": "Can I cancel any time?", "answer": "Yes. 2 clicks on Kiwify's dashboard. No penalty, no lock-in." }
+  },
+  "faqSection": {
+    "eyebrow": "frequently asked",
+    "headline": "still have doubts?",
+    "headlineHighlight": "the answer is here."
+  },
+  "finalCta": {
+    "badge": "first script in 30 seconds",
+    "headline": "come to the",
+    "headlineHighlight": "method.",
+    "subtitle": "$9/mo · full access · 7-day guarantee · cancel any time",
+    "primary": "I want to start now",
+    "secondary": "I already have access",
+    "security": "Secure payment via Kiwify · no lock-in"
+  },
+  "footer": {
+    "description": "Complete system for TikTok Shop creators. Built by a woman, with method.",
+    "productEyebrow": "product",
+    "productBuy": "Buy",
+    "productLogin": "Sign in",
+    "productFeatures": "Features",
+    "supportEyebrow": "support",
+    "supportHelp": "Help center",
+    "legalEyebrow": "legal",
+    "legalTerms": "Terms of use",
+    "legalPrivacy": "Privacy policy",
+    "copyright": "Método TTS · All rights reserved",
+    "security": "Secure payment via Kiwify"
+  }
+}
