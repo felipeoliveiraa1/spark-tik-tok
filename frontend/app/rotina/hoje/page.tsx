@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import {
   ArrowLeft,
   Pencil,
@@ -54,11 +55,11 @@ type Completion = {
   habits_total: number;
 } | null;
 
-const CATEGORY_LABELS: Record<HabitCategory, { label: string; emoji: string }> = {
-  trabalho: { label: "Trabalho", emoji: "💼" },
-  pessoal: { label: "Pessoal", emoji: "🌸" },
-  resultado: { label: "Resultado", emoji: "📈" },
-  custom: { label: "Meus", emoji: "✨" },
+const CATEGORY_EMOJIS: Record<HabitCategory, string> = {
+  trabalho: "💼",
+  pessoal: "🌸",
+  resultado: "📈",
+  custom: "✨",
 };
 
 function fmtDateBR(iso: string): string {
@@ -124,6 +125,7 @@ function CelebrationView({
   desktop: boolean;
   onReopen: () => void;
 }) {
+  const t = useTranslations("rotina");
   const pct =
     completion && completion.habits_total > 0
       ? Math.round((completion.habits_done / completion.habits_total) * 100)
@@ -152,7 +154,7 @@ function CelebrationView({
             className="inline-flex items-center gap-1.5 px-3 py-2 -ml-3 rounded-full text-spark-ink-70 hover:text-spark-ink hover:bg-spark-surface-sunken/60 text-[12.5px] font-extrabold transition-colors duration-300"
           >
             <ArrowLeft size={14} strokeWidth={2.5} />
-            Voltar pra home
+            {t("nav.back")}
           </Link>
         </SectionReveal>
 
@@ -166,14 +168,13 @@ function CelebrationView({
               className="font-display lowercase tracking-tight text-spark-ink leading-[0.9]"
               style={{ fontSize: "clamp(2.5rem, 8vw, 5rem)" }}
             >
-              você <span className="text-grad-brand">bateu hoje.</span>
+              {t("celebration.title")}
             </h1>
           </SectionReveal>
 
           <SectionReveal direction="up" delay={350}>
             <p className="mt-5 text-fluid-lead text-spark-ink-70 max-w-[40ch] mx-auto leading-snug font-semibold">
-              Próxima rotina libera amanhã. Por enquanto, descansa ou avança em outra parte do
-              método.
+              {t("celebration.subtitle")}
             </p>
           </SectionReveal>
 
@@ -183,7 +184,7 @@ function CelebrationView({
               <div className="rounded-spark-2xl bg-spark-surface border border-spark-hairline p-5 shadow-rest">
                 <div className="text-eyebrow text-spark-brand-deep mb-1.5 flex items-center justify-center gap-1.5">
                   <Flame size={11} strokeWidth={2.5} />
-                  streak
+                  {t("celebration.streakBadge")}
                 </div>
                 <div
                   className="font-display lowercase tracking-tight leading-none text-spark-ink"
@@ -192,11 +193,11 @@ function CelebrationView({
                   {streak}
                 </div>
                 <div className="mt-1.5 text-[11px] text-spark-ink-50 font-extrabold uppercase tracking-wider">
-                  {streak === 1 ? "dia" : "dias"}
+                  {streak === 1 ? t("header.streakDayLabel") : t("header.streakDayLabelPlural")}
                 </div>
               </div>
               <div className="rounded-spark-2xl bg-brand-grad-soft border border-spark-brand/20 p-5 shadow-rest">
-                <div className="text-eyebrow text-spark-brand-deep mb-1.5">aderência</div>
+                <div className="text-eyebrow text-spark-brand-deep mb-1.5">{t("celebration.adherenceBadge")}</div>
                 <div
                   className="font-display lowercase tracking-tight leading-none text-spark-brand-deep"
                   style={{ fontSize: "clamp(2.5rem, 5vw, 3.5rem)" }}
@@ -204,7 +205,10 @@ function CelebrationView({
                   {pct}%
                 </div>
                 <div className="mt-1.5 text-[11px] text-spark-ink-50 font-extrabold uppercase tracking-wider">
-                  {completion?.habits_done ?? 0} de {completion?.habits_total ?? 0} hábitos
+                  {t("celebration.adherenceDetail", {
+                    done: completion?.habits_done ?? 0,
+                    total: completion?.habits_total ?? 0,
+                  })}
                 </div>
               </div>
             </div>
@@ -214,7 +218,7 @@ function CelebrationView({
           <SectionReveal direction="up" delay={700}>
             <div className="mt-8 inline-flex items-center gap-2 px-4 py-2.5 rounded-full glass border border-spark-hairline text-[12px] font-extrabold text-spark-ink-70 uppercase tracking-wider">
               <Lock size={12} strokeWidth={2.5} />
-              dia trancado · libera amanhã às 00h
+              {t("celebration.lockNotice")}
             </div>
           </SectionReveal>
 
@@ -227,9 +231,9 @@ function CelebrationView({
               >
                 <div className="text-[28px] mb-2">🎓</div>
                 <div className="text-[13px] font-extrabold text-spark-ink group-hover:text-spark-brand-deep transition-colors">
-                  Ver uma aula
+                  {t("celebration.nextSteps.viewLesson")}
                 </div>
-                <div className="text-[11px] text-spark-ink-50 mt-1">Avança no método</div>
+                <div className="text-[11px] text-spark-ink-50 mt-1">{t("celebration.nextSteps.viewLessonDesc")}</div>
               </Link>
               <Link
                 href="/scripts"
@@ -237,9 +241,9 @@ function CelebrationView({
               >
                 <div className="text-[28px] mb-2">✍️</div>
                 <div className="text-[13px] font-extrabold text-spark-ink group-hover:text-spark-brand-deep transition-colors">
-                  Criar script
+                  {t("celebration.nextSteps.createScript")}
                 </div>
-                <div className="text-[11px] text-spark-ink-50 mt-1">Gera o próximo</div>
+                <div className="text-[11px] text-spark-ink-50 mt-1">{t("celebration.nextSteps.createScriptDesc")}</div>
               </Link>
               <Link
                 href="/rotina/evolucao"
@@ -247,9 +251,9 @@ function CelebrationView({
               >
                 <div className="text-[28px] mb-2">📊</div>
                 <div className="text-[13px] font-extrabold text-spark-ink group-hover:text-spark-brand-deep transition-colors">
-                  Ver evolução
+                  {t("celebration.nextSteps.viewEvolution")}
                 </div>
-                <div className="text-[11px] text-spark-ink-50 mt-1">Tua trajetória</div>
+                <div className="text-[11px] text-spark-ink-50 mt-1">{t("celebration.nextSteps.viewEvolutionDesc")}</div>
               </Link>
             </div>
           </SectionReveal>
@@ -262,7 +266,7 @@ function CelebrationView({
               className="mt-10 inline-flex items-center gap-1.5 text-[11.5px] text-spark-ink-50 hover:text-spark-ink underline underline-offset-2 font-extrabold uppercase tracking-wider transition-colors"
             >
               <RotateCcw size={11} strokeWidth={2.5} />
-              Marquei errado · destrancar
+              {t("celebration.reopen")}
             </button>
           </SectionReveal>
         </div>
@@ -363,6 +367,8 @@ function RoutineView({
   const total = habits.length;
   const done = habits.filter((h) => checked.has(h.id)).length;
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+  const t = useTranslations("rotina");
+  const tCats = useTranslations("rotina.categories");
 
   const grouped = React.useMemo(() => {
     const byCat = new Map<HabitCategory, Habit[]>();
@@ -405,8 +411,8 @@ function RoutineView({
         className="transition-transform duration-300 group-hover:scale-110"
       />
       {done === 0
-        ? "Marque pelo menos 1 hábito"
-        : `Concluir dia · ${done} de ${total} feitos`}
+        ? t("buttons.completeDayEmpty")
+        : t("buttons.completeDayFilled", { done, total })}
       {done > 0 && (
         <ArrowRight
           size={14}
@@ -446,7 +452,7 @@ function RoutineView({
                 className="inline-flex items-center gap-1.5 px-3 py-2 -ml-3 rounded-full text-spark-ink-70 hover:text-spark-ink hover:bg-spark-surface-sunken/60 text-[12.5px] font-extrabold transition-colors duration-300"
               >
                 <ArrowLeft size={14} strokeWidth={2.5} />
-                Voltar
+                {t("nav.backShort")}
               </Link>
               <div className="flex items-center gap-2">
                 <HelpMenu onReopenTour={onReopenTour} />
@@ -456,7 +462,7 @@ function RoutineView({
                   className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full glass border border-spark-hairline text-spark-ink text-[12px] font-extrabold hover:bg-spark-brand-soft hover:text-spark-brand-deep hover:-translate-y-0.5 transition-all duration-300 ease-premium shadow-rest"
                 >
                   <Pencil size={12} strokeWidth={2.5} />
-                  Editar minha rotina
+                  {t("buttons.editRoutine")}
                 </Link>
               </div>
             </div>
@@ -471,7 +477,7 @@ function RoutineView({
                     <span className="mx-2 opacity-50">·</span>
                     <span className="inline-flex items-center gap-1">
                       <Flame size={11} strokeWidth={2.5} />
-                      streak {streak} {streak === 1 ? "dia" : "dias"}
+                      streak {streak} {streak === 1 ? t("header.streakDayLabel") : t("header.streakDayLabelPlural")}
                     </span>
                   </>
                 )}
@@ -480,7 +486,7 @@ function RoutineView({
                 className="mt-3 font-display lowercase tracking-tight text-spark-ink leading-[0.9]"
                 style={{ fontSize: "clamp(2.25rem, 7vw, 4.5rem)" }}
               >
-                rotina <span className="text-grad-brand">de hoje.</span>
+                {t("header.title")}
               </h1>
             </div>
           </SectionReveal>
@@ -513,10 +519,10 @@ function RoutineView({
               <div className="text-center py-16 px-6 rounded-spark-2xl bg-spark-surface border border-spark-hairline">
                 <Activity size={40} strokeWidth={1.6} className="mx-auto text-spark-ink-50 mb-3" />
                 <div className="font-display lowercase text-spark-ink text-[24px]">
-                  rotina vazia.
+                  {t("empty.title")}
                 </div>
                 <p className="mt-2 text-[13px] text-spark-ink-50 max-w-[36ch] mx-auto">
-                  Adiciona seus primeiros hábitos pra começar a marcar dia a dia.
+                  {t("empty.description")}
                 </p>
                 <div className="mt-6">
                   <Link
@@ -524,7 +530,7 @@ function RoutineView({
                     className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-spark-ink text-white text-[13px] font-extrabold shadow-lift hover:-translate-y-0.5 transition-all duration-300 ease-premium"
                   >
                     <Pencil size={13} strokeWidth={2.5} />
-                    Configurar minha rotina
+                    {t("empty.button")}
                   </Link>
                 </div>
               </div>
@@ -532,13 +538,12 @@ function RoutineView({
           ) : (
             <div className="space-y-7">
               {grouped.map(([cat, items], gi) => {
-                const meta = CATEGORY_LABELS[cat];
                 return (
                   <SectionReveal key={cat} delay={gi * 60}>
                     <section>
                       <div className="mb-3 inline-flex items-center gap-2 text-eyebrow text-spark-brand-deep">
-                        <span className="text-[14px]">{meta.emoji}</span>
-                        <span>✦ {meta.label.toLowerCase()}</span>
+                        <span className="text-[14px]">{CATEGORY_EMOJIS[cat]}</span>
+                        <span>✦ {tCats(cat).toLowerCase()}</span>
                       </div>
                       <div className="space-y-2.5">
                         {items.map((h) => (
@@ -605,6 +610,7 @@ function RotinaHojeBody({
   const { habits, checked, completion, streak, loading, refresh, setChecked } = useRoutine();
   const confirm = useConfirm();
   const toast = useToast();
+  const t = useTranslations("rotina");
 
   const toggle = async (habitId: string) => {
     const wasChecked = checked.has(habitId);
@@ -622,10 +628,10 @@ function RotinaHojeBody({
       setChecked(checked);
       const j = (await res.json().catch(() => ({}))) as { error?: string };
       if (j?.error === "day_already_completed") {
-        toast.error("Dia já tá concluído. Destranca pra editar.");
+        toast.error(t("toast.dayAlreadyCompleted"));
         void refresh();
       } else {
-        toast.error("Não consegui salvar");
+        toast.error(t("toast.saveFailed"));
       }
     }
   };
@@ -636,9 +642,9 @@ function RotinaHojeBody({
     const pct = total > 0 ? Math.round((done / total) * 100) : 0;
 
     const ok = await confirm({
-      title: `Concluir o dia? (${pct}%)`,
-      description: `Você bateu ${done} de ${total} hábitos. A rotina vai travar até amanhã.`,
-      confirmLabel: "Concluir dia",
+      title: t("confirm.completeTitle", { pct }),
+      description: t("confirm.completeDescription", { done, total }),
+      confirmLabel: t("confirm.completeLabel"),
     });
     if (!ok) return;
 
@@ -648,18 +654,18 @@ function RotinaHojeBody({
       body: JSON.stringify({}),
     });
     if (res.ok) {
-      toast.success("Dia concluído! 🎉");
+      toast.success(t("toast.completedSuccess"));
       await refresh();
     } else {
-      toast.error("Não consegui concluir");
+      toast.error(t("toast.completedFailed"));
     }
   };
 
   const reopen = async () => {
     const ok = await confirm({
-      title: "Destrancar o dia?",
-      description: "Você vai poder editar as marcações de novo.",
-      confirmLabel: "Destrancar",
+      title: t("confirm.reopenTitle"),
+      description: t("confirm.reopenDescription"),
+      confirmLabel: t("confirm.reopenLabel"),
       destructive: true,
     });
     if (!ok) return;
@@ -668,17 +674,17 @@ function RotinaHojeBody({
       method: "DELETE",
     });
     if (res.ok) {
-      toast.success("Dia destrancado");
+      toast.success(t("toast.reopenSuccess"));
       await refresh();
     } else {
-      toast.error("Não consegui destrancar");
+      toast.error(t("toast.reopenFailed"));
     }
   };
 
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center min-h-[60vh] hero-radial">
-        <LoadingSplash message="Abrindo sua rotina" />
+        <LoadingSplash message={t("loading")} />
       </div>
     );
   }
