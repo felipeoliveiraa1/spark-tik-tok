@@ -1,1 +1,29 @@
-{}
+{
+  "hero": {
+    "backLink": "Volver a Educación",
+    "eyebrow": "encuentros con yara",
+    "subtitle": "Lives, mentorías y Q&As. Mira todo dentro del app.",
+    "titleActive": "ocurriendo",
+    "titleActiveAccent": "ahora.",
+    "titleInactive": "en vivo",
+    "titleInactiveAccent": "con yara.",
+    "countSingular": "encuentro disponible",
+    "countPlural": "encuentros disponibles"
+  },
+  "card": {
+    "badgeWatched": "Vista",
+    "badgeLive": "EN VIVO",
+    "badgeReplay": "replay"
+  },
+  "section": {
+    "liveTitle": "en vivo ahora",
+    "upcomingTitle": "próximos encuentros",
+    "replaysTitle": "replays"
+  },
+  "empty": {
+    "title": "sin lives",
+    "titleAccent": "agendados aún.",
+    "description": "Cuando Yara agende un encuentro, lo verás aquí. Los replays anteriores también aparecen en esta pestaña"
+  },
+  "loading": "Cargando lives"
+}

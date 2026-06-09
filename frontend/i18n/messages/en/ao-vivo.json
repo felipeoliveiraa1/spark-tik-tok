@@ -1,1 +1,29 @@
-{}
+{
+  "hero": {
+    "backLink": "Back to Learning",
+    "eyebrow": "sessions with yara",
+    "subtitle": "Lives, office hours, and Q&As. Watch it all inside the app.",
+    "titleActive": "happening",
+    "titleActiveAccent": "now.",
+    "titleInactive": "live",
+    "titleInactiveAccent": "with yara.",
+    "countSingular": "session available",
+    "countPlural": "sessions available"
+  },
+  "card": {
+    "badgeWatched": "Watched",
+    "badgeLive": "LIVE",
+    "badgeReplay": "replay"
+  },
+  "section": {
+    "liveTitle": "live now",
+    "upcomingTitle": "upcoming sessions",
+    "replaysTitle": "replays"
+  },
+  "empty": {
+    "title": "no lives",
+    "titleAccent": "scheduled yet.",
+    "description": "When Yara schedules a session, you'll see it here. Past replays also show up in this tab"
+  },
+  "loading": "Loading lives"
+}

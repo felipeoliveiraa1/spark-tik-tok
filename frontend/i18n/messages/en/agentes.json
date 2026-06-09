@@ -1,1 +1,42 @@
-{}
+{
+  "intro": {
+    "eyebrow": "✦ {totalAgents} specialists",
+    "subtitle": "Each niche has its expert. Chat directly on ChatGPT or Gemini.",
+    "headlineLine1": "talk",
+    "headlineLine2": "to them.",
+    "countPrefix": "of",
+    "countSuffix": "already on",
+    "howItWorksEyebrow": "✦ how it works",
+    "step1Action": "Pick",
+    "step1Text": "the platform you use above.",
+    "step2Action": "Swipe",
+    "step2Text": "and open the agent for your niche.",
+    "step3Action": "Paste",
+    "step3Text": "what she generated into Products or Scripts.",
+    "scrollIndicator": "swipe to view",
+    "stickerText": "AGENTS TTS · 2026 · "
+  },
+  "agent": {
+    "eyebrowTemplate": "✦ {index} of {total}",
+    "howItWorksShow": "how it works",
+    "howItWorksHide": "hide",
+    "comingSoon": "Coming soon",
+    "ctaOpen": "Open in {platform}",
+    "ctaOnly": "For now only on {platform}"
+  },
+  "platform": {
+    "chatgpt": "ChatGPT",
+    "gemini": "Gemini"
+  },
+  "preview": {
+    "mode": "🔍 Lock preview · admin"
+  },
+  "lock": {
+    "daysSingular": "1 day",
+    "daysPlural": "{daysRemaining} days",
+    "descriptionSingular": "To help you learn the method first, this agent unlocks in 1 day. For now use General and Support",
+    "descriptionPlural": "To help you learn the method first, this agent unlocks in {daysRemaining} days. For now use General and Support",
+    "general": "General",
+    "support": "Support"
+  }
+}

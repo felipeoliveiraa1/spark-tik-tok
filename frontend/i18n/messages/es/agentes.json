@@ -1,1 +1,42 @@
-{}
+{
+  "intro": {
+    "eyebrow": "✦ {totalAgents} especialistas",
+    "subtitle": "Cada nicho con su experta. Charla directo en ChatGPT o Gemini.",
+    "headlineLine1": "habla",
+    "headlineLine2": "con ellas.",
+    "countPrefix": "de",
+    "countSuffix": "ya en",
+    "howItWorksEyebrow": "✦ cómo funciona",
+    "step1Action": "Elige",
+    "step1Text": "la plataforma que usas arriba.",
+    "step2Action": "Desliza",
+    "step2Text": "y abre el agente de tu nicho.",
+    "step3Action": "Pega",
+    "step3Text": "lo que ella generó en Productos o Guiones.",
+    "scrollIndicator": "desliza para ver",
+    "stickerText": "AGENTES TTS · 2026 · "
+  },
+  "agent": {
+    "eyebrowTemplate": "✦ {index} de {total}",
+    "howItWorksShow": "cómo funciona",
+    "howItWorksHide": "ocultar",
+    "comingSoon": "Próximamente",
+    "ctaOpen": "Abrir en {platform}",
+    "ctaOnly": "Por ahora solo en {platform}"
+  },
+  "platform": {
+    "chatgpt": "ChatGPT",
+    "gemini": "Gemini"
+  },
+  "preview": {
+    "mode": "🔍 Vista previa de bloqueo · admin"
+  },
+  "lock": {
+    "daysSingular": "1 día",
+    "daysPlural": "{daysRemaining} días",
+    "descriptionSingular": "Para que aprendas el método primero, este agente se desbloquea en 1 día. Por ahora usa General y Soporte",
+    "descriptionPlural": "Para que aprendas el método primero, este agente se desbloquea en {daysRemaining} días. Por ahora usa General y Soporte",
+    "general": "General",
+    "support": "Soporte"
+  }
+}
