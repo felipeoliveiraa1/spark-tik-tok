@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useTranslations } from "next-intl";
 import { ArrowRight, AlertCircle, Plus, X, Check } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { SparkMark } from "@/components/atoms/spark-mark";
@@ -11,22 +12,30 @@ import { SInput } from "@/components/atoms/s-input";
 import { SButton } from "@/components/atoms/s-button";
 import { completeOnboardingAction } from "@/lib/auth";
 
-const PRESET_NICHES = [
-  "Skincare",
-  "Makeup",
-  "Suplementos",
-  "Cabelo",
-  "Perfumaria",
-  "Casa e decoração",
-  "Moda feminina",
-  "Maternidade",
-  "Eletrônicos",
-  "Acessórios",
-  "Pet",
-  "Calçados",
-];
+const PRESET_NICHE_KEYS = [
+  "skincare",
+  "makeup",
+  "supplements",
+  "hair",
+  "fragrance",
+  "home",
+  "fashion",
+  "motherhood",
+  "electronics",
+  "accessories",
+  "pet",
+  "shoes",
+] as const;
 
 function WelcomeForm({ desktop = false }: { desktop?: boolean }) {
+  const t = useTranslations("auth.welcome");
+  const tn = useTranslations("auth.welcome.presetNiches");
+  // PRESET_NICHE_LABELS sao gerados a cada render mas dependem so do locale;
+  // o useMemo aqui ajuda quando o componente re-renderiza por outros motivos.
+  const PRESET_NICHES = React.useMemo(
+    () => PRESET_NICHE_KEYS.map((k) => tn(k)),
+    [tn],
+  );
   const [error, setError] = React.useState<string | null>(null);
   const [pending, setPending] = React.useState(false);
   const [selected, setSelected] = React.useState<string[]>([]);
@@ -53,7 +62,7 @@ function WelcomeForm({ desktop = false }: { desktop?: boolean }) {
   async function onSubmit(formData: FormData) {
     setError(null);
     if (selected.length === 0) {
-      setError("Escolhe pelo menos um nicho.");
+      setError(t("errorNoNiche"));
       return;
     }
     formData.set("niche", selected.join(", "));
@@ -75,7 +84,7 @@ function WelcomeForm({ desktop = false }: { desktop?: boolean }) {
           <SparkMark size={desktop ? 96 : 80} />
         </SectionReveal>
         <SectionReveal direction="up" delay={150}>
-          <div className="mt-8 text-eyebrow text-spark-brand">✦ bem-vinda</div>
+          <div className="mt-8 text-eyebrow text-spark-brand">{t("eyebrow")}</div>
         </SectionReveal>
         <SectionReveal direction="up" delay={250} durationMs={800}>
           <h1
@@ -84,15 +93,14 @@ function WelcomeForm({ desktop = false }: { desktop?: boolean }) {
               fontSize: desktop ? "clamp(2.25rem, 4vw, 3rem)" : "clamp(2rem, 8vw, 2.5rem)",
             }}
           >
-            vamos te conhecer
+            {t("headline1")}
             <br />
-            <span className="text-grad-brand">rapidinho.</span>
+            <span className="text-grad-brand">{t("headlineHighlight")}</span>
           </h1>
         </SectionReveal>
         <SectionReveal direction="up" delay={400}>
           <p className="text-fluid-lead text-spark-ink-70 mt-4 max-w-[44ch] leading-snug font-semibold">
-            A IA usa essas informações pra calibrar o tom dos scripts e adaptar o conteúdo pros
-            seus nichos.
+            {t("subtitle")}
           </p>
         </SectionReveal>
       </div>
@@ -100,11 +108,11 @@ function WelcomeForm({ desktop = false }: { desktop?: boolean }) {
       <SectionReveal direction="up" delay={550}>
         <div className="mt-8">
           <div className="text-eyebrow text-spark-ink-50 mb-2">
-            Como podemos te chamar?
+            {t("nameLabel")}
           </div>
           <SInput
             name="name"
-            placeholder="Seu primeiro nome"
+            placeholder={t("namePlaceholder")}
             autoComplete="given-name"
             required
           />
@@ -115,16 +123,20 @@ function WelcomeForm({ desktop = false }: { desktop?: boolean }) {
         <div className="mt-6">
           <div className="flex items-baseline justify-between mb-2">
             <div className="text-eyebrow text-spark-ink-50">
-              Em quais nichos você atua?
+              {t("nicheLabel")}
             </div>
             <div className="text-[11px] text-spark-ink-50 font-mono">
               {selected.length > 0 &&
-                `${selected.length} selecionado${selected.length > 1 ? "s" : ""}`}
+                t(
+                  selected.length === 1
+                    ? "nicheSelectedSingular"
+                    : "nicheSelectedPlural",
+                  { count: selected.length },
+                )}
             </div>
           </div>
           <p className="text-[12.5px] text-spark-ink-50 mb-4 leading-snug">
-            Pode marcar quantos quiser. Não tá na lista? Toca em &ldquo;Outro&rdquo; e adiciona o
-            seu. ✨
+            {t("nicheHint")}
           </p>
 
           <div className="flex flex-wrap gap-2">
@@ -178,14 +190,14 @@ function WelcomeForm({ desktop = false }: { desktop?: boolean }) {
                       setCustomValue("");
                     }
                   }}
-                  placeholder="Digita seu nicho"
+                  placeholder={t("customPlaceholder")}
                   maxLength={40}
                   className="bg-transparent outline-none text-[13px] font-extrabold w-[140px] px-1 placeholder:text-spark-ink-35"
                 />
                 <button
                   type="button"
                   onClick={addCustom}
-                  aria-label="Adicionar nicho"
+                  aria-label={t("customAddAria")}
                   className="w-7 h-7 rounded-full bg-brand-grad text-white flex items-center justify-center active:scale-95 transition-transform shadow-lift-brand"
                 >
                   <Check size={12} strokeWidth={2.5} />
@@ -196,7 +208,7 @@ function WelcomeForm({ desktop = false }: { desktop?: boolean }) {
                     setCustomOpen(false);
                     setCustomValue("");
                   }}
-                  aria-label="Cancelar"
+                  aria-label={t("customAddAria")}
                   className="w-7 h-7 rounded-full text-spark-ink-50 hover:bg-spark-surface-sunken flex items-center justify-center"
                 >
                   <X size={12} strokeWidth={2.5} />
@@ -209,7 +221,7 @@ function WelcomeForm({ desktop = false }: { desktop?: boolean }) {
                 className="px-3.5 py-2 rounded-full border-2 border-dashed border-spark-brand/40 text-spark-brand-deep text-[13px] font-extrabold hover:bg-spark-brand-soft hover:-translate-y-0.5 transition-all duration-300 ease-premium inline-flex items-center gap-1.5"
               >
                 <Plus size={13} strokeWidth={2.5} />
-                Outro
+                {t("customLabel")}
               </button>
             )}
           </div>
@@ -235,7 +247,7 @@ function WelcomeForm({ desktop = false }: { desktop?: boolean }) {
             IconRight={ArrowRight}
             disabled={pending}
           >
-            {pending ? "Salvando..." : "Começar a usar"}
+            {pending ? t("submitting") : t("submit")}
           </SButton>
         </SectionReveal>
       </div>
