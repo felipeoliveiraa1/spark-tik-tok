@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/cn";
 
@@ -58,6 +59,7 @@ export function MobileHeader({
   variant = "gradient",
   className,
 }: Props) {
+  const tCommon = useTranslations("common.actions");
   const hasCenter = Boolean(center);
   const isGradient = variant === "gradient";
   const isSoft = variant === "soft";
@@ -102,7 +104,7 @@ export function MobileHeader({
           {back ? (
             <Link
               href={back.href}
-              aria-label={back.ariaLabel ?? "Voltar"}
+              aria-label={back.ariaLabel ?? tCommon("back")}
               className={cn(hitCls, back.label && "w-auto px-2.5 gap-1.5")}
             >
               <ArrowLeft size={22} strokeWidth={2.2} />

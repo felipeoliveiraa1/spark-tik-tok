@@ -1,6 +1,9 @@
+"use client";
+
 import * as React from "react";
 import { Menu } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/cn";
 
 type Props = {
@@ -32,10 +35,11 @@ export function AppHeader({
   LeadingIcon,
   TrailingIcon,
 }: Props) {
+  const t = useTranslations("nav.menu");
   const LeadingComp = LeadingIcon ?? Menu;
 
   const leadingNode = leading ?? (
-    <Link href={leadingHref} className={buttonCls} aria-label="Menu">
+    <Link href={leadingHref} className={buttonCls} aria-label={t("openMenu")}>
       <LeadingComp size={20} strokeWidth={1.7} />
     </Link>
   );
