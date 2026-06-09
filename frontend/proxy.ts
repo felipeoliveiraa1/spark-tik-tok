@@ -117,13 +117,38 @@ export async function proxy(request: NextRequest) {
   const isPageRoute = !pathname.startsWith("/api") && !pathname.startsWith("/_next");
 
   if (isPageRoute) {
-    const { data: profile } = await supabase
+    // Tenta com language (migration 0033). Se a coluna nao existe ainda,
+    // fallback sem language pra nao quebrar a app — i18n usa cookie default.
+    type ProfileRow = {
+      name: string | null;
+      niche: string | null;
+      plan_active: boolean | null;
+      plan_status: string | null;
+      plan_expires_at: string | null;
+      role: string | null;
+      must_reset_password: boolean | null;
+      language?: string | null;
+    };
+    let profile: ProfileRow | null = null;
+    const withLang = await supabase
       .from("profiles")
       .select(
         "name, niche, plan_active, plan_status, plan_expires_at, role, must_reset_password, language",
       )
       .eq("id", user.id)
       .maybeSingle();
+    if (withLang.error?.code === "42703") {
+      const fallback = await supabase
+        .from("profiles")
+        .select(
+          "name, niche, plan_active, plan_status, plan_expires_at, role, must_reset_password",
+        )
+        .eq("id", user.id)
+        .maybeSingle();
+      profile = fallback.data as ProfileRow | null;
+    } else {
+      profile = withLang.data as ProfileRow | null;
+    }
 
     // Sync cookie NEXT_LOCALE com profile.language quando divergirem.
     // Caso de uso: aluna troca idioma em outro device, ao voltar aqui

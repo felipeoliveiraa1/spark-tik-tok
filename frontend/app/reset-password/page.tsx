@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Lock, ArrowRight, AlertCircle, Check } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
+import { LanguageFloatingSwitch } from "@/components/atoms/language-floating-switch";
 import { SparkMark } from "@/components/atoms/spark-mark";
 import { SparkWordmark } from "@/components/atoms/spark-wordmark";
 import { HeroBlob } from "@/components/atoms/hero-blob";
@@ -276,5 +277,10 @@ function Desktop() {
 }
 
 export default function ResetPasswordPage() {
-  return <ResponsiveShell mobile={<Mobile />} desktop={<Desktop />} fullBleed />;
+  return (
+    <>
+      <LanguageFloatingSwitch />
+      <ResponsiveShell mobile={<Mobile />} desktop={<Desktop />} fullBleed />
+    </>
+  );
 }

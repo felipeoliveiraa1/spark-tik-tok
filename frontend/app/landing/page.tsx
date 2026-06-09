@@ -25,6 +25,7 @@ import { Sticker } from "@/components/atoms/sticker";
 import { SButton } from "@/components/atoms/s-button";
 import { SBadge } from "@/components/atoms/s-badge";
 import { AgentTile } from "@/components/atoms/agent-tile";
+import { LanguageFloatingSwitch } from "@/components/atoms/language-floating-switch";
 import { type AgentId } from "@/lib/agents";
 import { VISIBLE_AGENTS_CATALOG, CATEGORY_LABELS } from "@/lib/agents-catalog";
 
@@ -214,6 +215,7 @@ function ChapterMarker({ n, title }: { n: string; title: string }) {
 export default function LandingPage() {
   return (
     <div className="min-h-dvh w-full bg-spark-bg overflow-x-hidden">
+      <LanguageFloatingSwitch />
       {/* ============== HEADER ============== */}
       <header className="sticky top-0 z-30 backdrop-blur-md bg-spark-bg/85 border-b border-spark-hairline">
         <div className="max-w-[1200px] mx-auto px-4 sm:px-5 lg:px-10 py-1.5 lg:py-2 flex items-center gap-2 sm:gap-3">

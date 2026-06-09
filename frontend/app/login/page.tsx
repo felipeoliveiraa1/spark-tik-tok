@@ -12,6 +12,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
+import { LanguageFloatingSwitch } from "@/components/atoms/language-floating-switch";
 import { SparkMark } from "@/components/atoms/spark-mark";
 import { SparkWordmark } from "@/components/atoms/spark-wordmark";
 import { HeroBlob } from "@/components/atoms/hero-blob";
@@ -352,5 +353,10 @@ function LoginDesktop() {
 }
 
 export default function LoginPage() {
-  return <ResponsiveShell mobile={<LoginMobile />} desktop={<LoginDesktop />} fullBleed />;
+  return (
+    <>
+      <LanguageFloatingSwitch />
+      <ResponsiveShell mobile={<LoginMobile />} desktop={<LoginDesktop />} fullBleed />
+    </>
+  );
 }

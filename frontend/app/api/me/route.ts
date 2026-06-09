@@ -5,8 +5,9 @@ import { isLocale, LOCALE_COOKIE } from "@/i18n/config";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const PROFILE_FIELDS =
-  "id, email, name, niche, plan_active, plan_status, must_reset_password, role, avatar_url, bio, instagram_handle, tiktok_handle, cidade_uf, meta_mensal_brl, ranking_opt_in, whatsapp, whatsapp_opt_in, created_at, language";
+const PROFILE_FIELDS_BASE =
+  "id, email, name, niche, plan_active, plan_status, must_reset_password, role, avatar_url, bio, instagram_handle, tiktok_handle, cidade_uf, meta_mensal_brl, ranking_opt_in, whatsapp, whatsapp_opt_in, created_at";
+const PROFILE_FIELDS = `${PROFILE_FIELDS_BASE}, language`;
 
 // Normaliza telefone BR pra formato Evolution (55 + DDD + numero, so digitos)
 function normalizeWhatsapp(input: unknown): string | null {
@@ -43,13 +44,21 @@ export async function GET() {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const { data: profile } = await supabase
+  // Tenta com language; se migration 0033 nao rodou, fallback sem language.
+  const withLang = await supabase
     .from("profiles")
     .select(PROFILE_FIELDS)
     .eq("id", user.id)
     .maybeSingle();
-
-  return NextResponse.json({ profile });
+  if (withLang.error?.code === "42703") {
+    const fallback = await supabase
+      .from("profiles")
+      .select(PROFILE_FIELDS_BASE)
+      .eq("id", user.id)
+      .maybeSingle();
+    return NextResponse.json({ profile: fallback.data });
+  }
+  return NextResponse.json({ profile: withLang.data });
 }
 
 /**
@@ -123,13 +132,29 @@ export async function PATCH(request: Request) {
   }
   patch.updated_at = new Date().toISOString();
 
-  const { data, error } = await supabase
+  // Se admin tentar atualizar language mas a coluna nao existe ainda,
+  // remove ela do patch e retorna erro amigavel
+  const initial = await supabase
     .from("profiles")
     .update(patch)
     .eq("id", user.id)
     .select(PROFILE_FIELDS)
     .single();
 
+  let data = initial.data as unknown;
+  let error = initial.error;
+  if (initial.error?.code === "42703") {
+    // Coluna language nao existe — retira do patch e re-tenta
+    delete patch.language;
+    const retry = await supabase
+      .from("profiles")
+      .update(patch)
+      .eq("id", user.id)
+      .select(PROFILE_FIELDS_BASE)
+      .single();
+    data = retry.data;
+    error = retry.error;
+  }
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   const response = NextResponse.json({ profile: data });
