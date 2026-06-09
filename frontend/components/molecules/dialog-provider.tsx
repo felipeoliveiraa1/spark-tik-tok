@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useTranslations } from "next-intl";
 
 // =================================================================
 // Tipos
@@ -162,6 +163,7 @@ function ConfirmDialog({
   opts: ConfirmOptions;
   onAnswer: (v: boolean) => void;
 }) {
+  const t = useTranslations("common.actions");
   // Esc pra cancelar
   React.useEffect(() => {
     const h = (e: KeyboardEvent) => {
@@ -180,7 +182,7 @@ function ConfirmDialog({
     >
       <button
         type="button"
-        aria-label="Fechar"
+        aria-label={t("close")}
         onClick={() => onAnswer(false)}
         className="absolute inset-0 bg-black/40 backdrop-blur-sm cursor-default"
       />
@@ -214,14 +216,14 @@ function ConfirmDialog({
             }
             autoFocus
           >
-            {opts.confirmLabel ?? "Confirmar"}
+            {opts.confirmLabel ?? t("confirm")}
           </button>
           <button
             type="button"
             onClick={() => onAnswer(false)}
             className="flex-1 h-[46px] rounded-full font-semibold text-[14px] text-spark-ink-70 bg-spark-surface-sunken hover:bg-spark-surface-sunken/80 hover:text-spark-ink transition"
           >
-            {opts.cancelLabel ?? "Cancelar"}
+            {opts.cancelLabel ?? t("cancel")}
           </button>
         </div>
       </div>
@@ -240,6 +242,8 @@ function PromptDialog({
   opts: PromptOptions;
   onAnswer: (v: string | null) => void;
 }) {
+  const t = useTranslations("common.actions");
+  const tErrors = useTranslations("errors.validation");
   const [value, setValue] = React.useState(opts.defaultValue ?? "");
   const [err, setErr] = React.useState<string | null>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -270,7 +274,7 @@ function PromptDialog({
       }
     }
     if (!trimmed) {
-      setErr("Esse campo é obrigatório");
+      setErr(tErrors("required"));
       return;
     }
     onAnswer(trimmed);
@@ -284,7 +288,7 @@ function PromptDialog({
     >
       <button
         type="button"
-        aria-label="Fechar"
+        aria-label={t("close")}
         onClick={() => onAnswer(null)}
         className="absolute inset-0 bg-black/40 backdrop-blur-sm cursor-default"
       />
@@ -324,14 +328,14 @@ function PromptDialog({
               type="submit"
               className="flex-1 h-[46px] rounded-full font-semibold text-[14px] text-white bg-brand-grad shadow-[0_6px_18px_-8px_oklch(0.55_0.24_340/0.5)] hover:opacity-90 active:scale-[0.98] transition"
             >
-              {opts.confirmLabel ?? "Salvar"}
+              {opts.confirmLabel ?? t("save")}
             </button>
             <button
               type="button"
               onClick={() => onAnswer(null)}
               className="flex-1 h-[46px] rounded-full font-semibold text-[14px] text-spark-ink-70 bg-spark-surface-sunken hover:bg-spark-surface-sunken/80 hover:text-spark-ink transition"
             >
-              {opts.cancelLabel ?? "Cancelar"}
+              {opts.cancelLabel ?? t("cancel")}
             </button>
           </div>
         </form>

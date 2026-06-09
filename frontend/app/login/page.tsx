@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import {
   Mail,
   ArrowRight,
@@ -21,11 +22,9 @@ import { SInput } from "@/components/atoms/s-input";
 import { SButton } from "@/components/atoms/s-button";
 import { loginAction } from "@/lib/auth";
 
-// Botão separado pra poder usar useFormStatus (precisa estar dentro do <form>).
-// React 19 trata server actions como transitions — useState nao reflete pending
-// confiavelmente. useFormStatus e o jeito oficial.
 function SubmitButton({ desktop }: { desktop: boolean }) {
   const { pending } = useFormStatus();
+  const t = useTranslations("auth.login");
   return (
     <SButton
       type="submit"
@@ -35,12 +34,13 @@ function SubmitButton({ desktop }: { desktop: boolean }) {
       IconRight={ArrowRight}
       loading={pending}
     >
-      {pending ? "Entrando..." : "Entrar"}
+      {pending ? t("submitting") : t("submit")}
     </SButton>
   );
 }
 
 function LoginForm({ desktop = false }: { desktop?: boolean }) {
+  const t = useTranslations("auth.login");
   const [error, setError] = React.useState<string | null>(null);
 
   async function onSubmit(formData: FormData) {
@@ -53,10 +53,10 @@ function LoginForm({ desktop = false }: { desktop?: boolean }) {
 
   return (
     <form action={onSubmit}>
-      <div className="text-eyebrow text-spark-ink-50 mb-2">Email</div>
+      <div className="text-eyebrow text-spark-ink-50 mb-2">{t("emailLabel")}</div>
       <SInput
         name="email"
-        placeholder="seu@email.com"
+        placeholder={t("emailPlaceholder")}
         Icon={Mail}
         type="email"
         autoComplete="email"
@@ -65,12 +65,12 @@ function LoginForm({ desktop = false }: { desktop?: boolean }) {
       />
       <div className="h-4" />
       <div className="flex items-center justify-between mb-2">
-        <div className="text-eyebrow text-spark-ink-50">Senha</div>
+        <div className="text-eyebrow text-spark-ink-50">{t("passwordLabel")}</div>
         <Link
           href="/forgot-password"
           className="text-[12px] font-extrabold text-spark-brand hover:text-spark-brand-deep transition-colors"
         >
-          Esqueci minha senha
+          {t("forgotPassword")}
         </Link>
       </div>
       <SInput
@@ -98,6 +98,7 @@ function LoginForm({ desktop = false }: { desktop?: boolean }) {
 // =================================================================
 
 function LoginMobile() {
+  const t = useTranslations("auth.login");
   return (
     <div className="flex flex-col flex-1 relative overflow-auto hero-radial">
       <HeroBlob color="rose" variant={1} className="-top-24 -left-32 w-[480px] h-[480px]" />
@@ -120,18 +121,18 @@ function LoginMobile() {
 
         {/* Eyebrow + Tanker */}
         <SectionReveal direction="up" delay={250} durationMs={800}>
-          <div className="mt-10 text-eyebrow text-spark-brand">✦ login</div>
+          <div className="mt-10 text-eyebrow text-spark-brand">{t("eyebrow")}</div>
           <h1
             className="mt-2 font-display lowercase tracking-tight text-spark-ink leading-[0.92]"
             style={{ fontSize: "clamp(2.75rem, 12vw, 3.75rem)" }}
           >
-            tá em <span className="text-grad-brand">casa.</span>
+            {t("headline")} <span className="text-grad-brand">{t("headlineHighlight")}</span>
           </h1>
         </SectionReveal>
 
         <SectionReveal direction="up" delay={400}>
           <p className="mt-4 text-fluid-lead text-spark-ink-70 max-w-[30ch] leading-snug font-semibold">
-            Entra com email e senha. Seus roteiros, produtos e rotina te esperam.
+            {t("subtitle")}
           </p>
         </SectionReveal>
 
@@ -154,10 +155,10 @@ function LoginMobile() {
               </div>
               <div className="min-w-0">
                 <div className="text-[13.5px] font-extrabold text-spark-ink truncate">
-                  Ainda não tem acesso?
+                  {t("noAccount")}
                 </div>
                 <div className="text-[11.5px] text-spark-ink-50 mt-0.5 truncate">
-                  Compra e recebe senha no email
+                  {t("buyHint")}
                 </div>
               </div>
             </div>
@@ -172,14 +173,21 @@ function LoginMobile() {
         <div className="flex-1" />
 
         {/* Footer */}
-        <div className="pt-10 text-[10.5px] text-spark-ink-50 text-center flex justify-center gap-3 font-extrabold uppercase tracking-wider">
-          <span>Termos</span>
-          <span>·</span>
-          <span>Privacidade</span>
-          <span>·</span>
-          <span>Suporte</span>
-        </div>
+        <Footer />
       </div>
+    </div>
+  );
+}
+
+function Footer() {
+  const t = useTranslations("auth.login.footer");
+  return (
+    <div className="pt-10 text-[10.5px] text-spark-ink-50 text-center flex justify-center gap-3 font-extrabold uppercase tracking-wider">
+      <span>{t("terms")}</span>
+      <span>·</span>
+      <span>{t("privacy")}</span>
+      <span>·</span>
+      <span>{t("support")}</span>
     </div>
   );
 }
@@ -189,11 +197,12 @@ function LoginMobile() {
 // =================================================================
 
 function LoginDesktop() {
+  const t = useTranslations("auth.login");
+  const tm = useTranslations("auth.login.marketing");
   return (
     <div className="flex-1 min-h-dvh flex w-full">
       {/* LEFT — magazine cover */}
       <div className="flex-1 relative overflow-hidden text-white bg-brand-grad-hero flex flex-col justify-between p-14">
-        {/* Sparkles + blob on dark canvas */}
         <SparkleField count={20} seed={888} color="rgba(255,255,255,0.55)" className="opacity-70" />
         <div
           aria-hidden
@@ -217,15 +226,15 @@ function LoginDesktop() {
         <div className="relative max-w-[600px]">
           <SectionReveal direction="up" durationMs={700}>
             <div className="text-[12px] font-extrabold opacity-90 uppercase tracking-widest">
-              ✦ método tts
+              {tm("eyebrow")}
             </div>
             <h1
               className="font-display lowercase tracking-tight leading-[0.88] mt-5"
               style={{ fontSize: "clamp(3.5rem, 5.5vw, 6rem)" }}
             >
-              feito pra
+              {tm("headlineLine1")}
               <br />
-              criadoras
+              {tm("headlineLine2")}
               <br />
               <span
                 className="text-transparent bg-clip-text"
@@ -234,24 +243,23 @@ function LoginDesktop() {
                     "linear-gradient(90deg, oklch(1 0 0), oklch(0.92 0.08 30))",
                 }}
               >
-                que vendem.
+                {tm("headlineHighlight")}
               </span>
             </h1>
           </SectionReveal>
 
           <SectionReveal direction="up" delay={250}>
             <p className="mt-7 text-fluid-lead opacity-95 max-w-[460px] leading-snug font-semibold">
-              IA pessoal que analisa produto, escreve roteiros completos e organiza sua rotina —
-              tudo no celular.
+              {tm("description")}
             </p>
           </SectionReveal>
 
           {/* Stats inline */}
           <div className="mt-12 grid grid-cols-3 gap-8 max-w-[480px]">
             {[
-              { num: "5", label: "roteiros por produto" },
-              { num: "24/7", label: "suporte tira-dúvida" },
-              { num: "1", label: "clique pra começar" },
+              { num: "5", label: tm("stat1Label") },
+              { num: "24/7", label: tm("stat2Label") },
+              { num: "1", label: tm("stat3Label") },
             ].map((s, i) => (
               <SectionReveal key={s.label} direction="up" delay={400 + i * 100}>
                 <div>
@@ -276,7 +284,7 @@ function LoginDesktop() {
             © {new Date().getFullYear()} Método TTS
           </div>
           <div className="text-[11px] opacity-60 font-extrabold uppercase tracking-widest">
-            premium edition
+            {tm("premiumEdition")}
           </div>
         </div>
       </div>
@@ -288,7 +296,7 @@ function LoginDesktop() {
 
         <div className="relative px-14 py-12">
           <SectionReveal direction="down" durationMs={500}>
-            <div className="text-eyebrow text-spark-brand">✦ entrar</div>
+            <div className="text-eyebrow text-spark-brand">{t("eyebrow")}</div>
           </SectionReveal>
 
           <SectionReveal direction="up" delay={100} durationMs={800}>
@@ -296,14 +304,13 @@ function LoginDesktop() {
               className="mt-2 font-display lowercase tracking-tight text-spark-ink leading-[0.9]"
               style={{ fontSize: "clamp(2.5rem, 3.5vw, 3.5rem)" }}
             >
-              tá em <span className="text-grad-brand">casa.</span>
+              {t("headline")} <span className="text-grad-brand">{t("headlineHighlight")}</span>
             </h2>
           </SectionReveal>
 
           <SectionReveal direction="up" delay={250}>
             <p className="text-[14px] text-spark-ink-70 mt-4 font-semibold leading-snug max-w-[36ch]">
-              Use o email e senha que você recebeu na compra. Tudo continua exatamente como você
-              deixou.
+              {t("desktopSubtitle")}
             </p>
           </SectionReveal>
 
@@ -324,10 +331,10 @@ function LoginDesktop() {
                 </div>
                 <div className="min-w-0">
                   <div className="text-[13.5px] font-extrabold text-spark-ink">
-                    Ainda não tem acesso?
+                    {t("noAccount")}
                   </div>
                   <div className="text-[11.5px] text-spark-ink-50 mt-0.5">
-                    Compra e recebe senha no email
+                    {t("buyHint")}
                   </div>
                 </div>
               </div>
