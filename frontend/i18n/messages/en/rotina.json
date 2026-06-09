@@ -1,1 +1,61 @@
-{}
+{
+  "nav": {
+    "back": "Back to home",
+    "backShort": "Back"
+  },
+  "header": {
+    "title": "today's routine.",
+    "streakDayLabel": "day",
+    "streakDayLabelPlural": "days"
+  },
+  "buttons": {
+    "editRoutine": "Edit my routine",
+    "completeDayEmpty": "Check at least 1 habit",
+    "completeDayFilled": "Complete day · {done} of {total} done"
+  },
+  "celebration": {
+    "title": "you did it today.",
+    "subtitle": "Tomorrow's routine unlocks then. For now, rest or advance in another part of the method.",
+    "streakBadge": "streak",
+    "adherenceBadge": "adherence",
+    "adherenceDetail": "{done} of {total} habits",
+    "lockNotice": "day locked · unlocks tomorrow at midnight",
+    "nextSteps": {
+      "viewLesson": "Watch a lesson",
+      "viewLessonDesc": "Progress in the method",
+      "createScript": "Create a script",
+      "createScriptDesc": "Generate the next",
+      "viewEvolution": "View progress",
+      "viewEvolutionDesc": "Your journey"
+    },
+    "reopen": "Marked wrong · unlock"
+  },
+  "empty": {
+    "title": "empty routine.",
+    "description": "Add your first habits to start checking off day by day.",
+    "button": "Set up my routine"
+  },
+  "categories": {
+    "trabalho": "Work",
+    "pessoal": "Personal",
+    "resultado": "Results",
+    "custom": "Mine"
+  },
+  "toast": {
+    "dayAlreadyCompleted": "Day already complete. Unlock to edit.",
+    "saveFailed": "Couldn't save",
+    "completedSuccess": "Day complete! 🎉",
+    "completedFailed": "Couldn't complete",
+    "reopenSuccess": "Day unlocked",
+    "reopenFailed": "Couldn't unlock"
+  },
+  "confirm": {
+    "completeTitle": "Complete the day? ({pct}%)",
+    "completeDescription": "You hit {done} of {total} habits. The routine will lock until tomorrow.",
+    "completeLabel": "Complete day",
+    "reopenTitle": "Unlock the day?",
+    "reopenDescription": "You'll be able to edit the check-ins again.",
+    "reopenLabel": "Unlock"
+  },
+  "loading": "Opening your routine"
+}

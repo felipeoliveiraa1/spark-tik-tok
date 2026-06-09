@@ -1,1 +1,48 @@
-{}
+{
+  "header": {
+    "back": "Voltar pra home",
+    "eyebrow": "✦ educação · método tts"
+  },
+  "hero": {
+    "subtitle": "Módulos editoriais, aulas em vídeo, lives ao vivo e checklist interativo — tudo dentro do app.",
+    "headlineLine1": "a trilha",
+    "headlineHighlight": "do método."
+  },
+  "stats": {
+    "modules": "módulos",
+    "lessons": "aulas",
+    "progress": "progresso"
+  },
+  "module": {
+    "subtitleDefault": "Módulo do Método TTS",
+    "chapter": "cap. {index}"
+  },
+  "lives": {
+    "eyebrowLive": "✦ rolando agora",
+    "eyebrowUpcoming": "✦ próximos encontros",
+    "eyebrowReplays": "✦ encontros com a yara",
+    "titleLive": "a yara tá no ar.",
+    "titleUpcoming": "próxima live com a yara.",
+    "titleReplays": "reveja as lives.",
+    "viewAll": "Ver todas as lives",
+    "moreReplaysSingular": "outro replay",
+    "moreReplaysPlural": "outros replays",
+    "moreReplaysLabel": "+ {count} {replays} no acervo",
+    "badgeLive": "AO VIVO",
+    "badgeReplay": "◉ replay"
+  },
+  "empty": {
+    "headlineLine1": "trilha vazia",
+    "headlineHighlight": "por aqui ainda.",
+    "description": "A Yara tá organizando os módulos. Em breve você tem tudo aqui ✨"
+  },
+  "loading": "Carregando trilha",
+  "modules": {
+    "eyebrow": "✦ os módulos",
+    "title": "a trilha completa do método.",
+    "singular": "módulo",
+    "plural": "módulos",
+    "lessons": "aulas",
+    "countTemplate": "{count} {modules} · {lessons} aulas"
+  }
+}

@@ -1,1 +1,61 @@
-{}
+{
+  "nav": {
+    "back": "Volver al inicio",
+    "backShort": "Volver"
+  },
+  "header": {
+    "title": "rutina de hoy.",
+    "streakDayLabel": "día",
+    "streakDayLabelPlural": "días"
+  },
+  "buttons": {
+    "editRoutine": "Editar mi rutina",
+    "completeDayEmpty": "Marca al menos 1 hábito",
+    "completeDayFilled": "Cerrar día · {done} de {total} hechos"
+  },
+  "celebration": {
+    "title": "lo lograste hoy.",
+    "subtitle": "La próxima rutina se libera mañana. Por ahora, descansa o avanza en otra parte del método.",
+    "streakBadge": "racha",
+    "adherenceBadge": "adherencia",
+    "adherenceDetail": "{done} de {total} hábitos",
+    "lockNotice": "día cerrado · se libera mañana a las 00h",
+    "nextSteps": {
+      "viewLesson": "Ver una clase",
+      "viewLessonDesc": "Avanza en el método",
+      "createScript": "Crear guión",
+      "createScriptDesc": "Genera el siguiente",
+      "viewEvolution": "Ver progreso",
+      "viewEvolutionDesc": "Tu trayectoria"
+    },
+    "reopen": "Marqué mal · desbloquear"
+  },
+  "empty": {
+    "title": "rutina vacía.",
+    "description": "Agrega tus primeros hábitos para empezar a marcar día a día.",
+    "button": "Configurar mi rutina"
+  },
+  "categories": {
+    "trabalho": "Trabajo",
+    "pessoal": "Personal",
+    "resultado": "Resultados",
+    "custom": "Míos"
+  },
+  "toast": {
+    "dayAlreadyCompleted": "El día ya está cerrado. Desbloquéalo para editar.",
+    "saveFailed": "No pude guardar",
+    "completedSuccess": "¡Día cerrado! 🎉",
+    "completedFailed": "No pude cerrar",
+    "reopenSuccess": "Día desbloqueado",
+    "reopenFailed": "No pude desbloquear"
+  },
+  "confirm": {
+    "completeTitle": "¿Cerrar el día? ({pct}%)",
+    "completeDescription": "Hiciste {done} de {total} hábitos. La rutina se bloqueará hasta mañana.",
+    "completeLabel": "Cerrar día",
+    "reopenTitle": "¿Desbloquear el día?",
+    "reopenDescription": "Podrás editar las marcaciones de nuevo.",
+    "reopenLabel": "Desbloquear"
+  },
+  "loading": "Abriendo tu rutina"
+}

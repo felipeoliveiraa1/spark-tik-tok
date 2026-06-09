@@ -1,1 +1,75 @@
-{}
+{
+  "nav": {
+    "back": "Back to home"
+  },
+  "header": {
+    "eyebrow": "✦ creator ranking",
+    "title": "who's",
+    "titleHighlight": "on top.",
+    "subtitle": "GMV + consistency became a single score. Let's climb."
+  },
+  "tabs": {
+    "week": "last 7 days",
+    "month": "current month",
+    "year": "last year"
+  },
+  "stats": {
+    "creators": "creators",
+    "creatorsSingular": "creator"
+  },
+  "scoreHelpButton": "How does the score work?",
+  "podium": {
+    "cta": "tap to see more →",
+    "labelGmv": "gmv",
+    "labelScore": "score"
+  },
+  "list": {
+    "labelGmv": "gmv",
+    "labelConsistency": "routine",
+    "cta": "tap to see more →",
+    "sectionEyebrow": "✦ position {position} onward"
+  },
+  "profile": {
+    "sectionEyebrow": "✦ your position",
+    "badgeYou": "you",
+    "labelPosition": "position {position}",
+    "labelNiches": "niches",
+    "nichesEmpty": "Niche not set yet 💭",
+    "labelGmv": "gmv",
+    "labelConsistency": "routine",
+    "labelScore": "score",
+    "labelBreakdown": "how the score is calculated",
+    "consistencyComponent": "60% Routine consistency",
+    "gmvComponent": "40% GMV (relative)",
+    "closeAria": "Close"
+  },
+  "empty": {
+    "title": "ranking still empty.",
+    "description": "When other students opt in, they'll appear here. You can activate yours on the account page.",
+    "button": "Activate my ranking"
+  },
+  "modal": {
+    "eyebrow": "✦ how it works",
+    "title": "The ranking score",
+    "formulaLabel": "the formula",
+    "formulaScore": "score",
+    "formulaConsistency": "60% consistency",
+    "formulaGmv": "40% gmv",
+    "formulaRange": "0 to 100 points",
+    "consistencyTitle": "60% · consistency (the biggest weight)",
+    "consistencyDescription": "How much you hit your daily routine during the ranking period. Every day you open the routine and click \"Complete day\" counts as 1 point in your consistency.",
+    "consistencyExample1": "30 days with routine done in the month = 100% consistency = 60 points",
+    "consistencyExample2": "15 days done = 50% = 30 points",
+    "consistencyExample3": "0 days done = 0 points",
+    "gmvTitle": "40% · gmv (gross sales)",
+    "gmvDescription": "GMV is how much you sold on TikTok Shop in the period — the gross value, before fees and commissions (not net profit). It's relative to the group — if the top creator sold $10k and you sold $5k, you get 50% of 40 points. Set yours on Account → GMV, update during the month.",
+    "gmvTip": "💡 Because GMV is relative, someone who sold less can rank well if they keep consistency high. Conversely: selling a lot isn't enough if you don't hit the routine.",
+    "periodsTitle": "the 3 periods",
+    "periodsWeek": "Week — last 7 days (fast movement)",
+    "periodsMonth": "Month — current month (default)",
+    "periodsYear": "Total — last 12 months (truly consistent ones)",
+    "tipsTitle": "✦ to climb fast",
+    "tipsDescription": "Hit the routine every day. Even days you did the minimum, mark and complete. Daily consistency weighs most — in 2 weeks hitting daily you already pass those who only sold 💕",
+    "button": "Got it"
+  }
+}

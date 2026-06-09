@@ -1,1 +1,61 @@
-{}
+{
+  "nav": {
+    "back": "Voltar pra home",
+    "backShort": "Voltar"
+  },
+  "header": {
+    "title": "rotina de hoje.",
+    "streakDayLabel": "dia",
+    "streakDayLabelPlural": "dias"
+  },
+  "buttons": {
+    "editRoutine": "Editar minha rotina",
+    "completeDayEmpty": "Marque pelo menos 1 hábito",
+    "completeDayFilled": "Concluir dia · {done} de {total} feitos"
+  },
+  "celebration": {
+    "title": "você bateu hoje.",
+    "subtitle": "Próxima rotina libera amanhã. Por enquanto, descansa ou avança em outra parte do método.",
+    "streakBadge": "streak",
+    "adherenceBadge": "aderência",
+    "adherenceDetail": "{done} de {total} hábitos",
+    "lockNotice": "dia trancado · libera amanhã às 00h",
+    "nextSteps": {
+      "viewLesson": "Ver uma aula",
+      "viewLessonDesc": "Avança no método",
+      "createScript": "Criar script",
+      "createScriptDesc": "Gera o próximo",
+      "viewEvolution": "Ver evolução",
+      "viewEvolutionDesc": "Tua trajetória"
+    },
+    "reopen": "Marquei errado · destrancar"
+  },
+  "empty": {
+    "title": "rotina vazia.",
+    "description": "Adiciona seus primeiros hábitos pra começar a marcar dia a dia.",
+    "button": "Configurar minha rotina"
+  },
+  "categories": {
+    "trabalho": "Trabalho",
+    "pessoal": "Pessoal",
+    "resultado": "Resultado",
+    "custom": "Meus"
+  },
+  "toast": {
+    "dayAlreadyCompleted": "Dia já tá concluído. Destranca pra editar.",
+    "saveFailed": "Não consegui salvar",
+    "completedSuccess": "Dia concluído! 🎉",
+    "completedFailed": "Não consegui concluir",
+    "reopenSuccess": "Dia destrancado",
+    "reopenFailed": "Não consegui destrancar"
+  },
+  "confirm": {
+    "completeTitle": "Concluir o dia? ({pct}%)",
+    "completeDescription": "Você bateu {done} de {total} hábitos. A rotina vai travar até amanhã.",
+    "completeLabel": "Concluir dia",
+    "reopenTitle": "Destrancar o dia?",
+    "reopenDescription": "Você vai poder editar as marcações de novo.",
+    "reopenLabel": "Destrancar"
+  },
+  "loading": "Abrindo sua rotina"
+}

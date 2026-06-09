@@ -1,1 +1,75 @@
-{}
+{
+  "nav": {
+    "back": "Voltar pra home"
+  },
+  "header": {
+    "eyebrow": "✦ ranking de criadoras",
+    "title": "quem tá",
+    "titleHighlight": "no topo.",
+    "subtitle": "GMV + consistência viraram um score só. Bora pra cima."
+  },
+  "tabs": {
+    "week": "últimos 7 dias",
+    "month": "mês atual",
+    "year": "último ano"
+  },
+  "stats": {
+    "creators": "criadoras",
+    "creatorsSingular": "criadora"
+  },
+  "scoreHelpButton": "Como funciona o score?",
+  "podium": {
+    "cta": "toque pra ver mais →",
+    "labelGmv": "gmv",
+    "labelScore": "score"
+  },
+  "list": {
+    "labelGmv": "gmv",
+    "labelConsistency": "rotina",
+    "cta": "toque pra ver mais →",
+    "sectionEyebrow": "✦ posição {position} em diante"
+  },
+  "profile": {
+    "sectionEyebrow": "✦ sua posição",
+    "badgeYou": "você",
+    "labelPosition": "posição {position}",
+    "labelNiches": "nichos",
+    "nichesEmpty": "Ainda não cadastrou nicho 💭",
+    "labelGmv": "gmv",
+    "labelConsistency": "rotina",
+    "labelScore": "score",
+    "labelBreakdown": "como o score é calculado",
+    "consistencyComponent": "60% Consistência de rotina",
+    "gmvComponent": "40% GMV (relativo)",
+    "closeAria": "Fechar"
+  },
+  "empty": {
+    "title": "ranking ainda vazio.",
+    "description": "Quando outras alunas escolherem aparecer no ranking, elas vão pintar aqui. Você pode ativar o seu na página de conta.",
+    "button": "Ativar meu ranking"
+  },
+  "modal": {
+    "eyebrow": "✦ como funciona",
+    "title": "O score do ranking",
+    "formulaLabel": "a fórmula",
+    "formulaScore": "score",
+    "formulaConsistency": "60% consistência",
+    "formulaGmv": "40% gmv",
+    "formulaRange": "0 a 100 pontos",
+    "consistencyTitle": "60% · consistência (o que pesa mais)",
+    "consistencyDescription": "É o quanto você bateu sua rotina diária no período do ranking. Cada dia em que você abre a rotina e clica em \"Concluir dia\" conta como 1 ponto na sua consistência.",
+    "consistencyExample1": "30 dias com rotina batida no mês = consistência 100% = 60 pontos",
+    "consistencyExample2": "15 dias batidos = 50% = 30 pontos",
+    "consistencyExample3": "0 dias batidos = 0 pontos",
+    "gmvTitle": "40% · gmv (vendas brutas)",
+    "gmvDescription": "GMV é quanto você vendeu no TikTok Shop no período — o valor bruto, antes de taxas e comissões (não é o lucro líquido). É relativo ao grupo — se a top do ranking vendeu R$10 mil e você vendeu R$5 mil, ganha 50% dos 40 pontos. Cadastra na sua Conta → GMV, atualiza durante o mês.",
+    "gmvTip": "💡 Como o GMV é relativo, alguém pode ter vendido pouco mas ficar bem no ranking se mantém a consistência alta. E vice-versa: vender muito não basta se você não bate a rotina.",
+    "periodsTitle": "os 3 períodos",
+    "periodsWeek": "Semana — últimos 7 dias (movimento rápido)",
+    "periodsMonth": "Mês — mês atual (padrão)",
+    "periodsYear": "Total — últimos 12 meses (quem é constante de verdade)",
+    "tipsTitle": "✦ pra subir rápido",
+    "tipsDescription": "Bate a rotina todo dia. Mesmo dias que você só fez o mínimo, marca e conclui. A consistência diária é o que mais pesa — em 2 semanas batendo todo dia você já passa quem só vendeu 💕",
+    "button": "Entendi"
+  }
+}

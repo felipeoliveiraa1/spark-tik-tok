@@ -1,1 +1,48 @@
-{}
+{
+  "header": {
+    "back": "Back to home",
+    "eyebrow": "✦ learning · método tts"
+  },
+  "hero": {
+    "subtitle": "Editorial modules, video lessons, live sessions, and interactive checklists — all inside the app.",
+    "headlineLine1": "the method's",
+    "headlineHighlight": "track."
+  },
+  "stats": {
+    "modules": "modules",
+    "lessons": "lessons",
+    "progress": "progress"
+  },
+  "module": {
+    "subtitleDefault": "Método TTS module",
+    "chapter": "ch. {index}"
+  },
+  "lives": {
+    "eyebrowLive": "✦ live now",
+    "eyebrowUpcoming": "✦ upcoming sessions",
+    "eyebrowReplays": "✦ sessions with yara",
+    "titleLive": "yara is on air.",
+    "titleUpcoming": "next live with yara.",
+    "titleReplays": "rewatch the lives.",
+    "viewAll": "View all lives",
+    "moreReplaysSingular": "more replay",
+    "moreReplaysPlural": "more replays",
+    "moreReplaysLabel": "+ {count} {replays} in the archive",
+    "badgeLive": "LIVE",
+    "badgeReplay": "◉ replay"
+  },
+  "empty": {
+    "headlineLine1": "empty track",
+    "headlineHighlight": "here yet.",
+    "description": "Yara is organizing the modules. Soon you'll have everything here ✨"
+  },
+  "loading": "Loading the track",
+  "modules": {
+    "eyebrow": "✦ the modules",
+    "title": "the method's full track.",
+    "singular": "module",
+    "plural": "modules",
+    "lessons": "lessons",
+    "countTemplate": "{count} {modules} · {lessons} lessons"
+  }
+}
