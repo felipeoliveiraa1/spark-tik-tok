@@ -1,0 +1,127 @@
+{
+  "greeting": {
+    "earlyMorning": "Buena madrugada",
+    "morning": "Buen día",
+    "afternoon": "Buenas tardes",
+    "night": "Buenas noches"
+  },
+  "timeAgo": {
+    "today": "hoy",
+    "yesterday": "ayer",
+    "daysAgo": "hace {days}d"
+  },
+  "nav": {
+    "top": "Inicio",
+    "stats": "Stats",
+    "actions": "Acciones",
+    "routine": "Rutina",
+    "catalog": "Catálogo"
+  },
+  "hero": {
+    "adminLink": "Panel admin",
+    "adminAria": "Abrir panel admin",
+    "subtitle": "Tu central para crear, vender y crecer en TikTok Shop.",
+    "stickerText": "MÉTODO TTS · 2026 · PREMIUM · ",
+    "headlineLine1": "basta de postear",
+    "headlineHighlight": "a ciegas.",
+    "subCopy": "Charla con las especialistas, genera guiones virales, sigue tu rutina. Todo en un solo lugar, como te lo mereces. 💕",
+    "ctaAgents": "Charlar con agentes",
+    "ctaCheckin": "Check-in de hoy"
+  },
+  "stats": {
+    "products": "Productos en el catálogo",
+    "scripts": "Sets de guiones",
+    "lessons": "Clases completadas",
+    "streak": "Racha de días",
+    "sectionEyebrow": "✦ tú hoy",
+    "sectionTitle": "tus números"
+  },
+  "whatsapp": {
+    "eyebrow": "✦ comunidad en whatsapp",
+    "headlineLine1": "entra ya",
+    "headlineHighlight": "al grupo.",
+    "description": "Comunidad exclusiva para compartir resultados, resolver dudas con Yara y otras creadoras, y ver qué está funcionando ahora 💕",
+    "communityActive": "Comunidad activa",
+    "communityAccess": "Acceso incluido en tu plan",
+    "joinGroup": "Entrar al grupo"
+  },
+  "cards": {
+    "analysis": {
+      "title": "Análisis y guiones",
+      "subtitle": "Charla con las especialistas",
+      "description": "8 agentes por nicho. Skincare, suplementos, makeup, casa, electrónicos…"
+    },
+    "catalog": {
+      "title": "Catálogo",
+      "subtitle": "Registrar producto",
+      "description": "Pega la ficha generada por el agente Info para organizar."
+    },
+    "scripts": {
+      "title": "Guiones",
+      "subtitle": "Agregar guiones",
+      "description": "5 guiones en el método Yara — hook, dev, beneficio, CTA."
+    }
+  },
+  "actions": {
+    "eyebrow": "✦ para empezar",
+    "title": "¿creamos?",
+    "viewAll": "ver todo"
+  },
+  "highlight": {
+    "eyebrow": "✦ destacado",
+    "open": "abrir"
+  },
+  "routine": {
+    "eyebrow": "✦ tu camino",
+    "headlineLine1": "la constancia",
+    "headlineHighlight": "se vuelve venta.",
+    "checkinDone": "✓ Check-in hecho hoy",
+    "streakLabel": "🔥 Racha actual",
+    "dayOne": "día",
+    "dayMany": "días",
+    "streakActive": "¡Estás volando! Mantén el ritmo 💕",
+    "streakStart": "¿Empezamos tu racha hoy?",
+    "seeProgress": "ver progreso",
+    "doCheckin": "hacer check-in"
+  },
+  "live": {
+    "nowLive": "EN VIVO AHORA",
+    "watchNow": "ver ahora"
+  },
+  "yaraRoutine": {
+    "eyebrow": "✦ referencia",
+    "headlineLine1": "La rutina",
+    "headlineHighlight": "ideal de Yara",
+    "description": "06h a 23h: 7 posteos, 2 lives, grabación en lote. Inspírate.",
+    "viewTimeline": "ver timeline"
+  },
+  "catalogSection": {
+    "eyebrow": "✦ catálogo",
+    "headlineLine1": "tus",
+    "headlineHighlight": "productos",
+    "viewAll": "ver todos",
+    "newProduct": "Nuevo producto",
+    "addSheet": "Registrar ficha",
+    "emptyTitle": "Empieza agregando tu primer producto",
+    "emptyDescription": "Usa los agentes para generar la ficha completa y regístrala aquí para tener todo organizado.",
+    "viewAgents": "Ver agentes",
+    "addNow": "Registrar ahora"
+  },
+  "finalCta": {
+    "eyebrow": "✦ ¿lista para hoy?",
+    "headlineLine1": "crea algo",
+    "headlineLine2": "que nadie",
+    "headlineHighlight": "haya visto.",
+    "ctaStart": "empezar ahora"
+  },
+  "news": {
+    "eyebrow": "✦ novedades",
+    "headlineLine1": "últimas",
+    "headlineHighlight": "noticias",
+    "viewAll": "todas",
+    "newBadge": "nuevo"
+  },
+  "fallback": {
+    "creator": "creadora"
+  }
+}

@@ -85,6 +85,8 @@ export const NAMESPACES = [
   "ao-vivo",
   "chat",
   "errors",
+  "formulario",
+  "home",
 ] as const;
 
 export type Namespace = (typeof NAMESPACES)[number];
