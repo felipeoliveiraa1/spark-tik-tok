@@ -7,16 +7,17 @@
     "routine": "Routine",
     "lessons": "Lessons",
     "account": "Account",
-    "more": "More"
+    "more": "more"
   },
   "labels": {
     "home": "Home",
-    "chat": "Chat",
+    "chat": "Agents",
     "agents": "Agents",
     "products": "Products",
     "scripts": "Scripts",
     "routine": "Routine",
     "lessons": "Lessons",
+    "education": "Education",
     "news": "News",
     "live": "Live",
     "ranking": "Ranking",
@@ -24,6 +25,10 @@
   },
   "menu": {
     "openMenu": "Open menu",
-    "closeMenu": "Close menu"
+    "closeMenu": "Close menu",
+    "mainNav": "Main navigation",
+    "navMenu": "Navigation menu",
+    "moreOptions": "More menu options",
+    "whereTo": "where to next?"
   }
 }

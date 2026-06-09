@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/cn";
 
 export type NavId =
@@ -15,19 +18,19 @@ export type NavId =
 
 type Item = {
   id: NavId;
-  label: string;
+  labelKey: "home" | "agents" | "products" | "scripts" | "routine" | "lessons" | "account";
   href: string;
   emoji: string;
 };
 
 const items: Item[] = [
-  { id: "home", label: "Início", href: "/", emoji: "🏠" },
-  { id: "chat", label: "Agentes", href: "/agentes", emoji: "✨" },
-  { id: "produtos", label: "Produtos", href: "/produtos", emoji: "📦" },
-  { id: "scripts", label: "Scripts", href: "/scripts", emoji: "✍️" },
-  { id: "rotina", label: "Rotina", href: "/rotina/hoje", emoji: "📊" },
-  { id: "educacao", label: "Aulas", href: "/educacao", emoji: "🎓" },
-  { id: "conta", label: "Conta", href: "/conta", emoji: "👤" },
+  { id: "home", labelKey: "home", href: "/", emoji: "🏠" },
+  { id: "chat", labelKey: "agents", href: "/agentes", emoji: "✨" },
+  { id: "produtos", labelKey: "products", href: "/produtos", emoji: "📦" },
+  { id: "scripts", labelKey: "scripts", href: "/scripts", emoji: "✍️" },
+  { id: "rotina", labelKey: "routine", href: "/rotina/hoje", emoji: "📊" },
+  { id: "educacao", labelKey: "lessons", href: "/educacao", emoji: "🎓" },
+  { id: "conta", labelKey: "account", href: "/conta", emoji: "👤" },
 ];
 
 type Props = {
@@ -36,6 +39,7 @@ type Props = {
 };
 
 export function BottomNav({ active = "home", className }: Props) {
+  const t = useTranslations("nav.bottomBar");
   return (
     <nav
       className={cn(
@@ -72,7 +76,7 @@ export function BottomNav({ active = "home", className }: Props) {
                 isActive ? "font-extrabold" : "font-semibold",
               )}
             >
-              {it.label}
+              {t(it.labelKey)}
             </span>
           </Link>
         );

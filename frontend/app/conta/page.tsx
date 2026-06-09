@@ -23,6 +23,7 @@ import { ProfileEditor } from "./profile-editor";
 import { ChangePasswordForm } from "./change-password-form";
 import { AvatarEditor } from "./avatar-editor";
 import { ProfileExtrasEditor } from "./profile-extras-editor";
+import { LanguageSelector } from "./language-selector";
 import { RevenueCard } from "./revenue-card";
 import { RankingOptInCard } from "./ranking-opt-in-card";
 import { ContaTour } from "./conta-tour";
@@ -389,6 +390,11 @@ function ContaBody({
               </div>
             </SectionReveal>
           </div>
+
+          {/* Idioma da interface */}
+          <SectionReveal direction="up" delay={245}>
+            <LanguageSelector />
+          </SectionReveal>
 
           {/* Alterar senha */}
           {!showReset && (

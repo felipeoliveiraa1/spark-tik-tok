@@ -3,6 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   Home,
   Sparkles,
@@ -27,6 +28,17 @@ type IconComp = React.ComponentType<{
   className?: string;
 }>;
 
+type LabelKey =
+  | "home"
+  | "chat"
+  | "products"
+  | "scripts"
+  | "routine"
+  | "education"
+  | "ranking"
+  | "news"
+  | "account";
+
 /**
  * FloatingMainNav — navegação principal premium, glass morphism.
  *
@@ -49,21 +61,21 @@ type IconComp = React.ComponentType<{
 
 type Item = {
   id: NavId;
-  label: string;
+  labelKey: LabelKey;
   href: string;
   Icon: IconComp;
 };
 
 const ITEMS: Item[] = [
-  { id: "home", label: "Início", href: "/", Icon: Home },
-  { id: "chat", label: "Agentes", href: "/agentes", Icon: Sparkles },
-  { id: "produtos", label: "Produtos", href: "/produtos", Icon: Package },
-  { id: "scripts", label: "Scripts", href: "/scripts", Icon: PenLine },
-  { id: "rotina", label: "Rotina", href: "/rotina/hoje", Icon: Activity },
-  { id: "educacao", label: "Educação", href: "/educacao", Icon: GraduationCap },
-  { id: "ranking", label: "Ranking", href: "/ranking", Icon: Trophy },
-  { id: "news", label: "News", href: "/news", Icon: Newspaper },
-  { id: "conta", label: "Conta", href: "/conta", Icon: User },
+  { id: "home", labelKey: "home", href: "/", Icon: Home },
+  { id: "chat", labelKey: "chat", href: "/agentes", Icon: Sparkles },
+  { id: "produtos", labelKey: "products", href: "/produtos", Icon: Package },
+  { id: "scripts", labelKey: "scripts", href: "/scripts", Icon: PenLine },
+  { id: "rotina", labelKey: "routine", href: "/rotina/hoje", Icon: Activity },
+  { id: "educacao", labelKey: "education", href: "/educacao", Icon: GraduationCap },
+  { id: "ranking", labelKey: "ranking", href: "/ranking", Icon: Trophy },
+  { id: "news", labelKey: "news", href: "/news", Icon: Newspaper },
+  { id: "conta", labelKey: "account", href: "/conta", Icon: User },
 ];
 
 function deriveActive(pathname: string | null): NavId | undefined {
@@ -103,11 +115,12 @@ export function FloatingMainNav({ active }: Props) {
 
 function DesktopFloatingNav({ active }: { active?: NavId }) {
   const [hovered, setHovered] = React.useState(false);
+  const t = useTranslations("nav");
   return (
     <aside
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      aria-label="Navegação principal"
+      aria-label={t("menu.mainNav")}
       data-tutorial-id="desktop-nav"
       className={cn(
         "hidden lg:flex fixed left-5 z-40",
@@ -125,11 +138,12 @@ function DesktopFloatingNav({ active }: { active?: NavId }) {
     >
       {ITEMS.map((it) => {
         const isActive = active === it.id;
+        const label = t(`labels.${it.labelKey}`);
         return (
           <Link
             key={it.id}
             href={it.href}
-            aria-label={it.label}
+            aria-label={label}
             aria-current={isActive ? "page" : undefined}
             className={cn(
               "group relative flex items-center gap-3 h-12 rounded-full transition-all duration-300 ease-premium overflow-hidden",
@@ -157,7 +171,7 @@ function DesktopFloatingNav({ active }: { active?: NavId }) {
                 hovered ? "opacity-100" : "opacity-0",
               )}
             >
-              {it.label}
+              {label}
             </span>
 
             {/* Indicador ativo: dot no canto direito quando colapsado */}
@@ -183,6 +197,7 @@ const QUICK_IDS: NavId[] = ["home", "chat", "scripts", "rotina"];
 
 function MobileFloatingNav({ active }: { active?: NavId }) {
   const [open, setOpen] = React.useState(false);
+  const t = useTranslations("nav");
 
   // Fecha em ESC
   React.useEffect(() => {
@@ -212,7 +227,7 @@ function MobileFloatingNav({ active }: { active?: NavId }) {
     <>
       {/* Bottom bar fixa: 4 atalhos + botão "Mais" */}
       <nav
-        aria-label="Navegação principal"
+        aria-label={t("menu.mainNav")}
         data-tutorial-id="mobile-nav"
         className={cn(
           "lg:hidden fixed left-1/2 -translate-x-1/2 z-40",
@@ -225,11 +240,12 @@ function MobileFloatingNav({ active }: { active?: NavId }) {
       >
         {quickItems.map((it) => {
           const isActive = active === it.id;
+          const label = t(`labels.${it.labelKey}`);
           return (
             <Link
               key={it.id}
               href={it.href}
-              aria-label={it.label}
+              aria-label={label}
               aria-current={isActive ? "page" : undefined}
               className={cn(
                 "relative inline-flex flex-col items-center justify-center gap-0.5 rounded-full transition-all duration-300 ease-premium",
@@ -253,7 +269,7 @@ function MobileFloatingNav({ active }: { active?: NavId }) {
                   isActive ? "font-extrabold" : "font-extrabold opacity-90",
                 )}
               >
-                {it.label}
+                {label}
               </span>
             </Link>
           );
@@ -266,7 +282,7 @@ function MobileFloatingNav({ active }: { active?: NavId }) {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          aria-label="Mais opções de menu"
+          aria-label={t("menu.moreOptions")}
           aria-expanded={open}
           aria-controls="mobile-nav-overlay"
           className={cn(
@@ -281,7 +297,7 @@ function MobileFloatingNav({ active }: { active?: NavId }) {
         >
           <LayoutGrid size={17} strokeWidth={2.4} />
           <span className="text-[9px] leading-none tracking-tight font-extrabold">
-            mais
+            {t("bottomBar.more")}
           </span>
         </button>
       </nav>
@@ -292,14 +308,14 @@ function MobileFloatingNav({ active }: { active?: NavId }) {
           id="mobile-nav-overlay"
           role="dialog"
           aria-modal="true"
-          aria-label="Menu de navegação"
+          aria-label={t("menu.navMenu")}
           className="lg:hidden fixed inset-0 z-50 flex flex-col"
           style={{ animation: "nav-fade-in 240ms ease-premium both" }}
         >
           {/* Backdrop tap-to-close */}
           <button
             type="button"
-            aria-label="Fechar menu"
+            aria-label={t("menu.closeMenu")}
             onClick={() => setOpen(false)}
             className="absolute inset-0 bg-spark-ink/30 backdrop-blur-md"
           />
@@ -328,12 +344,12 @@ function MobileFloatingNav({ active }: { active?: NavId }) {
               {/* Header */}
               <div className="flex items-center justify-between mb-5">
                 <div className="text-eyebrow text-spark-brand">
-                  ✦ onde você quer ir?
+                  ✦ {t("menu.whereTo")}
                 </div>
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  aria-label="Fechar menu"
+                  aria-label={t("menu.closeMenu")}
                   className="w-9 h-9 rounded-full bg-spark-surface-sunken text-spark-ink-70 hover:text-spark-ink hover:bg-spark-brand-soft flex items-center justify-center transition-all duration-300 ease-premium active:scale-95"
                 >
                   <X size={16} strokeWidth={2.5} />
@@ -344,6 +360,7 @@ function MobileFloatingNav({ active }: { active?: NavId }) {
               <div className="grid grid-cols-3 gap-3">
                 {ITEMS.map((it, i) => {
                   const isActive = active === it.id;
+                  const label = t(`labels.${it.labelKey}`);
                   return (
                     <Link
                       key={it.id}
@@ -384,7 +401,7 @@ function MobileFloatingNav({ active }: { active?: NavId }) {
                           isActive ? "font-extrabold" : "font-extrabold",
                         )}
                       >
-                        {it.label}
+                        {label}
                       </span>
                     </Link>
                   );
