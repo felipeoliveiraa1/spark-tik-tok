@@ -108,14 +108,23 @@ export async function GET(request: Request) {
 
   const { ymList, dateFrom, dateTo, daysTotal } = periodBounds(period);
 
-  // 1) Profiles que optaram pelo ranking (so colunas publicas)
+  // 1) Profiles que optaram pelo ranking E tem plano ATIVO (active ou
+  //    trial em curso). Quem caiu pra inactive/canceled/refunded/late
+  //    nao aparece — ranking eh vitrine de quem ta dentro do app hoje.
+  //    Trial expirado vira 'inactive' via cron expireTrials, entao basta
+  //    filtrar plan_status. Tambem exclui staff (admin/crm_agent).
   const { data: profilesData, error: pErr } = await supabase
     .from("profiles")
-    .select("id, name, avatar_url, cidade_uf, meta_mensal_brl, niche")
-    .eq("ranking_opt_in", true);
+    .select("id, name, avatar_url, cidade_uf, meta_mensal_brl, niche, role")
+    .eq("ranking_opt_in", true)
+    .eq("plan_active", true)
+    .in("plan_status", ["active", "trial"]);
 
   if (pErr) return NextResponse.json({ error: pErr.message }, { status: 500 });
-  const profiles = profilesData ?? [];
+  // Exclui contas internas (admin/crm_agent) — sao staff, nao criadoras.
+  const profiles = (profilesData ?? []).filter(
+    (p) => p.role !== "admin" && p.role !== "crm_agent",
+  );
   if (profiles.length === 0) {
     return NextResponse.json({
       period,
