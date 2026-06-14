@@ -121,10 +121,10 @@ export async function GET(request: Request) {
     .in("plan_status", ["active", "trial"]);
 
   if (pErr) return NextResponse.json({ error: pErr.message }, { status: 500 });
-  // Exclui contas internas (admin/crm_agent) — sao staff, nao criadoras.
-  const profiles = (profilesData ?? []).filter(
-    (p) => p.role !== "admin" && p.role !== "crm_agent",
-  );
+  // Exclui apenas crm_agent (staff de vendas, nao criadora). Admins
+  // (Yara, Felipe) podem aparecer no ranking — quem nao quer eh so
+  // desativar ranking_opt_in em /conta.
+  const profiles = (profilesData ?? []).filter((p) => p.role !== "crm_agent");
   if (profiles.length === 0) {
     return NextResponse.json({
       period,
