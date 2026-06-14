@@ -11,8 +11,15 @@ import {
   CheckCircle2,
   ListChecks,
   FileText,
+  Lock,
   Sparkles,
 } from "lucide-react";
+import {
+  getModuleLockStatus,
+  formatModuleDaysRemaining,
+  type ModuleLockStatus,
+} from "@/lib/module-lock";
+import type { ProfileForGate } from "@/lib/agent-lock";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { FloatingMainNav } from "@/components/layout/floating-main-nav";
 import { HeroBlob } from "@/components/atoms/hero-blob";
@@ -89,6 +96,51 @@ function fmtLiveDate(iso: string): string {
 // =================================================================
 // DATA
 // =================================================================
+
+/**
+ * Carrega profile da aluna pra decidir bloqueio dos modulos.
+ * Preview admin: ?preview=lock (opcional &day=1-6 simula dia N).
+ */
+function useProfile(): { profile: ProfileForGate | null; previewMode: boolean } {
+  const [profile, setProfile] = React.useState<ProfileForGate | null>(null);
+  const [previewMode, setPreviewMode] = React.useState(false);
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    if (typeof window !== "undefined") {
+      const sp = new URLSearchParams(window.location.search);
+      if (sp.get("preview") === "lock") {
+        const dayParam = Number(sp.get("day"));
+        const day =
+          Number.isFinite(dayParam) && dayParam >= 1 && dayParam <= 6 ? dayParam : 1;
+        const fakeCreated = new Date(Date.now() - (day - 1) * 86_400_000);
+        setProfile({ created_at: fakeCreated.toISOString(), role: "user" });
+        setPreviewMode(true);
+        return;
+      }
+    }
+
+    fetch("/api/me", {
+      cache: "no-store",
+      headers: { "cache-control": "no-cache", pragma: "no-cache" },
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        if (cancelled) return;
+        const p = (j?.profile ?? null) as ProfileForGate | null;
+        setProfile(p);
+      })
+      .catch(() => {
+        // silencioso
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return { profile, previewMode };
+}
 
 function useHubData() {
   const [modules, setModules] = React.useState<Module[]>([]);
@@ -304,15 +356,18 @@ function ModuleCard({
   mod,
   index,
   progress,
+  lock,
 }: {
   mod: Module;
   index: number;
   progress: Record<string, ProgressRow>;
+  lock: ModuleLockStatus;
 }) {
   const total = mod.lessons.length;
   const done = mod.lessons.filter((l) => progress[l.id]?.completed).length;
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
   const acc = accentClasses(mod.accent);
+  const isLocked = lock.locked;
 
   const kindIcons = mod.lessons.reduce(
     (acc, l) => {
@@ -322,12 +377,12 @@ function ModuleCard({
     {} as Record<LessonKind, number>,
   );
 
-  return (
-    <SectionReveal delay={Math.min(index * 70, 360)}>
-      <Link
-        href={`/educacao/m/${mod.slug}`}
-        className="group block rounded-spark-3xl bg-spark-surface border border-spark-hairline overflow-hidden hover-lift shadow-rest hover:shadow-hero transition-all duration-500 ease-premium h-full"
-      >
+  const cardClassName = isLocked
+    ? "group block rounded-spark-3xl bg-spark-surface border border-spark-hairline overflow-hidden shadow-rest h-full cursor-not-allowed"
+    : "group block rounded-spark-3xl bg-spark-surface border border-spark-hairline overflow-hidden hover-lift shadow-rest hover:shadow-hero transition-all duration-500 ease-premium h-full";
+
+  const inner = (
+    <>
         {/* Cover */}
         <div
           className={cn(
@@ -342,7 +397,10 @@ function ModuleCard({
               src={mod.cover_url}
               alt=""
               loading="lazy"
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-premium group-hover:scale-105"
+              className={cn(
+                "absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-premium",
+                isLocked ? "grayscale brightness-75" : "group-hover:scale-105",
+              )}
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center">
@@ -356,6 +414,21 @@ function ModuleCard({
           )}
 
           <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
+
+          {/* Lock overlay (so quando bloqueado) */}
+          {isLocked && lock.locked && (
+            <>
+              <div className="absolute inset-0 bg-spark-ink/35 backdrop-blur-[2px]" />
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center">
+                <div className="w-14 h-14 rounded-full bg-white/95 shadow-lift flex items-center justify-center">
+                  <Lock size={22} strokeWidth={2.5} className="text-spark-ink" />
+                </div>
+                <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-spark-ink/85 backdrop-blur text-white text-[11.5px] font-extrabold tracking-tight">
+                  {formatModuleDaysRemaining(lock.daysRemaining)}
+                </span>
+              </div>
+            </>
+          )}
 
           {/* Module number badge */}
           <div className="absolute top-4 left-4">
@@ -409,20 +482,42 @@ function ModuleCard({
             </p>
           )}
 
-          {/* Progress */}
-          <div className="mt-5 flex items-center gap-3">
-            <div className="flex-1 h-2 rounded-full bg-spark-surface-sunken overflow-hidden">
-              <div
-                className="h-full bg-brand-grad transition-all duration-700 ease-premium"
-                style={{ width: `${pct}%` }}
-              />
+          {/* Progress (somente quando nao bloqueado) */}
+          {!isLocked ? (
+            <div className="mt-5 flex items-center gap-3">
+              <div className="flex-1 h-2 rounded-full bg-spark-surface-sunken overflow-hidden">
+                <div
+                  className="h-full bg-brand-grad transition-all duration-700 ease-premium"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+              <div className="text-[11.5px] text-spark-ink-70 font-extrabold font-mono shrink-0">
+                {done}/{total}
+              </div>
             </div>
-            <div className="text-[11.5px] text-spark-ink-70 font-extrabold font-mono shrink-0">
-              {done}/{total}
-            </div>
-          </div>
+          ) : (
+            lock.locked && (
+              <div className="mt-5 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-spark-surface-sunken text-spark-ink-70 text-[11px] font-extrabold">
+                <Lock size={10} strokeWidth={2.5} />
+                {formatModuleDaysRemaining(lock.daysRemaining)}
+              </div>
+            )
+          )}
         </div>
-      </Link>
+      </>
+    );
+
+  return (
+    <SectionReveal delay={Math.min(index * 70, 360)}>
+      {isLocked ? (
+        <div aria-disabled className={cardClassName}>
+          {inner}
+        </div>
+      ) : (
+        <Link href={`/educacao/m/${mod.slug}`} className={cardClassName}>
+          {inner}
+        </Link>
+      )}
     </SectionReveal>
   );
 }
@@ -681,16 +776,43 @@ function HubBody({
   onReopenTour: () => void;
 }) {
   const { modules, progress, featuredLives, totalLives, replaysCount, loading } = useHubData();
+  const { profile, previewMode } = useProfile();
   const totalLessons = modules.reduce((sum, m) => sum + m.lessons.length, 0);
   const completedCount = Object.values(progress).filter((p) => p.completed).length;
   const hasLiveNow = featuredLives.some((e) => getLiveStatus(e, new Date()) === "live");
   const isEmpty = modules.length === 0 && totalLives === 0;
+
+  // Calcula lock pra cada modulo. Se aluna for gated, reordena pra
+  // mostrar unlocked primeiro (Fundamentos + Estrutura&Rotina) — assim
+  // ela ve o que ja pode estudar sem scrollar.
+  const orderedWithLock = React.useMemo(() => {
+    const annotated = modules.map((m) => ({
+      mod: m,
+      lock: getModuleLockStatus(profile, m.slug, undefined, {
+        skipCutoff: previewMode,
+      }),
+    }));
+    const someLocked = annotated.some((a) => a.lock.locked);
+    if (!someLocked) return annotated;
+    const unlocked = annotated.filter((a) => !a.lock.locked);
+    const locked = annotated.filter((a) => a.lock.locked);
+    return [...unlocked, ...locked];
+  }, [modules, profile, previewMode]);
 
   return (
     <div
       className="flex-1 overflow-auto relative"
       style={{ paddingBottom: desktop ? 32 : "calc(env(safe-area-inset-bottom) + 100px)" }}
     >
+      {previewMode && (
+        <div
+          className="fixed left-1/2 -translate-x-1/2 z-50 inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-spark-ink text-white text-[11px] font-extrabold tracking-widest uppercase shadow-lift pointer-events-none"
+          style={{ top: "calc(env(safe-area-inset-top) + 12px)" }}
+          aria-hidden
+        >
+          🔍 Preview de bloqueio · admin
+        </div>
+      )}
       <HeroSection
         totalModules={modules.length}
         totalLessons={totalLessons}
@@ -751,8 +873,14 @@ function HubBody({
                       desktop ? "grid-cols-3" : "grid-cols-1 sm:grid-cols-2",
                     )}
                   >
-                    {modules.map((m, i) => (
-                      <ModuleCard key={m.id} mod={m} index={i} progress={progress} />
+                    {orderedWithLock.map(({ mod, lock }, i) => (
+                      <ModuleCard
+                        key={mod.id}
+                        mod={mod}
+                        index={i}
+                        progress={progress}
+                        lock={lock}
+                      />
                     ))}
                   </div>
                 </section>

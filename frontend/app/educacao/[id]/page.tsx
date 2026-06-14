@@ -17,7 +17,13 @@ import {
   Sparkles,
   Download,
   BookOpen,
+  Lock,
 } from "lucide-react";
+import {
+  getModuleLockStatus,
+  formatModuleDaysRemaining,
+} from "@/lib/module-lock";
+import type { ProfileForGate } from "@/lib/agent-lock";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { FloatingMainNav } from "@/components/layout/floating-main-nav";
 import { HeroBlob } from "@/components/atoms/hero-blob";
@@ -121,6 +127,47 @@ function useLesson(idOrSlug: string) {
   }, [idOrSlug]);
 
   return { lesson, mod, siblings, loading, error };
+}
+
+/**
+ * Mesma estrategia da /educacao. Preview admin: ?preview=lock&day=N.
+ */
+function useProfile(): { profile: ProfileForGate | null; previewMode: boolean } {
+  const [profile, setProfile] = React.useState<ProfileForGate | null>(null);
+  const [previewMode, setPreviewMode] = React.useState(false);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    if (typeof window !== "undefined") {
+      const sp = new URLSearchParams(window.location.search);
+      if (sp.get("preview") === "lock") {
+        const dayParam = Number(sp.get("day"));
+        const day =
+          Number.isFinite(dayParam) && dayParam >= 1 && dayParam <= 6 ? dayParam : 1;
+        const fakeCreated = new Date(Date.now() - (day - 1) * 86_400_000);
+        setProfile({ created_at: fakeCreated.toISOString(), role: "user" });
+        setPreviewMode(true);
+        return;
+      }
+    }
+    fetch("/api/me", {
+      cache: "no-store",
+      headers: { "cache-control": "no-cache", pragma: "no-cache" },
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        if (cancelled) return;
+        setProfile((j?.profile ?? null) as ProfileForGate | null);
+      })
+      .catch(() => {
+        // silencioso
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return { profile, previewMode };
 }
 
 function useChecklistState(lessonId: string | null) {
@@ -557,13 +604,72 @@ function ChecklistView({
 
 function LessonBody({ idOrSlug, desktop = false }: { idOrSlug: string; desktop?: boolean }) {
   const { lesson, mod, siblings, loading, error } = useLesson(idOrSlug);
+  const { profile, previewMode } = useProfile();
   const [marking, setMarking] = React.useState(false);
   const [marked, setMarked] = React.useState(false);
+
+  // Bloqueio progressivo: se a aula pertence a um modulo bloqueado pra
+  // essa aluna, ela nao pode ver o conteudo (mesmo via URL direta).
+  const lock = React.useMemo(
+    () =>
+      mod
+        ? getModuleLockStatus(profile, mod.slug, undefined, { skipCutoff: previewMode })
+        : { locked: false as const },
+    [profile, mod, previewMode],
+  );
 
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center min-h-[60vh] hero-radial">
         <LoadingSplash message="Abrindo aula" />
+      </div>
+    );
+  }
+
+  if (lock.locked) {
+    return (
+      <div className="flex-1 overflow-auto relative hero-radial">
+        {previewMode && (
+          <div
+            className="fixed left-1/2 -translate-x-1/2 z-50 inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-spark-ink text-white text-[11px] font-extrabold tracking-widest uppercase shadow-lift pointer-events-none"
+            style={{ top: "calc(env(safe-area-inset-top) + 12px)" }}
+            aria-hidden
+          >
+            🔍 Preview de bloqueio · admin
+          </div>
+        )}
+        <SparkleField count={8} seed={88} className="opacity-50" />
+        <HeroBlob color="rose" variant={1} className="-top-32 -left-32 w-[420px] h-[420px] opacity-50" />
+        <HeroBlob color="lilac" variant={2} className="bottom-0 -right-32 w-[420px] h-[420px] opacity-50" />
+        <div className="px-6 py-32 text-center max-w-[520px] mx-auto relative">
+          <div className="mx-auto w-20 h-20 rounded-full bg-white/95 shadow-lift flex items-center justify-center mb-6">
+            <Lock size={32} strokeWidth={2.4} className="text-spark-ink" />
+          </div>
+          <h1 className="font-display lowercase text-fluid-headline text-spark-ink leading-tight">
+            aula bloqueada.
+          </h1>
+          <p className="mt-4 text-[14px] text-spark-ink-70 leading-snug max-w-[44ch] mx-auto">
+            Essa aula faz parte de um módulo que ainda libera em{" "}
+            <strong className="text-spark-ink">
+              {lock.daysRemaining === 1 ? "1 dia" : `${lock.daysRemaining} dias`}
+            </strong>
+            . Por enquanto avança nos módulos <strong className="text-spark-ink">Comece Aqui</strong> e{" "}
+            <strong className="text-spark-ink">Estrutura e Rotina</strong> 💕
+          </p>
+          <div className="mt-6 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-spark-ink/85 backdrop-blur text-white text-[11.5px] font-extrabold tracking-tight">
+            <Lock size={11} strokeWidth={2.5} />
+            {formatModuleDaysRemaining(lock.daysRemaining)}
+          </div>
+          <div className="mt-8">
+            <Link
+              href="/educacao"
+              className="inline-flex items-center gap-1.5 px-6 py-3 rounded-full bg-spark-ink text-white text-[13px] font-extrabold shadow-lift transition-all duration-300 ease-premium hover:-translate-y-0.5"
+            >
+              <ArrowLeft size={14} strokeWidth={2.5} />
+              Voltar pra Educação
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }

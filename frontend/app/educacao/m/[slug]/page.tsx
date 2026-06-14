@@ -13,7 +13,13 @@ import {
   Sparkles,
   ArrowRight,
   BookOpen,
+  Lock,
 } from "lucide-react";
+import {
+  getModuleLockStatus,
+  formatModuleDaysRemaining,
+} from "@/lib/module-lock";
+import type { ProfileForGate } from "@/lib/agent-lock";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { FloatingMainNav } from "@/components/layout/floating-main-nav";
 import { HeroBlob } from "@/components/atoms/hero-blob";
@@ -71,6 +77,48 @@ function kindLabel(kind: LessonKind): string {
   if (kind === "checklist") return "Checklist";
   if (kind === "ebook") return "Ebook";
   return "Aula";
+}
+
+/**
+ * Carrega profile (mesma estrategia da /educacao). Preview admin
+ * via ?preview=lock&day=N pra simular bloqueio.
+ */
+function useProfile(): { profile: ProfileForGate | null; previewMode: boolean } {
+  const [profile, setProfile] = React.useState<ProfileForGate | null>(null);
+  const [previewMode, setPreviewMode] = React.useState(false);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    if (typeof window !== "undefined") {
+      const sp = new URLSearchParams(window.location.search);
+      if (sp.get("preview") === "lock") {
+        const dayParam = Number(sp.get("day"));
+        const day =
+          Number.isFinite(dayParam) && dayParam >= 1 && dayParam <= 6 ? dayParam : 1;
+        const fakeCreated = new Date(Date.now() - (day - 1) * 86_400_000);
+        setProfile({ created_at: fakeCreated.toISOString(), role: "user" });
+        setPreviewMode(true);
+        return;
+      }
+    }
+    fetch("/api/me", {
+      cache: "no-store",
+      headers: { "cache-control": "no-cache", pragma: "no-cache" },
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        if (cancelled) return;
+        setProfile((j?.profile ?? null) as ProfileForGate | null);
+      })
+      .catch(() => {
+        // silencioso
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return { profile, previewMode };
 }
 
 function useModule(slug: string) {
@@ -212,6 +260,7 @@ function LessonRow({
 
 function ModuleBody({ slug, desktop = false }: { slug: string; desktop?: boolean }) {
   const { mod, lessons, progress, loading, error } = useModule(slug);
+  const { profile, previewMode } = useProfile();
   const done = lessons.filter((l) => progress[l.id]?.completed).length;
   const total = lessons.length;
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
@@ -222,10 +271,66 @@ function ModuleBody({ slug, desktop = false }: { slug: string; desktop?: boolean
     return lessons.find((l) => !progress[l.id]?.completed) ?? lessons[0];
   }, [lessons, progress]);
 
+  // Bloqueio progressivo: se aluna esta gated nesse modulo, mostra tela
+  // de "bloqueado" e nao deixa ver as aulas. Anti-burla: alguem digita a
+  // URL direto, ainda assim bate aqui no client.
+  const lock = React.useMemo(
+    () => getModuleLockStatus(profile, slug, undefined, { skipCutoff: previewMode }),
+    [profile, slug, previewMode],
+  );
+
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center min-h-[60vh]">
         <LoadingSplash message="Abrindo módulo" />
+      </div>
+    );
+  }
+
+  if (lock.locked) {
+    return (
+      <div className="flex-1 overflow-auto relative hero-radial">
+        {previewMode && (
+          <div
+            className="fixed left-1/2 -translate-x-1/2 z-50 inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-spark-ink text-white text-[11px] font-extrabold tracking-widest uppercase shadow-lift pointer-events-none"
+            style={{ top: "calc(env(safe-area-inset-top) + 12px)" }}
+            aria-hidden
+          >
+            🔍 Preview de bloqueio · admin
+          </div>
+        )}
+        <SparkleField count={8} seed={77} className="opacity-50" />
+        <HeroBlob color="rose" variant={1} className="-top-32 -left-32 w-[420px] h-[420px] opacity-50" />
+        <HeroBlob color="lilac" variant={2} className="bottom-0 -right-32 w-[420px] h-[420px] opacity-50" />
+        <div className="px-6 py-32 text-center max-w-[520px] mx-auto relative">
+          <div className="mx-auto w-20 h-20 rounded-full bg-white/95 shadow-lift flex items-center justify-center mb-6">
+            <Lock size={32} strokeWidth={2.4} className="text-spark-ink" />
+          </div>
+          <h1 className="font-display lowercase text-fluid-headline text-spark-ink leading-tight">
+            módulo bloqueado.
+          </h1>
+          <p className="mt-4 text-[14px] text-spark-ink-70 leading-snug max-w-[44ch] mx-auto">
+            Pra você primeiro absorver o fundamento, esse módulo libera em{" "}
+            <strong className="text-spark-ink">
+              {lock.daysRemaining === 1 ? "1 dia" : `${lock.daysRemaining} dias`}
+            </strong>
+            . Por enquanto avança em <strong className="text-spark-ink">Comece Aqui</strong> e{" "}
+            <strong className="text-spark-ink">Estrutura e Rotina</strong> 💕
+          </p>
+          <div className="mt-6 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-spark-ink/85 backdrop-blur text-white text-[11.5px] font-extrabold tracking-tight">
+            <Lock size={11} strokeWidth={2.5} />
+            {formatModuleDaysRemaining(lock.daysRemaining)}
+          </div>
+          <div className="mt-8">
+            <Link
+              href="/educacao"
+              className="inline-flex items-center gap-1.5 px-6 py-3 rounded-full bg-spark-ink text-white text-[13px] font-extrabold shadow-lift transition-all duration-300 ease-premium hover:-translate-y-0.5"
+            >
+              <ArrowLeft size={14} strokeWidth={2.5} />
+              Voltar pra Educação
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }
