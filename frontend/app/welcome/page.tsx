@@ -235,17 +235,38 @@ function WelcomeForm({ desktop = false }: { desktop?: boolean }) {
         </div>
       )}
 
-      {/* Botão flui naturalmente após os nichos. Padding bottom inclui
-          safe-area do iOS/Android pra nao colar na borda inferior. */}
-      <div
-        className={desktop ? "mt-10 pb-10" : "mt-8"}
-        style={
-          desktop
-            ? undefined
-            : { paddingBottom: "calc(env(safe-area-inset-bottom) + 32px)" }
-        }
-      >
-        <SectionReveal direction="up" delay={850}>
+      {/* Spacer pra conteudo nao ficar atras do botao fixed em mobile.
+          Em desktop, o botao eh inline (mt-10) entao nao precisa. */}
+      {!desktop && (
+        <div
+          aria-hidden
+          style={{ height: "calc(env(safe-area-inset-bottom) + 110px)" }}
+        />
+      )}
+
+      {/* MOBILE: botao FIXO no rodape (sempre visivel, sem precisar
+          scrollar). Glass + safe-area pra nao cobrir nada importante.
+          DESKTOP: botao inline apos os nichos. */}
+      {desktop ? (
+        <div className="mt-10 pb-10">
+          <SectionReveal direction="up" delay={850}>
+            <SButton
+              type="submit"
+              variant="primary"
+              size="lg"
+              full
+              IconRight={ArrowRight}
+              disabled={pending}
+            >
+              {pending ? t("submitting") : t("submit")}
+            </SButton>
+          </SectionReveal>
+        </div>
+      ) : (
+        <div
+          className="fixed left-0 right-0 bottom-0 z-30 px-5 pt-3 bg-gradient-to-t from-spark-bg via-spark-bg/95 to-spark-bg/0 backdrop-blur-sm"
+          style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 16px)" }}
+        >
           <SButton
             type="submit"
             variant="primary"
@@ -256,8 +277,8 @@ function WelcomeForm({ desktop = false }: { desktop?: boolean }) {
           >
             {pending ? t("submitting") : t("submit")}
           </SButton>
-        </SectionReveal>
-      </div>
+        </div>
+      )}
     </form>
   );
 }
