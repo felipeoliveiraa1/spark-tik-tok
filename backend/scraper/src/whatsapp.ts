@@ -37,7 +37,9 @@ import {
   TRIGGER_PLANO_CANCELOU_KEY,
   TRIGGER_PLANO_REATIVADO_KEY,
   TRIGGER_LEMBRETE_CHECKIN_KEY,
+  TRIGGER_LEAD_FIRST_CONTACT_KEY,
   buildLembreteCheckin,
+  buildTriggerLeadFirstContact,
   buildTriggerDia1NaoLogou,
   buildTriggerSumiu7d,
   buildTriggerStreak3,
@@ -1899,4 +1901,266 @@ export async function handleFlushNow() {
   // Admin clicando "Processar agora" -> ignora janela de horario (intencional)
   const stats = await flushOutbox(supabase, FLUSH_BATCH_SIZE, { bypassWindow: true });
   return { ok: true, ...stats, ran_at: new Date().toISOString() };
+}
+
+// =================================================================
+// LEAD BLAST — primeiro contato com leads do /formulario
+// =================================================================
+// Funil separado do sistema principal:
+//   - Usa instancia Evolution dedicada (env EVOLUTION_LEADS_*)
+//     porque o chip da instancia principal eh pra alunas e nao
+//     pode arriscar ban com volume de outbound frio
+//   - Cadencia 120s entre envios (chip novo, conservador)
+//   - Nao passa pelo outbox/sticky_routing — leads nao tem user_id
+//   - Marca status novo -> contactado, registra lead_event
+//   - Roda em background (fire-and-forget) — endpoint retorna
+//     estimativa, processamento continua pelo proprio worker
+
+export const LEAD_BLAST_INTERVAL_MS = 120_000;
+
+function getFinanceEvoConfig(): {
+  url: string | null;
+  key: string | null;
+  instance: string;
+} {
+  return {
+    url: process.env.EVOLUTION_LEADS_URL ?? null,
+    key: process.env.EVOLUTION_LEADS_API_KEY ?? null,
+    instance: process.env.EVOLUTION_LEADS_INSTANCE ?? "Finance",
+  };
+}
+
+async function sendViaFinanceInstance(args: {
+  phone: string;
+  text: string;
+}): Promise<{ ok: true; id?: string } | { ok: false; error: string }> {
+  const { url, key, instance } = getFinanceEvoConfig();
+  if (!url || !key) {
+    return {
+      ok: false,
+      error: "EVOLUTION_LEADS_URL / EVOLUTION_LEADS_API_KEY ausentes",
+    };
+  }
+  const endpoint = `${url.replace(/\/$/, "")}/message/sendText/${encodeURIComponent(instance)}`;
+  try {
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: key },
+      body: JSON.stringify({ number: args.phone, text: args.text }),
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      return { ok: false, error: `evo_${res.status}: ${body.slice(0, 200)}` };
+    }
+    const json = (await res.json().catch(() => null)) as
+      | { key?: { id?: string } }
+      | null;
+    return { ok: true, id: json?.key?.id };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "fetch_failed",
+    };
+  }
+}
+
+let _leadBlastRunning = false;
+
+export async function runLeadFirstContactBlast(opts?: {
+  limit?: number;
+  intervalMs?: number;
+  dryRun?: boolean;
+}): Promise<{
+  ok: boolean;
+  already_running?: boolean;
+  found: number;
+  will_send: number;
+  skipped_invalid_phone: number;
+  campaign: string;
+  interval_ms: number;
+  estimated_finish_iso: string;
+  dry_run: boolean;
+  preview_sample?: Array<{ id: string; nome: string; phone: string; text: string }>;
+}> {
+  if (_leadBlastRunning) {
+    return {
+      ok: false,
+      already_running: true,
+      found: 0,
+      will_send: 0,
+      skipped_invalid_phone: 0,
+      campaign: "",
+      interval_ms: LEAD_BLAST_INTERVAL_MS,
+      estimated_finish_iso: new Date().toISOString(),
+      dry_run: false,
+    };
+  }
+
+  const supabase = getSupabase();
+  const limit = opts?.limit ?? 200;
+  const intervalMs = opts?.intervalMs ?? LEAD_BLAST_INTERVAL_MS;
+  const dryRun = opts?.dryRun === true;
+  const campaign = `lead_first_contact_${new Date().toISOString().slice(0, 10)}`;
+
+  const { data: leadsData, error } = await supabase
+    .from("leads")
+    .select("id, nome, telefone, tiktok_handle")
+    .eq("status", "novo")
+    .not("telefone", "is", null)
+    .order("created_at", { ascending: true })
+    .limit(limit);
+
+  if (error) {
+    log.error({ err: error }, "[lead-blast] erro buscar leads");
+    return {
+      ok: false,
+      found: 0,
+      will_send: 0,
+      skipped_invalid_phone: 0,
+      campaign,
+      interval_ms: intervalMs,
+      estimated_finish_iso: new Date().toISOString(),
+      dry_run: dryRun,
+    };
+  }
+
+  const candidates = (leadsData ?? []) as Array<{
+    id: string;
+    nome: string;
+    telefone: string;
+    tiktok_handle: string;
+  }>;
+
+  const valid: Array<{
+    id: string;
+    nome: string;
+    phone: string;
+    text: string;
+  }> = [];
+  let skippedInvalid = 0;
+  for (const c of candidates) {
+    const phone = normalizePhoneBR(c.telefone);
+    if (!phone) {
+      skippedInvalid++;
+      continue;
+    }
+    const { text } = buildTriggerLeadFirstContact({ firstName: c.nome });
+    valid.push({ id: c.id, nome: c.nome, phone, text });
+  }
+
+  const estimated_finish_iso = new Date(
+    Date.now() + valid.length * intervalMs,
+  ).toISOString();
+
+  if (dryRun) {
+    return {
+      ok: true,
+      found: candidates.length,
+      will_send: valid.length,
+      skipped_invalid_phone: skippedInvalid,
+      campaign,
+      interval_ms: intervalMs,
+      estimated_finish_iso,
+      dry_run: true,
+      preview_sample: valid.slice(0, 3),
+    };
+  }
+
+  _leadBlastRunning = true;
+  void (async () => {
+    log.info(
+      { campaign, total: valid.length, intervalMs },
+      "[lead-blast] iniciando campanha",
+    );
+    let sent = 0;
+    let failed = 0;
+    try {
+      for (let i = 0; i < valid.length; i++) {
+        const lead = valid[i]!;
+        try {
+          const sendRes = await sendViaFinanceInstance({
+            phone: lead.phone,
+            text: lead.text,
+          });
+
+          if (sendRes.ok) {
+            sent++;
+            await supabase
+              .from("leads")
+              .update({
+                status: "contactado",
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", lead.id);
+
+            await supabase.from("lead_events").insert({
+              lead_id: lead.id,
+              actor_id: null,
+              kind: "contact_attempt",
+              payload: {
+                campaign,
+                channel: "whatsapp",
+                instance: "Finance",
+                template_key: TRIGGER_LEAD_FIRST_CONTACT_KEY,
+                evo_message_id: sendRes.id ?? null,
+                phone: lead.phone,
+              },
+            });
+
+            log.info(
+              { lead_id: lead.id, i: i + 1, total: valid.length },
+              "[lead-blast] enviado",
+            );
+          } else {
+            failed++;
+            await supabase.from("lead_events").insert({
+              lead_id: lead.id,
+              actor_id: null,
+              kind: "contact_attempt",
+              payload: {
+                campaign,
+                channel: "whatsapp",
+                instance: "Finance",
+                template_key: TRIGGER_LEAD_FIRST_CONTACT_KEY,
+                phone: lead.phone,
+                failed: true,
+                error: sendRes.error,
+              },
+            });
+            log.warn(
+              { lead_id: lead.id, error: sendRes.error },
+              "[lead-blast] falha envio",
+            );
+          }
+        } catch (err) {
+          failed++;
+          log.error({ err, lead_id: lead.id }, "[lead-blast] erro lead");
+        }
+
+        if (i < valid.length - 1) {
+          await new Promise((r) => setTimeout(r, intervalMs));
+        }
+      }
+      log.info(
+        { campaign, sent, failed, total: valid.length },
+        "[lead-blast] campanha finalizada",
+      );
+    } finally {
+      _leadBlastRunning = false;
+    }
+  })().catch((err) => {
+    log.error({ err }, "[lead-blast] erro fatal loop");
+    _leadBlastRunning = false;
+  });
+
+  return {
+    ok: true,
+    found: candidates.length,
+    will_send: valid.length,
+    skipped_invalid_phone: skippedInvalid,
+    campaign,
+    interval_ms: intervalMs,
+    estimated_finish_iso,
+    dry_run: false,
+  };
 }

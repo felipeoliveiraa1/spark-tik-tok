@@ -930,3 +930,28 @@ export function buildTriggerPlanoReativado(input: {
   ].join("\n");
   return { text };
 }
+
+// ============================================================
+// LEAD: Mensagem 1 — quebra de padrao (primeiro contato pra
+// lead que preencheu /formulario mas nunca foi abordado).
+// NAO assina como Yara — apresenta como suporte. Pergunta
+// aberta pra iniciar conversa. Mensagens 2-6 do funil ficam
+// na conversa manual da atendente apos resposta da lead.
+// ============================================================
+export const TRIGGER_LEAD_FIRST_CONTACT_KEY = "trigger_lead_first_contact";
+
+export function buildTriggerLeadFirstContact(input: {
+  firstName: string | null;
+}): { text: string } {
+  const name = firstName(input.firstName);
+  const text = [
+    `Oi, ${name} ❤️`,
+    ``,
+    `FAÇO PARTE DO SUPORTE DA YARA DO MÉTODO TIKTOK SHOP, LEMBRA?`,
+    ``,
+    `Posso te fazer uma pergunta sincera?`,
+    ``,
+    `Você entrou no grupo porque realmente quer ganhar dinheiro com TikTok Shop ou porque ficou curiosa sobre como funciona?`,
+  ].join("\n");
+  return { text };
+}
