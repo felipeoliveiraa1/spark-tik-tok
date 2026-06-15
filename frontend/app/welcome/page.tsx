@@ -235,38 +235,22 @@ function WelcomeForm({ desktop = false }: { desktop?: boolean }) {
         </div>
       )}
 
-      {/* Spacer pra conteudo nao ficar atras do botao fixed em mobile.
-          Em desktop, o botao eh inline (mt-10) entao nao precisa. */}
-      {!desktop && (
-        <div
-          aria-hidden
-          style={{ height: "calc(env(safe-area-inset-bottom) + 110px)" }}
-        />
-      )}
+      {/* Spacer pra conteudo nao ficar atras do botao fixed.
+          Aplica em ambos mobile e desktop. */}
+      <div
+        aria-hidden
+        style={{ height: "calc(env(safe-area-inset-bottom) + 120px)" }}
+      />
 
-      {/* MOBILE: botao FIXO no rodape (sempre visivel, sem precisar
-          scrollar). Glass + safe-area pra nao cobrir nada importante.
-          DESKTOP: botao inline apos os nichos. */}
-      {desktop ? (
-        <div className="mt-10 pb-10">
-          <SectionReveal direction="up" delay={850}>
-            <SButton
-              type="submit"
-              variant="primary"
-              size="lg"
-              full
-              IconRight={ArrowRight}
-              disabled={pending}
-            >
-              {pending ? t("submitting") : t("submit")}
-            </SButton>
-          </SectionReveal>
-        </div>
-      ) : (
-        <div
-          className="fixed left-0 right-0 bottom-0 z-30 px-5 pt-3 bg-gradient-to-t from-spark-bg via-spark-bg/95 to-spark-bg/0 backdrop-blur-sm"
-          style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 16px)" }}
-        >
+      {/* Botao FIXED no rodape em TODOS os viewports (sempre visivel
+          sem precisar scrollar). Glass gradient pra disfarçar conteudo
+          que passa por tras. Em desktop, inner mantem max-width pra
+          ficar alinhado com o form centralizado. */}
+      <div
+        className="fixed left-0 right-0 bottom-0 z-30 px-5 pt-4 bg-gradient-to-t from-spark-bg via-spark-bg/95 to-spark-bg/0 backdrop-blur-sm"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 16px)" }}
+      >
+        <div className={desktop ? "max-w-[560px] mx-auto px-8" : ""}>
           <SButton
             type="submit"
             variant="primary"
@@ -278,7 +262,7 @@ function WelcomeForm({ desktop = false }: { desktop?: boolean }) {
             {pending ? t("submitting") : t("submit")}
           </SButton>
         </div>
-      )}
+      </div>
     </form>
   );
 }
