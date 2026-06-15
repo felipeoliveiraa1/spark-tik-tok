@@ -77,7 +77,7 @@ function WelcomeForm({ desktop = false }: { desktop?: boolean }) {
   return (
     <form
       action={onSubmit}
-      className={`flex flex-col flex-1 relative ${desktop ? "max-w-[560px] mx-auto py-14 px-8" : "px-6"}`}
+      className={`relative ${desktop ? "max-w-[560px] mx-auto py-14 px-8" : "px-6"}`}
     >
       <div className={desktop ? "" : "pt-[70px]"}>
         <SectionReveal direction="down" durationMs={500}>
@@ -235,9 +235,16 @@ function WelcomeForm({ desktop = false }: { desktop?: boolean }) {
         </div>
       )}
 
-      <div className="flex-1" />
-
-      <div className={`pb-[30px] ${desktop ? "pt-8" : "pt-6"}`}>
+      {/* Botão flui naturalmente após os nichos. Padding bottom inclui
+          safe-area do iOS/Android pra nao colar na borda inferior. */}
+      <div
+        className={desktop ? "mt-10 pb-10" : "mt-8"}
+        style={
+          desktop
+            ? undefined
+            : { paddingBottom: "calc(env(safe-area-inset-bottom) + 32px)" }
+        }
+      >
         <SectionReveal direction="up" delay={850}>
           <SButton
             type="submit"
