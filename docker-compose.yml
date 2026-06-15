@@ -54,6 +54,13 @@ services:
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:?set SUPABASE_SERVICE_ROLE_KEY}
       EVOLUTION_API_URL: ${EVOLUTION_API_URL:?set EVOLUTION_API_URL}
       EVOLUTION_API_KEY: ${EVOLUTION_API_KEY:?set EVOLUTION_API_KEY}
+      # Lead blast — instancia Evolution DEDICADA (chip Finance isolado).
+      # OPCIONAL: se nao setar, o endpoint /whatsapp/lead-blast retorna
+      # erro ja na primeira tentativa de envio (sem afetar status do lead),
+      # mas o demais do worker (motivacionais, triggers) continua funcionando.
+      EVOLUTION_LEADS_URL: ${EVOLUTION_LEADS_URL:-}
+      EVOLUTION_LEADS_API_KEY: ${EVOLUTION_LEADS_API_KEY:-}
+      EVOLUTION_LEADS_INSTANCE: ${EVOLUTION_LEADS_INSTANCE:-Finance}
       NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://www.metodotts.app}
       WHATSAPP_WORKER_ENABLED: ${WHATSAPP_WORKER_ENABLED:-true}
     volumes:

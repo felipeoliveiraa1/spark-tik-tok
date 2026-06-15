@@ -1982,77 +1982,245 @@ export async function runLeadFirstContactBlast(opts?: {
   dry_run: boolean;
   preview_sample?: Array<{ id: string; nome: string; phone: string; text: string }>;
 }> {
-  if (_leadBlastRunning) {
-    return {
-      ok: false,
-      already_running: true,
-      found: 0,
-      will_send: 0,
-      skipped_invalid_phone: 0,
-      campaign: "",
-      interval_ms: LEAD_BLAST_INTERVAL_MS,
-      estimated_finish_iso: new Date().toISOString(),
-      dry_run: false,
-    };
-  }
-
-  const supabase = getSupabase();
-  const limit = opts?.limit ?? 200;
-  const intervalMs = opts?.intervalMs ?? LEAD_BLAST_INTERVAL_MS;
+  // Lock TEM que ser setado ANTES de qualquer await — JS eh single-thread mas
+  // entre cada await o event loop libera. Se duas chamadas concorrentes (ex:
+  // duplo clique no CLI, retry HTTP) entram em <1ms, ambas passariam pelo
+  // guard antes do flag virar true => disparo duplicado.
+  // dryRun NAO seta lock (pode rodar varios concorrentes, eh leitura).
   const dryRun = opts?.dryRun === true;
-  const campaign = `lead_first_contact_${new Date().toISOString().slice(0, 10)}`;
-
-  const { data: leadsData, error } = await supabase
-    .from("leads")
-    .select("id, nome, telefone, tiktok_handle")
-    .eq("status", "novo")
-    .not("telefone", "is", null)
-    .order("created_at", { ascending: true })
-    .limit(limit);
-
-  if (error) {
-    log.error({ err: error }, "[lead-blast] erro buscar leads");
-    return {
-      ok: false,
-      found: 0,
-      will_send: 0,
-      skipped_invalid_phone: 0,
-      campaign,
-      interval_ms: intervalMs,
-      estimated_finish_iso: new Date().toISOString(),
-      dry_run: dryRun,
-    };
-  }
-
-  const candidates = (leadsData ?? []) as Array<{
-    id: string;
-    nome: string;
-    telefone: string;
-    tiktok_handle: string;
-  }>;
-
-  const valid: Array<{
-    id: string;
-    nome: string;
-    phone: string;
-    text: string;
-  }> = [];
-  let skippedInvalid = 0;
-  for (const c of candidates) {
-    const phone = normalizePhoneBR(c.telefone);
-    if (!phone) {
-      skippedInvalid++;
-      continue;
+  if (!dryRun) {
+    if (_leadBlastRunning) {
+      return {
+        ok: false,
+        already_running: true,
+        found: 0,
+        will_send: 0,
+        skipped_invalid_phone: 0,
+        campaign: "",
+        interval_ms: LEAD_BLAST_INTERVAL_MS,
+        estimated_finish_iso: new Date().toISOString(),
+        dry_run: false,
+      };
     }
-    const { text } = buildTriggerLeadFirstContact({ firstName: c.nome });
-    valid.push({ id: c.id, nome: c.nome, phone, text });
+    _leadBlastRunning = true;
   }
 
-  const estimated_finish_iso = new Date(
-    Date.now() + valid.length * intervalMs,
-  ).toISOString();
+  // A partir daqui, em modo real, lock esta setado. Qualquer return antes
+  // do IIFE async tem que liberar o lock. try/catch externo garante isso.
+  try {
+    const supabase = getSupabase();
+    const limit = opts?.limit ?? 200;
+    const intervalMs = opts?.intervalMs ?? LEAD_BLAST_INTERVAL_MS;
+    const campaign = `lead_first_contact_${new Date().toISOString().slice(0, 10)}`;
 
-  if (dryRun) {
+    const { data: leadsData, error } = await supabase
+      .from("leads")
+      .select("id, nome, telefone, tiktok_handle")
+      .eq("status", "novo")
+      .not("telefone", "is", null)
+      .order("created_at", { ascending: true })
+      .limit(limit);
+
+    if (error) {
+      log.error({ err: error }, "[lead-blast] erro buscar leads");
+      if (!dryRun) _leadBlastRunning = false;
+      return {
+        ok: false,
+        found: 0,
+        will_send: 0,
+        skipped_invalid_phone: 0,
+        campaign,
+        interval_ms: intervalMs,
+        estimated_finish_iso: new Date().toISOString(),
+        dry_run: dryRun,
+      };
+    }
+
+    const candidates = (leadsData ?? []) as Array<{
+      id: string;
+      nome: string;
+      telefone: string;
+      tiktok_handle: string;
+    }>;
+
+    // Dedup por phone normalizado: se 2 leads tem o mesmo numero (caso comum
+    // — pessoa preencheu /formulario 2x), so o mais antigo entra no `valid`.
+    // Sem isso, chip novo manda mensagem identica 2x pro mesmo numero em
+    // <120s e leva flag de spam.
+    const seenPhones = new Set<string>();
+    const valid: Array<{
+      id: string;
+      nome: string;
+      phone: string;
+      text: string;
+    }> = [];
+    let skippedInvalid = 0;
+    let skippedDuplicate = 0;
+    for (const c of candidates) {
+      const phone = normalizePhoneBR(c.telefone);
+      if (!phone) {
+        skippedInvalid++;
+        continue;
+      }
+      if (seenPhones.has(phone)) {
+        skippedDuplicate++;
+        continue;
+      }
+      seenPhones.add(phone);
+      const { text } = buildTriggerLeadFirstContact({ firstName: c.nome });
+      valid.push({ id: c.id, nome: c.nome, phone, text });
+    }
+
+    if (skippedDuplicate > 0) {
+      log.info(
+        { skippedDuplicate, totalCandidates: candidates.length },
+        "[lead-blast] leads com phone duplicado pulados",
+      );
+    }
+
+    const estimated_finish_iso = new Date(
+      Date.now() + valid.length * intervalMs,
+    ).toISOString();
+
+    if (dryRun) {
+      return {
+        ok: true,
+        found: candidates.length,
+        will_send: valid.length,
+        skipped_invalid_phone: skippedInvalid,
+        campaign,
+        interval_ms: intervalMs,
+        estimated_finish_iso,
+        dry_run: true,
+        preview_sample: valid.slice(0, 3),
+      };
+    }
+
+    void (async () => {
+      log.info(
+        { campaign, total: valid.length, intervalMs },
+        "[lead-blast] iniciando campanha",
+      );
+      let sent = 0;
+      let failed = 0;
+      try {
+        for (let i = 0; i < valid.length; i++) {
+          const lead = valid[i]!;
+          try {
+            const sendRes = await sendViaFinanceInstance({
+              phone: lead.phone,
+              text: lead.text,
+            });
+
+            if (sendRes.ok) {
+              // Marca lead como contactado ANTES de incrementar sent — se
+              // o UPDATE falhar e lead ficar 'novo', proxima execucao do
+              // blast pegaria de novo e enviaria 2x. UPDATE primeiro,
+              // contador depois.
+              const { error: updErr } = await supabase
+                .from("leads")
+                .update({
+                  status: "contactado",
+                  updated_at: new Date().toISOString(),
+                })
+                .eq("id", lead.id);
+
+              if (updErr) {
+                failed++;
+                log.error(
+                  { err: updErr, lead_id: lead.id, phone: lead.phone },
+                  "[lead-blast] UPDATE status falhou — mensagem ja foi enviada, lead ainda esta 'novo'",
+                );
+                // Audit explicito do desync
+                await supabase.from("lead_events").insert({
+                  lead_id: lead.id,
+                  actor_id: null,
+                  kind: "contact_attempt",
+                  payload: {
+                    campaign,
+                    channel: "whatsapp",
+                    instance: "Finance",
+                    template_key: TRIGGER_LEAD_FIRST_CONTACT_KEY,
+                    evo_message_id: sendRes.id ?? null,
+                    phone: lead.phone,
+                    sent_but_status_update_failed: true,
+                    error: updErr.message,
+                  },
+                });
+              } else {
+                sent++;
+                const { error: insErr } = await supabase.from("lead_events").insert({
+                  lead_id: lead.id,
+                  actor_id: null,
+                  kind: "contact_attempt",
+                  payload: {
+                    campaign,
+                    channel: "whatsapp",
+                    instance: "Finance",
+                    template_key: TRIGGER_LEAD_FIRST_CONTACT_KEY,
+                    evo_message_id: sendRes.id ?? null,
+                    phone: lead.phone,
+                  },
+                });
+                if (insErr) {
+                  log.warn(
+                    { err: insErr, lead_id: lead.id },
+                    "[lead-blast] INSERT lead_event audit falhou (envio ok, status ok)",
+                  );
+                }
+                log.info(
+                  { lead_id: lead.id, i: i + 1, total: valid.length },
+                  "[lead-blast] enviado",
+                );
+              }
+            } else {
+              failed++;
+              const { error: insErr } = await supabase.from("lead_events").insert({
+                lead_id: lead.id,
+                actor_id: null,
+                kind: "contact_attempt",
+                payload: {
+                  campaign,
+                  channel: "whatsapp",
+                  instance: "Finance",
+                  template_key: TRIGGER_LEAD_FIRST_CONTACT_KEY,
+                  phone: lead.phone,
+                  failed: true,
+                  error: sendRes.error,
+                },
+              });
+              if (insErr) {
+                log.warn(
+                  { err: insErr, lead_id: lead.id },
+                  "[lead-blast] INSERT lead_event de falha tambem falhou",
+                );
+              }
+              log.warn(
+                { lead_id: lead.id, error: sendRes.error },
+                "[lead-blast] falha envio",
+              );
+            }
+          } catch (err) {
+            failed++;
+            log.error({ err, lead_id: lead.id }, "[lead-blast] erro lead");
+          }
+
+          if (i < valid.length - 1) {
+            await new Promise((r) => setTimeout(r, intervalMs));
+          }
+        }
+        log.info(
+          { campaign, sent, failed, total: valid.length },
+          "[lead-blast] campanha finalizada",
+        );
+      } finally {
+        _leadBlastRunning = false;
+      }
+    })().catch((err) => {
+      log.error({ err }, "[lead-blast] erro fatal loop");
+      _leadBlastRunning = false;
+    });
+
     return {
       ok: true,
       found: candidates.length,
@@ -2061,106 +2229,13 @@ export async function runLeadFirstContactBlast(opts?: {
       campaign,
       interval_ms: intervalMs,
       estimated_finish_iso,
-      dry_run: true,
-      preview_sample: valid.slice(0, 3),
+      dry_run: false,
     };
+  } catch (err) {
+    // Erro sync entre o lock set e o IIFE async — libera lock pra nao
+    // travar disparos futuros
+    log.error({ err }, "[lead-blast] erro pre-IIFE, liberando lock");
+    if (!dryRun) _leadBlastRunning = false;
+    throw err;
   }
-
-  _leadBlastRunning = true;
-  void (async () => {
-    log.info(
-      { campaign, total: valid.length, intervalMs },
-      "[lead-blast] iniciando campanha",
-    );
-    let sent = 0;
-    let failed = 0;
-    try {
-      for (let i = 0; i < valid.length; i++) {
-        const lead = valid[i]!;
-        try {
-          const sendRes = await sendViaFinanceInstance({
-            phone: lead.phone,
-            text: lead.text,
-          });
-
-          if (sendRes.ok) {
-            sent++;
-            await supabase
-              .from("leads")
-              .update({
-                status: "contactado",
-                updated_at: new Date().toISOString(),
-              })
-              .eq("id", lead.id);
-
-            await supabase.from("lead_events").insert({
-              lead_id: lead.id,
-              actor_id: null,
-              kind: "contact_attempt",
-              payload: {
-                campaign,
-                channel: "whatsapp",
-                instance: "Finance",
-                template_key: TRIGGER_LEAD_FIRST_CONTACT_KEY,
-                evo_message_id: sendRes.id ?? null,
-                phone: lead.phone,
-              },
-            });
-
-            log.info(
-              { lead_id: lead.id, i: i + 1, total: valid.length },
-              "[lead-blast] enviado",
-            );
-          } else {
-            failed++;
-            await supabase.from("lead_events").insert({
-              lead_id: lead.id,
-              actor_id: null,
-              kind: "contact_attempt",
-              payload: {
-                campaign,
-                channel: "whatsapp",
-                instance: "Finance",
-                template_key: TRIGGER_LEAD_FIRST_CONTACT_KEY,
-                phone: lead.phone,
-                failed: true,
-                error: sendRes.error,
-              },
-            });
-            log.warn(
-              { lead_id: lead.id, error: sendRes.error },
-              "[lead-blast] falha envio",
-            );
-          }
-        } catch (err) {
-          failed++;
-          log.error({ err, lead_id: lead.id }, "[lead-blast] erro lead");
-        }
-
-        if (i < valid.length - 1) {
-          await new Promise((r) => setTimeout(r, intervalMs));
-        }
-      }
-      log.info(
-        { campaign, sent, failed, total: valid.length },
-        "[lead-blast] campanha finalizada",
-      );
-    } finally {
-      _leadBlastRunning = false;
-    }
-  })().catch((err) => {
-    log.error({ err }, "[lead-blast] erro fatal loop");
-    _leadBlastRunning = false;
-  });
-
-  return {
-    ok: true,
-    found: candidates.length,
-    will_send: valid.length,
-    skipped_invalid_phone: skippedInvalid,
-    campaign,
-    interval_ms: intervalMs,
-    estimated_finish_iso,
-    dry_run: false,
-  };
 }
