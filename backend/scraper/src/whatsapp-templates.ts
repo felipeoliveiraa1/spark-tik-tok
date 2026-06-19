@@ -932,6 +932,32 @@ export function buildTriggerPlanoReativado(input: {
 }
 
 // ============================================================
+// TRIGGER: aviso 24h antes de remocao do grupo
+// ============================================================
+// Dispara quando plano caiu (canceled/refunded/inactive/chargeback)
+// e worker runGroupCleanup() vai remover dos grupos 24h depois.
+// NAO comeca com 'motivacional_' -> NAO conta no weekly limit.
+export const TRIGGER_GROUP_REMOVAL_WARNING_KEY = "trigger_group_removal_warning";
+
+export function buildTriggerGroupRemovalWarning(input: {
+  firstName: string | null;
+}): { text: string } {
+  const name = firstName(input.firstName);
+  const text = [
+    `Oi ${name}, tudo bem? 💕`,
+    ``,
+    `Aqui é do *Método TTS*. Notamos que seu plano foi encerrado e infelizmente seu acesso ao grupo das alunas será removido nas próximas 24h.`,
+    ``,
+    `Mas se quiser continuar com a gente, é só reativar seu plano e você volta automaticamente pra comunidade:`,
+    ``,
+    `🔗 https://www.metodotts.app`,
+    ``,
+    `Qualquer dúvida pode falar comigo por aqui. Tô torcendo pra você continuar 🌹`,
+  ].join("\n");
+  return { text };
+}
+
+// ============================================================
 // LEAD: Mensagem 1 — quebra de padrao (primeiro contato pra
 // lead que preencheu /formulario mas nunca foi abordado).
 // NAO assina como Yara — apresenta como suporte. Pergunta

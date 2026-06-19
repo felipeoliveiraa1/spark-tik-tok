@@ -13,6 +13,7 @@ import {
   handleStats,
   runAllTriggers,
   runDailyMotivationalBlast,
+  runGroupCleanupWithLock,
   runLeadFirstContactBlast,
   runLembreteCheckin,
   startWhatsAppWorker,
@@ -210,6 +211,26 @@ app.post("/whatsapp/lembrete-checkin/run", hmacAuth, async (_req, res) => {
   } catch (err) {
     log.error({ err }, "whatsapp/lembrete-checkin error");
     res.status(500).json({ ok: false, error: err instanceof Error ? err.message : "erro" });
+  }
+});
+
+// Group cleanup — avisa 24h + remove do grupo alunas com plano cancelado.
+// Roda hourly via setInterval no startWhatsAppWorker; este endpoint eh
+// pra rodar manualmente (debug / one-off). Usa runGroupCleanupWithLock
+// pra compartilhar o mesmo lock do tick — invocacao concorrente
+// retorna 409 ao inves de duplicar avisos.
+app.post("/whatsapp/group-cleanup/run", hmacAuth, async (_req, res) => {
+  try {
+    const result = await runGroupCleanupWithLock();
+    if (!result.ok) {
+      return res.status(409).json({ ok: false, reason: result.reason });
+    }
+    res.json(result);
+  } catch (err) {
+    log.error({ err }, "whatsapp/group-cleanup error");
+    res
+      .status(500)
+      .json({ ok: false, error: err instanceof Error ? err.message : "erro" });
   }
 });
 

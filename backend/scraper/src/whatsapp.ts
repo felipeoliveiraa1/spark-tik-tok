@@ -38,8 +38,10 @@ import {
   TRIGGER_PLANO_REATIVADO_KEY,
   TRIGGER_LEMBRETE_CHECKIN_KEY,
   TRIGGER_LEAD_FIRST_CONTACT_KEY,
+  TRIGGER_GROUP_REMOVAL_WARNING_KEY,
   buildLembreteCheckin,
   buildTriggerLeadFirstContact,
+  buildTriggerGroupRemovalWarning,
   buildTriggerDia1NaoLogou,
   buildTriggerSumiu7d,
   buildTriggerStreak3,
@@ -136,6 +138,66 @@ async function sendViaEvoInstance(args: {
     return { ok: true, id: json?.key?.id };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "fetch_failed" };
+  }
+}
+
+// Mascarar PII em strings de erro vindas do Evolution/Baileys antes de
+// logar/persistir. Evolution echo o phone do participante no body de
+// erro (ex: "forbidden to remove 5511999999999@s.whatsapp.net from group"),
+// e LGPD nao permite phone bruto em logs operacionais nem em audit
+// jsonb. Mascara phones E.164 BR (12-13 digitos) e JIDs WhatsApp.
+function maskPhoneInErrorString(input: string): string {
+  return input
+    .replace(/\b55\d{10,11}\b/g, "55**********")
+    .replace(/\b\d{12,13}@s\.whatsapp\.net\b/g, "55**********@s.whatsapp.net");
+}
+
+// Evolution v2 group/updateParticipant — remove participante de grupo.
+// CONFIRMADO via recon: groupJid eh QUERY PARAM (nao body), method POST,
+// body { action: "remove", participants: ["5511..."] } com phone puro
+// (sem @s.whatsapp.net). Headers: apikey + Content-Type. Erros comuns:
+// 400/403 quando instancia nao eh admin; 400 com Baileys error quando
+// participante ja saiu do grupo. Erros sao sanitizados (phone mascarado)
+// pra nao vazar PII em log/audit.
+export async function removeParticipantFromGroup(args: {
+  instanceName: string;
+  groupJid: string;
+  phone: string;
+}): Promise<{ ok: true; raw?: unknown } | { ok: false; error: string; status?: number }> {
+  const baseUrl = process.env.EVOLUTION_API_URL;
+  const apiKey = process.env.EVOLUTION_API_KEY;
+  if (!baseUrl || !apiKey) {
+    return { ok: false, error: "EVOLUTION_API_URL / EVOLUTION_API_KEY ausentes" };
+  }
+  if (!args.groupJid.endsWith("@g.us")) {
+    return { ok: false, error: `groupJid invalido (faltando @g.us): ${args.groupJid}` };
+  }
+
+  const phone = normalizePhoneBR(args.phone) ?? args.phone;
+  const url =
+    `${baseUrl.replace(/\/$/, "")}` +
+    `/group/updateParticipant/${encodeURIComponent(args.instanceName)}` +
+    `?groupJid=${encodeURIComponent(args.groupJid)}`;
+
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: apiKey },
+      body: JSON.stringify({ action: "remove", participants: [phone] }),
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      return {
+        ok: false,
+        status: res.status,
+        error: maskPhoneInErrorString(`evo_${res.status}: ${body.slice(0, 300)}`),
+      };
+    }
+    const json = await res.json().catch(() => null);
+    return { ok: true, raw: json };
+  } catch (err) {
+    const raw = err instanceof Error ? err.message : "fetch_failed";
+    return { ok: false, error: maskPhoneInErrorString(raw) };
   }
 }
 
@@ -1544,6 +1606,423 @@ export async function runDailyMotivationalBlast(): Promise<{
 }
 
 // =================================================================
+// GROUP CLEANUP — avisa 24h antes + remove do grupo das alunas
+// =================================================================
+// Fase A: aluna com plano caido (canceled/refunded/inactive/chargeback)
+//   -> manda aviso WhatsApp + marca profiles.group_removal_warned_at
+// Fase B: warned_at + 24h passou -> remove dos grupos via Evolution
+//   updateParticipant + marca profiles.group_removed_at
+//
+// Idempotente: trigger postgres zera as 2 colunas se aluna reativa
+// (plan_active vira true), permitindo ciclo limpo se cancelar dnv.
+//
+// Roda hourly (setInterval no startWhatsAppWorker), tick imediato no
+// startup pra cobrir restart de container.
+
+const GROUP_CLEANUP_INTERVAL_MS = 60 * 60 * 1000; // 1h
+const GROUP_CLEANUP_WARN_DELAY_MS = 24 * 60 * 60 * 1000; // 24h entre warn e remove
+const GROUP_CLEANUP_SLEEP_BETWEEN_GROUPS_MS = 2_000;
+const GROUP_CLEANUP_SLEEP_BETWEEN_USERS_MS = 1_000;
+const GROUP_CLEANUP_MAX_USERS_PER_TICK = 500;
+
+// Lock declarado aqui (nao no bloco WORKER abaixo) porque
+// runGroupCleanupWithLock o usa antes da declaracao do bloco WORKER.
+let groupCleanupRunning = false;
+
+const groupCleanupSleep = (ms: number) =>
+  new Promise<void>((r) => setTimeout(r, ms));
+
+type GroupRemovalAction = "warned" | "removed" | "failed" | "skipped";
+
+async function insertGroupAudit(
+  supabase: SupabaseClient,
+  userId: string,
+  action: GroupRemovalAction,
+  reason: string,
+  payload: Record<string, unknown>,
+): Promise<void> {
+  const { error } = await supabase.from("group_removal_audit").insert({
+    user_id: userId,
+    action,
+    reason,
+    payload,
+  });
+  if (error) {
+    log.warn(
+      { err: error, userId, action, reason },
+      "[group-cleanup] insert audit falhou (best-effort)",
+    );
+  }
+}
+
+// Parse + valida WHATSAPP_GROUP_JIDS do env. Filtra entries vazios,
+// rejeita JIDs sem @g.us (com warning loud), e dedupe via Set.
+function parseGroupJids(): string[] {
+  const raw = process.env.WHATSAPP_GROUP_JIDS ?? "";
+  const seen = new Set<string>();
+  const valid: string[] = [];
+  const invalid: string[] = [];
+  for (const item of raw.split(",").map((s) => s.trim()).filter(Boolean)) {
+    if (!item.endsWith("@g.us")) {
+      invalid.push(item);
+      continue;
+    }
+    if (seen.has(item)) continue;
+    seen.add(item);
+    valid.push(item);
+  }
+  if (invalid.length > 0) {
+    log.warn(
+      { invalid, valid_count: valid.length },
+      "[group-cleanup] WHATSAPP_GROUP_JIDS contem JIDs invalidos (sem @g.us)",
+    );
+  }
+  return valid;
+}
+
+export async function runGroupCleanup(): Promise<{
+  warned: number;
+  removed: number;
+  failed: number;
+  skipped: number;
+  no_admin: number;
+  candidates: number;
+}> {
+  const stats = {
+    warned: 0,
+    removed: 0,
+    failed: 0,
+    skipped: 0,
+    no_admin: 0,
+    candidates: 0,
+  };
+
+  const groupJids = parseGroupJids();
+  if (groupJids.length === 0) {
+    log.warn("[group-cleanup] WHATSAPP_GROUP_JIDS vazio, skip");
+    return stats;
+  }
+
+  // FIX (review#3): pra remocao SEMPRE usa instancia default (a que eh
+  // admin nos grupos), nao a sticky de marketing — sticky pode ser uma
+  // instancia que NAO eh admin do grupo, gerando loop infinito de
+  // 'instance_not_admin' nos logs.
+  const adminInstance =
+    process.env.WHATSAPP_DEFAULT_INSTANCE ?? "metodotts";
+
+  const supabase = getSupabase();
+
+  const { data: profilesData, error: pErr } = await supabase
+    .from("profiles")
+    .select(
+      "id, name, whatsapp, plan_status, plan_active, role, whatsapp_opt_in, group_removal_warned_at, group_removed_at",
+    )
+    .eq("plan_active", false)
+    .in("plan_status", ["canceled", "inactive", "refunded", "chargeback"])
+    .not("whatsapp", "is", null)
+    .is("group_removed_at", null)
+    .limit(GROUP_CLEANUP_MAX_USERS_PER_TICK);
+
+  if (pErr) {
+    log.error({ err: pErr }, "[group-cleanup] erro buscar candidatos");
+    return stats;
+  }
+
+  const candidates = (profilesData ?? []).filter(
+    (p) => p.role !== "admin" && p.role !== "crm_agent",
+  ) as Array<{
+    id: string;
+    name: string | null;
+    whatsapp: string | null;
+    plan_status: string | null;
+    plan_active: boolean;
+    role: string | null;
+    whatsapp_opt_in: boolean;
+    group_removal_warned_at: string | null;
+    group_removed_at: string | null;
+  }>;
+
+  stats.candidates = candidates.length;
+  if (candidates.length === 0) return stats;
+
+  log.info(
+    { candidates: candidates.length, groupJids: groupJids.length },
+    "[group-cleanup] inicio",
+  );
+
+  const now = new Date();
+  const nowMs = now.getTime();
+
+  for (const profile of candidates) {
+    const phone = normalizePhoneBR(profile.whatsapp ?? null);
+    if (!phone) {
+      stats.skipped++;
+      continue;
+    }
+
+    // ====== ETAPA A: ainda nao avisada ======
+    if (profile.group_removal_warned_at == null) {
+      if (profile.whatsapp_opt_in === false) {
+        const { error: updErr } = await supabase
+          .from("profiles")
+          .update({ group_removal_warned_at: now.toISOString() })
+          .eq("id", profile.id);
+        if (updErr) {
+          log.warn(
+            { err: updErr, userId: profile.id },
+            "[group-cleanup] update warned_at (opt-out) falhou",
+          );
+          stats.failed++;
+        } else {
+          await insertGroupAudit(
+            supabase,
+            profile.id,
+            "skipped",
+            "opt_out_no_warning",
+            {},
+          );
+          stats.skipped++;
+        }
+        await groupCleanupSleep(GROUP_CLEANUP_SLEEP_BETWEEN_USERS_MS);
+        continue;
+      }
+
+      // FIX (review#4): dedup defensivo — se warned_at falhou de
+      // persistir em ciclo anterior mas enqueueOutbox rolou, este check
+      // evita reenviar. Janela 23h porque tick eh hourly e queremos
+      // garantir 1 aviso por ciclo de 24h.
+      const recentlyWarned = await alreadyReceivedRecently(
+        supabase,
+        profile.id,
+        TRIGGER_GROUP_REMOVAL_WARNING_KEY,
+        23,
+      );
+      if (recentlyWarned) {
+        log.info(
+          { userId: profile.id },
+          "[group-cleanup] aviso ja foi enviado nas ultimas 23h, marcando warned_at sem reenviar",
+        );
+        const { error: updErr } = await supabase
+          .from("profiles")
+          .update({ group_removal_warned_at: now.toISOString() })
+          .eq("id", profile.id);
+        if (updErr) {
+          log.warn({ err: updErr, userId: profile.id }, "[group-cleanup] update warned_at (dedup) falhou");
+          stats.failed++;
+        } else {
+          await insertGroupAudit(
+            supabase,
+            profile.id,
+            "skipped",
+            "warning_already_in_outbox",
+            {},
+          );
+          stats.skipped++;
+        }
+        await groupCleanupSleep(GROUP_CLEANUP_SLEEP_BETWEEN_USERS_MS);
+        continue;
+      }
+
+      const { text } = buildTriggerGroupRemovalWarning({
+        firstName: profile.name,
+      });
+      const enq = await enqueueOutbox(supabase, {
+        userId: profile.id,
+        phone,
+        templateKey: TRIGGER_GROUP_REMOVAL_WARNING_KEY,
+        text,
+        metadata: { kind: "group_removal_warning" },
+      });
+
+      if (!enq.ok) {
+        await insertGroupAudit(
+          supabase,
+          profile.id,
+          "failed",
+          `warn_enqueue_${enq.reason}`,
+          {},
+        );
+        stats.failed++;
+        await groupCleanupSleep(GROUP_CLEANUP_SLEEP_BETWEEN_USERS_MS);
+        continue;
+      }
+
+      const { error: updErr } = await supabase
+        .from("profiles")
+        .update({ group_removal_warned_at: now.toISOString() })
+        .eq("id", profile.id);
+      if (updErr) {
+        // Enqueue rolou mas UPDATE falhou. Proximo ciclo o dedup
+        // defensivo (alreadyReceivedRecently) ja pega — nao vai
+        // reenviar. Marca como failed pra alerta.
+        log.error(
+          { err: updErr, userId: profile.id, outbox_id: enq.outbox_id },
+          "[group-cleanup] UPDATE warned_at falhou apos enqueue (dedup defensivo cobre proximo tick)",
+        );
+        await insertGroupAudit(
+          supabase,
+          profile.id,
+          "failed",
+          "warn_update_failed",
+          { outbox_id: enq.outbox_id, error: updErr.message },
+        );
+        stats.failed++;
+      } else {
+        await insertGroupAudit(
+          supabase,
+          profile.id,
+          "warned",
+          "warning_enqueued",
+          { outbox_id: enq.outbox_id },
+        );
+        stats.warned++;
+      }
+      await groupCleanupSleep(GROUP_CLEANUP_SLEEP_BETWEEN_USERS_MS);
+      continue;
+    }
+
+    // ====== ETAPA B: avisada — 24h ja passou? ======
+    const warnedAtMs = new Date(profile.group_removal_warned_at).getTime();
+    if (!Number.isFinite(warnedAtMs) || nowMs - warnedAtMs < GROUP_CLEANUP_WARN_DELAY_MS) {
+      stats.skipped++;
+      continue;
+    }
+
+    let anySuccess = false;
+    let anyAlreadyOut = false;
+    let anyNoAdmin = false;
+    let anyEvoError = false;
+    const perGroup: Array<Record<string, unknown>> = [];
+
+    for (const groupJid of groupJids) {
+      const result = await removeParticipantFromGroup({
+        instanceName: adminInstance,
+        groupJid,
+        phone,
+      });
+
+      if (result.ok) {
+        anySuccess = true;
+        perGroup.push({ groupJid, ok: true });
+      } else {
+        const msg = (result.error ?? "").toLowerCase();
+        const isAlreadyOut =
+          msg.includes("not-in-group") ||
+          msg.includes("not a participant") ||
+          msg.includes("not in group") ||
+          msg.includes("nao esta no grupo");
+        // FIX (review#3): remover substring 'admin' generico — qualquer
+        // erro com a palavra 'admin' (URL, stack trace, etc) virava
+        // falso positivo. So matches especificos do Baileys/HTTP.
+        const isNoAdmin =
+          msg.includes("not-authorized") ||
+          msg.includes("forbidden") ||
+          msg.includes("evo_403");
+
+        if (isAlreadyOut) {
+          anyAlreadyOut = true;
+          perGroup.push({ groupJid, ok: true, alreadyOut: true });
+        } else if (isNoAdmin) {
+          anyNoAdmin = true;
+          perGroup.push({ groupJid, ok: false, reason: "no_admin" });
+        } else {
+          anyEvoError = true;
+          perGroup.push({ groupJid, ok: false, reason: "evo_error", error: result.error });
+        }
+      }
+      await groupCleanupSleep(GROUP_CLEANUP_SLEEP_BETWEEN_GROUPS_MS);
+    }
+
+    // FIX (review#2 — BLOCKER): so marca removed_at se TODOS os grupos
+    // resolveram (success ou already_out). Se algum no_admin/evo_error
+    // pendente, fica como failed pra retry quando admin promover/Evolution
+    // estabilizar. Sem isso, aluna ficava eternamente em grupo nao-admin.
+    const allResolved =
+      (anySuccess || anyAlreadyOut) && !anyNoAdmin && !anyEvoError;
+
+    if (allResolved) {
+      const { error: updErr } = await supabase
+        .from("profiles")
+        .update({ group_removed_at: now.toISOString() })
+        .eq("id", profile.id);
+      if (updErr) {
+        log.error(
+          { err: updErr, userId: profile.id },
+          "[group-cleanup] UPDATE removed_at falhou (proximo ciclo retenta)",
+        );
+        await insertGroupAudit(supabase, profile.id, "failed", "remove_update_failed", {
+          groups: perGroup,
+          error: updErr.message,
+        });
+        stats.failed++;
+      } else {
+        await insertGroupAudit(
+          supabase,
+          profile.id,
+          "removed",
+          anyAlreadyOut && !anySuccess ? "already_out" : "removed_from_group",
+          { groups: perGroup },
+        );
+        stats.removed++;
+      }
+    } else if (anyNoAdmin) {
+      // FIX (review nit): log.warn em vez de log.error pra nao poluir
+      // alerting com instancia nao admin recorrente (admin precisa
+      // promover manualmente; audit ja persiste o estado).
+      log.warn(
+        { userId: profile.id, instanceName: adminInstance, perGroup },
+        "[group-cleanup] instancia nao eh admin em algum grupo — promover manualmente",
+      );
+      await insertGroupAudit(
+        supabase,
+        profile.id,
+        "failed",
+        anySuccess || anyAlreadyOut ? "instance_not_admin_partial" : "instance_not_admin",
+        { groups: perGroup },
+      );
+      stats.no_admin++;
+    } else {
+      await insertGroupAudit(supabase, profile.id, "failed", "evo_error", {
+        groups: perGroup,
+      });
+      stats.failed++;
+    }
+
+    await groupCleanupSleep(GROUP_CLEANUP_SLEEP_BETWEEN_USERS_MS);
+  }
+
+  log.info({ stats }, "[group-cleanup] done");
+  return stats;
+}
+
+// FIX (review#1 — BLOCKER): single source of truth pro lock anti-overlap.
+// Tanto o cron tick quanto o endpoint manual passam por aqui — assim 2
+// invocacoes concorrentes nao geram aviso duplicado.
+export async function runGroupCleanupWithLock(): Promise<
+  | {
+      ok: true;
+      warned: number;
+      removed: number;
+      failed: number;
+      skipped: number;
+      no_admin: number;
+      candidates: number;
+    }
+  | { ok: false; reason: "already_running" }
+> {
+  if (groupCleanupRunning) {
+    return { ok: false, reason: "already_running" };
+  }
+  groupCleanupRunning = true;
+  try {
+    const result = await runGroupCleanup();
+    return { ok: true, ...result };
+  } finally {
+    groupCleanupRunning = false;
+  }
+}
+
+// =================================================================
 // WORKER (setInterval)
 // =================================================================
 
@@ -1552,8 +2031,10 @@ let triggersTimer: NodeJS.Timeout | null = null;
 let expireTrialsTimer: NodeJS.Timeout | null = null;
 let motivationalTimer: NodeJS.Timeout | null = null;
 let checkinReminderTimer: NodeJS.Timeout | null = null;
+let groupCleanupTimer: NodeJS.Timeout | null = null;
 let flushRunning = false;
 let expireRunning = false;
+// groupCleanupRunning declarado mais acima (perto de runGroupCleanupWithLock)
 
 export function startWhatsAppWorker() {
   if (process.env.WHATSAPP_WORKER_ENABLED === "false") {
@@ -1683,6 +2164,23 @@ export function startWhatsAppWorker() {
   // Tick imediato no startup pra limpar qualquer atraso, depois cada 30min
   void tickExpireTrials();
   expireTrialsTimer = setInterval(() => void tickExpireTrials(), 30 * 60 * 1000);
+
+  // Group cleanup hourly: avisa 24h antes + remove do grupo das alunas
+  // com plano cancelado. Anti-overlap via runGroupCleanupWithLock —
+  // mesmo lock compartilhado com endpoint manual /whatsapp/group-cleanup/run.
+  const tickGroupCleanup = async () => {
+    try {
+      const result = await runGroupCleanupWithLock();
+      if (!result.ok) return; // already_running -> skip silencioso
+      if (result.warned > 0 || result.removed > 0 || result.failed > 0 || result.no_admin > 0) {
+        log.info({ result }, "[group-cleanup] tick done");
+      }
+    } catch (err) {
+      log.error({ err }, "[group-cleanup] erro");
+    }
+  };
+  void tickGroupCleanup();
+  groupCleanupTimer = setInterval(() => void tickGroupCleanup(), GROUP_CLEANUP_INTERVAL_MS);
 }
 
 export function stopWhatsAppWorker() {
@@ -1691,11 +2189,13 @@ export function stopWhatsAppWorker() {
   if (expireTrialsTimer) clearInterval(expireTrialsTimer);
   if (motivationalTimer) clearInterval(motivationalTimer);
   if (checkinReminderTimer) clearInterval(checkinReminderTimer);
+  if (groupCleanupTimer) clearInterval(groupCleanupTimer);
   flushTimer = null;
   triggersTimer = null;
   expireTrialsTimer = null;
   motivationalTimer = null;
   checkinReminderTimer = null;
+  groupCleanupTimer = null;
 }
 
 // =================================================================

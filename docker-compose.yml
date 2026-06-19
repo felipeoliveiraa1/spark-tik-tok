@@ -54,6 +54,11 @@ services:
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:?set SUPABASE_SERVICE_ROLE_KEY}
       EVOLUTION_API_URL: ${EVOLUTION_API_URL:?set EVOLUTION_API_URL}
       EVOLUTION_API_KEY: ${EVOLUTION_API_KEY:?set EVOLUTION_API_KEY}
+      # Group cleanup — JIDs dos grupos WhatsApp + instancia default
+      # admin desses grupos. WHATSAPP_GROUP_JIDS vazio = cleanup vira
+      # no-op silencioso (skip total) — util pra rollback.
+      WHATSAPP_GROUP_JIDS: ${WHATSAPP_GROUP_JIDS:-}
+      WHATSAPP_DEFAULT_INSTANCE: ${WHATSAPP_DEFAULT_INSTANCE:-metodotts}
       # Lead blast — instancia Evolution DEDICADA (chip Finance isolado).
       # OPCIONAL: se nao setar, o endpoint /whatsapp/lead-blast retorna
       # erro ja na primeira tentativa de envio (sem afetar status do lead),
