@@ -20,6 +20,7 @@ import {
   Hourglass,
   Users,
   TrendingUp,
+  UserX,
 } from "lucide-react";
 import { SparkWordmark } from "@/components/atoms/spark-wordmark";
 import { cn } from "@/lib/cn";
@@ -57,6 +58,7 @@ const SECTIONS: Section[] = [
     label: "Comunidade",
     items: [
       { href: "/admin/whatsapp", label: "WhatsApp", icon: MessageCircle },
+      { href: "/admin/group-removals", label: "Saídas do grupo", icon: UserX },
       { href: "/admin/feedback", label: "Feedback", icon: MessageSquareWarning },
       { href: "/crm-metodotts", label: "CRM (leads)", icon: Sparkles },
       { href: "/admin/crm-stats", label: "CRM (métricas)", icon: TrendingUp },
