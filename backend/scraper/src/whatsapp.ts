@@ -65,7 +65,11 @@ import {
 // CONFIG
 // =================================================================
 
-export const BLAST_INTERVAL_MS = 15_000;
+// Cadencia entre envios em batch (motivacional diario, group cleanup
+// warning, etc). Subiu de 15s -> 40s em 2026-06-20 pra dar mais folga
+// pro chip metodotts (caiu uma vez recente; ritmo mais lento ajuda
+// estabilidade do Baileys/WhatsApp Web).
+export const BLAST_INTERVAL_MS = 40_000;
 export const WEEKLY_MSG_LIMIT_PER_USER = 5;
 export const HOUR_OPEN_BRT = 8;
 export const HOUR_CLOSE_BRT = 23;
