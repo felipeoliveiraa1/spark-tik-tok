@@ -891,21 +891,150 @@ export const TRIGGER_PLANO_REATIVADO_KEY = "trigger_plano_reativado";
 // ============================================================
 export const TRIGGER_LEMBRETE_CHECKIN_KEY = "trigger_lembrete_checkin";
 
-export function buildLembreteCheckin(input: { firstName: string }): { text: string } {
-  const name = firstName(input.firstName);
-  const text = [
+// 10 variacoes do lembrete noturno (20:30 BRT). Sistema escolhe random
+// a cada envio — alunas que recebem todo dia veem variedade ao longo da
+// semana, evitando fadiga do mesmo texto repetido. Tom warm + noturno.
+const LEMBRETES_NOTURNOS: ((name: string) => string)[] = [
+  // 1 — disciplina suave
+  (name) => [
     `${name} 🌙`,
     ``,
     `Lembrete carinhoso: você ainda não bateu sua *rotina de hoje* no *Método TTS*.`,
     ``,
-    `São 5 minutinhos. Fecha o dia em ordem, mantém o ritmo, e amanhã você já acorda em frente.`,
+    `São só 5 minutinhos pra fechar o dia em paz. Bora?`,
     ``,
     `🔗 https://www.metodotts.app`,
     ``,
     `Boa noite 💕`,
     ``,
     `_Yara · Método TTS_`,
-  ].join("\n");
+  ].join("\n"),
+  // 2 — streak / sequencia
+  (name) => [
+    `${name} 🌙`,
+    ``,
+    `Antes de dormir, dá uma passadinha no app pra bater sua rotina de hoje. Não quebra a sequência justo agora 💪`,
+    ``,
+    `5 minutinhos só.`,
+    ``,
+    `🔗 https://www.metodotts.app`,
+    ``,
+    `Descansa bem 💕`,
+    ``,
+    `_Yara · Método TTS_`,
+  ].join("\n"),
+  // 3 — self-care
+  (name) => [
+    `Oi ${name} 🌙`,
+    ``,
+    `Investe 5 minutinhos em você antes de dormir? Sua rotina de hoje no *Método TTS* ainda tá em aberto.`,
+    ``,
+    `Marcar é cuidar de si.`,
+    ``,
+    `🔗 https://www.metodotts.app`,
+    ``,
+    `Boa noite, mocinha 🌹`,
+    ``,
+    `_Yara · Método TTS_`,
+  ].join("\n"),
+  // 4 — anti-perfeccionismo
+  (name) => [
+    `${name} 🌙`,
+    ``,
+    `Lembrete: você ainda não bateu a *rotina de hoje*. Mesmo que tenha conseguido só 1 ou 2 itens, vale demais marcar.`,
+    ``,
+    `Constância > perfeição. Sempre.`,
+    ``,
+    `🔗 https://www.metodotts.app`,
+    ``,
+    `Boa noite 💕`,
+    ``,
+    `_Yara · Método TTS_`,
+  ].join("\n"),
+  // 5 — identidade
+  (name) => [
+    `${name} 🌙`,
+    ``,
+    `Cada noite que você abre o app pra fechar a rotina, você tá virando a criadora que você quer ser.`,
+    ``,
+    `Hoje ainda dá tempo. 5 minutinhos.`,
+    ``,
+    `🔗 https://www.metodotts.app`,
+    ``,
+    `_Yara · Método TTS_`,
+  ].join("\n"),
+  // 6 — amanha comeca hoje
+  (name) => [
+    `${name} 🌙`,
+    ``,
+    `Amanhã começa hoje. Bate a rotina, fecha o dia certinho, e amanhã você acorda já no jogo.`,
+    ``,
+    `5 minutinhos só, vai 💪`,
+    ``,
+    `🔗 https://www.metodotts.app`,
+    ``,
+    `Boa noite 💕`,
+    ``,
+    `_Yara · Método TTS_`,
+  ].join("\n"),
+  // 7 — anti-procrastinacao
+  (name) => [
+    `${name} 🌙`,
+    ``,
+    `Sei que o dia foi corrido e que agora bate vontade só de deitar. Mas 5 minutinhos pra fechar a rotina valem muito.`,
+    ``,
+    `Você vai dormir mais leve, eu garanto.`,
+    ``,
+    `🔗 https://www.metodotts.app`,
+    ``,
+    `_Yara · Método TTS_`,
+  ].join("\n"),
+  // 8 — algoritmo TikTok
+  (name) => [
+    `${name} 🌙`,
+    ``,
+    `Sabia? O TikTok premia quem aparece *todo dia*. E sua rotina no app te treina exatamente pra isso: aparecer, mesmo cansada.`,
+    ``,
+    `5 minutinhos antes de dormir.`,
+    ``,
+    `🔗 https://www.metodotts.app`,
+    ``,
+    `Boa noite 💕`,
+    ``,
+    `_Yara · Método TTS_`,
+  ].join("\n"),
+  // 9 — pequenas vitorias
+  (name) => [
+    `${name} 🌙`,
+    ``,
+    `Bora fechar o dia? Marca o que conseguiu na rotina — sem culpa pelo que não rolou.`,
+    ``,
+    `Toda noite marcada é um tijolinho do seu negócio 🧱`,
+    ``,
+    `🔗 https://www.metodotts.app`,
+    ``,
+    `_Yara · Método TTS_`,
+  ].join("\n"),
+  // 10 — comunidade
+  (name) => [
+    `${name} 🌙`,
+    ``,
+    `As meninas que mais crescem no *Método TTS* são as que aparecem TODO dia, mesmo no dia ruim.`,
+    ``,
+    `Hoje é só 5 minutinhos pra você não ficar pra trás.`,
+    ``,
+    `🔗 https://www.metodotts.app`,
+    ``,
+    `Boa noite 💕`,
+    ``,
+    `_Yara · Método TTS_`,
+  ].join("\n"),
+];
+
+export function buildLembreteCheckin(input: { firstName: string }): { text: string } {
+  const name = firstName(input.firstName);
+  const idx = Math.floor(Math.random() * LEMBRETES_NOTURNOS.length);
+  const text = LEMBRETES_NOTURNOS[idx]!(name);
   return { text };
 }
 
