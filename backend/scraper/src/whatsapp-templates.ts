@@ -948,11 +948,11 @@ export function buildTriggerGroupRemovalWarning(input: {
     ``,
     `Aqui é do *Método TTS*. Notamos que seu plano foi encerrado e infelizmente seu acesso ao grupo das alunas será removido nas próximas 24h.`,
     ``,
-    `Mas se quiser continuar com a gente, é só reativar seu plano e você volta automaticamente pra comunidade:`,
+    `Mas se quiser continuar com a gente, é só *acessar sua conta novamente e ativar seu plano* — você volta automaticamente pra comunidade:`,
     ``,
     `🔗 https://www.metodotts.app`,
     ``,
-    `Qualquer dúvida pode falar comigo por aqui. Tô torcendo pra você continuar 🌹`,
+    `Boa sorte, viu? Tô torcendo muito por você 🌹`,
   ].join("\n");
   return { text };
 }
