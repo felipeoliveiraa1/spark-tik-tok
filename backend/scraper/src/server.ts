@@ -14,7 +14,6 @@ import {
   runAllTriggers,
   runDailyMotivationalBlast,
   runGroupCleanupWithLock,
-  runLeadFirstContactBlast,
   runLembreteCheckin,
   startWhatsAppWorker,
   stopWhatsAppWorker,
@@ -228,31 +227,6 @@ app.post("/whatsapp/group-cleanup/run", hmacAuth, async (_req, res) => {
     res.json(result);
   } catch (err) {
     log.error({ err }, "whatsapp/group-cleanup error");
-    res
-      .status(500)
-      .json({ ok: false, error: err instanceof Error ? err.message : "erro" });
-  }
-});
-
-// Lead blast — primeiro contato com leads do /formulario (status='novo').
-// Usa instancia Evolution dedicada (EVOLUTION_LEADS_*) — chip isolado pra
-// nao arriscar a do metodo. Cadencia 120s default, marca novo -> contactado.
-// Body opcional: { limit?: number, intervalMs?: number, dryRun?: boolean }
-app.post("/whatsapp/lead-blast", hmacAuth, async (req, res) => {
-  try {
-    const limit =
-      typeof req.body?.limit === "number" && req.body.limit > 0
-        ? Math.min(req.body.limit, 500)
-        : undefined;
-    const intervalMs =
-      typeof req.body?.intervalMs === "number" && req.body.intervalMs >= 5_000
-        ? req.body.intervalMs
-        : undefined;
-    const dryRun = req.body?.dryRun === true;
-    const result = await runLeadFirstContactBlast({ limit, intervalMs, dryRun });
-    res.json(result);
-  } catch (err) {
-    log.error({ err }, "whatsapp/lead-blast error");
     res
       .status(500)
       .json({ ok: false, error: err instanceof Error ? err.message : "erro" });

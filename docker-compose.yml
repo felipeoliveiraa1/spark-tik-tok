@@ -59,13 +59,6 @@ services:
       # no-op silencioso (skip total) — util pra rollback.
       WHATSAPP_GROUP_JIDS: ${WHATSAPP_GROUP_JIDS:-}
       WHATSAPP_DEFAULT_INSTANCE: ${WHATSAPP_DEFAULT_INSTANCE:-metodotts}
-      # Lead blast — instancia Evolution DEDICADA (chip Finance isolado).
-      # OPCIONAL: se nao setar, o endpoint /whatsapp/lead-blast retorna
-      # erro ja na primeira tentativa de envio (sem afetar status do lead),
-      # mas o demais do worker (motivacionais, triggers) continua funcionando.
-      EVOLUTION_LEADS_URL: ${EVOLUTION_LEADS_URL:-}
-      EVOLUTION_LEADS_API_KEY: ${EVOLUTION_LEADS_API_KEY:-}
-      EVOLUTION_LEADS_INSTANCE: ${EVOLUTION_LEADS_INSTANCE:-Finance}
       NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://www.metodotts.app}
       WHATSAPP_WORKER_ENABLED: ${WHATSAPP_WORKER_ENABLED:-true}
     volumes:
