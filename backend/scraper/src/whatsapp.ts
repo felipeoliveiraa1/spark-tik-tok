@@ -1745,6 +1745,31 @@ export async function runGroupCleanup(): Promise<{
   stats.candidates = candidates.length;
   if (candidates.length === 0) return stats;
 
+  // FIX (incidente 2026-06-20): aluna pode ter 2 cadastros com o MESMO
+  // whatsapp — um cancelado, outro ativo (recomprou apos refund com email
+  // novo). Sem este check, removiamos pelo phone da cancelada e a aluna
+  // ativa caia do grupo (mesmo numero, Evolution nao diferencia profile).
+  // Carrega Set de phones que tem PELO MENOS 1 profile ativo. Se a
+  // candidata tem phone nesse set, skip + marca como tratada (warned_at +
+  // removed_at agora) pra nao reentrar no ciclo eternamente.
+  const { data: activeData, error: aErr } = await supabase
+    .from("profiles")
+    .select("id, whatsapp")
+    .eq("plan_active", true)
+    .not("whatsapp", "is", null);
+  if (aErr) {
+    log.error({ err: aErr }, "[group-cleanup] erro buscar phones ativos");
+    return stats;
+  }
+  const activeByPhone = new Map<string, string[]>();
+  for (const row of activeData ?? []) {
+    const norm = normalizePhoneBR(row.whatsapp as string | null);
+    if (!norm) continue;
+    const arr = activeByPhone.get(norm) ?? [];
+    arr.push(row.id as string);
+    activeByPhone.set(norm, arr);
+  }
+
   log.info(
     { candidates: candidates.length, groupJids: groupJids.length },
     "[group-cleanup] inicio",
@@ -1757,6 +1782,41 @@ export async function runGroupCleanup(): Promise<{
     const phone = normalizePhoneBR(profile.whatsapp ?? null);
     if (!phone) {
       stats.skipped++;
+      continue;
+    }
+
+    // PHONE OVERLAP: se este phone tambem pertence a outra profile com
+    // plano ATIVO, NUNCA enviar warning nem remover (Evolution remove pelo
+    // numero, aluna ativa sairia do grupo). Marca como tratada (warned_at
+    // + removed_at = agora) pra sair do ciclo. Se a profile ativa cancelar
+    // depois, ELA mesma sera processada normalmente — o phone vai sair do
+    // Set activeByPhone na proxima execucao.
+    const overlapIds = activeByPhone.get(phone);
+    if (overlapIds && overlapIds.length > 0) {
+      const { error: updErr } = await supabase
+        .from("profiles")
+        .update({
+          group_removal_warned_at: now.toISOString(),
+          group_removed_at: now.toISOString(),
+        })
+        .eq("id", profile.id);
+      if (updErr) {
+        log.error(
+          { err: updErr, userId: profile.id },
+          "[group-cleanup] update phone_overlap skip falhou",
+        );
+        stats.failed++;
+      } else {
+        await insertGroupAudit(
+          supabase,
+          profile.id,
+          "skipped",
+          "phone_overlap_with_active",
+          { active_profile_ids: overlapIds },
+        );
+        stats.skipped++;
+      }
+      await groupCleanupSleep(GROUP_CLEANUP_SLEEP_BETWEEN_USERS_MS);
       continue;
     }
 
