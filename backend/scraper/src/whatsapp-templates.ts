@@ -948,9 +948,11 @@ export function buildTriggerGroupRemovalWarning(input: {
     ``,
     `Aqui é do *Método TTS*. Notamos que seu plano foi encerrado e infelizmente seu acesso ao grupo das alunas será removido nas próximas 24h.`,
     ``,
-    `Mas se quiser continuar com a gente, é só *acessar sua conta novamente e ativar seu plano* — você volta automaticamente pra comunidade:`,
+    `Se quiser continuar com a gente, é só *acessar sua conta e ativar seu plano* novamente:`,
     ``,
     `🔗 https://www.metodotts.app`,
+    ``,
+    `Importante: depois de reativar, *você precisa entrar manualmente no grupo de novo* pra voltar pra comunidade.`,
     ``,
     `Boa sorte, viu? Tô torcendo muito por você 🌹`,
   ].join("\n");
