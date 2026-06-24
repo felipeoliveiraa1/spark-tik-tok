@@ -178,14 +178,10 @@ const READY_PRESETS: Array<{ rede: string; medium: string; campaign: string; emo
 ];
 
 function ReadyLinks() {
-  const [origin, setOrigin] = React.useState("https://www.metodotts.app");
+  // Hardcoded production — admin pode estar em localhost/preview deploy e
+  // copiar URL errada pra divulgar nas redes.
+  const origin = "https://www.metodotts.app";
   const toast = useToast();
-
-  React.useEffect(() => {
-    if (typeof window !== "undefined") {
-      setOrigin(window.location.origin);
-    }
-  }, []);
 
   const copy = (url: string) => {
     void navigator.clipboard.writeText(url);
@@ -256,6 +252,24 @@ export default function AdminGrupoPage() {
   }, [refresh]);
 
   const handleToggle = async (link: Link) => {
+    // Se desativando E for o ultimo do pool ativo (que ainda nao bateu cap),
+    // confirma — senao /grupo retorna 503 no meio do lancamento
+    if (link.is_active) {
+      const activeNotCapped = links.filter(
+        (l) => l.is_active && (l.cap_count === null || l.click_count < l.cap_count),
+      );
+      const isOnlyActive = activeNotCapped.length === 1 && activeNotCapped[0]?.id === link.id;
+      if (isOnlyActive) {
+        const ok = await confirm({
+          title: "Desativar o único grupo disponível?",
+          description:
+            "Sem nenhum grupo ativo, /grupo vai mostrar 'Grupos lotados' pra todo mundo. Tem certeza?",
+          confirmLabel: "Desativar mesmo assim",
+          destructive: true,
+        });
+        if (!ok) return;
+      }
+    }
     const res = await fetch(`/api/admin/group-redirect/${link.id}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
@@ -305,7 +319,9 @@ export default function AdminGrupoPage() {
   };
 
   const handleCopyShareLink = () => {
-    const shareUrl = `${window.location.origin}/grupo`;
+    // Hardcoded production URL — admin pode acessar de localhost/preview e
+    // copiar acidentalmente esse origin pra divulgar nas redes.
+    const shareUrl = "https://www.metodotts.app/grupo";
     void navigator.clipboard.writeText(shareUrl);
     toast.success(`Copiado: ${shareUrl}`);
   };
