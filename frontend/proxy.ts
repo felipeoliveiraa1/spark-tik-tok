@@ -24,11 +24,14 @@ const PUBLIC_ROUTES = new Set(["/login", "/landing"]);
 // Rotas SEMPRE acessíveis (logado ou não). Necessário pro reset de senha
 // porque o link do email cria sessão temporária — não dá pra kickar.
 // /formulario eh pagina publica de captacao de leads (bio do TikTok).
+// /grupo eh redirecionador publico round-robin pros grupos WhatsApp
+// (divulgado em redes sociais durante lancamento).
 const ALWAYS_PUBLIC = new Set([
   "/forgot-password",
   "/reset-password",
   "/formulario",
   "/formulario/obrigada",
+  "/grupo",
 ]);
 const ONBOARDING_ROUTES = new Set(["/welcome"]);
 
