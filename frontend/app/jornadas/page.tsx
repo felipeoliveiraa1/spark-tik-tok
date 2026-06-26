@@ -4,8 +4,10 @@ import * as React from "react";
 import Link from "next/link";
 import { Loader2, Lock, ChevronRight, Sparkles } from "lucide-react";
 import { JourneyCharacter } from "@/components/journey/JourneyCharacter";
+import { XPBar } from "@/components/journey/XPBar";
 import type { CharacterStage } from "@/lib/journey/character-stage";
 import { STAGE_EMOJI } from "@/lib/journey/character-stage";
+import { useJourneyStats } from "@/lib/journey/useJourneyStats";
 import { cn } from "@/lib/cn";
 
 type JourneyCard = {
@@ -43,6 +45,7 @@ type ApiResp = {
 export default function JornadasPage() {
   const [data, setData] = React.useState<ApiResp | null>(null);
   const [loading, setLoading] = React.useState(true);
+  const { stats } = useJourneyStats();
 
   React.useEffect(() => {
     void fetch("/api/jornadas", { cache: "no-store" })
@@ -85,6 +88,11 @@ export default function JornadasPage() {
         <p className="text-spark-ink-70 text-[14px] mt-3 max-w-[44ch] mx-auto">
           Complete aulas, prove suas vendas e evolua de bebê pra adulta no TikTok Shop.
         </p>
+        {stats && (
+          <div className="mt-4 flex justify-center">
+            <XPBar xpTotal={stats.xp_total} stage={data.me.character_stage} />
+          </div>
+        )}
         {data.me.is_admin && (
           <div className="mt-3 inline-block px-2 py-0.5 rounded-full bg-orange-50 border border-orange-200 text-orange-700 text-[10.5px] font-extrabold uppercase tracking-wide">
             ⚡ Preview admin

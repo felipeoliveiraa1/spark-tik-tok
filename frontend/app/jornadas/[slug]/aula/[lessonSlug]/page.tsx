@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Loader2, ArrowLeft, CheckCircle2, Lock } from "lucide-react";
 import { useToast } from "@/components/molecules/dialog-provider";
+import { BadgeUnlockModal, type AwardedBadge } from "@/components/journey/BadgeUnlockModal";
+import { XPDelta } from "@/components/journey/XPDelta";
 import { cn } from "@/lib/cn";
 
 type Lesson = {
@@ -35,6 +37,8 @@ export default function AulaJornadaPage() {
   const [data, setData] = React.useState<ApiResp | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [completing, setCompleting] = React.useState(false);
+  const [xpDelta, setXpDelta] = React.useState<number | null>(null);
+  const [awardedBadges, setAwardedBadges] = React.useState<AwardedBadge[]>([]);
 
   const load = React.useCallback(async () => {
     setLoading(true);
@@ -111,13 +115,22 @@ export default function AulaJornadaPage() {
           xp_earned?: number;
           xp_total?: number;
           already_completed?: boolean;
+          badges_awarded?: AwardedBadge[];
         };
         if (j.already_completed) {
           toast.toast("Já estava marcada como concluída");
+          router.push(`/jornadas/${params.slug}`);
         } else {
-          toast.success(`+${j.xp_earned} XP ✨`);
+          // 1) Anima XP
+          setXpDelta(j.xp_earned ?? 0);
+          // 2) Se houver badges, abre modal logo apos o XP delta (1.5s)
+          if (j.badges_awarded && j.badges_awarded.length > 0) {
+            setTimeout(() => setAwardedBadges(j.badges_awarded ?? []), 1500);
+          } else {
+            // Sem badge: volta pra jornada apos 1.7s
+            setTimeout(() => router.push(`/jornadas/${params.slug}`), 1700);
+          }
         }
-        router.push(`/jornadas/${params.slug}`);
       } else {
         const j = (await res.json().catch(() => ({}))) as { error?: string };
         toast.error(j.error ?? "Erro ao marcar");
@@ -125,6 +138,11 @@ export default function AulaJornadaPage() {
     } finally {
       setCompleting(false);
     }
+  };
+
+  const handleBadgesClose = () => {
+    setAwardedBadges([]);
+    router.push(`/jornadas/${params.slug}`);
   };
 
   return (
@@ -212,6 +230,16 @@ export default function AulaJornadaPage() {
           </div>
         </div>
       </div>
+
+      {/* XP delta float */}
+      {xpDelta !== null && (
+        <XPDelta amount={xpDelta} onDone={() => setXpDelta(null)} />
+      )}
+
+      {/* Badge unlock modal */}
+      {awardedBadges.length > 0 && (
+        <BadgeUnlockModal badges={awardedBadges} onClose={handleBadgesClose} />
+      )}
     </div>
   );
 }

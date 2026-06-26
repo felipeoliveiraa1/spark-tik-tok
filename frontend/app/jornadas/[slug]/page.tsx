@@ -3,8 +3,10 @@
 import * as React from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Loader2, ArrowLeft, Lock, CheckCircle2, Camera, ChevronRight } from "lucide-react";
+import { Loader2, ArrowLeft, Lock, CheckCircle2, Camera, ChevronRight, Map } from "lucide-react";
 import { JourneyCharacter } from "@/components/journey/JourneyCharacter";
+import { JourneyMap } from "@/components/journey/JourneyMap";
+import { XPBar } from "@/components/journey/XPBar";
 import type { CharacterStage } from "@/lib/journey/character-stage";
 import { cn } from "@/lib/cn";
 
@@ -17,6 +19,8 @@ type Lesson = {
   order_index: number;
   xp_reward: number;
   requires_proof: boolean;
+  map_x: number | null;
+  map_y: number | null;
   completed: boolean;
   locked: boolean;
 };
@@ -85,13 +89,19 @@ export default function JornadaDetailPage() {
     <div className="min-h-dvh pb-20" style={{
       background: journey ? `linear-gradient(180deg, ${journey.character_stage === "bebe" ? "#fff0f3" : journey.character_stage === "adolescente" ? "#f5edff" : "#fff6ec"} 0%, var(--spark-bg) 50%)` : undefined,
     }}>
-      <header className="px-6 pt-6 pb-4 max-w-[920px] mx-auto">
+      <header className="px-6 pt-6 pb-4 max-w-[920px] mx-auto flex items-center justify-between gap-3 flex-wrap">
         <Link
           href="/jornadas"
           className="text-[12.5px] font-extrabold text-spark-ink-70 hover:text-spark-ink inline-flex items-center gap-1.5"
         >
           <ArrowLeft size={13} /> Jornadas
         </Link>
+        {data.progress && (
+          <XPBar
+            xpTotal={data.progress.xp_total ?? 0}
+            stage={journey.character_stage}
+          />
+        )}
       </header>
 
       <div className="px-6 max-w-[920px] mx-auto">
@@ -121,11 +131,42 @@ export default function JornadaDetailPage() {
           </div>
         </div>
 
+        {/* Mini-mapa do joguinho */}
+        {lessons.length > 0 && (
+          <div className="mt-6">
+            <div className="flex items-center gap-2 mb-3">
+              <Map size={14} className="text-spark-brand-deep" />
+              <span className="text-eyebrow text-spark-brand-deep">Mapa da jornada</span>
+            </div>
+            <JourneyMap
+              lessons={lessons.map((l) => ({
+                id: l.id,
+                slug: l.slug,
+                title: l.title,
+                order_index: l.order_index,
+                map_x: l.map_x ?? null,
+                map_y: l.map_y ?? null,
+                completed: l.completed,
+                locked: l.locked,
+              }))}
+              currentLessonId={
+                lessons.find((l) => !l.completed && !l.locked)?.id ?? null
+              }
+              stage={journey.character_stage}
+              backgroundUrl={null}
+              journeySlug={journey.slug}
+            />
+          </div>
+        )}
+
         {/* Lista de aulas */}
-        <div className="mt-6 space-y-2">
-          {lessons.map((l, idx) => (
-            <LessonRow key={l.id} journey={journey} lesson={l} index={idx + 1} />
-          ))}
+        <div className="mt-8">
+          <div className="text-eyebrow text-spark-brand-deep mb-3">Aulas</div>
+          <div className="space-y-2">
+            {lessons.map((l, idx) => (
+              <LessonRow key={l.id} journey={journey} lesson={l} index={idx + 1} />
+            ))}
+          </div>
         </div>
 
         {/* Bloco de prova */}
@@ -194,7 +235,7 @@ function LessonRow({
     <Link
       href={disabled ? "#" : `/jornadas/${journey.slug}/aula/${lesson.slug}`}
       className={cn(
-        "block rounded-spark-lg border p-4 flex items-center gap-3 transition-all",
+        "flex items-center gap-3 rounded-spark-lg border p-4 transition-all",
         disabled
           ? "bg-spark-surface-sunken/50 border-spark-hairline opacity-50 cursor-not-allowed"
           : lesson.completed

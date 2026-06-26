@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { getSupabaseServer } from "@/lib/supabase-server";
 import { XP_RULES } from "@/lib/journey/xp-rules";
 import { stageFromCompletedCount } from "@/lib/journey/character-stage";
+import { evaluateBadgesForUser } from "@/lib/journey/badge-engine";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -134,10 +135,24 @@ export async function POST(
     .eq("status", "completed");
   const characterStage = stageFromCompletedCount(completedJourneys ?? 0);
 
+  // Avalia badges — pode conceder primeira-aula, madrugadora, coruja,
+  // maratonista, consistente, etc. Fire-and-forget se quiser performance
+  // mas aqui aguardamos pra retornar os badges no response.
+  let awardedBadges: Awaited<ReturnType<typeof evaluateBadgesForUser>> = [];
+  try {
+    awardedBadges = await evaluateBadgesForUser(supabase, {
+      userId: user.id,
+      eventKind: "lesson_complete",
+    });
+  } catch (err) {
+    console.warn("[complete] badge engine error:", err);
+  }
+
   return json({
     ok: true,
     xp_earned: xpEarned,
     xp_total: newXp,
     character_stage: characterStage,
+    badges_awarded: awardedBadges,
   });
 }
