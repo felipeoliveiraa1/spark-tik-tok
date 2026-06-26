@@ -168,12 +168,11 @@ function Trail({
   proofApproved: boolean;
   proofRejected: boolean;
 }) {
-  // Layout zigzag: aulas alternam left -> center -> right -> center -> left
-  const POSITIONS = ["left", "center", "right", "center"] as const;
+  // Tudo centralizado vertical — sem zigzag (fica torto com poucas aulas).
+  // Linha vertical unica conectando todos os checkpoints + prova no final.
   return (
-    <div className="relative py-8">
+    <div className="relative py-6 flex flex-col items-center">
       {lessons.map((lesson, idx) => {
-        const align = POSITIONS[idx % POSITIONS.length]!;
         const isCurrent = idx === currentLessonIdx;
         const isLast = idx === lessons.length - 1;
         return (
@@ -182,17 +181,15 @@ function Trail({
             lesson={lesson}
             journey={journey}
             index={idx + 1}
-            align={align}
             isCurrent={isCurrent}
             isLast={isLast && !proofUnlocked}
           />
         );
       })}
 
-      {/* Prova final no topo do caminho (depois de TODAS as aulas) */}
+      {/* Prova final no fim do caminho (depois de TODAS as aulas) */}
       <ProofCheckpoint
         journey={journey}
-        align={POSITIONS[lessons.length % POSITIONS.length]!}
         unlocked={proofUnlocked}
         proofPending={proofPending}
         proofApproved={proofApproved}
@@ -207,41 +204,34 @@ function CheckpointRow({
   lesson,
   journey,
   index,
-  align,
   isCurrent,
   isLast,
 }: {
   lesson: Lesson;
   journey: Journey;
   index: number;
-  align: "left" | "center" | "right";
   isCurrent: boolean;
   isLast: boolean;
 }) {
   const disabled = lesson.locked;
-  const alignmentClass = {
-    left: "items-start pl-4",
-    center: "items-center",
-    right: "items-end pr-4",
-  }[align];
 
   return (
-    <div className="relative">
-      {/* Linha vertical conectando ao proximo (se nao for o ultimo) */}
+    <div className="relative w-full flex flex-col items-center mb-16 last:mb-12">
+      {/* Linha pontilhada que sai EMBAIXO desse checkpoint indo pro proximo */}
       {!isLast && (
         <div
-          className="absolute left-1/2 -translate-x-1/2 w-1 bg-spark-ink-10"
-          style={{
-            top: "60%",
-            height: "80px",
-            backgroundImage:
-              "repeating-linear-gradient(to bottom, var(--spark-brand-soft, #ffd1dd) 0 6px, transparent 6px 12px)",
-          }}
           aria-hidden
+          className="absolute left-1/2 -translate-x-1/2 w-1"
+          style={{
+            top: "calc(100% - 4px)",
+            height: "64px",
+            backgroundImage:
+              "repeating-linear-gradient(to bottom, #ffb4c4 0 6px, transparent 6px 12px)",
+          }}
         />
       )}
 
-      <div className={cn("relative flex flex-col mb-[60px]", alignmentClass)}>
+      <div className="relative flex flex-col items-center">
         <Link
           href={disabled ? "#" : `/jornadas/${journey.slug}/aula/${lesson.slug}`}
           aria-label={`Aula ${index}: ${lesson.title}${lesson.completed ? " (concluída)" : lesson.locked ? " (bloqueada)" : ""}`}
@@ -341,7 +331,6 @@ function CheckpointRow({
 
 function ProofCheckpoint({
   journey,
-  align,
   unlocked,
   proofPending,
   proofApproved,
@@ -349,19 +338,12 @@ function ProofCheckpoint({
   hasAnyLessons,
 }: {
   journey: Journey;
-  align: "left" | "center" | "right";
   unlocked: boolean;
   proofPending: boolean;
   proofApproved: boolean;
   proofRejected: boolean;
   hasAnyLessons: boolean;
 }) {
-  const alignmentClass = {
-    left: "items-start pl-4",
-    center: "items-center",
-    right: "items-end pr-4",
-  }[align];
-
   const disabled = !unlocked;
 
   const statusLabel = proofApproved
@@ -375,20 +357,22 @@ function ProofCheckpoint({
           : "Complete as aulas";
 
   return (
-    <div className="relative">
-      {/* Linha de conexao se houver aulas antes */}
+    <div className="relative w-full flex flex-col items-center">
+      {/* Linha pontilhada vindo de cima (se houver aulas antes) */}
       {hasAnyLessons && (
         <div
-          className="absolute left-1/2 -translate-x-1/2 w-1 -top-[80px] h-[80px]"
-          style={{
-            backgroundImage:
-              "repeating-linear-gradient(to bottom, var(--spark-brand-soft, #ffd1dd) 0 6px, transparent 6px 12px)",
-          }}
           aria-hidden
+          className="absolute left-1/2 -translate-x-1/2 w-1"
+          style={{
+            bottom: "calc(100% - 4px)",
+            height: "64px",
+            backgroundImage:
+              "repeating-linear-gradient(to bottom, #ffb4c4 0 6px, transparent 6px 12px)",
+          }}
         />
       )}
 
-      <div className={cn("relative flex flex-col", alignmentClass)}>
+      <div className="relative flex flex-col items-center">
         <Link
           href={disabled ? "#" : `/jornadas/${journey.slug}/prova`}
           aria-label={`Prova final — ${statusLabel}`}
