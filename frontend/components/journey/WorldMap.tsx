@@ -2,9 +2,9 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Lock, Check, Sparkles } from "lucide-react";
+import { Lock, Check } from "lucide-react";
 import { CharacterSprite } from "@/components/journey/CharacterSprite";
-import { STAGE_EMOJI, type CharacterStage } from "@/lib/journey/character-stage";
+import { type CharacterStage } from "@/lib/journey/character-stage";
 import { cn } from "@/lib/cn";
 
 type JourneyPoi = {
@@ -13,21 +13,30 @@ type JourneyPoi = {
   title: string;
   character_stage: CharacterStage;
   is_completed: boolean;
-  is_current: boolean;   // jornada em progresso da aluna
-  is_locked: boolean;    // sequencia: precisa terminar anterior
+  is_current: boolean;
+  is_locked: boolean;
   is_admin_only: boolean;
   pct_complete: number;
 };
 
+const JOURNEY_BG_PATHS = [
+  "/sprites/map/journey-1-bg.png",
+  "/sprites/map/journey-2-bg.png",
+  "/sprites/map/journey-3-bg.png",
+];
+
+const JOURNEY_TITLES_FALLBACK = ["Praia da Iniciante", "Vila Adolescente", "Cidade Adulta"];
+
 /**
- * Mapa de mundo fullscreen com os 3 POIs das jornadas.
+ * Mapa fullscreen com 3 ILHAS separadas (uma por jornada), conectadas
+ * por path tracejado. Cada ilha = um card quadrado com a imagem
+ * journey-{n}-bg.png como background.
  *
- * Posicionamento em % do container — funciona em qualquer aspect ratio.
- * Background fica sendo /sprites/map/overworld.png (gerado pelo script).
- * Se nao existe ainda, fallback pra gradient pastel + dots SVG.
- *
- * Personagem fica no POI atual (current_journey) ou no primeiro nao-completed.
- * Path tracejado conectando POIs (verde se completo, neon-pink se atual, dim se locked).
+ * Estados visuais:
+ * - locked: grayscale + dim overlay + cadeado gigante centralizado
+ * - current: borda rosa + halo pulsante + personagem em cima
+ * - completed: borda verde + check + tag "concluida"
+ * - locked (admin): admin ve normal (sem grayscale), com badge BETA
  */
 export function WorldMap({
   journeys,
@@ -38,267 +47,248 @@ export function WorldMap({
   characterStage: CharacterStage;
   isAdmin: boolean;
 }) {
-  // Posicionamento manual dos 3 POIs no mapa (% do container)
-  // Ajustar se for trocar o background pra um com layout diferente.
-  const POI_POSITIONS = [
-    { x: 18, y: 70 },  // Jornada 1 — esquerda baixo (praia)
-    { x: 50, y: 45 },  // Jornada 2 — centro (vila)
-    { x: 82, y: 30 },  // Jornada 3 — direita topo (cidade)
-  ];
-
-  const poisWithPos = journeys.slice(0, 3).map((j, idx) => ({
-    ...j,
-    x: POI_POSITIONS[idx]?.x ?? 50,
-    y: POI_POSITIONS[idx]?.y ?? 50,
-  }));
-
-  // Personagem fica em current ou primeiro nao-completed ou no ultimo
-  const characterPoi =
-    poisWithPos.find((p) => p.is_current) ??
-    poisWithPos.find((p) => !p.is_completed && !p.is_locked) ??
-    poisWithPos[poisWithPos.length - 1] ??
-    null;
-
-  // Path conectando os pontos
-  const pathD = poisWithPos.reduce(
-    (acc, p, i) => acc + (i === 0 ? `M ${p.x} ${p.y}` : ` L ${p.x} ${p.y}`),
-    "",
-  );
-
-  const [bgLoaded, setBgLoaded] = React.useState<boolean | null>(null);
-  React.useEffect(() => {
-    const img = new Image();
-    img.onload = () => setBgLoaded(true);
-    img.onerror = () => setBgLoaded(false);
-    img.src = "/sprites/map/overworld.png";
-  }, []);
-
   return (
-    <div
-      className="relative w-full aspect-[3/2] md:aspect-[16/10] rounded-spark-xl border-2 border-spark-hairline overflow-hidden shadow-lift"
-      style={{
-        backgroundColor: "#fff5f7",
-        backgroundImage: bgLoaded ? "url(/sprites/map/overworld.png)" : undefined,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        imageRendering: bgLoaded ? "pixelated" : "auto",
-      }}
-    >
-      {/* Fallback gradient + decoracoes se bg nao existe ainda */}
-      {!bgLoaded && (
-        <div className="absolute inset-0 pointer-events-none">
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                "linear-gradient(135deg, #ffe0e8 0%, #fff0d6 33%, #f3e0ff 66%, #ffe0e8 100%)",
-            }}
-          />
-          {/* Decorative tiles */}
-          <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 w-full h-full opacity-40">
-            <defs>
-              <pattern id="tile-pattern" x="0" y="0" width="6" height="6" patternUnits="userSpaceOnUse">
-                <circle cx="3" cy="3" r="0.4" fill="#ff5f8d" opacity="0.3" />
-              </pattern>
-            </defs>
-            <rect width="100" height="100" fill="url(#tile-pattern)" />
-          </svg>
-          {/* Mock "areas" labels */}
-          <div className="absolute bottom-[18%] left-[12%] text-[8px] md:text-[10px] font-extrabold text-spark-ink-50/60 uppercase tracking-wider">
-            🌴 praia
-          </div>
-          <div className="absolute top-[40%] left-[44%] text-[8px] md:text-[10px] font-extrabold text-spark-ink-50/60 uppercase tracking-wider">
-            🏘️ vila
-          </div>
-          <div className="absolute top-[22%] right-[12%] text-[8px] md:text-[10px] font-extrabold text-spark-ink-50/60 uppercase tracking-wider">
-            🏙️ cidade
-          </div>
-        </div>
-      )}
-
-      {/* Path SVG conectando POIs */}
-      <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 w-full h-full pointer-events-none">
-        {/* Drop shadow do path */}
-        <path
-          d={pathD}
-          stroke="rgba(0,0,0,0.15)"
-          strokeWidth="1.5"
-          strokeDasharray="2.4 1.6"
-          strokeLinecap="round"
-          fill="none"
-          transform="translate(0.3, 0.3)"
-        />
-        {/* Path principal: gradient por segmento (completo verde, atual rosa, locked dim) */}
-        {poisWithPos.slice(0, -1).map((p, i) => {
-          const next = poisWithPos[i + 1]!;
-          const isSegmentDone = p.is_completed;
-          const isSegmentActive = p.is_completed && (next.is_current || (!next.is_completed && !next.is_locked));
+    <div className="relative w-full">
+      {/* SVG do path tracejado conectando os cards (atras) */}
+      <svg
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        className="absolute inset-0 w-full h-full pointer-events-none"
+        style={{ zIndex: 0 }}
+      >
+        {journeys.slice(0, -1).map((j, i) => {
+          const next = journeys[i + 1]!;
+          const isSegmentDone = j.is_completed;
+          const isSegmentActive =
+            j.is_completed && (next.is_current || (!next.is_completed && !next.is_locked));
           const color = isSegmentDone
-            ? "#10b981" // verde (done)
+            ? "#10b981"
             : isSegmentActive
-              ? "#ff5f8d" // pink (active path)
-              : "#9ca3af"; // gray (future)
-          const opacity = isSegmentDone || isSegmentActive ? 0.85 : 0.35;
+              ? "#ff5f8d"
+              : "#c1c1c1";
+          const opacity = isSegmentDone || isSegmentActive ? 0.85 : 0.4;
+          // Conecta lado direito do card i ao lado esquerdo do card i+1
+          const x1 = ((i + 0.5) / journeys.length) * 100 + (50 / journeys.length) * 0.6;
+          const x2 = ((i + 1 + 0.5) / journeys.length) * 100 - (50 / journeys.length) * 0.6;
           return (
-            <path
-              key={i}
-              d={`M ${p.x} ${p.y} L ${next.x} ${next.y}`}
+            <line
+              key={`seg-${i}`}
+              x1={x1}
+              y1={50}
+              x2={x2}
+              y2={50}
               stroke={color}
-              strokeWidth="1.2"
-              strokeDasharray="2.4 1.6"
+              strokeWidth="0.8"
+              strokeDasharray="2 1.2"
               strokeLinecap="round"
-              fill="none"
               opacity={opacity}
             />
           );
         })}
       </svg>
 
-      {/* POIs como buttons clicaveis */}
-      {poisWithPos.map((poi, idx) => (
-        <PoiMarker
-          key={poi.id}
-          poi={poi}
-          index={idx}
-          isAdmin={isAdmin}
-        />
-      ))}
-
-      {/* Personagem na posicao atual */}
-      {characterPoi && (
-        <div
-          className="absolute pointer-events-none transition-all duration-1000 ease-out"
-          style={{
-            left: `${characterPoi.x}%`,
-            top: `${characterPoi.y}%`,
-            transform: "translate(-50%, -130%)",
-            zIndex: 30,
-          }}
-        >
-          <CharacterSprite
-            stage={characterStage}
-            anim="idle"
-            scale={2}
+      {/* Grid das 3 ilhas */}
+      <div className="grid grid-cols-3 gap-3 md:gap-6 relative" style={{ zIndex: 1 }}>
+        {journeys.slice(0, 3).map((poi, idx) => (
+          <JourneyIsland
+            key={poi.id}
+            poi={poi}
+            index={idx}
+            isAdmin={isAdmin}
+            characterStage={characterStage}
           />
-        </div>
-      )}
-
-      {/* Tooltip flutuante com nome da jornada atual */}
-      {characterPoi && (
-        <div
-          className="absolute pointer-events-none bg-white/95 backdrop-blur px-3 py-1.5 rounded-full border-2 border-spark-hairline shadow-lift text-[11px] font-extrabold text-spark-ink whitespace-nowrap z-30"
-          style={{
-            left: `${characterPoi.x}%`,
-            top: `${characterPoi.y}%`,
-            transform: "translate(-50%, -280%)",
-          }}
-        >
-          <span className="text-spark-brand-deep mr-1">✦</span>
-          {characterPoi.title}
-        </div>
-      )}
+        ))}
+      </div>
     </div>
   );
 }
 
-function PoiMarker({
+function JourneyIsland({
   poi,
   index,
   isAdmin,
+  characterStage,
 }: {
-  poi: JourneyPoi & { x: number; y: number };
+  poi: JourneyPoi;
   index: number;
   isAdmin: boolean;
+  characterStage: CharacterStage;
 }) {
+  const bgPath = JOURNEY_BG_PATHS[index] ?? JOURNEY_BG_PATHS[0]!;
+  const fallbackTitle = JOURNEY_TITLES_FALLBACK[index] ?? "";
+
+  // Aluna ve grayscale se locked. Admin ve normal mas com badge BETA.
+  const showGrayscale = poi.is_locked && !isAdmin;
   const disabled = poi.is_locked && !isAdmin;
   const num = index + 1;
 
-  return (
-    <Link
-      href={disabled ? "#" : `/jornadas/${poi.slug}`}
-      aria-label={`Jornada ${num}: ${poi.title}${poi.is_completed ? " (concluída)" : poi.is_locked ? " (bloqueada)" : ""}`}
-      tabIndex={disabled ? -1 : 0}
-      className={cn(
-        "absolute -translate-x-1/2 -translate-y-1/2 group",
-        disabled ? "cursor-not-allowed" : "cursor-pointer",
-      )}
-      style={{
-        left: `${poi.x}%`,
-        top: `${poi.y}%`,
-        zIndex: 20,
-      }}
-    >
-      {/* Halo de pulso pra POI atual */}
-      {poi.is_current && (
-        <div
-          className="absolute inset-0 -translate-x-1/2 -translate-y-1/2 rounded-full bg-spark-brand"
-          style={{
-            width: "80px",
-            height: "80px",
-            left: "50%",
-            top: "50%",
-            opacity: 0.3,
-            animation: "poi-pulse 2s ease-in-out infinite",
-          }}
-        />
-      )}
+  const statusLabel = poi.is_completed
+    ? "Concluída"
+    : poi.is_current
+      ? "Em andamento"
+      : poi.is_locked
+        ? "Bloqueada"
+        : "Disponível";
 
-      {/* Body do marker */}
-      <div
+  return (
+    <div className="flex flex-col">
+      <Link
+        href={disabled ? "#" : `/jornadas/${poi.slug}`}
+        aria-label={`Jornada ${num}: ${poi.title} — ${statusLabel}`}
+        tabIndex={disabled ? -1 : 0}
         className={cn(
-          "relative w-14 h-14 md:w-16 md:h-16 rounded-full border-4 flex items-center justify-center font-display text-[18px] md:text-[22px] shadow-lift transition-all duration-300",
-          poi.is_completed
-            ? "bg-emerald-500 border-white text-white"
-            : poi.is_locked
-              ? "bg-spark-ink-35 border-white/60 text-white/60 grayscale"
-              : poi.is_current
-                ? "bg-white border-spark-brand text-spark-brand-deep group-hover:scale-110"
-                : "bg-white border-spark-hairline text-spark-ink-70 group-hover:scale-110 group-hover:border-spark-brand/40",
-          disabled && "opacity-50",
+          "group relative block aspect-square rounded-spark-xl overflow-hidden transition-all duration-300",
+          "border-[3px] shadow-lift",
+          poi.is_completed && "border-emerald-400",
+          poi.is_current && "border-spark-brand",
+          !poi.is_completed && !poi.is_current && !poi.is_locked && "border-spark-hairline",
+          poi.is_locked && "border-spark-ink-35/40",
+          disabled
+            ? "cursor-not-allowed"
+            : "cursor-pointer hover:-translate-y-1 hover:shadow-2xl",
         )}
       >
-        {poi.is_completed ? (
-          <Check size={24} strokeWidth={3} />
-        ) : poi.is_locked && !isAdmin ? (
-          <Lock size={18} strokeWidth={2.5} />
-        ) : (
-          num
+        {/* Background da jornada */}
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `url(${bgPath})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            imageRendering: "pixelated",
+            filter: showGrayscale ? "grayscale(100%) brightness(0.6)" : undefined,
+            transition: "filter 400ms",
+          }}
+        />
+
+        {/* Dim overlay extra pra locked */}
+        {showGrayscale && (
+          <div className="absolute inset-0 bg-black/30" aria-hidden />
+        )}
+
+        {/* Halo de pulso pra current */}
+        {poi.is_current && (
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              boxShadow: "inset 0 0 0 4px rgba(255, 95, 141, 0.45)",
+              animation: "island-pulse 2s ease-in-out infinite",
+            }}
+            aria-hidden
+          />
+        )}
+
+        {/* Numero do POI no canto superior esquerdo */}
+        <div
+          className={cn(
+            "absolute top-3 left-3 w-9 h-9 rounded-full border-2 flex items-center justify-center font-display text-[16px] shadow-lift",
+            poi.is_completed
+              ? "bg-emerald-500 border-white text-white"
+              : poi.is_current
+                ? "bg-white border-spark-brand text-spark-brand-deep"
+                : poi.is_locked
+                  ? "bg-spark-ink/60 border-white/70 text-white"
+                  : "bg-white border-spark-hairline text-spark-ink-70",
+          )}
+        >
+          {poi.is_completed ? <Check size={16} strokeWidth={3} /> : num}
+        </div>
+
+        {/* Status badge no canto superior direito */}
+        {(poi.is_completed || poi.is_current || (poi.is_admin_only && isAdmin)) && (
+          <div
+            className={cn(
+              "absolute top-3 right-3 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide border-[1.5px] backdrop-blur",
+              poi.is_completed && "bg-emerald-50/90 border-emerald-300 text-emerald-700",
+              poi.is_current && !poi.is_completed && "bg-spark-brand-soft/90 border-spark-brand text-spark-brand-deep",
+              !poi.is_completed && !poi.is_current && poi.is_admin_only && isAdmin && "bg-orange-100/90 border-orange-400 text-orange-800",
+            )}
+          >
+            {poi.is_completed
+              ? "Concluída"
+              : poi.is_current
+                ? "Em andamento"
+                : "Beta"}
+          </div>
+        )}
+
+        {/* Cadeado gigante centralizado (so se locked + nao admin) */}
+        {showGrayscale && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="bg-spark-ink/80 backdrop-blur rounded-full w-20 h-20 md:w-24 md:h-24 flex items-center justify-center shadow-2xl">
+              <Lock size={32} strokeWidth={2.5} className="text-white md:hidden" />
+              <Lock size={40} strokeWidth={2.5} className="text-white hidden md:block" />
+            </div>
+          </div>
+        )}
+
+        {/* Personagem em cima do card atual */}
+        {poi.is_current && (
+          <div
+            className="absolute pointer-events-none"
+            style={{
+              right: "8%",
+              bottom: "8%",
+              animation: "character-float 3s ease-in-out infinite",
+            }}
+          >
+            <CharacterSprite stage={characterStage} anim="idle" scale={1.5} />
+          </div>
+        )}
+
+        {/* Progress bar embaixo se em progresso */}
+        {poi.pct_complete > 0 && !poi.is_completed && (
+          <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-spark-ink/30">
+            <div
+              className="h-full bg-spark-brand transition-all duration-500"
+              style={{ width: `${poi.pct_complete}%` }}
+            />
+          </div>
+        )}
+
+        {/* Hover gradient sutil */}
+        {!disabled && (
+          <div
+            className="absolute inset-0 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-300"
+            style={{
+              background:
+                "linear-gradient(to top, rgba(0,0,0,0.3) 0%, transparent 50%)",
+            }}
+            aria-hidden
+          />
+        )}
+      </Link>
+
+      {/* Caption embaixo do card — fora da imagem, sem sobrepor nada */}
+      <div className="mt-3 text-center px-1">
+        <div className="text-eyebrow text-spark-brand-deep mb-0.5">
+          Jornada {num}
+        </div>
+        <div
+          className={cn(
+            "font-display text-[15px] md:text-[18px] leading-tight",
+            disabled ? "text-spark-ink-50" : "text-spark-ink",
+          )}
+        >
+          {poi.title || fallbackTitle}
+        </div>
+        {poi.pct_complete > 0 && !poi.is_completed && (
+          <div className="text-[11px] text-spark-brand-deep font-extrabold mt-1">
+            {poi.pct_complete}% completo
+          </div>
         )}
       </div>
 
-      {/* Stage emoji no canto */}
-      <span
-        className="absolute text-[18px] md:text-[22px] -bottom-1 -right-1 rotate-12"
-        style={{ lineHeight: 1 }}
-      >
-        {STAGE_EMOJI[poi.character_stage]}
-      </span>
-
-      {/* Tooltip on hover (so se nao for locked) */}
-      {!disabled && (
-        <div className="absolute left-1/2 top-full mt-3 -translate-x-1/2 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-10">
-          <div className="bg-spark-ink text-white px-3 py-1.5 rounded-spark-lg text-[11px] font-extrabold whitespace-nowrap shadow-lift">
-            {poi.title}
-            {poi.is_admin_only && (
-              <span className="ml-1.5 px-1.5 py-0.5 rounded text-[9px] bg-orange-500/80 text-white">
-                BETA
-              </span>
-            )}
-            {poi.pct_complete > 0 && !poi.is_completed && (
-              <div className="text-[10px] font-mono opacity-80 mt-0.5">
-                {poi.pct_complete}% completo
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
       <style>{`
-        @keyframes poi-pulse {
-          0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.4; }
-          50% { transform: translate(-50%, -50%) scale(1.4); opacity: 0; }
+        @keyframes island-pulse {
+          0%, 100% { opacity: 0.7; }
+          50% { opacity: 1; }
+        }
+        @keyframes character-float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-6px); }
         }
       `}</style>
-    </Link>
+    </div>
   );
 }
