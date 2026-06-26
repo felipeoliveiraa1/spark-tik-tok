@@ -183,7 +183,7 @@ export default function AulaJornadaPage() {
     setCommentsLoading(true);
     try {
       const r = await fetch(
-        `/api/jornadas/comments/${lessonIdForComments}`,
+        `/api/jornadas/comments/by-lesson/${lessonIdForComments}`,
         { cache: "no-store" },
       );
       if (r.ok) {
@@ -204,7 +204,7 @@ export default function AulaJornadaPage() {
     setPostingComment(true);
     try {
       const res = await fetch(
-        `/api/jornadas/comments/${lessonIdForComments}`,
+        `/api/jornadas/comments/by-lesson/${lessonIdForComments}`,
         {
           method: "POST",
           headers: { "content-type": "application/json" },
