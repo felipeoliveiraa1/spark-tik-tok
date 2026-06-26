@@ -22,6 +22,7 @@ import {
   TrendingUp,
   UserX,
   Link2,
+  Gamepad2,
 } from "lucide-react";
 import { SparkWordmark } from "@/components/atoms/spark-wordmark";
 import { cn } from "@/lib/cn";
@@ -52,6 +53,7 @@ const SECTIONS: Section[] = [
     items: [
       { href: "/admin/news", label: "News", icon: Newspaper },
       { href: "/admin/educacao", label: "Aulas", icon: GraduationCap },
+      { href: "/admin/jornadas", label: "Jornadas", icon: Gamepad2 },
       { href: "/admin/ao-vivo", label: "Ao vivo", icon: Radio },
     ],
   },

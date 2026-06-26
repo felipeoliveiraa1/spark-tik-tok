@@ -199,6 +199,20 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
+    // /jornadas: beta interno admin-only. Aluna so acessa quando o admin
+    // libera UMA jornada via UPDATE journeys SET is_admin_only=false.
+    // Cache 60s pra nao queryar em todo request.
+    if (
+      !isAdmin &&
+      (pathname === "/jornadas" || pathname.startsWith("/jornadas/"))
+    ) {
+      const { hasAnyPublicJourney } = await import("@/lib/journey/journey-access");
+      const hasPublic = await hasAnyPublicJourney(supabase);
+      if (!hasPublic) {
+        return NextResponse.redirect(new URL("/chat", request.url));
+      }
+    }
+
     // Profile incompleto → onboarding (admin pula)
     if (!isAdmin && !profile?.name) {
       return NextResponse.redirect(new URL("/welcome", request.url));
