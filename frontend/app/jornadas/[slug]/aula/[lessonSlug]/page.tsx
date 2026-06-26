@@ -37,9 +37,11 @@ type ApiResp = {
 };
 
 export default function AulaJornadaPage() {
+  // ========= TODOS OS HOOKS NO TOPO (Rules of Hooks) =========
   const params = useParams<{ slug: string; lessonSlug: string }>();
   const router = useRouter();
   const toast = useToast();
+
   const [data, setData] = React.useState<ApiResp | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [completing, setCompleting] = React.useState(false);
@@ -52,6 +54,7 @@ export default function AulaJornadaPage() {
   const [postingComment, setPostingComment] = React.useState(false);
   const [replyingTo, setReplyingTo] = React.useState<Comment | null>(null);
 
+  // Carrega dados da jornada
   const load = React.useCallback(async () => {
     setLoading(true);
     try {
@@ -69,53 +72,39 @@ export default function AulaJornadaPage() {
     void load();
   }, [load]);
 
-  if (loading) {
-    return (
-      <div className="min-h-dvh flex items-center justify-center text-spark-ink-50">
-        <Loader2 size={24} className="animate-spin" />
-      </div>
-    );
-  }
+  // Derived: aula atual (pode ser null se data ainda nao carregou ou slug invalido)
+  const lesson = React.useMemo(
+    () => data?.lessons.find((l) => l.slug === params.lessonSlug) ?? null,
+    [data, params.lessonSlug],
+  );
+  const lessonId = lesson?.id ?? null;
 
-  if (!data) {
-    return (
-      <div className="min-h-dvh flex items-center justify-center px-6 text-center">
-        <p className="text-spark-ink-70">Jornada não encontrada.</p>
-      </div>
-    );
-  }
+  // Carrega comentarios quando lesson resolve
+  const loadComments = React.useCallback(async () => {
+    if (!lessonId) return;
+    setCommentsLoading(true);
+    try {
+      const r = await fetch(
+        `/api/jornadas/comments/by-lesson/${lessonId}`,
+        { cache: "no-store" },
+      );
+      if (r.ok) {
+        const j = (await r.json()) as { comments: Comment[] };
+        setComments(j.comments);
+      }
+    } finally {
+      setCommentsLoading(false);
+    }
+  }, [lessonId]);
 
-  const lesson = data.lessons.find((l) => l.slug === params.lessonSlug);
-  if (!lesson) {
-    return (
-      <div className="min-h-dvh flex flex-col items-center justify-center px-6 text-center">
-        <p className="text-spark-ink-70">Aula não encontrada.</p>
-        <Link href={`/jornadas/${params.slug}`} className="mt-4 text-spark-brand-deep underline">
-          Voltar
-        </Link>
-      </div>
-    );
-  }
+  React.useEffect(() => {
+    void loadComments();
+  }, [loadComments]);
 
-  if (lesson.locked) {
-    return (
-      <div className="min-h-dvh flex flex-col items-center justify-center px-6 text-center">
-        <Lock size={32} className="text-spark-ink-35 mb-3" />
-        <h2 className="font-display text-[20px] text-spark-ink">Aula bloqueada</h2>
-        <p className="text-spark-ink-70 mt-2 max-w-[40ch] text-[13.5px]">
-          Complete a aula anterior pra desbloquear essa.
-        </p>
-        <Link
-          href={`/jornadas/${params.slug}`}
-          className="mt-5 px-5 py-2 rounded-full bg-brand-grad text-white text-[12.5px] font-extrabold inline-flex items-center gap-2 shadow-lift-brand"
-        >
-          <ArrowLeft size={12} /> Voltar
-        </Link>
-      </div>
-    );
-  }
+  // ========= HANDLERS (nao sao hooks, podem ficar antes ou depois) =========
 
   const handleComplete = async () => {
+    if (!lesson) return;
     setCompleting(true);
     try {
       const res = await fetch(
@@ -133,7 +122,6 @@ export default function AulaJornadaPage() {
           toast.toast("Já estava marcada como concluída");
           router.push(`/jornadas/${params.slug}`);
         } else {
-          // Telemetria
           trackJourneyEvent("lesson_completed", {
             journey_slug: params.slug as string,
             lesson_slug: params.lessonSlug as string,
@@ -145,14 +133,10 @@ export default function AulaJornadaPage() {
               rarity: b.rarity,
             }),
           );
-
-          // 1) Anima XP
           setXpDelta(j.xp_earned ?? 0);
-          // 2) Se houver badges, abre modal logo apos o XP delta (1.5s)
           if (j.badges_awarded && j.badges_awarded.length > 0) {
             setTimeout(() => setAwardedBadges(j.badges_awarded ?? []), 1500);
           } else {
-            // Sem badge: volta pra jornada apos 1.7s
             setTimeout(() => router.push(`/jornadas/${params.slug}`), 1700);
           }
         }
@@ -165,46 +149,17 @@ export default function AulaJornadaPage() {
     }
   };
 
-
   const handleBadgesClose = () => {
     setAwardedBadges([]);
     router.push(`/jornadas/${params.slug}`);
   };
 
-  // Comments — load when lesson resolves
-  const lessonForComments = React.useMemo(
-    () => data?.lessons.find((l) => l.slug === params.lessonSlug) ?? null,
-    [data, params.lessonSlug],
-  );
-  const lessonIdForComments = lessonForComments?.id ?? null;
-
-  const loadComments = React.useCallback(async () => {
-    if (!lessonIdForComments) return;
-    setCommentsLoading(true);
-    try {
-      const r = await fetch(
-        `/api/jornadas/comments/by-lesson/${lessonIdForComments}`,
-        { cache: "no-store" },
-      );
-      if (r.ok) {
-        const j = (await r.json()) as { comments: Comment[] };
-        setComments(j.comments);
-      }
-    } finally {
-      setCommentsLoading(false);
-    }
-  }, [lessonIdForComments]);
-
-  React.useEffect(() => {
-    void loadComments();
-  }, [loadComments]);
-
   const handlePostComment = async (body: string) => {
-    if (!lessonIdForComments) return;
+    if (!lessonId) return;
     setPostingComment(true);
     try {
       const res = await fetch(
-        `/api/jornadas/comments/by-lesson/${lessonIdForComments}`,
+        `/api/jornadas/comments/by-lesson/${lessonId}`,
         {
           method: "POST",
           headers: { "content-type": "application/json" },
@@ -250,7 +205,6 @@ export default function AulaJornadaPage() {
   };
 
   const handleLikeComment = async (c: Comment) => {
-    // optimistic update
     setComments((prev) =>
       prev.map((x) =>
         x.id === c.id
@@ -264,7 +218,6 @@ export default function AulaJornadaPage() {
     );
     const method = c.liked_by_me ? "DELETE" : "POST";
     await fetch(`/api/jornadas/comments/${c.id}/like`, { method });
-    // refresh em background pra alinhar contagem real
     void loadComments();
   };
 
@@ -275,6 +228,58 @@ export default function AulaJornadaPage() {
       toast.success("Apagado");
     }
   };
+
+  // ========= EARLY RETURNS (apos todos os hooks) =========
+
+  if (loading) {
+    return (
+      <div className="min-h-dvh flex items-center justify-center text-spark-ink-50">
+        <Loader2 size={24} className="animate-spin" />
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="min-h-dvh flex flex-col items-center justify-center px-6 text-center">
+        <p className="text-spark-ink-70">Jornada não encontrada.</p>
+        <Link href="/jornadas" className="mt-4 text-spark-brand-deep underline">
+          Voltar
+        </Link>
+      </div>
+    );
+  }
+
+  if (!lesson) {
+    return (
+      <div className="min-h-dvh flex flex-col items-center justify-center px-6 text-center">
+        <p className="text-spark-ink-70">Aula não encontrada.</p>
+        <Link href={`/jornadas/${params.slug}`} className="mt-4 text-spark-brand-deep underline">
+          Voltar
+        </Link>
+      </div>
+    );
+  }
+
+  if (lesson.locked) {
+    return (
+      <div className="min-h-dvh flex flex-col items-center justify-center px-6 text-center">
+        <Lock size={32} className="text-spark-ink-35 mb-3" />
+        <h2 className="font-display text-[20px] text-spark-ink">Aula bloqueada</h2>
+        <p className="text-spark-ink-70 mt-2 max-w-[40ch] text-[13.5px]">
+          Complete a aula anterior pra desbloquear essa.
+        </p>
+        <Link
+          href={`/jornadas/${params.slug}`}
+          className="mt-5 px-5 py-2 rounded-full bg-brand-grad text-white text-[12.5px] font-extrabold inline-flex items-center gap-2 shadow-lift-brand"
+        >
+          <ArrowLeft size={12} /> Voltar
+        </Link>
+      </div>
+    );
+  }
+
+  // ========= JSX PRINCIPAL =========
 
   return (
     <div className="min-h-dvh hero-radial pb-20">
