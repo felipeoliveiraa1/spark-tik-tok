@@ -407,3 +407,33 @@ html { scroll-behavior: smooth; }
   }
   .hover-lift:hover { transform: none; }
 }
+
+/* ============================================================
+ * Jornadas — Story Deck keyframes
+ * ============================================================ */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes ken-burns {
+    0% { transform: scale(1) translate(0, 0); }
+    100% { transform: scale(1.08) translate(-2%, -2%); }
+  }
+  @keyframes story-twinkle {
+    0%, 100% { opacity: 0; transform: scale(0.6); }
+    50% { opacity: 1; transform: scale(1.2); }
+  }
+  @keyframes story-halo-pulse {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.45; }
+    50% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+  }
+  @keyframes trophy-rays {
+    from { transform: translate(-50%, -50%) rotate(0deg); }
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+  }
+  @keyframes trophy-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.06); }
+  }
+  @keyframes deck-hint-bounce {
+    0%, 100% { transform: translateX(0); opacity: 0.6; }
+    50% { transform: translateX(-6px); opacity: 1; }
+  }
+}
