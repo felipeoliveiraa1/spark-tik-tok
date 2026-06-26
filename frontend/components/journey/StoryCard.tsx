@@ -113,56 +113,54 @@ export function StoryCard({
         </div>
       )}
 
-      {/* Personagem CENTRO-CIMA (~38% vertical) */}
+      {/* Slot central — varia por variant:
+          - current: personagem + halo (foco visual da jornada)
+          - completed: checkmark verde gigante
+          - locked: cadeado branco gigante
+          Mantem MESMA posicao (top 32%) pra cards parecerem cortados pela
+          mesma "grade" no swipe horizontal. */}
       <div
         className="absolute left-1/2 -translate-x-1/2 z-[7] pointer-events-none"
         style={{ top: "32%" }}
       >
-        {/* Halo rosa atras (so current) */}
         {variant === "current" && (
-          <div
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-spark-brand"
-            style={{
-              width: "200px",
-              height: "200px",
-              opacity: 0.35,
-              animation: "story-halo-pulse 2.4s ease-in-out infinite",
-            }}
-            aria-hidden
-          />
+          <>
+            <div
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-spark-brand"
+              style={{
+                width: "200px",
+                height: "200px",
+                opacity: 0.35,
+                animation: "story-halo-pulse 2.4s ease-in-out infinite",
+              }}
+              aria-hidden
+            />
+            <div className="relative">
+              <CharacterSprite stage={characterStage} anim="idle" scale={3.5} />
+            </div>
+          </>
         )}
-        <div
-          className={cn(
-            "relative",
-            isLocked && "grayscale brightness-75 opacity-70",
-          )}
-        >
-          <CharacterSprite
-            stage={characterStage}
-            anim={isLocked ? "locked" : "idle"}
-            scale={3.5}
-          />
-        </div>
-      </div>
-
-      {/* Cadeado gigante centralizado se locked */}
-      {isLocked && (
-        <div className="absolute inset-0 flex items-center justify-center z-[15] pointer-events-none">
-          <div className="bg-spark-ink/85 backdrop-blur rounded-full w-28 h-28 flex items-center justify-center shadow-2xl border-4 border-white/20">
-            <Lock size={52} strokeWidth={2.5} className="text-white" />
+        {variant === "completed" && (
+          <div
+            className="flex items-center justify-center w-[180px] h-[180px] rounded-full bg-emerald-500/20 border-4 border-emerald-400/50 backdrop-blur-sm shadow-2xl"
+            aria-hidden
+          >
+            <CheckCircle2
+              size={96}
+              strokeWidth={2.2}
+              className="text-emerald-300 drop-shadow-lg"
+            />
           </div>
-        </div>
-      )}
-
-      {/* Banner "Concluida" diagonal canto superior direito */}
-      {variant === "completed" && (
-        <div
-          className="absolute top-8 right-[-32px] z-[12] rotate-45 bg-emerald-500 text-white text-[11px] font-extrabold tracking-wider px-14 py-1.5 shadow-lg pointer-events-none uppercase"
-          aria-hidden
-        >
-          ✓ Concluída
-        </div>
-      )}
+        )}
+        {variant === "locked" && (
+          <div
+            className="flex items-center justify-center w-[180px] h-[180px] rounded-full bg-spark-ink/70 border-4 border-white/20 backdrop-blur-sm shadow-2xl"
+            aria-hidden
+          >
+            <Lock size={88} strokeWidth={2.4} className="text-white/75" />
+          </div>
+        )}
+      </div>
 
       {/* Footer: gradient escuro + conteudo textual + CTA */}
       <div
@@ -215,7 +213,7 @@ export function StoryCard({
             <Link
               href={`/jornadas/${journey.slug}/aula/${lesson.slug}`}
               className={cn(
-                "block w-full py-3.5 rounded-full text-white text-[15px] font-extrabold shadow-lift-brand active:scale-95 transition-transform inline-flex items-center justify-center gap-2",
+                "w-full py-3.5 rounded-full text-white text-[15px] font-extrabold shadow-lift-brand active:scale-95 transition-transform inline-flex items-center justify-center gap-2",
                 variant === "completed"
                   ? "bg-emerald-500"
                   : "bg-brand-grad",

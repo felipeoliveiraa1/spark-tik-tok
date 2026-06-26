@@ -190,7 +190,7 @@ export function ProofStoryCard({
             <Link
               href={statusConfig.cta.href}
               className={cn(
-                "block w-full py-3.5 rounded-full text-[15px] font-extrabold shadow-2xl active:scale-95 transition-transform inline-flex items-center justify-center gap-2",
+                "w-full py-3.5 rounded-full text-[15px] font-extrabold shadow-2xl active:scale-95 transition-transform inline-flex items-center justify-center gap-2",
                 statusConfig.ctaClass,
               )}
             >

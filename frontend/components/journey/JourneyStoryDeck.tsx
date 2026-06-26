@@ -74,15 +74,15 @@ export function JourneyStoryDeck({
     cardRefs.current = cardRefs.current.slice(0, totalCards);
   }, [totalCards]);
 
-  // Auto-scroll inicial pro current
+  // Auto-scroll inicial pro current — usa scrollIntoView pra deixar o
+  // browser fazer a math respeitando padding lateral + snap-center
   React.useLayoutEffect(() => {
-    const scroller = scrollerRef.current;
-    if (!scroller) return;
     const targetIdx = Math.max(0, currentLessonIdx);
     const card = cardRefs.current[targetIdx];
     if (card) {
-      scroller.scrollTo({
-        left: card.offsetLeft - scroller.offsetLeft,
+      card.scrollIntoView({
+        inline: "center",
+        block: "nearest",
         behavior: "instant" as ScrollBehavior,
       });
     }
@@ -153,11 +153,11 @@ export function JourneyStoryDeck({
   }, [activeIdx, totalCards]);
 
   const jumpTo = React.useCallback((idx: number) => {
-    const scroller = scrollerRef.current;
     const card = cardRefs.current[idx];
-    if (!scroller || !card) return;
-    scroller.scrollTo({
-      left: card.offsetLeft - scroller.offsetLeft,
+    if (!card) return;
+    card.scrollIntoView({
+      inline: "center",
+      block: "nearest",
       behavior: "smooth",
     });
   }, []);
@@ -262,7 +262,7 @@ export function JourneyStoryDeck({
                 cardRefs.current[idx] = el;
               }}
               data-idx={idx}
-              className="snap-center shrink-0"
+              className="shrink-0"
             >
               <StoryCard
                 lesson={lesson}
@@ -283,7 +283,7 @@ export function JourneyStoryDeck({
             cardRefs.current[lessons.length] = el;
           }}
           data-idx={lessons.length}
-          className="snap-center shrink-0"
+          className="shrink-0"
         >
           <ProofStoryCard
             journey={{ slug: journey.slug, title: journey.title }}
