@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Plus, Loader2, ExternalLink, Lock, Unlock, Eye, EyeOff } from "lucide-react";
+import { Plus, Loader2, ExternalLink, Lock, Unlock, Eye, EyeOff, Camera } from "lucide-react";
 import { useToast } from "@/components/molecules/dialog-provider";
 import { cn } from "@/lib/cn";
 
@@ -85,12 +85,20 @@ export default function AdminJornadasPage() {
             <Unlock size={12} className="inline" /> libera pra alunas.
           </p>
         </div>
-        <button
-          onClick={() => setCreating(true)}
-          className="px-4 py-2 rounded-spark-lg bg-brand-grad text-white text-[12.5px] font-extrabold inline-flex items-center gap-2 shadow-lift-brand hover:-translate-y-0.5 transition-all"
-        >
-          <Plus size={13} /> Nova jornada
-        </button>
+        <div className="flex gap-2">
+          <Link
+            href="/admin/jornadas/provas"
+            className="px-4 py-2 rounded-spark-lg border border-spark-hairline bg-spark-surface text-[12.5px] font-extrabold inline-flex items-center gap-2 hover:bg-spark-surface-sunken"
+          >
+            <Camera size={13} /> Fila de provas
+          </Link>
+          <button
+            onClick={() => setCreating(true)}
+            className="px-4 py-2 rounded-spark-lg bg-brand-grad text-white text-[12.5px] font-extrabold inline-flex items-center gap-2 shadow-lift-brand hover:-translate-y-0.5 transition-all"
+          >
+            <Plus size={13} /> Nova jornada
+          </button>
+        </div>
       </div>
 
       {loading ? (

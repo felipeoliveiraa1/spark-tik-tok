@@ -5,8 +5,10 @@ import Link from "next/link";
 import { Loader2, Lock, ChevronRight, Sparkles } from "lucide-react";
 import { JourneyCharacter } from "@/components/journey/JourneyCharacter";
 import { XPBar } from "@/components/journey/XPBar";
+import { NotificationFeed } from "@/components/journey/NotificationFeed";
+import { LevelUpAnimation } from "@/components/journey/LevelUpAnimation";
 import type { CharacterStage } from "@/lib/journey/character-stage";
-import { STAGE_EMOJI } from "@/lib/journey/character-stage";
+import { STAGE_EMOJI, CHARACTER_STAGES } from "@/lib/journey/character-stage";
 import { useJourneyStats } from "@/lib/journey/useJourneyStats";
 import { cn } from "@/lib/cn";
 
@@ -42,9 +44,15 @@ type ApiResp = {
   };
 };
 
+const LEVEL_UP_KEY = "tts:lastSeenStage";
+
 export default function JornadasPage() {
   const [data, setData] = React.useState<ApiResp | null>(null);
   const [loading, setLoading] = React.useState(true);
+  const [levelUp, setLevelUp] = React.useState<{
+    from: CharacterStage;
+    to: CharacterStage;
+  } | null>(null);
   const { stats } = useJourneyStats();
 
   React.useEffect(() => {
@@ -53,6 +61,28 @@ export default function JornadasPage() {
       .then((j) => setData(j))
       .finally(() => setLoading(false));
   }, []);
+
+  // Detecta level up comparando stage atual com ultimo visto (localStorage)
+  React.useEffect(() => {
+    if (!data?.me.character_stage || typeof window === "undefined") return;
+    const lastSeen = window.localStorage.getItem(LEVEL_UP_KEY) as CharacterStage | null;
+    const current = data.me.character_stage;
+    if (
+      lastSeen &&
+      CHARACTER_STAGES.includes(lastSeen) &&
+      lastSeen !== current &&
+      CHARACTER_STAGES.indexOf(current) > CHARACTER_STAGES.indexOf(lastSeen)
+    ) {
+      setLevelUp({ from: lastSeen, to: current });
+      void import("@/lib/journey/track").then(({ trackJourneyEvent }) =>
+        trackJourneyEvent("level_up_seen", {
+          from_stage: lastSeen,
+          to_stage: current,
+        }),
+      );
+    }
+    window.localStorage.setItem(LEVEL_UP_KEY, current);
+  }, [data?.me.character_stage]);
 
   if (loading) {
     return (
@@ -76,8 +106,13 @@ export default function JornadasPage() {
 
   return (
     <div className="min-h-dvh hero-radial pb-20">
+      {/* Top bar com sininho */}
+      <div className="px-6 pt-4 flex justify-end max-w-[920px] mx-auto">
+        <NotificationFeed />
+      </div>
+
       {/* Header com personagem */}
-      <header className="px-6 pt-8 pb-6 text-center">
+      <header className="px-6 pt-4 pb-6 text-center">
         <div className="text-eyebrow text-spark-brand-deep">Jornadas Método TTS</div>
         <h1 className="font-display text-[34px] md:text-[44px] text-spark-ink mt-1 leading-tight">
           Sua aventura
@@ -177,6 +212,15 @@ export default function JornadasPage() {
           );
         })}
       </div>
+
+      {/* Level up animation */}
+      {levelUp && (
+        <LevelUpAnimation
+          fromStage={levelUp.from}
+          toStage={levelUp.to}
+          onDismiss={() => setLevelUp(null)}
+        />
+      )}
     </div>
   );
 }

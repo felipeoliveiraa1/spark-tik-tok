@@ -7,6 +7,12 @@ import { Loader2, ArrowLeft, CheckCircle2, Lock } from "lucide-react";
 import { useToast } from "@/components/molecules/dialog-provider";
 import { BadgeUnlockModal, type AwardedBadge } from "@/components/journey/BadgeUnlockModal";
 import { XPDelta } from "@/components/journey/XPDelta";
+import {
+  CommentComposer,
+  CommentThread,
+  type Comment,
+} from "@/components/journey/CommentThread";
+import { trackJourneyEvent } from "@/lib/journey/track";
 import { cn } from "@/lib/cn";
 
 type Lesson = {
@@ -39,6 +45,12 @@ export default function AulaJornadaPage() {
   const [completing, setCompleting] = React.useState(false);
   const [xpDelta, setXpDelta] = React.useState<number | null>(null);
   const [awardedBadges, setAwardedBadges] = React.useState<AwardedBadge[]>([]);
+
+  // Comments state
+  const [comments, setComments] = React.useState<Comment[]>([]);
+  const [commentsLoading, setCommentsLoading] = React.useState(true);
+  const [postingComment, setPostingComment] = React.useState(false);
+  const [replyingTo, setReplyingTo] = React.useState<Comment | null>(null);
 
   const load = React.useCallback(async () => {
     setLoading(true);
@@ -121,6 +133,19 @@ export default function AulaJornadaPage() {
           toast.toast("Já estava marcada como concluída");
           router.push(`/jornadas/${params.slug}`);
         } else {
+          // Telemetria
+          trackJourneyEvent("lesson_completed", {
+            journey_slug: params.slug as string,
+            lesson_slug: params.lessonSlug as string,
+            xp_earned: j.xp_earned ?? 0,
+          });
+          (j.badges_awarded ?? []).forEach((b) =>
+            trackJourneyEvent("badge_earned", {
+              badge_slug: b.slug,
+              rarity: b.rarity,
+            }),
+          );
+
           // 1) Anima XP
           setXpDelta(j.xp_earned ?? 0);
           // 2) Se houver badges, abre modal logo apos o XP delta (1.5s)
@@ -140,9 +165,115 @@ export default function AulaJornadaPage() {
     }
   };
 
+
   const handleBadgesClose = () => {
     setAwardedBadges([]);
     router.push(`/jornadas/${params.slug}`);
+  };
+
+  // Comments — load when lesson resolves
+  const lessonForComments = React.useMemo(
+    () => data?.lessons.find((l) => l.slug === params.lessonSlug) ?? null,
+    [data, params.lessonSlug],
+  );
+  const lessonIdForComments = lessonForComments?.id ?? null;
+
+  const loadComments = React.useCallback(async () => {
+    if (!lessonIdForComments) return;
+    setCommentsLoading(true);
+    try {
+      const r = await fetch(
+        `/api/jornadas/comments/${lessonIdForComments}`,
+        { cache: "no-store" },
+      );
+      if (r.ok) {
+        const j = (await r.json()) as { comments: Comment[] };
+        setComments(j.comments);
+      }
+    } finally {
+      setCommentsLoading(false);
+    }
+  }, [lessonIdForComments]);
+
+  React.useEffect(() => {
+    void loadComments();
+  }, [loadComments]);
+
+  const handlePostComment = async (body: string) => {
+    if (!lessonIdForComments) return;
+    setPostingComment(true);
+    try {
+      const res = await fetch(
+        `/api/jornadas/comments/${lessonIdForComments}`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            body,
+            parent_id: replyingTo?.id ?? null,
+          }),
+        },
+      );
+      if (!res.ok) {
+        const j = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          reason?: string;
+        };
+        if (j.reason === "banned_word") {
+          throw new Error("Conteúdo não permitido");
+        }
+        if (j.reason === "spam_pattern") {
+          throw new Error("Comentário parece spam — tira links externos ou números");
+        }
+        throw new Error(j.error ?? "Erro ao postar");
+      }
+      const j = (await res.json()) as {
+        xp_earned?: number;
+        badges_awarded?: AwardedBadge[];
+      };
+      trackJourneyEvent("comment_posted", {
+        journey_slug: params.slug as string,
+        lesson_slug: params.lessonSlug as string,
+        is_reply: !!replyingTo,
+      });
+      setReplyingTo(null);
+      void loadComments();
+      if (j.xp_earned) {
+        setXpDelta(j.xp_earned);
+      }
+      if (j.badges_awarded && j.badges_awarded.length > 0) {
+        setTimeout(() => setAwardedBadges(j.badges_awarded ?? []), 1500);
+      }
+    } finally {
+      setPostingComment(false);
+    }
+  };
+
+  const handleLikeComment = async (c: Comment) => {
+    // optimistic update
+    setComments((prev) =>
+      prev.map((x) =>
+        x.id === c.id
+          ? {
+              ...x,
+              liked_by_me: !x.liked_by_me,
+              like_count: x.like_count + (x.liked_by_me ? -1 : 1),
+            }
+          : x,
+      ),
+    );
+    const method = c.liked_by_me ? "DELETE" : "POST";
+    await fetch(`/api/jornadas/comments/${c.id}/like`, { method });
+    // refresh em background pra alinhar contagem real
+    void loadComments();
+  };
+
+  const handleDeleteComment = async (c: Comment) => {
+    const res = await fetch(`/api/jornadas/comments/${c.id}`, { method: "DELETE" });
+    if (res.ok) {
+      void loadComments();
+      toast.success("Apagado");
+    }
   };
 
   return (
@@ -222,11 +353,30 @@ export default function AulaJornadaPage() {
           )}
         </div>
 
-        {/* Comentários: placeholder pra Semana 3 */}
-        <div className="mt-10 rounded-spark-xl border border-dashed border-spark-hairline bg-spark-surface-sunken/30 p-6 text-center">
-          <div className="text-eyebrow text-spark-ink-50">Em breve</div>
-          <div className="text-[13px] text-spark-ink-70 mt-1">
-            Comentários das alunas chegam na próxima atualização 💬
+        {/* Comentários */}
+        <div className="mt-10">
+          <div className="text-eyebrow text-spark-brand-deep mb-3">
+            💬 Comentários ({comments.length})
+          </div>
+          <CommentComposer
+            replyingTo={replyingTo}
+            onCancelReply={() => setReplyingTo(null)}
+            onSubmit={handlePostComment}
+            pending={postingComment}
+          />
+          <div className="mt-5">
+            {commentsLoading ? (
+              <div className="py-8 flex items-center justify-center text-spark-ink-50">
+                <Loader2 size={16} className="animate-spin" />
+              </div>
+            ) : (
+              <CommentThread
+                comments={comments}
+                onReplyTo={setReplyingTo}
+                onLike={handleLikeComment}
+                onDelete={handleDeleteComment}
+              />
+            )}
           </div>
         </div>
       </div>
