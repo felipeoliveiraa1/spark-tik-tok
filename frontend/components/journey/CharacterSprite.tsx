@@ -22,15 +22,22 @@ const FPS: Record<Anim, number> = {
   studying: 3,
 };
 
-const SPRITE_BASE = 64; // px por frame (sprite sheet horizontal)
+const SPRITE_BASE = 64; // px por frame (sprite sheet)
+const DISPLAY_BASE = 64; // px base de render
 
 /**
- * Pixel art character sprite. Tenta carregar sprite sheet de
- * /sprites/characters/{stage}/{anim}.png. Se nao existir, fallback pra
- * emoji animado com bounce CSS.
+ * Pixel art character sprite com 3 fallbacks em ordem:
  *
- * API estavel: stage + anim + scale. Quando swap pra real pixel art,
- * basta colocar PNGs nas paths definidas em character-stage.ts.
+ * 1. Sprite sheet animado em /sprites/characters/{stage}/{anim}.sheet.png
+ *    (frames horizontais de 64x64). Renderiza via canvas + RAF.
+ *
+ * 2. Single-pose PNG em /sprites/characters/{stage}/{anim}.png
+ *    (1024x1024 gerado pelo script generate-jornada-assets.mjs).
+ *    Renderiza via <img> + CSS bounce.
+ *
+ * 3. Emoji fallback (👶/👧/🙋‍♀️) com bounce CSS.
+ *
+ * Deteccao automatica — basta colocar o PNG no path correto.
  */
 export function CharacterSprite({
   stage,
@@ -47,38 +54,161 @@ export function CharacterSprite({
   className?: string;
   ariaLabel?: string;
 }) {
-  const canvasRef = React.useRef<HTMLCanvasElement>(null);
-  const [hasSprite, setHasSprite] = React.useState<boolean | null>(null);
-
-  // Detecta prefers-reduced-motion
   const prefersReduced = useReducedMotion(reducedMotion);
+  const [mode, setMode] = React.useState<"sheet" | "single" | "emoji" | null>(null);
 
-  // Tenta carregar sprite sheet. Se 404, marca hasSprite=false → fallback emoji
+  // Tenta sheet → single → emoji
   React.useEffect(() => {
-    const img = new Image();
-    let cancelled = false;
-    img.onload = () => {
-      if (cancelled) return;
-      setHasSprite(true);
-      drawSpriteFrames(canvasRef.current, img, anim, prefersReduced);
+    const sheetImg = new Image();
+    sheetImg.onload = () => setMode("sheet");
+    sheetImg.onerror = () => {
+      const singleImg = new Image();
+      singleImg.onload = () => setMode("single");
+      singleImg.onerror = () => setMode("emoji");
+      singleImg.src = `/sprites/characters/${stage}/${anim}.png`;
     };
-    img.onerror = () => {
-      if (!cancelled) setHasSprite(false);
-    };
-    img.src = `/sprites/characters/${stage}/${anim}.png`;
-    return () => {
-      cancelled = true;
-    };
-  }, [stage, anim, prefersReduced]);
+    sheetImg.src = `/sprites/characters/${stage}/${anim}.sheet.png`;
+  }, [stage, anim]);
 
-  const label = ariaLabel ?? `Personagem ${STAGE_LABELS[stage]} — ${anim}`;
+  const label = ariaLabel ?? `Personagem ${STAGE_LABELS[stage]}`;
+  const displaySize = DISPLAY_BASE * scale;
 
-  if (hasSprite === false) {
-    // Fallback: emoji animado (sem sprite real ainda)
+  if (mode === null) {
+    // Loading invisivel — evita flicker
     return (
-      <EmojiFallback stage={stage} scale={scale} className={className} label={label} reduced={prefersReduced} />
+      <div
+        className={cn("inline-block", className)}
+        style={{ width: displaySize, height: displaySize }}
+        aria-label={label}
+        role="img"
+      />
     );
   }
+
+  if (mode === "sheet") {
+    return (
+      <SheetCanvas
+        stage={stage}
+        anim={anim}
+        scale={scale}
+        reducedMotion={prefersReduced}
+        label={label}
+        className={className}
+      />
+    );
+  }
+
+  if (mode === "single") {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={`/sprites/characters/${stage}/${anim}.png`}
+        alt={label}
+        width={displaySize}
+        height={displaySize}
+        className={cn("select-none", className)}
+        style={{
+          width: displaySize,
+          height: displaySize,
+          imageRendering: "pixelated",
+          animation: prefersReduced ? undefined : "char-bounce 2.4s ease-in-out infinite",
+        }}
+      />
+    );
+  }
+
+  // Emoji fallback
+  const emojiSize = displaySize * 0.6;
+  return (
+    <span
+      role="img"
+      aria-label={label}
+      style={{
+        fontSize: emojiSize,
+        lineHeight: 1,
+        display: "inline-block",
+        width: displaySize,
+        height: displaySize,
+        textAlign: "center",
+        animation: prefersReduced ? undefined : "char-bounce 2.4s ease-in-out infinite",
+      }}
+      className={cn("select-none", className)}
+    >
+      {STAGE_EMOJI[stage]}
+      <style>{`
+        @keyframes char-bounce {
+          0%, 100% { transform: translateY(0) scale(1); }
+          50% { transform: translateY(-4px) scale(1.03); }
+        }
+      `}</style>
+    </span>
+  );
+}
+
+function SheetCanvas({
+  stage,
+  anim,
+  scale,
+  reducedMotion,
+  label,
+  className,
+}: {
+  stage: CharacterStage;
+  anim: Anim;
+  scale: number;
+  reducedMotion: boolean;
+  label: string;
+  className?: string;
+}) {
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+
+  React.useEffect(() => {
+    const img = new Image();
+    img.src = `/sprites/characters/${stage}/${anim}.sheet.png`;
+    let raf = 0;
+    img.onload = () => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      ctx.imageSmoothingEnabled = false;
+
+      const totalFrames = FRAMES[anim];
+      if (totalFrames === 1 || reducedMotion) {
+        ctx.clearRect(0, 0, SPRITE_BASE, SPRITE_BASE);
+        ctx.drawImage(img, 0, 0, SPRITE_BASE, SPRITE_BASE, 0, 0, SPRITE_BASE, SPRITE_BASE);
+        return;
+      }
+
+      let frame = 0;
+      let lastFrameTime = 0;
+      const frameInterval = 1000 / FPS[anim];
+
+      const loop = (now: number) => {
+        if (now - lastFrameTime >= frameInterval) {
+          ctx.clearRect(0, 0, SPRITE_BASE, SPRITE_BASE);
+          ctx.drawImage(
+            img,
+            frame * SPRITE_BASE,
+            0,
+            SPRITE_BASE,
+            SPRITE_BASE,
+            0,
+            0,
+            SPRITE_BASE,
+            SPRITE_BASE,
+          );
+          frame = (frame + 1) % totalFrames;
+          lastFrameTime = now;
+        }
+        raf = requestAnimationFrame(loop);
+      };
+      raf = requestAnimationFrame(loop);
+    };
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [stage, anim, reducedMotion]);
 
   return (
     <canvas
@@ -92,97 +222,8 @@ export function CharacterSprite({
         width: SPRITE_BASE * scale,
         height: SPRITE_BASE * scale,
         imageRendering: "pixelated",
-        opacity: hasSprite === null ? 0 : 1,
-        transition: "opacity 150ms",
       }}
     />
-  );
-}
-
-function drawSpriteFrames(
-  canvas: HTMLCanvasElement | null,
-  img: HTMLImageElement,
-  anim: Anim,
-  reduced: boolean,
-) {
-  if (!canvas) return;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return;
-  ctx.imageSmoothingEnabled = false;
-
-  const totalFrames = FRAMES[anim];
-  if (totalFrames === 1 || reduced) {
-    // Frame unico
-    ctx.clearRect(0, 0, SPRITE_BASE, SPRITE_BASE);
-    ctx.drawImage(img, 0, 0, SPRITE_BASE, SPRITE_BASE, 0, 0, SPRITE_BASE, SPRITE_BASE);
-    return;
-  }
-
-  let frame = 0;
-  let lastFrameTime = 0;
-  const frameInterval = 1000 / FPS[anim];
-  let raf = 0;
-
-  const loop = (now: number) => {
-    if (now - lastFrameTime >= frameInterval) {
-      ctx.clearRect(0, 0, SPRITE_BASE, SPRITE_BASE);
-      ctx.drawImage(
-        img,
-        frame * SPRITE_BASE,
-        0,
-        SPRITE_BASE,
-        SPRITE_BASE,
-        0,
-        0,
-        SPRITE_BASE,
-        SPRITE_BASE,
-      );
-      frame = (frame + 1) % totalFrames;
-      lastFrameTime = now;
-    }
-    raf = requestAnimationFrame(loop);
-  };
-  raf = requestAnimationFrame(loop);
-
-  // Cleanup quando o canvas sai do DOM (mas o efeito useEffect ja gerencia
-  // remount via deps; aqui RAF para sozinho se canvas for desmontado pelo GC)
-  return () => cancelAnimationFrame(raf);
-}
-
-function EmojiFallback({
-  stage,
-  scale,
-  className,
-  label,
-  reduced,
-}: {
-  stage: CharacterStage;
-  scale: number;
-  className?: string;
-  label: string;
-  reduced: boolean;
-}) {
-  const size = SPRITE_BASE * scale * 0.6;
-  return (
-    <span
-      role="img"
-      aria-label={label}
-      style={{
-        fontSize: size,
-        lineHeight: 1,
-        display: "inline-block",
-        animation: reduced ? undefined : "char-bounce 2.4s ease-in-out infinite",
-      }}
-      className={cn("select-none", className)}
-    >
-      {STAGE_EMOJI[stage]}
-      <style>{`
-        @keyframes char-bounce {
-          0%, 100% { transform: translateY(0) scale(1); }
-          50% { transform: translateY(-4px) scale(1.03); }
-        }
-      `}</style>
-    </span>
   );
 }
 

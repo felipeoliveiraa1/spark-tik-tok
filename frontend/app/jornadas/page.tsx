@@ -1,16 +1,14 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
-import { Loader2, Lock, ChevronRight, Sparkles } from "lucide-react";
-import { JourneyCharacter } from "@/components/journey/JourneyCharacter";
+import { Loader2, Sparkles } from "lucide-react";
 import { XPBar } from "@/components/journey/XPBar";
 import { NotificationFeed } from "@/components/journey/NotificationFeed";
 import { LevelUpAnimation } from "@/components/journey/LevelUpAnimation";
+import { WorldMap } from "@/components/journey/WorldMap";
 import type { CharacterStage } from "@/lib/journey/character-stage";
-import { STAGE_EMOJI, CHARACTER_STAGES } from "@/lib/journey/character-stage";
+import { CHARACTER_STAGES } from "@/lib/journey/character-stage";
 import { useJourneyStats } from "@/lib/journey/useJourneyStats";
-import { cn } from "@/lib/cn";
 
 type JourneyCard = {
   id: string;
@@ -62,7 +60,7 @@ export default function JornadasPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Detecta level up comparando stage atual com ultimo visto (localStorage)
+  // Detecta level up
   React.useEffect(() => {
     if (!data?.me.character_stage || typeof window === "undefined") return;
     const lastSeen = window.localStorage.getItem(LEVEL_UP_KEY) as CharacterStage | null;
@@ -104,114 +102,123 @@ export default function JornadasPage() {
     );
   }
 
+  // Marca current_journey (primeira nao-completed e nao-locked)
+  let currentIdx = -1;
+  const enrichedJourneys = data.journeys.map((j, idx) => {
+    const isCompleted = j.progress?.status === "completed";
+    const isLocked = idx > 0 && data.journeys[idx - 1]?.progress?.status !== "completed";
+    const isCurrent = !isCompleted && !isLocked && currentIdx === -1;
+    if (isCurrent) currentIdx = idx;
+    return {
+      id: j.id,
+      slug: j.slug,
+      title: j.title,
+      character_stage: j.character_stage,
+      is_completed: isCompleted,
+      is_current: isCurrent,
+      is_locked: isLocked,
+      is_admin_only: j.is_admin_only,
+      pct_complete: j.pct_complete,
+    };
+  });
+
   return (
-    <div className="min-h-dvh hero-radial pb-20">
-      {/* Top bar com sininho */}
-      <div className="px-6 pt-4 flex justify-end max-w-[920px] mx-auto">
-        <NotificationFeed />
+    <div className="min-h-dvh bg-spark-bg pb-12">
+      {/* Top bar */}
+      <div className="px-4 md:px-6 pt-4 flex items-center justify-between max-w-[1200px] mx-auto">
+        <div className="flex flex-col gap-1">
+          <div className="text-eyebrow text-spark-brand-deep">
+            Jornadas Método TTS
+          </div>
+          {data.me.is_admin && (
+            <span className="self-start px-2 py-0.5 rounded-full bg-orange-50 border border-orange-200 text-orange-700 text-[10px] font-extrabold uppercase tracking-wide">
+              ⚡ Preview admin
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-3">
+          {stats && (
+            <XPBar xpTotal={stats.xp_total} stage={data.me.character_stage} />
+          )}
+          <NotificationFeed />
+        </div>
       </div>
 
-      {/* Header com personagem */}
-      <header className="px-6 pt-4 pb-6 text-center">
-        <div className="text-eyebrow text-spark-brand-deep">Jornadas Método TTS</div>
-        <h1 className="font-display text-[34px] md:text-[44px] text-spark-ink mt-1 leading-tight">
-          Sua aventura
+      {/* Title */}
+      <header className="px-4 md:px-6 pt-4 pb-3 text-center max-w-[920px] mx-auto">
+        <h1 className="font-display text-[28px] md:text-[40px] text-spark-ink leading-tight">
+          Sua aventura no <span className="text-grad-brand">TikTok Shop</span>
         </h1>
-        <div className="mt-4 flex justify-center">
-          <JourneyCharacter stage={data.me.character_stage} size={120} showLabel />
-        </div>
-        <p className="text-spark-ink-70 text-[14px] mt-3 max-w-[44ch] mx-auto">
-          Complete aulas, prove suas vendas e evolua de bebê pra adulta no TikTok Shop.
+        <p className="text-spark-ink-70 text-[13px] md:text-[14px] mt-2 max-w-[44ch] mx-auto">
+          Complete aulas, prove vendas reais e evolua de bebê pra adulta no jogo.
         </p>
-        {stats && (
-          <div className="mt-4 flex justify-center">
-            <XPBar xpTotal={stats.xp_total} stage={data.me.character_stage} />
-          </div>
-        )}
-        {data.me.is_admin && (
-          <div className="mt-3 inline-block px-2 py-0.5 rounded-full bg-orange-50 border border-orange-200 text-orange-700 text-[10.5px] font-extrabold uppercase tracking-wide">
-            ⚡ Preview admin
-          </div>
-        )}
       </header>
 
-      {/* Cards jornadas */}
-      <div className="px-6 max-w-[920px] mx-auto space-y-4">
-        {data.journeys.map((j, idx) => {
-          const isCompleted = j.progress?.status === "completed";
-          const isInProgress = j.progress && !isCompleted;
-          const isLocked = idx > 0 && data.journeys[idx - 1]?.progress?.status !== "completed";
-
-          return (
-            <Link
-              key={j.id}
-              href={isLocked && !data.me.is_admin ? "#" : `/jornadas/${j.slug}`}
-              className={cn(
-                "block rounded-spark-xl border-2 p-5 transition-all duration-300",
-                isLocked && !data.me.is_admin
-                  ? "border-spark-hairline bg-spark-surface-sunken opacity-60 cursor-not-allowed"
-                  : "border-spark-hairline bg-spark-surface hover:border-spark-brand/40 hover:-translate-y-0.5 shadow-rest",
-              )}
-              style={
-                isCompleted
-                  ? {
-                      borderColor: j.hero_color_a ?? "#fdb4c2",
-                      background: `linear-gradient(135deg, ${j.hero_color_a ?? "#fdb4c2"}11, ${j.hero_color_b ?? "#ffd6a8"}11)`,
-                    }
-                  : undefined
-              }
-            >
-              <div className="flex items-center gap-4">
-                <span className="text-5xl shrink-0" style={{ lineHeight: 1 }}>
-                  {STAGE_EMOJI[j.character_stage]}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className="text-eyebrow text-spark-brand">Jornada {idx + 1}</div>
-                    {isCompleted && (
-                      <span className="px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-extrabold uppercase">
-                        concluída
-                      </span>
-                    )}
-                    {isInProgress && (
-                      <span className="px-2 py-0.5 rounded-full bg-yellow-50 border border-yellow-200 text-yellow-700 text-[10px] font-extrabold uppercase">
-                        em andamento
-                      </span>
-                    )}
-                    {isLocked && !data.me.is_admin && (
-                      <Lock size={12} className="text-spark-ink-35" />
-                    )}
-                  </div>
-                  <h3 className="font-display text-[20px] md:text-[24px] text-spark-ink leading-tight">
-                    {j.title}
-                  </h3>
-                  {j.subtitle && (
-                    <p className="text-[13px] text-spark-ink-70 mt-0.5">{j.subtitle}</p>
-                  )}
-                  <div className="mt-3 flex items-center gap-3 text-[12px] text-spark-ink-50">
-                    <span>📚 {j.lesson_count} aulas</span>
-                    {j.lessons_completed > 0 && (
-                      <span className="font-extrabold text-spark-brand-deep">
-                        {j.pct_complete}% completo
-                      </span>
-                    )}
-                  </div>
-                  {/* Progress bar */}
-                  {j.lesson_count > 0 && (
-                    <div className="mt-2 h-1.5 bg-spark-ink-10 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-brand-grad transition-all duration-500"
-                        style={{ width: `${j.pct_complete}%` }}
-                      />
-                    </div>
-                  )}
-                </div>
-                <ChevronRight size={18} className="text-spark-ink-35 shrink-0" />
-              </div>
-            </Link>
-          );
-        })}
+      {/* World map fullscreen */}
+      <div className="px-4 md:px-6 max-w-[1200px] mx-auto">
+        <WorldMap
+          journeys={enrichedJourneys}
+          characterStage={data.me.character_stage}
+          isAdmin={data.me.is_admin}
+        />
       </div>
+
+      {/* Stats abaixo do mapa */}
+      <div className="px-4 md:px-6 max-w-[920px] mx-auto mt-6">
+        <div className="grid grid-cols-3 gap-3">
+          <StatCard
+            label="Aulas"
+            value={stats?.lessons_completed_count ?? 0}
+            emoji="📚"
+          />
+          <StatCard
+            label="Provas"
+            value={stats?.proofs_approved_count ?? 0}
+            emoji="🎯"
+          />
+          <StatCard
+            label="Badges"
+            value={stats?.badges.length ?? 0}
+            emoji="🏆"
+          />
+        </div>
+      </div>
+
+      {/* Badges recentes (se houver) */}
+      {stats && stats.badges.length > 0 && (
+        <div className="px-4 md:px-6 max-w-[920px] mx-auto mt-6">
+          <div className="text-eyebrow text-spark-brand-deep mb-3">
+            🏆 Suas conquistas
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {stats.badges.slice(0, 8).map((b) => (
+              <div
+                key={b.slug}
+                className="px-3 py-1.5 rounded-full bg-spark-surface border border-spark-hairline text-[11.5px] font-extrabold inline-flex items-center gap-1.5"
+                title={b.description ?? undefined}
+              >
+                {b.icon_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={b.icon_url}
+                    alt=""
+                    className="w-4 h-4"
+                    style={{ imageRendering: "pixelated" }}
+                  />
+                ) : (
+                  <span>✨</span>
+                )}
+                {b.title}
+              </div>
+            ))}
+            {stats.badges.length > 8 && (
+              <span className="px-3 py-1.5 text-[11.5px] text-spark-ink-50">
+                +{stats.badges.length - 8} mais
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Level up animation */}
       {levelUp && (
@@ -221,6 +228,30 @@ export default function JornadasPage() {
           onDismiss={() => setLevelUp(null)}
         />
       )}
+    </div>
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  emoji,
+}: {
+  label: string;
+  value: number;
+  emoji: string;
+}) {
+  return (
+    <div className="rounded-spark-xl border border-spark-hairline bg-spark-surface px-4 py-3 text-center">
+      <div className="text-2xl mb-1" style={{ lineHeight: 1 }}>
+        {emoji}
+      </div>
+      <div className="font-display text-[24px] leading-none text-spark-ink">
+        {value}
+      </div>
+      <div className="text-[10.5px] font-extrabold uppercase tracking-[0.18em] text-spark-ink-50 mt-1">
+        {label}
+      </div>
     </div>
   );
 }

@@ -1,12 +1,13 @@
 "use client";
 
-import { STAGE_EMOJI, STAGE_LABELS, type CharacterStage } from "@/lib/journey/character-stage";
+import { CharacterSprite } from "@/components/journey/CharacterSprite";
+import { STAGE_LABELS, type CharacterStage } from "@/lib/journey/character-stage";
 import { cn } from "@/lib/cn";
 
 /**
- * Personagem do joguinho — MVP usa emoji.
- * Quando virar pixel art (Semana 2), troca pra <Image src="/sprites/.../idle.png" />
- * mantendo a mesma API (props: stage, size, className).
+ * Wrapper "alto-nivel" do CharacterSprite. Mantem a API antiga (size em
+ * pixels + showLabel) pros callers existentes. CharacterSprite detecta
+ * automaticamente sprite-sheet > single PNG > emoji fallback.
  */
 export function JourneyCharacter({
   stage,
@@ -19,16 +20,13 @@ export function JourneyCharacter({
   showLabel?: boolean;
   className?: string;
 }) {
+  // CharacterSprite trabalha com `scale` (multiplicador de 64px base).
+  // Converter `size` em scale aproximado: size 96 → scale 1.5; size 120 → scale ~1.9
+  const scale = Math.max(0.5, size / 64);
+
   return (
     <div className={cn("inline-flex flex-col items-center gap-2", className)}>
-      <span
-        role="img"
-        aria-label={`personagem ${STAGE_LABELS[stage]}`}
-        style={{ fontSize: size, lineHeight: 1 }}
-        className="select-none transition-transform duration-500 ease-out hover:scale-110"
-      >
-        {STAGE_EMOJI[stage]}
-      </span>
+      <CharacterSprite stage={stage} anim="idle" scale={scale} />
       {showLabel && (
         <span className="text-eyebrow text-spark-brand">
           ✦ {STAGE_LABELS[stage]}
