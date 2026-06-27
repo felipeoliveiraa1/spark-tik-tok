@@ -54,6 +54,12 @@
       "history": "💬 Chat history with the AIs",
       "lessons": "🎓 Lesson progress"
     },
+    "sameEmail": {
+      "headline": "Use THIS email at checkout",
+      "subtitle": "If you use a different email, Kiwify creates a new account and your progress stays stuck here. The link already opens with your email pre-filled — just double-check before paying.",
+      "copy": "Copy",
+      "copied": "Copied!"
+    },
     "actions": {
       "reactivate": "Reactivate via Kiwify",
       "myAccount": "My account",

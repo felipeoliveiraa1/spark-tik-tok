@@ -54,6 +54,12 @@
       "history": "💬 Histórico de conversas com as IAs",
       "lessons": "🎓 Progresso nas aulas"
     },
+    "sameEmail": {
+      "headline": "Use ESTE email no checkout",
+      "subtitle": "Se você usar outro email, a Kiwify cria uma conta nova e seu progresso fica preso aqui. O link já abre com seu email — só confere antes de pagar.",
+      "copy": "Copiar",
+      "copied": "Copiado!"
+    },
     "actions": {
       "reactivate": "Reativar pelo Kiwify",
       "myAccount": "Minha conta",

@@ -11,6 +11,7 @@ import { SectionReveal } from "@/components/atoms/section-reveal";
 import { SButton } from "@/components/atoms/s-button";
 import { getDisplayStatus, hasActiveAccess, statusLabel } from "@/lib/plan-access";
 import { LogOut, ExternalLink, RefreshCw, KeyRound } from "lucide-react";
+import { EmailCallout } from "./_email-callout";
 
 export const dynamic = "force-dynamic";
 
@@ -55,6 +56,14 @@ export default async function PlanoInativoPage() {
   const titleHighlight = tStatusCopy("titleHighlight");
   const description = tStatusCopy("description");
 
+  // Email pre-preenchido no checkout Kiwify: garante que o webhook
+  // matche o profile existente (em vez de criar conta duplicada).
+  const checkoutUrl = `${KIWIFY_CHECKOUT_URL}?email=${encodeURIComponent(profile.email)}`;
+  const emailHeadline = tNs("sameEmail.headline");
+  const emailSubtitle = tNs("sameEmail.subtitle");
+  const emailCopy = tNs("sameEmail.copy");
+  const emailCopied = tNs("sameEmail.copied");
+
   const { tone } = statusLabel(status);
   // Label vem do nosso i18n (mesmo nome de status que statusLabel usa)
   const label = isStatusKey(status) || status === "active" || status === "late"
@@ -84,11 +93,16 @@ export default async function PlanoInativoPage() {
             titleHighlight={titleHighlight}
             description={description}
             email={profile.email}
+            checkoutUrl={checkoutUrl}
             comebackEyebrow={tNs("comeback.eyebrow")}
             comebackProducts={tNs("comeback.products")}
             comebackScripts={tNs("comeback.scripts")}
             comebackHistory={tNs("comeback.history")}
             comebackLessons={tNs("comeback.lessons")}
+            emailHeadline={emailHeadline}
+            emailSubtitle={emailSubtitle}
+            emailCopy={emailCopy}
+            emailCopied={emailCopied}
             actReactivate={tA("reactivate")}
             actMyAccount={tA("myAccount")}
             actLogout={tA("logout")}
@@ -110,11 +124,16 @@ export default async function PlanoInativoPage() {
               titleHighlight={titleHighlight}
               description={description}
               email={profile.email}
+              checkoutUrl={checkoutUrl}
               comebackEyebrow={tNs("comeback.eyebrow")}
               comebackProducts={tNs("comeback.products")}
               comebackScripts={tNs("comeback.scripts")}
               comebackHistory={tNs("comeback.history")}
               comebackLessons={tNs("comeback.lessons")}
+              emailHeadline={emailHeadline}
+              emailSubtitle={emailSubtitle}
+              emailCopy={emailCopy}
+              emailCopied={emailCopied}
               actReactivate={tA("reactivate")}
               actMyAccount={tA("myAccount")}
               actLogout={tA("logout")}
@@ -135,11 +154,16 @@ function PlanoInativoBody({
   titleHighlight,
   description,
   email,
+  checkoutUrl,
   comebackEyebrow,
   comebackProducts,
   comebackScripts,
   comebackHistory,
   comebackLessons,
+  emailHeadline,
+  emailSubtitle,
+  emailCopy,
+  emailCopied,
   actReactivate,
   actMyAccount,
   actLogout,
@@ -152,11 +176,16 @@ function PlanoInativoBody({
   titleHighlight: string;
   description: string;
   email: string;
+  checkoutUrl: string;
   comebackEyebrow: string;
   comebackProducts: string;
   comebackScripts: string;
   comebackHistory: string;
   comebackLessons: string;
+  emailHeadline: string;
+  emailSubtitle: string;
+  emailCopy: string;
+  emailCopied: string;
   actReactivate: string;
   actMyAccount: string;
   actLogout: string;
@@ -212,24 +241,30 @@ function PlanoInativoBody({
           </SectionReveal>
         )}
 
-        <SectionReveal direction="up" delay={700}>
-          <div className="mt-6 text-[12px] text-spark-ink-50 font-mono">{email}</div>
-        </SectionReveal>
       </div>
 
       <SectionReveal direction="up" delay={850}>
-        <div className="space-y-3 mt-8">
+        <div className="space-y-4 mt-8">
           {status !== "chargeback" && (
-            <a
-              href={KIWIFY_CHECKOUT_URL}
-              target="_blank"
-              rel="noreferrer"
-              className="block w-full"
-            >
-              <SButton variant="primary" size="lg" full IconRight={ExternalLink}>
-                {actReactivate}
-              </SButton>
-            </a>
+            <>
+              <EmailCallout
+                email={email}
+                headline={emailHeadline}
+                subtitle={emailSubtitle}
+                copyLabel={emailCopy}
+                copiedLabel={emailCopied}
+              />
+              <a
+                href={checkoutUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="block w-full"
+              >
+                <SButton variant="primary" size="lg" full IconRight={ExternalLink}>
+                  {actReactivate}
+                </SButton>
+              </a>
+            </>
           )}
 
           <Link href="/conta" className="block w-full">
