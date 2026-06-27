@@ -67,7 +67,7 @@ export function StoryCard({
         "w-screen md:w-[440px]",
         "h-[100dvh] md:h-[88dvh] md:rounded-spark-xl md:shadow-2xl",
       )}
-      style={{ scrollSnapStop: "always" }}
+      style={{ scrollSnapStop: "normal" }}
       aria-label={`Aula ${index} de ${totalLessons}: ${lesson.title}${variant === "completed" ? " concluída" : variant === "locked" ? " bloqueada" : ""}`}
     >
       {/* Overlay escurecedor pra locked */}
@@ -125,12 +125,15 @@ export function StoryCard({
       >
         {variant === "current" && (
           <>
+            {/* Glow radial difuso — "perdoa" character off-center no PNG */}
             <div
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-spark-brand"
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
               style={{
-                width: "200px",
-                height: "200px",
-                opacity: 0.35,
+                width: "300px",
+                height: "300px",
+                background:
+                  "radial-gradient(circle at 50% 55%, rgba(236,72,153,0.55) 0%, rgba(236,72,153,0.30) 35%, rgba(236,72,153,0.10) 65%, rgba(236,72,153,0) 80%)",
+                filter: "blur(2px)",
                 animation: "story-halo-pulse 2.4s ease-in-out infinite",
               }}
               aria-hidden

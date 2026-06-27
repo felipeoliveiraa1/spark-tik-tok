@@ -240,12 +240,12 @@ export function JourneyStoryDeck({
         ref={scrollerRef}
         className={cn(
           "absolute inset-0 flex overflow-x-auto overflow-y-hidden",
-          "snap-x snap-mandatory",
+          "snap-x snap-proximity",
           "scrollbar-none",
           "md:px-[calc((100vw-440px)/2)]",
         )}
         style={{
-          scrollSnapType: "x mandatory",
+          scrollSnapType: "x proximity",
           overscrollBehaviorInline: "contain",
           scrollbarWidth: "none",
           WebkitOverflowScrolling: "touch",
@@ -314,14 +314,15 @@ export function JourneyStoryDeck({
         </button>
       )}
 
-      {/* Hint swipe (so mobile, ate primeiro swipe) */}
+      {/* Hint swipe direcional (so mobile, ate primeiro swipe) */}
       {hintVisible && (
         <div
           className="absolute bottom-32 right-6 z-30 md:hidden pointer-events-none flex items-center gap-1 text-white/80 text-[11.5px] font-extrabold tracking-wider uppercase"
           style={{ animation: "deck-hint-bounce 1.6s ease-in-out infinite" }}
         >
+          {activeIdx > 0 && <ChevronLeft size={14} strokeWidth={3} />}
           deslize
-          <ChevronRight size={14} strokeWidth={3} />
+          {activeIdx < totalCards - 1 && <ChevronRight size={14} strokeWidth={3} />}
         </div>
       )}
 

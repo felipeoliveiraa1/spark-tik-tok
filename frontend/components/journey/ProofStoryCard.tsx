@@ -74,7 +74,7 @@ export function ProofStoryCard({
         "h-[100dvh] md:h-[88dvh] md:rounded-spark-xl md:shadow-2xl",
       )}
       style={{
-        scrollSnapStop: "always",
+        scrollSnapStop: "normal",
         background:
           proofStatus === "approved"
             ? "linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%)"

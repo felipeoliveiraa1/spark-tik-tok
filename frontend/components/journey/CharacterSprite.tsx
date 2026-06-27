@@ -99,6 +99,10 @@ export function CharacterSprite({
   }
 
   if (mode === "single") {
+    // PNG gerado pela openai vem com character off-center no canvas 1024x1024
+    // (bbox tipica 640x960, dy=-26px do centro vertical, margens transparentes
+    // 180-204px laterais). cover + objectPosition 50% 35% + scale 1.35 ancora
+    // o character no centro visual do slot e crop as margens vazias.
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
@@ -110,6 +114,10 @@ export function CharacterSprite({
         style={{
           width: displaySize,
           height: displaySize,
+          objectFit: "cover",
+          objectPosition: "50% 35%",
+          transform: "scale(1.35)",
+          transformOrigin: "center 40%",
           imageRendering: "pixelated",
           animation: prefersReduced ? undefined : "char-bounce 2.4s ease-in-out infinite",
         }}
