@@ -74,18 +74,18 @@ export function JourneyStoryDeck({
     cardRefs.current = cardRefs.current.slice(0, totalCards);
   }, [totalCards]);
 
-  // Auto-scroll inicial pro current — usa scrollIntoView pra deixar o
-  // browser fazer a math respeitando padding lateral + snap-center
+  // Auto-scroll inicial pro current — math manual (mesmo motivo do jumpTo)
   React.useLayoutEffect(() => {
+    const scroller = scrollerRef.current;
     const targetIdx = Math.max(0, currentLessonIdx);
     const card = cardRefs.current[targetIdx];
-    if (card) {
-      card.scrollIntoView({
-        inline: "center",
-        block: "nearest",
-        behavior: "instant" as ScrollBehavior,
-      });
-    }
+    if (!scroller || !card) return;
+    const target =
+      card.offsetLeft - (scroller.clientWidth - card.offsetWidth) / 2;
+    scroller.scrollTo({
+      left: Math.max(0, target),
+      behavior: "instant" as ScrollBehavior,
+    });
   }, [currentLessonIdx]);
 
   // IntersectionObserver pra detectar card visivel
@@ -153,11 +153,17 @@ export function JourneyStoryDeck({
   }, [activeIdx, totalCards]);
 
   const jumpTo = React.useCallback((idx: number) => {
+    const scroller = scrollerRef.current;
     const card = cardRefs.current[idx];
-    if (!card) return;
-    card.scrollIntoView({
-      inline: "center",
-      block: "nearest",
+    if (!scroller || !card) return;
+    // Math manual pra snap-center: alinha o centro do card com o centro do
+    // scroller visivel. Funciona em mobile (sem padding) e desktop (com
+    // padding md:px-[calc(...)]) sem depender de scrollIntoView+snap, que
+    // tem quirks em Safari/Chrome quando indo pra esquerda com proximity.
+    const target =
+      card.offsetLeft - (scroller.clientWidth - card.offsetWidth) / 2;
+    scroller.scrollTo({
+      left: Math.max(0, target),
       behavior: "smooth",
     });
   }, []);
