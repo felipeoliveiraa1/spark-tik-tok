@@ -74,7 +74,8 @@ export function JourneyStoryDeck({
     cardRefs.current = cardRefs.current.slice(0, totalCards);
   }, [totalCards]);
 
-  // Auto-scroll inicial pro current — math manual (mesmo motivo do jumpTo)
+  // Auto-scroll inicial pro current — math manual (mesmo motivo do jumpTo).
+  // Desabilita snap durante o set inicial pra nao "puxar" a posicao calculada.
   React.useLayoutEffect(() => {
     const scroller = scrollerRef.current;
     const targetIdx = Math.max(0, currentLessonIdx);
@@ -82,9 +83,11 @@ export function JourneyStoryDeck({
     if (!scroller || !card) return;
     const target =
       card.offsetLeft - (scroller.clientWidth - card.offsetWidth) / 2;
-    scroller.scrollTo({
-      left: Math.max(0, target),
-      behavior: "instant" as ScrollBehavior,
+    const prevSnap = scroller.style.scrollSnapType;
+    scroller.style.scrollSnapType = "none";
+    scroller.scrollLeft = Math.max(0, target);
+    window.requestAnimationFrame(() => {
+      scroller.style.scrollSnapType = prevSnap || "x proximity";
     });
   }, [currentLessonIdx]);
 
@@ -158,14 +161,19 @@ export function JourneyStoryDeck({
     if (!scroller || !card) return;
     // Math manual pra snap-center: alinha o centro do card com o centro do
     // scroller visivel. Funciona em mobile (sem padding) e desktop (com
-    // padding md:px-[calc(...)]) sem depender de scrollIntoView+snap, que
-    // tem quirks em Safari/Chrome quando indo pra esquerda com proximity.
+    // padding md:px-[calc(...)]).
     const target =
       card.offsetLeft - (scroller.clientWidth - card.offsetWidth) / 2;
-    scroller.scrollTo({
-      left: Math.max(0, target),
-      behavior: "smooth",
-    });
+    const targetLeft = Math.max(0, target);
+    // Workaround bug conhecido Chrome/Safari: scroll-snap interfere com
+    // scrollTo programatico (principalmente quando indo pra esquerda).
+    // Desabilita snap, scrolla, reabilita depois da animacao smooth (~500ms).
+    const prevSnap = scroller.style.scrollSnapType;
+    scroller.style.scrollSnapType = "none";
+    scroller.scrollTo({ left: targetLeft, behavior: "smooth" });
+    window.setTimeout(() => {
+      scroller.style.scrollSnapType = prevSnap || "x proximity";
+    }, 550);
   }, []);
 
   // Empty state
