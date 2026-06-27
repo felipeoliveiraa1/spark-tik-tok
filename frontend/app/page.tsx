@@ -13,7 +13,6 @@ import {
   Radio,
   Shield,
   Sparkles,
-  Users,
 } from "lucide-react";
 import { ResponsiveShell } from "@/components/layout/responsive-shell";
 import { FloatingMainNav } from "@/components/layout/floating-main-nav";
@@ -464,44 +463,62 @@ function StatsSection({
 }
 
 // =================================================================
-// COMUNIDADE — Banner WhatsApp premium
+// COMUNIDADE — Banner "Em breve" com countdown
 // =================================================================
 
-const COMMUNITY_WHATSAPP_URL = "https://chat.whatsapp.com/LnrukfQ4QawLB7y9XshBWh";
+// Data de abertura do grupo (BRT). Para reabrir o link, basta:
+// 1. Voltar o componente CommunitySection pro <a href={COMMUNITY_WHATSAPP_URL}>
+// 2. Ou setar COMMUNITY_OPEN_AT pra uma data passada (countdown some sozinho)
+const COMMUNITY_OPEN_AT = new Date("2026-07-01T00:00:00-03:00");
+
+function useCountdown(target: Date) {
+  const [now, setNow] = React.useState(() => Date.now());
+  React.useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+  const diff = Math.max(0, target.getTime() - now);
+  const totalSec = Math.floor(diff / 1000);
+  const days = Math.floor(totalSec / 86400);
+  const hours = Math.floor((totalSec % 86400) / 3600);
+  const minutes = Math.floor((totalSec % 3600) / 60);
+  const seconds = totalSec % 60;
+  return { days, hours, minutes, seconds, isOpen: diff === 0 };
+}
 
 function CommunitySection({ desktop }: { desktop: boolean }) {
+  const { days, hours, minutes, seconds } = useCountdown(COMMUNITY_OPEN_AT);
+  const pad = (n: number) => String(n).padStart(2, "0");
+
   return (
     <section
       className={`relative overflow-hidden ${desktop ? "py-20 px-12" : "py-12 px-5"}`}
     >
       <div className={desktop ? "max-w-[1200px] mx-auto" : ""}>
         <SectionReveal>
-          <a
-            href={COMMUNITY_WHATSAPP_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group relative block rounded-spark-3xl overflow-hidden hover-lift shadow-hero"
+          <div
+            className="relative rounded-spark-3xl overflow-hidden shadow-hero cursor-not-allowed select-none"
+            aria-disabled="true"
             style={{
               background:
-                "linear-gradient(135deg, oklch(0.68 0.18 145) 0%, oklch(0.55 0.18 155) 100%)",
+                "linear-gradient(135deg, oklch(0.58 0.16 145) 0%, oklch(0.42 0.14 155) 100%)",
             }}
           >
-            {/* Sparkles + blobs decorativos */}
-            <SparkleField count={12} seed={555} color="rgba(255,255,255,0.7)" className="opacity-60" />
+            <SparkleField count={12} seed={555} color="rgba(255,255,255,0.55)" className="opacity-40" />
             <div
               aria-hidden
-              className="absolute -top-32 -right-32 w-[420px] h-[420px] rounded-full opacity-30"
+              className="absolute -top-32 -right-32 w-[420px] h-[420px] rounded-full opacity-25"
               style={{
                 background:
-                  "radial-gradient(circle, rgba(255,255,255,0.4) 0%, transparent 70%)",
+                  "radial-gradient(circle, rgba(255,255,255,0.35) 0%, transparent 70%)",
               }}
             />
             <div
               aria-hidden
-              className="absolute -bottom-20 -left-10 w-[300px] h-[300px] rounded-full opacity-25"
+              className="absolute -bottom-20 -left-10 w-[300px] h-[300px] rounded-full opacity-20"
               style={{
                 background:
-                  "radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%)",
+                  "radial-gradient(circle, rgba(255,255,255,0.25) 0%, transparent 70%)",
               }}
             />
 
@@ -515,48 +532,59 @@ function CommunitySection({ desktop }: { desktop: boolean }) {
               <div className="min-w-0">
                 <div className="text-eyebrow text-white/85 mb-3 flex items-center gap-2">
                   <MessageCircle size={11} strokeWidth={2.5} />
-                  ✦ comunidade no whatsapp
+                  🔒 em breve · comunidade no whatsapp
                 </div>
                 <h2
                   className="font-display lowercase leading-[0.9] tracking-tight"
                   style={{ fontSize: desktop ? "clamp(2.25rem, 4vw, 3.5rem)" : "clamp(1.75rem, 7vw, 2.5rem)" }}
                 >
-                  bora pra dentro<br />
-                  <span className="text-white/90">do grupo.</span>
+                  abre dia<br />
+                  <span className="tabular-nums">01/07</span>
                 </h2>
                 <p className="mt-5 text-[14.5px] lg:text-[16px] text-white/90 leading-snug font-semibold max-w-[44ch]">
-                  Comunidade exclusiva pra dividir resultado, tirar dúvida com a Yara e
-                  com as outras criadoras, ver o que tá funcionando agora 💕
+                  Tô preparando uma comunidade exclusiva pra dividir resultado,
+                  trocar com as outras criadoras e ver o que tá funcionando agora.
+                  Salva a data 💕
                 </p>
-
-                <div className="mt-6 flex items-center gap-4 text-white/90 text-[12px] font-extrabold uppercase tracking-widest flex-wrap">
-                  <span className="inline-flex items-center gap-1.5">
-                    <Users size={12} strokeWidth={2.5} />
-                    Comunidade ativa
-                  </span>
-                  <span className="opacity-50">·</span>
-                  <span>Acesso liberado pelo seu plano</span>
-                </div>
               </div>
 
-              {/* CTA visual */}
+              {/* Countdown — 4 boxes DD : HH : MM : SS */}
               <div className={desktop ? "shrink-0" : ""}>
                 <div
-                  className={`inline-flex items-center gap-3 px-7 py-5 rounded-full bg-white text-[#0d6b3d] font-extrabold shadow-lift transition-all duration-300 ease-premium group-hover:-translate-y-1 ${
-                    desktop ? "text-[15px]" : "text-[14px] w-full justify-center"
+                  role="timer"
+                  aria-live="off"
+                  aria-label={`Faltam ${days} dias, ${hours} horas, ${minutes} minutos e ${seconds} segundos`}
+                  className={`grid grid-cols-4 gap-2 ${
+                    desktop ? "min-w-[360px]" : "w-full"
                   }`}
                 >
-                  <span className="text-[22px] leading-none">💬</span>
-                  Entrar no grupo
-                  <ArrowUpRight
-                    size={16}
-                    strokeWidth={2.5}
-                    className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-                  />
+                  {[
+                    { v: days, l: "dias" },
+                    { v: hours, l: "horas" },
+                    { v: minutes, l: "min" },
+                    { v: seconds, l: "seg" },
+                  ].map(({ v, l }) => (
+                    <div
+                      key={l}
+                      className="rounded-spark-xl bg-white/15 backdrop-blur border border-white/25 px-2 py-3 text-center"
+                    >
+                      <div
+                        className="font-display tabular-nums leading-none"
+                        style={{
+                          fontSize: desktop ? "2.5rem" : "1.85rem",
+                        }}
+                      >
+                        {pad(v)}
+                      </div>
+                      <div className="mt-1 text-[10px] font-extrabold uppercase tracking-widest text-white/80">
+                        {l}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
-          </a>
+          </div>
         </SectionReveal>
       </div>
     </section>
