@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Sparkles, PlayCircle, ChevronRight } from "lucide-react";
 import { NotificationFeed } from "@/components/journey/NotificationFeed";
 import { JourneyImmersiveBG } from "@/components/journey/JourneyImmersiveBG";
+import { JourneyLoadingScreen } from "@/components/journey/JourneyLoadingScreen";
 import { STAGE_EMOJI } from "@/lib/journey/character-stage";
 import { LevelUpAnimation } from "@/components/journey/LevelUpAnimation";
 import { JourneyCard } from "@/components/journey/JourneyCard";
@@ -95,23 +96,9 @@ export default function JornadasPage() {
     window.localStorage.setItem(LEVEL_UP_KEY, current);
   }, [data?.me.character_stage]);
 
-  // Loading skeleton
+  // Loading
   if (loading) {
-    return (
-      <div className="min-h-dvh relative">
-        <JourneyImmersiveBG stage="bebe" intensity="medium" fixed />
-        <StickyHeader />
-        <div className="px-4 max-w-[520px] mx-auto flex flex-col gap-4 pt-3">
-          <div className="h-[72px] rounded-spark-xl skeleton-shimmer" />
-          {[0, 1, 2].map((i) => (
-            <div
-              key={i}
-              className="aspect-[4/3] w-full rounded-spark-xl skeleton-shimmer"
-            />
-          ))}
-        </div>
-      </div>
-    );
+    return <JourneyLoadingScreen />;
   }
 
   // Error state

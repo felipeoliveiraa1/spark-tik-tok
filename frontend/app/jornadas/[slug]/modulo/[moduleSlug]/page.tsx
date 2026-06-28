@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { JourneyStoryDeck } from "@/components/journey/JourneyStoryDeck";
+import { JourneyLoadingScreen } from "@/components/journey/JourneyLoadingScreen";
 import type { CharacterStage } from "@/lib/journey/character-stage";
 
 type Lesson = {
@@ -92,9 +93,7 @@ export default function ModuloPage() {
 
   if (loading) {
     return (
-      <div className="min-h-dvh flex items-center justify-center text-spark-ink-50">
-        <Loader2 size={24} className="animate-spin" />
-      </div>
+      <JourneyLoadingScreen />
     );
   }
 
@@ -119,9 +118,7 @@ export default function ModuloPage() {
   if (mod.locked) {
     router.replace(`/jornadas/${params.slug}`);
     return (
-      <div className="min-h-dvh flex items-center justify-center text-spark-ink-50">
-        <Loader2 size={24} className="animate-spin" />
-      </div>
+      <JourneyLoadingScreen />
     );
   }
 

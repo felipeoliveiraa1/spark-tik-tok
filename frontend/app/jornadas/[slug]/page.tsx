@@ -9,6 +9,7 @@ import { JourneyHeroBar } from "@/components/journey/JourneyHeroBar";
 import { ModuleCard } from "@/components/journey/ModuleCard";
 import { ProofFinalCard } from "@/components/journey/ProofFinalCard";
 import { JourneyImmersiveBG } from "@/components/journey/JourneyImmersiveBG";
+import { JourneyLoadingScreen } from "@/components/journey/JourneyLoadingScreen";
 import type { CharacterStage } from "@/lib/journey/character-stage";
 
 type Lesson = {
@@ -84,11 +85,7 @@ export default function JornadaDetailPage() {
   }, [params.slug]);
 
   if (loading) {
-    return (
-      <div className="min-h-dvh flex items-center justify-center text-spark-ink-50">
-        <Loader2 size={24} className="animate-spin" />
-      </div>
-    );
+    return <JourneyLoadingScreen />;
   }
 
   if (errored || !data || !data.journey) {

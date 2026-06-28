@@ -13,6 +13,7 @@ import {
   type Comment,
 } from "@/components/journey/CommentThread";
 import { JourneyImmersiveBG } from "@/components/journey/JourneyImmersiveBG";
+import { JourneyLoadingScreen } from "@/components/journey/JourneyLoadingScreen";
 import type { CharacterStage } from "@/lib/journey/character-stage";
 import { trackJourneyEvent } from "@/lib/journey/track";
 import { cn } from "@/lib/cn";
@@ -248,11 +249,7 @@ export default function AulaJornadaPage() {
   // ========= EARLY RETURNS (apos todos os hooks) =========
 
   if (loading) {
-    return (
-      <div className="min-h-dvh flex items-center justify-center text-spark-ink-50">
-        <Loader2 size={24} className="animate-spin" />
-      </div>
-    );
+    return <JourneyLoadingScreen />;
   }
 
   if (!data) {
