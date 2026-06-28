@@ -85,7 +85,7 @@ create policy "journey_modules_admin_all" on public.journey_modules
 drop trigger if exists journey_modules_touch on public.journey_modules;
 create trigger journey_modules_touch
   before update on public.journey_modules
-  for each row execute function public.touch_updated_at();
+  for each row execute function public.touch_journey_updated_at();
 
 -- ---------------------------------------------------------------------------
 -- 5) UPDATE Jornada 1 — titulo/subtitulo/description da spec
