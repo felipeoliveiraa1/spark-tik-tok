@@ -5,9 +5,9 @@ import { CharacterSprite } from "@/components/journey/CharacterSprite";
 import type { CharacterStage } from "@/lib/journey/character-stage";
 
 const MESSAGES = [
-  "Preparando seu joguinho... ✨",
+  "Abrindo sua jornada... ✨",
   "Carregando as aulas... 📚",
-  "Animando os personagens... 🎨",
+  "Preparando o cenário... 🎨",
   "Quase lá... 💕",
 ] as const;
 
