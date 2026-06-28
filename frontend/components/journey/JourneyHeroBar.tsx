@@ -32,7 +32,7 @@ export function JourneyHeroBar({
   xpTotal: number;
 }) {
   return (
-    <header className="sticky top-0 z-30 bg-spark-bg/95 backdrop-blur border-b border-spark-hairline">
+    <header className="sticky top-0 z-30 bg-white/75 backdrop-blur-md border-b border-white/40">
       <div className="max-w-[520px] mx-auto px-4 py-3 flex items-center gap-3">
         <Link
           href="/jornadas"

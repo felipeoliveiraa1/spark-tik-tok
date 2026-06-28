@@ -12,6 +12,8 @@ import {
   CommentThread,
   type Comment,
 } from "@/components/journey/CommentThread";
+import { JourneyImmersiveBG } from "@/components/journey/JourneyImmersiveBG";
+import type { CharacterStage } from "@/lib/journey/character-stage";
 import { trackJourneyEvent } from "@/lib/journey/track";
 import { cn } from "@/lib/cn";
 
@@ -35,7 +37,12 @@ type Lesson = {
 };
 
 type ApiResp = {
-  journey: { id: string; slug: string; title: string };
+  journey: {
+    id: string;
+    slug: string;
+    title: string;
+    character_stage: CharacterStage;
+  };
   lessons: Lesson[];
 };
 
@@ -291,18 +298,28 @@ export default function AulaJornadaPage() {
   // ========= JSX PRINCIPAL =========
 
   return (
-    <div className="min-h-dvh hero-radial pb-20">
-      <header className="px-6 pt-6 max-w-[860px] mx-auto">
+    <div className="min-h-dvh pb-20 relative">
+      <JourneyImmersiveBG
+        stage={data.journey.character_stage}
+        intensity="subtle"
+        sparkles={false}
+        fixed
+      />
+
+      {/* Back link sobre o BG (sem sheet, integrado ao ambiente) */}
+      <header className="px-6 pt-6 max-w-[720px] mx-auto relative z-10">
         <Link
           href={backHref}
-          className="text-[12.5px] font-extrabold text-spark-ink-70 hover:text-spark-ink inline-flex items-center gap-1.5"
+          className="text-[12.5px] font-extrabold text-white/85 hover:text-white inline-flex items-center gap-1.5"
+          style={{ textShadow: "0 1px 4px rgba(0,0,0,0.6)" }}
         >
           <ArrowLeft size={13} />{" "}
           {lesson.module_title ?? data.journey.title}
         </Link>
       </header>
 
-      <div className="px-6 max-w-[860px] mx-auto mt-6">
+      {/* Sheet branco — conteudo da aula respira aqui */}
+      <article className="relative z-10 mx-4 md:mx-auto max-w-[720px] my-4 md:my-6 bg-white/92 backdrop-blur-md rounded-spark-2xl shadow-lift p-5 md:p-10 border border-white/40">
         <h1 className="font-display text-[26px] md:text-[34px] text-spark-ink leading-tight">
           {lesson.title}
         </h1>
@@ -394,7 +411,7 @@ export default function AulaJornadaPage() {
             )}
           </div>
         </div>
-      </div>
+      </article>
 
       {/* XP delta float */}
       {xpDelta !== null && (

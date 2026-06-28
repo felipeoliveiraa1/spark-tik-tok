@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { Sparkles, PlayCircle, ChevronRight } from "lucide-react";
 import { NotificationFeed } from "@/components/journey/NotificationFeed";
+import { JourneyImmersiveBG } from "@/components/journey/JourneyImmersiveBG";
 import { STAGE_EMOJI } from "@/lib/journey/character-stage";
 import { LevelUpAnimation } from "@/components/journey/LevelUpAnimation";
 import { JourneyCard } from "@/components/journey/JourneyCard";
@@ -97,7 +98,8 @@ export default function JornadasPage() {
   // Loading skeleton
   if (loading) {
     return (
-      <div className="min-h-dvh bg-spark-bg">
+      <div className="min-h-dvh relative">
+        <JourneyImmersiveBG stage="bebe" intensity="medium" fixed />
         <StickyHeader />
         <div className="px-4 max-w-[520px] mx-auto flex flex-col gap-4 pt-3">
           <div className="h-[72px] rounded-spark-xl skeleton-shimmer" />
@@ -115,9 +117,10 @@ export default function JornadasPage() {
   // Error state
   if (errored) {
     return (
-      <div className="min-h-dvh bg-spark-bg">
+      <div className="min-h-dvh relative">
+        <JourneyImmersiveBG stage="bebe" intensity="medium" fixed />
         <StickyHeader />
-        <div className="mx-4 max-w-[520px] md:mx-auto mt-6 rounded-spark-xl border border-spark-hairline bg-spark-surface p-6 text-center">
+        <div className="mx-4 max-w-[520px] md:mx-auto mt-6 rounded-spark-xl border border-spark-hairline bg-spark-surface/95 backdrop-blur p-6 text-center">
           <p className="text-spark-ink mb-4">
             Não conseguimos carregar suas jornadas agora.
           </p>
@@ -175,7 +178,12 @@ export default function JornadasPage() {
   const currentJourney = enrichedJourneys.find((j) => j.is_current);
 
   return (
-    <div className="min-h-dvh bg-spark-bg pb-12">
+    <div className="min-h-dvh pb-12 relative">
+      <JourneyImmersiveBG
+        stage={data.me.character_stage}
+        intensity="medium"
+        fixed
+      />
       <StickyHeader
         xpTotal={stats?.xp_total ?? null}
         stage={data.me.character_stage}
@@ -303,7 +311,7 @@ function StickyHeader({
   isAdmin?: boolean;
 } = {}) {
   return (
-    <header className="sticky top-0 z-40 bg-spark-bg/90 backdrop-blur border-b border-spark-hairline">
+    <header className="sticky top-0 z-40 bg-white/75 backdrop-blur-md border-b border-white/40">
       <div className="flex items-center justify-between gap-2 px-4 h-14 max-w-[520px] mx-auto">
         <div className="flex flex-col min-w-0">
           <h1 className="font-display text-[15px] text-spark-ink truncate">

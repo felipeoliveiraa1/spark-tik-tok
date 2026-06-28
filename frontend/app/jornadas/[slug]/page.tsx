@@ -8,6 +8,7 @@ import { JourneyStoryDeck } from "@/components/journey/JourneyStoryDeck";
 import { JourneyHeroBar } from "@/components/journey/JourneyHeroBar";
 import { ModuleCard } from "@/components/journey/ModuleCard";
 import { ProofFinalCard } from "@/components/journey/ProofFinalCard";
+import { JourneyImmersiveBG } from "@/components/journey/JourneyImmersiveBG";
 import type { CharacterStage } from "@/lib/journey/character-stage";
 
 type Lesson = {
@@ -126,7 +127,12 @@ export default function JornadaDetailPage() {
             : "locked";
 
   return (
-    <div className="min-h-dvh bg-spark-bg pb-12">
+    <div className="min-h-dvh pb-12 relative">
+      <JourneyImmersiveBG
+        stage={journey.character_stage}
+        intensity="medium"
+        fixed
+      />
       <JourneyHeroBar
         journey={journey}
         modulesCompleted={stats.modules_completed}
@@ -138,7 +144,10 @@ export default function JornadaDetailPage() {
 
       <main className="max-w-[520px] mx-auto px-4 pt-4">
         {journey.subtitle && (
-          <p className="text-[13.5px] text-spark-ink-70 mb-4 leading-snug">
+          <p
+            className="text-[13.5px] text-white/95 mb-4 leading-snug"
+            style={{ textShadow: "0 2px 6px rgba(0,0,0,0.45)" }}
+          >
             {journey.subtitle}
           </p>
         )}
