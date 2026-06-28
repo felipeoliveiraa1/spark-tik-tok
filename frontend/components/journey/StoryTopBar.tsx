@@ -24,6 +24,8 @@ export function StoryTopBar({
   xpTotal,
   proofStatus,
   activeLabel,
+  backHref = "/jornadas",
+  backLabel = "Voltar pra Jornadas",
 }: {
   lessons: Lesson[];
   activeIdx: number;
@@ -31,6 +33,8 @@ export function StoryTopBar({
   xpTotal: number;
   proofStatus: "locked" | "pending" | "approved" | "rejected" | "ready";
   activeLabel: string;
+  backHref?: string;
+  backLabel?: string;
 }) {
   return (
     <header
@@ -43,8 +47,8 @@ export function StoryTopBar({
       {/* Linha 1: back + activeLabel + xp */}
       <div className="flex items-center gap-2 mb-2">
         <Link
-          href="/jornadas"
-          aria-label="Voltar pra Jornadas"
+          href={backHref}
+          aria-label={backLabel}
           className="shrink-0 w-11 h-11 -ml-2 flex items-center justify-center text-white/90 hover:text-white active:scale-95 transition-transform"
         >
           <ArrowLeft size={20} strokeWidth={2.5} />

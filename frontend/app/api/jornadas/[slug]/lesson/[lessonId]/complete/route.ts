@@ -48,7 +48,7 @@ export async function POST(
   // 1) Resolve jornada + valida aula pertence a ela
   const { data: lesson, error: lErr } = await supabase
     .from("journey_lessons")
-    .select("id, journey_id, order_index, xp_reward, journeys!inner(slug)")
+    .select("id, journey_id, module_id, order_index, xp_reward, journeys!inner(slug)")
     .eq("id", lessonId)
     .maybeSingle();
   if (lErr || !lesson) return json({ error: "lesson not found" }, { status: 404 });
@@ -69,23 +69,96 @@ export async function POST(
     return json({ ok: true, already_completed: true });
   }
 
-  // 3) Valida linear: aulas anteriores devem estar completas
-  const { data: priorLessons } = await supabase
-    .from("journey_lessons")
-    .select("id")
-    .eq("journey_id", lesson.journey_id)
-    .lt("order_index", lesson.order_index)
-    .eq("is_published", true);
-  const priorIds = (priorLessons ?? []).map((l) => l.id as string);
-  if (priorIds.length > 0) {
-    const { data: priorCompleted } = await supabase
-      .from("journey_lesson_progress")
-      .select("lesson_id, completed")
-      .eq("user_id", user.id)
-      .in("lesson_id", priorIds)
-      .eq("completed", true);
-    if ((priorCompleted?.length ?? 0) < priorIds.length) {
-      return json({ error: "complete previous lessons first" }, { status: 409 });
+  // 3) Valida ordem:
+  //    - Sem module_id (legacy): aula N+1 trava ate N completar (regra global da jornada)
+  //    - Com module_id: prev_in_module deve estar completed + modulo anterior all_complete
+  const lessonModuleId = (lesson as { module_id: string | null }).module_id;
+  if (!lessonModuleId) {
+    // Legacy global
+    const { data: priorLessons } = await supabase
+      .from("journey_lessons")
+      .select("id")
+      .eq("journey_id", lesson.journey_id)
+      .lt("order_index", lesson.order_index)
+      .eq("is_published", true);
+    const priorIds = (priorLessons ?? []).map((l) => l.id as string);
+    if (priorIds.length > 0) {
+      const { data: priorCompleted } = await supabase
+        .from("journey_lesson_progress")
+        .select("lesson_id, completed")
+        .eq("user_id", user.id)
+        .in("lesson_id", priorIds)
+        .eq("completed", true);
+      if ((priorCompleted?.length ?? 0) < priorIds.length) {
+        return json({ error: "complete previous lessons first" }, { status: 409 });
+      }
+    }
+  } else {
+    // Scoped: gate inter-modulo + sequencial dentro do modulo
+
+    // 3a) Busca todos os modulos publicados da jornada (ordenados)
+    const { data: allModules } = await supabase
+      .from("journey_modules")
+      .select("id, order_index")
+      .eq("journey_id", lesson.journey_id)
+      .eq("is_published", true)
+      .order("order_index", { ascending: true });
+    const modules = allModules ?? [];
+    const currentModule = modules.find((m) => m.id === lessonModuleId);
+    if (!currentModule) {
+      return json({ error: "module unpublished or deleted" }, { status: 409 });
+    }
+
+    // 3b) Modulo anterior deve estar 100% completo
+    const prevModule = modules.find(
+      (m) => m.order_index < currentModule.order_index,
+    );
+    const earlierModules = modules.filter((m) => m.order_index < currentModule.order_index);
+    for (const m of earlierModules) {
+      const { data: mLessons } = await supabase
+        .from("journey_lessons")
+        .select("id")
+        .eq("module_id", m.id)
+        .eq("is_published", true);
+      const mLessonIds = (mLessons ?? []).map((l) => l.id as string);
+      if (mLessonIds.length === 0) continue; // modulo vazio nao bloqueia
+      const { data: mCompleted } = await supabase
+        .from("journey_lesson_progress")
+        .select("lesson_id")
+        .eq("user_id", user.id)
+        .eq("completed", true)
+        .in("lesson_id", mLessonIds);
+      if ((mCompleted?.length ?? 0) < mLessonIds.length) {
+        return json(
+          { error: "complete previous module first", blocked_by_module: m.id },
+          { status: 409 },
+        );
+      }
+    }
+    // prevModule eh usado so pra existir referencia; reusamos earlierModules acima
+    void prevModule;
+
+    // 3c) Dentro do modulo atual, prev_in_module deve estar completed
+    const { data: priorInModule } = await supabase
+      .from("journey_lessons")
+      .select("id")
+      .eq("module_id", lessonModuleId)
+      .lt("order_index", lesson.order_index)
+      .eq("is_published", true);
+    const priorIds = (priorInModule ?? []).map((l) => l.id as string);
+    if (priorIds.length > 0) {
+      const { data: priorCompleted } = await supabase
+        .from("journey_lesson_progress")
+        .select("lesson_id, completed")
+        .eq("user_id", user.id)
+        .in("lesson_id", priorIds)
+        .eq("completed", true);
+      if ((priorCompleted?.length ?? 0) < priorIds.length) {
+        return json(
+          { error: "complete previous lessons in this module first" },
+          { status: 409 },
+        );
+      }
     }
   }
 

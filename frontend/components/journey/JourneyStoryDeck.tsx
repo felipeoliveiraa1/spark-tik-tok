@@ -52,12 +52,29 @@ export function JourneyStoryDeck({
   xpTotal,
   proofStatus,
   currentLessonIdx,
+  backHref,
+  backLabel,
+  showProofCard = true,
+  topbarLabelTemplate,
 }: {
   journey: Journey;
   lessons: Lesson[];
   xpTotal: number;
   proofStatus: "locked" | "pending" | "approved" | "rejected" | "ready";
   currentLessonIdx: number;
+  /** href do back arrow na topbar. Default "/jornadas". */
+  backHref?: string;
+  /** aria-label do back arrow. Default "Voltar pra Jornadas". */
+  backLabel?: string;
+  /** Renderiza ProofStoryCard como ultimo card. Default true (deck completo).
+   *  No deck do MODULO usar false — prova vive no hub da jornada. */
+  showProofCard?: boolean;
+  /** Funcao opcional pra customizar label da topbar conforme card ativo. */
+  topbarLabelTemplate?: (args: {
+    idx: number;
+    total: number;
+    isProof: boolean;
+  }) => string;
 }) {
   const router = useRouter();
   const scrollerRef = React.useRef<HTMLDivElement>(null);
@@ -67,7 +84,7 @@ export function JourneyStoryDeck({
   );
   const [hintVisible, setHintVisible] = React.useState(false);
 
-  const totalCards = lessons.length + 1; // +1 prova
+  const totalCards = lessons.length + (showProofCard ? 1 : 0);
 
   // Cards array refs sempre com tamanho certo
   React.useEffect(() => {
@@ -207,8 +224,14 @@ export function JourneyStoryDeck({
 
   // Label da topbar muda conforme card ativo
   const activeLesson = lessons[activeIdx];
-  const activeLabel =
-    activeIdx >= lessons.length
+  const isProofActive = showProofCard && activeIdx >= lessons.length;
+  const activeLabel = topbarLabelTemplate
+    ? topbarLabelTemplate({
+        idx: activeIdx,
+        total: lessons.length,
+        isProof: isProofActive,
+      })
+    : isProofActive
       ? `Prova final · ${journey.title}`
       : activeLesson
         ? `Aula ${activeIdx + 1} de ${lessons.length}`
@@ -247,6 +270,8 @@ export function JourneyStoryDeck({
         xpTotal={xpTotal}
         proofStatus={proofStatus}
         activeLabel={activeLabel}
+        backHref={backHref}
+        backLabel={backLabel}
       />
 
       {/* Scroller horizontal com snap */}
@@ -291,21 +316,23 @@ export function JourneyStoryDeck({
           );
         })}
 
-        {/* Card especial prova final */}
-        <div
-          ref={(el) => {
-            cardRefs.current[lessons.length] = el;
-          }}
-          data-idx={lessons.length}
-          className="shrink-0"
-        >
-          <ProofStoryCard
-            journey={{ slug: journey.slug, title: journey.title }}
-            proofStatus={proofStatus}
-            isActive={activeIdx === lessons.length}
-            totalLessons={lessons.length}
-          />
-        </div>
+        {/* Card especial prova final (so quando showProofCard=true) */}
+        {showProofCard && (
+          <div
+            ref={(el) => {
+              cardRefs.current[lessons.length] = el;
+            }}
+            data-idx={lessons.length}
+            className="shrink-0"
+          >
+            <ProofStoryCard
+              journey={{ slug: journey.slug, title: journey.title }}
+              proofStatus={proofStatus}
+              isActive={activeIdx === lessons.length}
+              totalLessons={lessons.length}
+            />
+          </div>
+        )}
       </div>
 
       {/* Setas desktop (peek navigation) */}

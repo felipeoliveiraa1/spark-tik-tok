@@ -59,7 +59,20 @@ export async function GET(
     return json({ error: "forbidden" }, { status: 403 });
   }
 
-  // Aulas publicadas
+  // Modulos publicados da jornada (pode ser vazio em jornadas legacy)
+  const { data: modulesRaw, error: mErr } = await supabase
+    .from("journey_modules")
+    .select("*")
+    .eq("journey_id", journey.id)
+    .eq("is_published", true)
+    .order("order_index", { ascending: true });
+  if (mErr) return json({ error: mErr.message }, { status: 500 });
+
+  const publishedModuleIds = new Set((modulesRaw ?? []).map((m) => m.id as string));
+
+  // Aulas publicadas — exclui as cujo modulo pai esta unpublished
+  // (modulo deletado/unpublish nao some com as aulas; elas viram orfas e
+  // continuam visiveis se nao tinham modulo OU se modulo continua publicado).
   const { data: lessons, error: lErr } = await supabase
     .from("journey_lessons")
     .select("*")
@@ -68,7 +81,13 @@ export async function GET(
     .order("order_index", { ascending: true });
   if (lErr) return json({ error: lErr.message }, { status: 500 });
 
-  const lessonIds = (lessons ?? []).map((l) => l.id as string);
+  const filteredLessons = (lessons ?? []).filter((l) => {
+    const moduleId = (l as { module_id?: string | null }).module_id;
+    if (!moduleId) return true; // legacy aula sem modulo
+    return publishedModuleIds.has(moduleId);
+  });
+
+  const lessonIds = filteredLessons.map((l) => l.id as string);
 
   const [progressRes, lessonProgressRes, proofRes] = await Promise.all([
     supabase
@@ -103,27 +122,117 @@ export async function GET(
     completedMap.set(row.lesson_id, { completed: row.completed, completed_at: row.completed_at });
   }
 
-  // Adiciona flag completed + locked (linear: aula N+1 trava ate N completar)
-  const lessonsWithState = (lessons ?? []).map((l, idx) => {
+  // Indexa modulos pra enriquecer cada lesson com module_slug + module_title.
+  // Tambem agrupa lessons por modulo pra calcular gate inter-modulo:
+  // - Dentro do modulo: aula N+1 trava ate N completar (sequencial scoped)
+  // - Entre modulos: M2 inteiro trava ate M1 100% completar (gate inter-modulo)
+  // - Lessons sem module_id (legacy): comportamento global antigo
+  type ModuleRow = {
+    id: string;
+    slug: string;
+    title: string;
+    description: string | null;
+    week_number: number | null;
+    order_index: number;
+  };
+  const moduleById = new Map<string, ModuleRow>();
+  for (const m of (modulesRaw ?? []) as ModuleRow[]) {
+    moduleById.set(m.id, m);
+  }
+
+  const lessonsByModule = new Map<string, typeof filteredLessons>();
+  for (const l of filteredLessons) {
+    const moduleId = (l as { module_id?: string | null }).module_id ?? "__no_module__";
+    const arr = lessonsByModule.get(moduleId) ?? [];
+    arr.push(l);
+    lessonsByModule.set(moduleId, arr);
+  }
+
+  // Pra cada modulo, calcula se esta TODO completo (gate pro proximo)
+  const moduleAllComplete = new Map<string, boolean>();
+  for (const [moduleId, mlessons] of lessonsByModule.entries()) {
+    const allDone =
+      mlessons.length > 0 &&
+      mlessons.every((l) => completedMap.get(l.id as string)?.completed ?? false);
+    moduleAllComplete.set(moduleId, allDone);
+  }
+
+  // Determina locked por aula:
+  // 1. Se lesson sem module_id (legacy): regra global antiga
+  // 2. Se com module_id: prev_in_module deve estar completed + modulo anterior all_complete
+  const orderedModuleIds = (modulesRaw ?? []).map((m) => m.id as string);
+  const lessonsWithState = filteredLessons.map((l, globalIdx) => {
     const completed = completedMap.get(l.id as string)?.completed ?? false;
-    const prevCompleted =
-      idx === 0
-        ? true
-        : completedMap.get((lessons ?? [])[idx - 1]?.id as string)?.completed ?? false;
+    const moduleId = (l as { module_id?: string | null }).module_id ?? null;
+    const moduleRow = moduleId ? moduleById.get(moduleId) ?? null : null;
+
+    let locked = false;
+    if (!moduleId) {
+      // Legacy: aula N+1 trava ate N completar (regra global)
+      const prevCompleted =
+        globalIdx === 0
+          ? true
+          : completedMap.get(filteredLessons[globalIdx - 1]?.id as string)?.completed ?? false;
+      locked = !completed && !prevCompleted;
+    } else {
+      // Scoped: gate inter-modulo + sequencial dentro do modulo
+      const moduleOrderIdx = orderedModuleIds.indexOf(moduleId);
+      const prevModuleId = moduleOrderIdx > 0 ? orderedModuleIds[moduleOrderIdx - 1] : null;
+      const prevModuleDone = prevModuleId ? (moduleAllComplete.get(prevModuleId) ?? true) : true;
+      if (!prevModuleDone) {
+        locked = !completed;
+      } else {
+        const inModule = lessonsByModule.get(moduleId) ?? [];
+        const inModuleIdx = inModule.findIndex((x) => x.id === l.id);
+        const prevInModuleCompleted =
+          inModuleIdx <= 0
+            ? true
+            : completedMap.get(inModule[inModuleIdx - 1]?.id as string)?.completed ?? false;
+        locked = !completed && !prevInModuleCompleted;
+      }
+    }
+
     return {
       ...l,
+      module_id: moduleId,
+      module_slug: moduleRow?.slug ?? null,
+      module_title: moduleRow?.title ?? null,
+      module_order_index: moduleRow?.order_index ?? null,
       completed,
       completed_at: completedMap.get(l.id as string)?.completed_at ?? null,
-      locked: !completed && !prevCompleted,
+      locked,
+    };
+  });
+
+  // Enriquece modules[] com lessons aninhadas + stats por modulo
+  const modules = (modulesRaw ?? []).map((m) => {
+    const mlessons = lessonsByModule.get(m.id as string) ?? [];
+    const completedInModule = mlessons.filter(
+      (l) => completedMap.get(l.id as string)?.completed ?? false,
+    ).length;
+    const moduleOrderIdx = orderedModuleIds.indexOf(m.id as string);
+    const prevModuleId = moduleOrderIdx > 0 ? orderedModuleIds[moduleOrderIdx - 1] : null;
+    const prevModuleDone = prevModuleId ? (moduleAllComplete.get(prevModuleId) ?? true) : true;
+    return {
+      ...m,
+      lesson_count: mlessons.length,
+      lessons_completed: completedInModule,
+      pct_complete:
+        mlessons.length === 0 ? 0 : Math.round((completedInModule / mlessons.length) * 100),
+      all_complete: moduleAllComplete.get(m.id as string) ?? false,
+      locked: !prevModuleDone,
     };
   });
 
   const totalLessons = lessonsWithState.length;
   const completedLessons = lessonsWithState.filter((l) => l.completed).length;
   const allLessonsComplete = totalLessons > 0 && completedLessons === totalLessons;
+  const allModulesComplete =
+    modules.length > 0 && modules.every((m) => m.all_complete);
 
   return json({
     journey,
+    modules,
     lessons: lessonsWithState,
     progress: progressRes.data ?? null,
     proof: proofRes.data ?? null,
@@ -132,6 +241,9 @@ export async function GET(
       completed_lessons: completedLessons,
       pct_complete: totalLessons === 0 ? 0 : Math.round((completedLessons / totalLessons) * 100),
       all_lessons_complete: allLessonsComplete,
+      module_count: modules.length,
+      modules_completed: modules.filter((m) => m.all_complete).length,
+      all_modules_complete: allModulesComplete,
     },
   });
 }
