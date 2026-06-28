@@ -29,6 +29,9 @@ type Lesson = {
   requires_proof: boolean;
   completed: boolean;
   locked: boolean;
+  module_id?: string | null;
+  module_slug?: string | null;
+  module_title?: string | null;
 };
 
 type ApiResp = {
@@ -79,6 +82,12 @@ export default function AulaJornadaPage() {
   );
   const lessonId = lesson?.id ?? null;
 
+  // Destino de "voltar" + redirect pos-complete: se aula tem modulo, vai
+  // pro deck do modulo; senao (legacy), vai pro hub da jornada.
+  const backHref = lesson?.module_slug
+    ? `/jornadas/${params.slug}/modulo/${lesson.module_slug}`
+    : `/jornadas/${params.slug}`;
+
   // Carrega comentarios quando lesson resolve
   const loadComments = React.useCallback(async () => {
     if (!lessonId) return;
@@ -120,7 +129,7 @@ export default function AulaJornadaPage() {
         };
         if (j.already_completed) {
           toast.toast("Já estava marcada como concluída");
-          router.push(`/jornadas/${params.slug}`);
+          router.push(backHref);
         } else {
           trackJourneyEvent("lesson_completed", {
             journey_slug: params.slug as string,
@@ -137,7 +146,7 @@ export default function AulaJornadaPage() {
           if (j.badges_awarded && j.badges_awarded.length > 0) {
             setTimeout(() => setAwardedBadges(j.badges_awarded ?? []), 1500);
           } else {
-            setTimeout(() => router.push(`/jornadas/${params.slug}`), 1700);
+            setTimeout(() => router.push(backHref), 1700);
           }
         }
       } else {
@@ -151,7 +160,7 @@ export default function AulaJornadaPage() {
 
   const handleBadgesClose = () => {
     setAwardedBadges([]);
-    router.push(`/jornadas/${params.slug}`);
+    router.push(backHref);
   };
 
   const handlePostComment = async (body: string) => {
@@ -285,10 +294,11 @@ export default function AulaJornadaPage() {
     <div className="min-h-dvh hero-radial pb-20">
       <header className="px-6 pt-6 max-w-[860px] mx-auto">
         <Link
-          href={`/jornadas/${params.slug}`}
+          href={backHref}
           className="text-[12.5px] font-extrabold text-spark-ink-70 hover:text-spark-ink inline-flex items-center gap-1.5"
         >
-          <ArrowLeft size={13} /> {data.journey.title}
+          <ArrowLeft size={13} />{" "}
+          {lesson.module_title ?? data.journey.title}
         </Link>
       </header>
 
