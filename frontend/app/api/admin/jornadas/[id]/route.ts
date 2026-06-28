@@ -36,10 +36,15 @@ export async function GET(
   const { id } = await ctx.params;
   const supabase = getServiceClient();
 
-  const [journeyRes, lessonsRes] = await Promise.all([
+  const [journeyRes, lessonsRes, modulesRes] = await Promise.all([
     supabase.from("journeys").select("*").eq("id", id).maybeSingle(),
     supabase
       .from("journey_lessons")
+      .select("*")
+      .eq("journey_id", id)
+      .order("order_index", { ascending: true }),
+    supabase
+      .from("journey_modules")
       .select("*")
       .eq("journey_id", id)
       .order("order_index", { ascending: true }),
@@ -48,7 +53,11 @@ export async function GET(
   if (journeyRes.error) return json({ error: journeyRes.error.message }, { status: 500 });
   if (!journeyRes.data) return json({ error: "not found" }, { status: 404 });
 
-  return json({ journey: journeyRes.data, lessons: lessonsRes.data ?? [] });
+  return json({
+    journey: journeyRes.data,
+    lessons: lessonsRes.data ?? [],
+    modules: modulesRes.data ?? [],
+  });
 }
 
 /**

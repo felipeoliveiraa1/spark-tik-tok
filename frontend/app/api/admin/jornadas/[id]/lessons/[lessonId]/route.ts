@@ -53,6 +53,7 @@ export async function PATCH(
     "map_x",
     "map_y",
     "is_published",
+    "module_id",
   ] as const;
 
   const update: Record<string, unknown> = {};

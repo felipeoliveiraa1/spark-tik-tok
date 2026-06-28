@@ -57,6 +57,7 @@ export async function POST(
     .from("journey_lessons")
     .insert({
       journey_id: journeyId,
+      module_id: typeof body.module_id === "string" ? body.module_id : null,
       slug,
       title,
       description: typeof body.description === "string" ? body.description : null,

@@ -3,7 +3,17 @@
 import * as React from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { Plus, Loader2, ArrowLeft, Trash2, Save } from "lucide-react";
+import {
+  Plus,
+  Loader2,
+  ArrowLeft,
+  Trash2,
+  Save,
+  Pencil,
+  Layers,
+  ChevronDown,
+  ChevronRight,
+} from "lucide-react";
 import { useToast, useConfirm } from "@/components/molecules/dialog-provider";
 
 type Journey = {
@@ -32,6 +42,17 @@ type Lesson = {
   map_x: number | null;
   map_y: number | null;
   is_published: boolean;
+  module_id: string | null;
+};
+
+type Module = {
+  id: string;
+  slug: string;
+  title: string;
+  description: string | null;
+  week_number: number | null;
+  order_index: number;
+  is_published: boolean;
 };
 
 export default function AdminJornadaEditPage() {
@@ -42,18 +63,30 @@ export default function AdminJornadaEditPage() {
 
   const [journey, setJourney] = React.useState<Journey | null>(null);
   const [lessons, setLessons] = React.useState<Lesson[]>([]);
+  const [modules, setModules] = React.useState<Module[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [savingJourney, setSavingJourney] = React.useState(false);
-  const [creatingLesson, setCreatingLesson] = React.useState(false);
+  const [creatingLesson, setCreatingLesson] = React.useState<{
+    moduleId: string | null;
+  } | null>(null);
+  const [editingLesson, setEditingLesson] = React.useState<Lesson | null>(null);
+  const [collapsedModules, setCollapsedModules] = React.useState<Set<string>>(
+    new Set(),
+  );
 
   const refresh = React.useCallback(async () => {
     setLoading(true);
     try {
       const r = await fetch(`/api/admin/jornadas/${params.id}`, { cache: "no-store" });
       if (r.ok) {
-        const j = (await r.json()) as { journey: Journey; lessons: Lesson[] };
+        const j = (await r.json()) as {
+          journey: Journey;
+          lessons: Lesson[];
+          modules: Module[];
+        };
         setJourney(j.journey);
         setLessons(j.lessons);
+        setModules(j.modules ?? []);
       }
     } finally {
       setLoading(false);
@@ -117,16 +150,39 @@ export default function AdminJornadaEditPage() {
     }
   };
 
+  const toggleModule = (moduleId: string) => {
+    setCollapsedModules((prev) => {
+      const next = new Set(prev);
+      if (next.has(moduleId)) next.delete(moduleId);
+      else next.add(moduleId);
+      return next;
+    });
+  };
+
   if (loading || !journey) {
     return (
-      <div className="py-16 flex items-center justify-center text-spark-ink-50">
+      <div className="flex items-center justify-center py-20 text-spark-ink-50">
         <Loader2 size={20} className="animate-spin" />
       </div>
     );
   }
 
+  // Agrupa lessons por modulo (orphan = sem module_id ou modulo deletado)
+  const lessonsByModule = new Map<string, Lesson[]>();
+  const moduleIds = new Set(modules.map((m) => m.id));
+  const orphanLessons: Lesson[] = [];
+  for (const l of lessons) {
+    if (l.module_id && moduleIds.has(l.module_id)) {
+      const arr = lessonsByModule.get(l.module_id) ?? [];
+      arr.push(l);
+      lessonsByModule.set(l.module_id, arr);
+    } else {
+      orphanLessons.push(l);
+    }
+  }
+
   return (
-    <div className="space-y-6 max-w-[900px]">
+    <div className="max-w-[920px] mx-auto px-4 md:px-6 py-6 space-y-6">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <Link
           href="/admin/jornadas"
@@ -183,55 +239,142 @@ export default function AdminJornadaEditPage() {
         </button>
       </div>
 
-      <div className="rounded-spark-xl border border-spark-hairline bg-spark-surface p-5 space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="font-display text-[24px] text-spark-ink">Aulas ({lessons.length})</h2>
+      <div className="rounded-spark-xl border border-spark-hairline bg-spark-surface p-5 space-y-4">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <h2 className="font-display text-[24px] text-spark-ink">
+              Módulos & Aulas
+            </h2>
+            <div className="text-[11.5px] text-spark-ink-50 mt-0.5">
+              {modules.length} módulos · {lessons.length} aulas
+              {orphanLessons.length > 0 && (
+                <span className="text-orange-700 ml-2">
+                  ({orphanLessons.length} sem módulo)
+                </span>
+              )}
+            </div>
+          </div>
           <button
-            onClick={() => setCreatingLesson(true)}
+            onClick={() => setCreatingLesson({ moduleId: null })}
             className="px-3 py-1.5 rounded-spark-lg bg-brand-grad text-white text-[12px] font-extrabold inline-flex items-center gap-1.5 shadow-lift-brand"
           >
             <Plus size={12} /> Nova aula
           </button>
         </div>
-        {lessons.length === 0 ? (
+
+        {modules.length === 0 && orphanLessons.length === 0 && (
           <div className="py-8 text-center text-spark-ink-50 text-[13px]">
-            Nenhuma aula. Adicione a primeira.
+            Nenhum módulo nem aula. Crie módulos via SQL ou adicione aulas
+            soltas com o botão acima.
           </div>
-        ) : (
-          <div className="space-y-2">
-            {lessons.map((l) => (
-              <div
-                key={l.id}
-                className="border border-spark-hairline rounded-spark-lg px-3 py-2 flex items-center gap-3"
+        )}
+
+        {modules.map((m) => {
+          const mlessons = lessonsByModule.get(m.id) ?? [];
+          const collapsed = collapsedModules.has(m.id);
+          return (
+            <div
+              key={m.id}
+              className="border border-spark-hairline rounded-spark-lg overflow-hidden"
+            >
+              <button
+                onClick={() => toggleModule(m.id)}
+                className="w-full px-4 py-3 bg-spark-surface-sunken hover:bg-spark-ink/5 transition-colors flex items-center gap-3 text-left"
               >
-                <span className="text-[11px] font-mono text-spark-ink-35 w-8 text-center">
-                  #{l.order_index}
-                </span>
+                <Layers size={14} className="text-spark-brand-deep shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <div className="font-extrabold text-spark-ink text-[13.5px]">{l.title}</div>
-                  <div className="text-[11px] text-spark-ink-50 flex gap-3">
-                    <span>kind: {l.kind}</span>
-                    <span>XP: {l.xp_reward}</span>
-                    {l.requires_proof && <span className="text-orange-700">requires_proof</span>}
-                    {!l.is_published && <span className="text-spark-ink-35">rascunho</span>}
+                  <div className="font-extrabold text-spark-ink text-[13.5px] inline-flex items-center gap-2">
+                    {m.title}
+                    {m.week_number !== null && (
+                      <span className="text-[10px] font-extrabold uppercase tracking-wide text-spark-ink-50 bg-spark-ink/5 px-1.5 py-0.5 rounded">
+                        SEM {m.week_number}
+                      </span>
+                    )}
+                    {!m.is_published && (
+                      <span className="text-[10px] text-spark-ink-35">
+                        rascunho
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[11px] text-spark-ink-50 font-mono">
+                    {m.slug} · {mlessons.length} aulas · order #{m.order_index}
                   </div>
                 </div>
-                <button
-                  onClick={() => deleteLesson(l)}
-                  className="w-8 h-8 rounded-full hover:bg-bad/10 flex items-center justify-center text-bad"
+                <span
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCreatingLesson({ moduleId: m.id });
+                  }}
+                  className="px-2.5 py-1 rounded-full bg-white border border-spark-hairline text-[11px] font-extrabold text-spark-ink-70 inline-flex items-center gap-1 cursor-pointer hover:border-spark-brand/40"
                 >
-                  <Trash2 size={13} />
-                </button>
+                  <Plus size={11} /> Aula
+                </span>
+                {collapsed ? (
+                  <ChevronRight size={14} className="text-spark-ink-50" />
+                ) : (
+                  <ChevronDown size={14} className="text-spark-ink-50" />
+                )}
+              </button>
+              {!collapsed && (
+                <div className="p-2 space-y-1.5 bg-white">
+                  {mlessons.length === 0 ? (
+                    <div className="py-4 text-center text-spark-ink-50 text-[12.5px]">
+                      Sem aulas nesse módulo.
+                    </div>
+                  ) : (
+                    mlessons.map((l) => (
+                      <LessonRow
+                        key={l.id}
+                        lesson={l}
+                        onEdit={() => setEditingLesson(l)}
+                        onDelete={() => deleteLesson(l)}
+                      />
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        {orphanLessons.length > 0 && (
+          <div className="border-2 border-dashed border-orange-300 rounded-spark-lg overflow-hidden">
+            <div className="px-4 py-3 bg-orange-50/50 flex items-center gap-3">
+              <Layers size={14} className="text-orange-700 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <div className="font-extrabold text-orange-900 text-[13.5px]">
+                  Sem módulo ({orphanLessons.length})
+                </div>
+                <div className="text-[11px] text-orange-700">
+                  Edite cada aula pra vincular a um módulo.
+                </div>
               </div>
-            ))}
+            </div>
+            <div className="p-2 space-y-1.5 bg-white">
+              {orphanLessons.map((l) => (
+                <LessonRow
+                  key={l.id}
+                  lesson={l}
+                  onEdit={() => setEditingLesson(l)}
+                  onDelete={() => deleteLesson(l)}
+                />
+              ))}
+            </div>
           </div>
         )}
       </div>
 
-      {creatingLesson && (
-        <CreateLessonModal
+      {(creatingLesson || editingLesson) && (
+        <LessonFormModal
           journeyId={params.id as string}
-          onClose={() => setCreatingLesson(false)}
+          modules={modules}
+          mode={editingLesson ? "edit" : "create"}
+          initialLesson={editingLesson ?? undefined}
+          initialModuleId={creatingLesson?.moduleId ?? null}
+          onClose={() => {
+            setCreatingLesson(null);
+            setEditingLesson(null);
+          }}
           onSaved={refresh}
         />
       )}
@@ -239,23 +382,86 @@ export default function AdminJornadaEditPage() {
   );
 }
 
-function CreateLessonModal({
+function LessonRow({
+  lesson,
+  onEdit,
+  onDelete,
+}: {
+  lesson: Lesson;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <div className="border border-spark-hairline rounded-spark-lg px-3 py-2 flex items-center gap-3 hover:bg-spark-ink/[0.02]">
+      <span className="text-[11px] font-mono text-spark-ink-35 w-8 text-center shrink-0">
+        #{lesson.order_index}
+      </span>
+      <div className="flex-1 min-w-0">
+        <div className="font-extrabold text-spark-ink text-[13.5px] truncate">
+          {lesson.title}
+        </div>
+        <div className="text-[11px] text-spark-ink-50 flex gap-3 flex-wrap">
+          <span>kind: {lesson.kind}</span>
+          <span>XP: {lesson.xp_reward}</span>
+          {lesson.requires_proof && <span className="text-orange-700">requires_proof</span>}
+          {!lesson.is_published && <span className="text-spark-ink-35">rascunho</span>}
+          {lesson.kind === "video" && !lesson.youtube_id && (
+            <span className="text-amber-700">⚠ sem youtube_id</span>
+          )}
+        </div>
+      </div>
+      <button
+        onClick={onEdit}
+        className="w-8 h-8 rounded-full hover:bg-spark-brand/10 flex items-center justify-center text-spark-brand-deep shrink-0"
+        aria-label="Editar aula"
+      >
+        <Pencil size={13} />
+      </button>
+      <button
+        onClick={onDelete}
+        className="w-8 h-8 rounded-full hover:bg-bad/10 flex items-center justify-center text-bad shrink-0"
+        aria-label="Apagar aula"
+      >
+        <Trash2 size={13} />
+      </button>
+    </div>
+  );
+}
+
+function LessonFormModal({
   journeyId,
+  modules,
+  mode,
+  initialLesson,
+  initialModuleId,
   onClose,
   onSaved,
 }: {
   journeyId: string;
+  modules: Module[];
+  mode: "create" | "edit";
+  initialLesson?: Lesson;
+  initialModuleId?: string | null;
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const [slug, setSlug] = React.useState("");
-  const [title, setTitle] = React.useState("");
-  const [kind, setKind] = React.useState<"video" | "rich" | "checklist" | "ebook">("video");
-  const [youtubeId, setYoutubeId] = React.useState("");
-  const [bodyMd, setBodyMd] = React.useState("");
-  const [xpReward, setXpReward] = React.useState(10);
-  const [requiresProof, setRequiresProof] = React.useState(false);
-  const [orderIndex, setOrderIndex] = React.useState(100);
+  const [slug, setSlug] = React.useState(initialLesson?.slug ?? "");
+  const [title, setTitle] = React.useState(initialLesson?.title ?? "");
+  const [description, setDescription] = React.useState(initialLesson?.description ?? "");
+  const [kind, setKind] = React.useState<Lesson["kind"]>(initialLesson?.kind ?? "video");
+  const [youtubeId, setYoutubeId] = React.useState(initialLesson?.youtube_id ?? "");
+  const [bodyMd, setBodyMd] = React.useState(initialLesson?.body_md ?? "");
+  const [xpReward, setXpReward] = React.useState(initialLesson?.xp_reward ?? 10);
+  const [requiresProof, setRequiresProof] = React.useState(
+    initialLesson?.requires_proof ?? false,
+  );
+  const [orderIndex, setOrderIndex] = React.useState(initialLesson?.order_index ?? 100);
+  const [moduleId, setModuleId] = React.useState<string | null>(
+    initialLesson?.module_id ?? initialModuleId ?? null,
+  );
+  const [isPublished, setIsPublished] = React.useState(
+    initialLesson?.is_published ?? true,
+  );
   const [saving, setSaving] = React.useState(false);
   const toast = useToast();
 
@@ -266,22 +472,31 @@ function CreateLessonModal({
     }
     setSaving(true);
     try {
-      const res = await fetch(`/api/admin/jornadas/${journeyId}/lessons`, {
-        method: "POST",
+      const payload = {
+        slug,
+        title,
+        description: description || null,
+        kind,
+        youtube_id: kind === "video" ? youtubeId : null,
+        body_md: bodyMd || null,
+        xp_reward: xpReward,
+        requires_proof: requiresProof,
+        order_index: orderIndex,
+        module_id: moduleId,
+        is_published: isPublished,
+      };
+      const url =
+        mode === "create"
+          ? `/api/admin/jornadas/${journeyId}/lessons`
+          : `/api/admin/jornadas/${journeyId}/lessons/${initialLesson?.id}`;
+      const method = mode === "create" ? "POST" : "PATCH";
+      const res = await fetch(url, {
+        method,
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          slug,
-          title,
-          kind,
-          youtube_id: kind === "video" ? youtubeId : null,
-          body_md: bodyMd || null,
-          xp_reward: xpReward,
-          requires_proof: requiresProof,
-          order_index: orderIndex,
-        }),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
-        toast.success("Aula criada");
+        toast.success(mode === "create" ? "Aula criada" : "Aula atualizada");
         onSaved();
         onClose();
       } else {
@@ -295,24 +510,63 @@ function CreateLessonModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-spark-ink/40 backdrop-blur-sm flex items-center justify-center px-4 py-8 overflow-y-auto">
-      <div className="bg-spark-surface rounded-spark-xl border border-spark-hairline shadow-lift max-w-[520px] w-full my-auto">
+      <div className="bg-spark-surface rounded-spark-xl border border-spark-hairline shadow-lift max-w-[560px] w-full my-auto">
         <div className="px-5 py-4 border-b border-spark-hairline">
-          <div className="text-eyebrow text-spark-ink-50">Nova</div>
-          <div className="font-extrabold text-spark-ink mt-0.5">Adicionar aula</div>
+          <div className="text-eyebrow text-spark-ink-50">
+            {mode === "create" ? "Nova" : "Editar"}
+          </div>
+          <div className="font-extrabold text-spark-ink mt-0.5">
+            {mode === "create" ? "Adicionar aula" : `Editar ${initialLesson?.title ?? "aula"}`}
+          </div>
         </div>
-        <div className="px-5 py-4 space-y-3">
-          <Field label="Slug">
-            <input
-              value={slug}
-              onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"))}
-              placeholder="ex: aula-01-config-conta"
-              className="w-full px-3 py-2 rounded-spark-lg border border-spark-hairline bg-spark-surface-sunken text-[13px] font-mono"
-            />
+        <div className="px-5 py-4 space-y-3 max-h-[70vh] overflow-y-auto">
+          <Field label="Módulo">
+            <select
+              value={moduleId ?? ""}
+              onChange={(e) => setModuleId(e.target.value || null)}
+              className="w-full px-3 py-2 rounded-spark-lg border border-spark-hairline bg-spark-surface-sunken text-[13px]"
+            >
+              <option value="">— Sem módulo —</option>
+              {modules.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.title}
+                  {m.week_number !== null ? ` (Semana ${m.week_number})` : ""}
+                </option>
+              ))}
+            </select>
           </Field>
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_120px] gap-3">
+            <Field label="Slug">
+              <input
+                value={slug}
+                onChange={(e) =>
+                  setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"))
+                }
+                placeholder="ex: aula-01-config-conta"
+                className="w-full px-3 py-2 rounded-spark-lg border border-spark-hairline bg-spark-surface-sunken text-[13px] font-mono"
+                disabled={mode === "edit"}
+              />
+            </Field>
+            <Field label="Order">
+              <input
+                type="number"
+                value={orderIndex}
+                onChange={(e) => setOrderIndex(Number(e.target.value))}
+                className="w-full px-3 py-2 rounded-spark-lg border border-spark-hairline bg-spark-surface-sunken text-[13px]"
+              />
+            </Field>
+          </div>
           <Field label="Title">
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              className="w-full px-3 py-2 rounded-spark-lg border border-spark-hairline bg-spark-surface-sunken text-[13px]"
+            />
+          </Field>
+          <Field label="Description (opcional)">
+            <input
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
               className="w-full px-3 py-2 rounded-spark-lg border border-spark-hairline bg-spark-surface-sunken text-[13px]"
             />
           </Field>
@@ -343,7 +597,7 @@ function CreateLessonModal({
               <textarea
                 value={bodyMd}
                 onChange={(e) => setBodyMd(e.target.value)}
-                rows={5}
+                rows={6}
                 placeholder="## Bem vinda..."
                 className="w-full px-3 py-2 rounded-spark-lg border border-spark-hairline bg-spark-surface-sunken text-[12.5px] font-mono"
               />
@@ -358,13 +612,15 @@ function CreateLessonModal({
                 className="w-full px-3 py-2 rounded-spark-lg border border-spark-hairline bg-spark-surface-sunken text-[13px]"
               />
             </Field>
-            <Field label="Order index">
-              <input
-                type="number"
-                value={orderIndex}
-                onChange={(e) => setOrderIndex(Number(e.target.value))}
+            <Field label="Publicada">
+              <select
+                value={isPublished ? "1" : "0"}
+                onChange={(e) => setIsPublished(e.target.value === "1")}
                 className="w-full px-3 py-2 rounded-spark-lg border border-spark-hairline bg-spark-surface-sunken text-[13px]"
-              />
+              >
+                <option value="1">Sim</option>
+                <option value="0">Rascunho</option>
+              </select>
             </Field>
           </div>
           <label className="flex items-center gap-2 text-[12.5px] text-spark-ink-70 cursor-pointer">
@@ -377,7 +633,10 @@ function CreateLessonModal({
           </label>
         </div>
         <div className="px-5 py-4 border-t border-spark-hairline flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 rounded-spark-lg text-[13px] font-extrabold text-spark-ink-70 hover:bg-spark-surface-sunken">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-spark-lg text-[13px] font-extrabold text-spark-ink-70 hover:bg-spark-surface-sunken"
+          >
             Cancelar
           </button>
           <button
@@ -386,7 +645,7 @@ function CreateLessonModal({
             className="px-4 py-2 rounded-spark-lg bg-brand-grad text-white text-[13px] font-extrabold shadow-lift-brand hover:-translate-y-0.5 transition-all disabled:opacity-50 inline-flex items-center gap-2"
           >
             {saving && <Loader2 size={13} className="animate-spin" />}
-            Criar
+            {mode === "create" ? "Criar" : "Salvar"}
           </button>
         </div>
       </div>
