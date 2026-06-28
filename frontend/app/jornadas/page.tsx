@@ -195,30 +195,27 @@ export default function JornadasPage() {
         {currentJourney && (
           <Link
             href={`/jornadas/${currentJourney.slug}`}
-            className="mx-4 mt-3 flex items-center gap-3 h-[72px] px-4 rounded-spark-xl bg-gradient-to-r from-spark-brand/15 to-spark-brand/5 border border-spark-brand/40 active:scale-[0.98] transition-transform"
+            className="mx-4 mt-3 flex items-center gap-3 h-[72px] px-4 rounded-spark-xl bg-spark-brand border border-spark-brand-deep shadow-lift-brand active:scale-[0.98] transition-transform"
           >
             <PlayCircle
               size={28}
-              className="text-spark-brand-deep shrink-0"
-              strokeWidth={2.2}
+              className="text-white shrink-0"
+              strokeWidth={2.4}
             />
             <div className="flex-1 min-w-0">
-              <div className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-spark-brand-deep">
+              <div className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-white/85">
                 Continuar
               </div>
-              <div className="font-display text-[15px] text-spark-ink truncate">
+              <div className="font-display text-[15px] text-white truncate">
                 {currentJourney.title}
                 {currentJourney.pct_complete > 0 && (
-                  <span className="text-spark-ink-50 font-normal ml-1.5 text-[12.5px]">
+                  <span className="text-white/80 font-normal ml-1.5 text-[12.5px]">
                     · {Math.round(currentJourney.pct_complete)}%
                   </span>
                 )}
               </div>
             </div>
-            <ChevronRight
-              size={20}
-              className="text-spark-brand-deep shrink-0"
-            />
+            <ChevronRight size={20} className="text-white shrink-0" />
           </Link>
         )}
 
