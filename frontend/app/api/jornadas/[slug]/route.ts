@@ -134,10 +134,37 @@ export async function GET(
     description: string | null;
     week_number: number | null;
     order_index: number;
+    unlock_days_after_start?: number | null;
   };
   const moduleById = new Map<string, ModuleRow>();
   for (const m of (modulesRaw ?? []) as ModuleRow[]) {
     moduleById.set(m.id, m);
+  }
+
+  // Time-based unlock: cada modulo pode ter unlock_days_after_start.
+  // Calcula timestamp de desbloqueio baseado em journey_progress.started_at.
+  // Se aluna nao comecou, todos os modulos com unlock_days>0 ficam locked
+  // (UI mostra "abre apos voce comecar a jornada").
+  const progressStartedAt = progressRes.data?.started_at as string | null | undefined;
+  const startedAtMs = progressStartedAt ? new Date(progressStartedAt).getTime() : null;
+  const nowMs = Date.now();
+  const moduleTimeLocked = new Map<string, { locked: boolean; unlocksAt: string | null }>();
+  for (const m of (modulesRaw ?? []) as ModuleRow[]) {
+    const days = m.unlock_days_after_start ?? 0;
+    if (days <= 0) {
+      moduleTimeLocked.set(m.id, { locked: false, unlocksAt: null });
+      continue;
+    }
+    if (startedAtMs === null) {
+      // Aluna nao comecou — modulo trava ate ela completar a primeira aula
+      moduleTimeLocked.set(m.id, { locked: true, unlocksAt: null });
+      continue;
+    }
+    const unlocksAtMs = startedAtMs + days * 24 * 60 * 60 * 1000;
+    moduleTimeLocked.set(m.id, {
+      locked: nowMs < unlocksAtMs,
+      unlocksAt: new Date(unlocksAtMs).toISOString(),
+    });
   }
 
   const lessonsByModule = new Map<string, typeof filteredLessons>();
@@ -175,11 +202,12 @@ export async function GET(
           : completedMap.get(filteredLessons[globalIdx - 1]?.id as string)?.completed ?? false;
       locked = !completed && !prevCompleted;
     } else {
-      // Scoped: gate inter-modulo + sequencial dentro do modulo
+      // Scoped: gate inter-modulo + time-based + sequencial dentro do modulo
       const moduleOrderIdx = orderedModuleIds.indexOf(moduleId);
       const prevModuleId = moduleOrderIdx > 0 ? orderedModuleIds[moduleOrderIdx - 1] : null;
       const prevModuleDone = prevModuleId ? (moduleAllComplete.get(prevModuleId) ?? true) : true;
-      if (!prevModuleDone) {
+      const timeLocked = moduleTimeLocked.get(moduleId)?.locked ?? false;
+      if (!prevModuleDone || timeLocked) {
         locked = !completed;
       } else {
         const inModule = lessonsByModule.get(moduleId) ?? [];
@@ -213,6 +241,8 @@ export async function GET(
     const moduleOrderIdx = orderedModuleIds.indexOf(m.id as string);
     const prevModuleId = moduleOrderIdx > 0 ? orderedModuleIds[moduleOrderIdx - 1] : null;
     const prevModuleDone = prevModuleId ? (moduleAllComplete.get(prevModuleId) ?? true) : true;
+    const timeLock = moduleTimeLocked.get(m.id as string);
+    const timeLocked = timeLock?.locked ?? false;
     return {
       ...m,
       lesson_count: mlessons.length,
@@ -220,7 +250,9 @@ export async function GET(
       pct_complete:
         mlessons.length === 0 ? 0 : Math.round((completedInModule / mlessons.length) * 100),
       all_complete: moduleAllComplete.get(m.id as string) ?? false,
-      locked: !prevModuleDone,
+      locked: !prevModuleDone || timeLocked,
+      time_locked: timeLocked,
+      unlocks_at: timeLock?.unlocksAt ?? null,
     };
   });
 

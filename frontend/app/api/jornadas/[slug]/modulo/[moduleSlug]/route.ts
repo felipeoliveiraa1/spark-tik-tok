@@ -149,7 +149,24 @@ export async function GET(
     prevModuleLessonIds.length === 0 ||
     prevModuleLessonIds.every((id) => completedSet.has(id));
 
-  const moduleLocked = !prevModuleAllComplete;
+  // 5b) Time-based unlock — unlock_days_after_start vs journey_progress.started_at
+  const unlockDays =
+    (currentModule as { unlock_days_after_start?: number | null }).unlock_days_after_start ?? 0;
+  const startedAt = progressRes.data?.started_at as string | null | undefined;
+  let timeLocked = false;
+  let unlocksAtIso: string | null = null;
+  if (unlockDays > 0) {
+    if (!startedAt) {
+      timeLocked = true;
+    } else {
+      const unlocksMs =
+        new Date(startedAt).getTime() + unlockDays * 24 * 60 * 60 * 1000;
+      timeLocked = Date.now() < unlocksMs;
+      unlocksAtIso = new Date(unlocksMs).toISOString();
+    }
+  }
+
+  const moduleLocked = !prevModuleAllComplete || timeLocked;
 
   // 6) Enriquece lessons com completed + locked scoped
   const lessonsWithState = moduleLessons.map((l, idx) => {
@@ -188,6 +205,8 @@ export async function GET(
           : Math.round((completedInModule / moduleLessons.length) * 100),
       all_complete: allComplete,
       locked: moduleLocked,
+      time_locked: timeLocked,
+      unlocks_at: unlocksAtIso,
     },
     lessons: lessonsWithState,
     prev_module: prevModule

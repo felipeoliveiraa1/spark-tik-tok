@@ -99,7 +99,7 @@ export async function POST(
     // 3a) Busca todos os modulos publicados da jornada (ordenados)
     const { data: allModules } = await supabase
       .from("journey_modules")
-      .select("id, order_index")
+      .select("id, order_index, unlock_days_after_start")
       .eq("journey_id", lesson.journey_id)
       .eq("is_published", true)
       .order("order_index", { ascending: true });
@@ -107,6 +107,33 @@ export async function POST(
     const currentModule = modules.find((m) => m.id === lessonModuleId);
     if (!currentModule) {
       return json({ error: "module unpublished or deleted" }, { status: 409 });
+    }
+
+    // 3a.bis) Time-based gate: modulo trava ate N dias apos started_at
+    const unlockDays =
+      (currentModule as { unlock_days_after_start?: number | null }).unlock_days_after_start ?? 0;
+    if (unlockDays > 0) {
+      const { data: progRow } = await supabase
+        .from("journey_progress")
+        .select("started_at")
+        .eq("user_id", user.id)
+        .eq("journey_id", lesson.journey_id)
+        .maybeSingle();
+      const startedAt = progRow?.started_at as string | null | undefined;
+      if (!startedAt) {
+        return json({ error: "journey not started yet" }, { status: 409 });
+      }
+      const unlocksMs =
+        new Date(startedAt).getTime() + unlockDays * 24 * 60 * 60 * 1000;
+      if (Date.now() < unlocksMs) {
+        return json(
+          {
+            error: "module locked until week unlock date",
+            unlocks_at: new Date(unlocksMs).toISOString(),
+          },
+          { status: 409 },
+        );
+      }
     }
 
     // 3b) Modulo anterior deve estar 100% completo

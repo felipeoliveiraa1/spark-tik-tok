@@ -1,7 +1,8 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
-import { Lock, Check, ChevronRight, BookOpen } from "lucide-react";
+import { Lock, Check, ChevronRight, BookOpen, Clock } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 type Module = {
@@ -16,7 +17,21 @@ type Module = {
   pct_complete: number;
   all_complete: boolean;
   locked: boolean;
+  time_locked?: boolean;
+  unlocks_at?: string | null;
 };
+
+function formatRemaining(unlocksAt: string | null | undefined): string {
+  if (!unlocksAt) return "ainda nao começou a jornada";
+  const ms = new Date(unlocksAt).getTime() - Date.now();
+  if (ms <= 0) return "abrindo agora...";
+  const days = Math.floor(ms / 86_400_000);
+  const hours = Math.floor((ms % 86_400_000) / 3_600_000);
+  const minutes = Math.floor((ms % 3_600_000) / 60_000);
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
+}
 
 /**
  * Card de modulo no hub da jornada — stack vertical aspect-[16/9].
@@ -42,14 +57,29 @@ export function ModuleCard({
   const completed = module.all_complete;
   const inProgress = !completed && module.lessons_completed > 0;
   const disabled = module.locked;
+  const timeLocked = module.time_locked === true;
+
+  const [remaining, setRemaining] = React.useState(() =>
+    formatRemaining(module.unlocks_at),
+  );
+  React.useEffect(() => {
+    if (!timeLocked) return;
+    const id = window.setInterval(
+      () => setRemaining(formatRemaining(module.unlocks_at)),
+      60_000,
+    );
+    return () => window.clearInterval(id);
+  }, [timeLocked, module.unlocks_at]);
 
   const status = completed
     ? "Concluído"
-    : inProgress
-      ? "Em andamento"
-      : disabled
-        ? "Bloqueado"
-        : "Disponível";
+    : timeLocked
+      ? "Em breve"
+      : inProgress
+        ? "Em andamento"
+        : disabled
+          ? "Bloqueado"
+          : "Disponível";
 
   const inner = (
     <div
@@ -161,7 +191,13 @@ export function ModuleCard({
                 {module.lesson_count} {module.lesson_count === 1 ? "aula" : "aulas"}
               </div>
             )}
-            {disabled && (
+            {disabled && timeLocked && (
+              <div className="text-[11.5px] font-extrabold text-spark-ink-70 inline-flex items-center gap-1.5">
+                <Clock size={12} strokeWidth={2.5} />
+                Abre em {remaining}
+              </div>
+            )}
+            {disabled && !timeLocked && (
               <div className="text-[11.5px] font-extrabold text-spark-ink-70 inline-flex items-center gap-1.5">
                 <Lock size={12} strokeWidth={2.5} />
                 Termine o módulo {index - 1} pra abrir
