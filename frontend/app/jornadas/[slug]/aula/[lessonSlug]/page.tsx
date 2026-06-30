@@ -328,11 +328,14 @@ export default function AulaJornadaPage() {
         <div className="mt-6 rounded-spark-xl border border-spark-hairline bg-spark-surface overflow-hidden">
           {lesson.kind === "video" && lesson.youtube_id && (
             <div className="aspect-video bg-spark-ink/5">
+              {/* Player travado: sem controls (sem progress bar = sem seek),
+                  sem teclado (disablekb), sem fullscreen, sem related videos,
+                  sem annotations. Aluna clica no video pra play/pause (default
+                  do embed YouTube quando controls=0). Branding minimo. */}
               <iframe
-                src={`https://www.youtube.com/embed/${lesson.youtube_id}`}
+                src={`https://www.youtube-nocookie.com/embed/${lesson.youtube_id}?controls=0&disablekb=1&modestbranding=1&rel=0&playsinline=1&iv_load_policy=3&fs=0`}
                 className="w-full h-full"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
                 title={lesson.title}
               />
             </div>
