@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { after } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "node:crypto";
+import { isInAppBrowser, interstitialHtml } from "@/lib/wa-interstitial";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -180,6 +181,17 @@ export async function GET(request: Request) {
       console.warn("[grupo] click insert failed:", insErr.message);
     }
   });
+
+  // In-app browser (Insta/TikTok/FB) nao faz hand-off pro WhatsApp nativo
+  // — serve pagina intermediaria com botao + instrucao "abrir no navegador
+  // externo". Round-robin + click tracking (after()) ja rodaram acima,
+  // intactos. Browser nativo cai no redirect 302 normal.
+  if (isInAppBrowser(ua)) {
+    return new NextResponse(
+      interstitialHtml({ waUrl: targetUrl, ua }),
+      { status: 200, headers: { "content-type": "text/html; charset=utf-8" } },
+    );
+  }
 
   return NextResponse.redirect(targetUrl, 302);
 }
