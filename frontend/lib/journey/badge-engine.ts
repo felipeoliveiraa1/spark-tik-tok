@@ -16,6 +16,8 @@
  *   { kind: 'streak_days', threshold: number }
  *   { kind: 'stage_reached', stage: 'adolescente'|'adulta' }
  *   { kind: 'pioneer', threshold: number }
+ *   { kind: 'modules_complete', journey_slug: string, module_slugs: string[] }
+ *   { kind: 'proof_with_sales', min_sales: number }
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -294,6 +296,64 @@ async function evaluateCriteria(
       const earlyUsers = new Set<string>();
       for (const r of distinctUsers) earlyUsers.add(r.user_id as string);
       return earlyUsers.has(ctx.userId);
+    }
+    case "modules_complete": {
+      // Checa se aluna completou TODAS as aulas publicadas de N modulos
+      // especificos de uma jornada (intersection rigorosa).
+      const journeySlug = String(criteria.journey_slug ?? "");
+      const moduleSlugsRaw = criteria.module_slugs;
+      const moduleSlugs = Array.isArray(moduleSlugsRaw)
+        ? (moduleSlugsRaw as string[])
+        : [];
+      if (!journeySlug || moduleSlugs.length === 0) return false;
+
+      // 1) Resolve journey_id
+      const { data: journey } = await supabase
+        .from("journeys")
+        .select("id")
+        .eq("slug", journeySlug)
+        .maybeSingle();
+      if (!journey?.id) return false;
+
+      // 2) Resolve module_ids (intersection: tem que achar todos)
+      const { data: modules } = await supabase
+        .from("journey_modules")
+        .select("id, slug")
+        .eq("journey_id", journey.id)
+        .in("slug", moduleSlugs);
+      if (!modules || modules.length < moduleSlugs.length) return false;
+
+      // 3) Lista aulas publicadas desses modulos
+      const moduleIds = modules.map((m) => m.id as string);
+      const { data: lessons } = await supabase
+        .from("journey_lessons")
+        .select("id")
+        .in("module_id", moduleIds)
+        .eq("is_published", true);
+      const lessonIds = (lessons ?? []).map((l) => l.id as string);
+      if (lessonIds.length === 0) return false;
+
+      // 4) Conta completadas
+      const { count } = await supabase
+        .from("journey_lesson_progress")
+        .select("lesson_id", { count: "exact", head: true })
+        .eq("user_id", ctx.userId)
+        .eq("completed", true)
+        .in("lesson_id", lessonIds);
+      return (count ?? 0) >= lessonIds.length;
+    }
+    case "proof_with_sales": {
+      // Aluna tem >= 1 prova aprovada com vendas detectadas acima do threshold
+      const minSales = Number(criteria.min_sales ?? 0.01);
+      const { data } = await supabase
+        .from("journey_proofs")
+        .select("ocr_detected_sales")
+        .eq("user_id", ctx.userId)
+        .in("status", ["approved", "auto_approved"]);
+      if (!data || data.length === 0) return false;
+      return data.some(
+        (r) => Number(r.ocr_detected_sales ?? 0) >= minSales,
+      );
     }
     default:
       return false;
