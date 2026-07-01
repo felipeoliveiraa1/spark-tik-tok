@@ -12,6 +12,7 @@ export type NavId =
   | "rotina"
   | "ao-vivo"
   | "educacao"
+  | "jornadas"
   | "news"
   | "ranking"
   | "conta";

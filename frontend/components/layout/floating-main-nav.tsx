@@ -11,6 +11,7 @@ import {
   PenLine,
   Activity,
   GraduationCap,
+  Gamepad2,
   Newspaper,
   Trophy,
   User,
@@ -35,6 +36,7 @@ type LabelKey =
   | "scripts"
   | "routine"
   | "education"
+  | "jornadas"
   | "ranking"
   | "news"
   | "account";
@@ -64,6 +66,8 @@ type Item = {
   labelKey: LabelKey;
   href: string;
   Icon: IconComp;
+  /** Se true, so admin ve no menu. Filtrado client-side apos fetch /api/me. */
+  adminOnly?: boolean;
 };
 
 const ITEMS: Item[] = [
@@ -73,6 +77,7 @@ const ITEMS: Item[] = [
   { id: "scripts", labelKey: "scripts", href: "/scripts", Icon: PenLine },
   { id: "rotina", labelKey: "routine", href: "/rotina/hoje", Icon: Activity },
   { id: "educacao", labelKey: "education", href: "/educacao", Icon: GraduationCap },
+  { id: "jornadas", labelKey: "jornadas", href: "/jornadas", Icon: Gamepad2, adminOnly: true },
   { id: "ranking", labelKey: "ranking", href: "/ranking", Icon: Trophy },
   { id: "news", labelKey: "news", href: "/news", Icon: Newspaper },
   { id: "conta", labelKey: "account", href: "/conta", Icon: User },
@@ -87,6 +92,7 @@ function deriveActive(pathname: string | null): NavId | undefined {
   if (pathname.startsWith("/rotina")) return "rotina";
   // /ao-vivo agora vive sob o guarda-chuva "Educação" no menu
   if (pathname.startsWith("/educacao") || pathname.startsWith("/ao-vivo")) return "educacao";
+  if (pathname.startsWith("/jornadas")) return "jornadas";
   if (pathname.startsWith("/ranking")) return "ranking";
   if (pathname.startsWith("/news")) return "news";
   if (pathname.startsWith("/conta")) return "conta";
@@ -101,10 +107,28 @@ type Props = {
 export function FloatingMainNav({ active }: Props) {
   const pathname = usePathname();
   const derived = active ?? deriveActive(pathname);
+  const [isAdmin, setIsAdmin] = React.useState(false);
+
+  // Fetch role uma vez pra filtrar entradas adminOnly (ex: Jornadas em beta).
+  // Falha silenciosa = user default nao-admin.
+  React.useEffect(() => {
+    void fetch("/api/me", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        if (j?.role === "admin") setIsAdmin(true);
+      })
+      .catch(() => {});
+  }, []);
+
+  const items = React.useMemo(
+    () => ITEMS.filter((it) => !it.adminOnly || isAdmin),
+    [isAdmin],
+  );
+
   return (
     <>
-      <DesktopFloatingNav active={derived} />
-      <MobileFloatingNav active={derived} />
+      <DesktopFloatingNav active={derived} items={items} />
+      <MobileFloatingNav active={derived} items={items} />
     </>
   );
 }
@@ -113,7 +137,7 @@ export function FloatingMainNav({ active }: Props) {
 // DESKTOP — vertical pill lateral esquerda
 // =================================================================
 
-function DesktopFloatingNav({ active }: { active?: NavId }) {
+function DesktopFloatingNav({ active, items }: { active?: NavId; items: Item[] }) {
   const [hovered, setHovered] = React.useState(false);
   const t = useTranslations("nav");
   return (
@@ -136,7 +160,7 @@ function DesktopFloatingNav({ active }: { active?: NavId }) {
           : "translate(0, -50%)",
       }}
     >
-      {ITEMS.map((it) => {
+      {items.map((it) => {
         const isActive = active === it.id;
         const label = t(`labels.${it.labelKey}`);
         return (
@@ -195,7 +219,7 @@ function DesktopFloatingNav({ active }: { active?: NavId }) {
 // Os 4 que a aluna usa todo dia. Restantes ficam no overlay.
 const QUICK_IDS: NavId[] = ["home", "chat", "scripts", "rotina"];
 
-function MobileFloatingNav({ active }: { active?: NavId }) {
+function MobileFloatingNav({ active, items }: { active?: NavId; items: Item[] }) {
   const [open, setOpen] = React.useState(false);
   const t = useTranslations("nav");
 
@@ -219,7 +243,7 @@ function MobileFloatingNav({ active }: { active?: NavId }) {
     };
   }, [open]);
 
-  const quickItems = QUICK_IDS.map((id) => ITEMS.find((it) => it.id === id)!).filter(
+  const quickItems = QUICK_IDS.map((id) => items.find((it) => it.id === id)!).filter(
     Boolean,
   );
 
@@ -358,7 +382,7 @@ function MobileFloatingNav({ active }: { active?: NavId }) {
 
               {/* Grid 3x3 (9 itens) */}
               <div className="grid grid-cols-3 gap-3">
-                {ITEMS.map((it, i) => {
+                {items.map((it, i) => {
                   const isActive = active === it.id;
                   const label = t(`labels.${it.labelKey}`);
                   return (
