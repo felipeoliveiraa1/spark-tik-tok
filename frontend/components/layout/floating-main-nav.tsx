@@ -218,7 +218,7 @@ function DesktopFloatingNav({ active, items }: { active?: NavId; items: Item[] }
 // =================================================================
 
 // Os 4 que a aluna usa todo dia. Restantes ficam no overlay.
-const QUICK_IDS: NavId[] = ["home", "chat", "scripts", "rotina"];
+const QUICK_IDS: NavId[] = ["home", "chat", "jornadas", "rotina"];
 
 function MobileFloatingNav({ active, items }: { active?: NavId; items: Item[] }) {
   const [open, setOpen] = React.useState(false);
