@@ -18,6 +18,7 @@ import { HeroBlob } from "@/components/atoms/hero-blob";
 import { SparkleField } from "@/components/atoms/sparkle-field";
 import { SectionReveal } from "@/components/atoms/section-reveal";
 import { cn } from "@/lib/cn";
+import { SegmentsTabs } from "./_segments-tabs";
 
 type Money = { gross_cents: number; net_cents: number };
 
@@ -49,6 +50,9 @@ type FinanceiroData = {
   new_customers_30d: number;
   churned_30d: number;
   churn_30d_pct: number;
+  renewals_30d: number;
+  renewal_rate_30d_pct: number;
+  refund_rate_lifetime_pct: number;
   avg_ticket: number;
   revenue: {
     last_30d: Money;
@@ -58,7 +62,21 @@ type FinanceiroData = {
   monthly_history: MonthBucket[];
   status_breakdown: Record<string, number>;
   recent_transactions: Transaction[];
-  upcoming_30d: { count: number; projected_gross: number; projected_net: number };
+  upcoming_30d: {
+    count: number;
+    d7: number;
+    d14: number;
+    d30: number;
+    projected_gross: number;
+    projected_net: number;
+  };
+  risk_summary: {
+    renewal_7d: number;
+    late_1_3d: number;
+    late_4_14d: number;
+    trial_expiring_3d: number;
+    mrr_at_risk_cents: number;
+  };
 };
 
 const STATUS_LABELS: Record<string, { label: string; emoji: string; tone: string }> = {
@@ -249,15 +267,22 @@ function FinanceiroContent({ data }: { data: FinanceiroData }) {
         </div>
       </section>
 
-      {/* Churn em linha separada (era 4-col junto, agora dedica espaço) */}
+      {/* Retenção — 4 KPIs de retention/churn/renewal */}
       <section>
         <div className="text-eyebrow text-spark-brand mb-3">✦ retenção</div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <KpiCard
             label="Total com acesso"
             value={String(data.active_customers)}
-            sub={`Pagantes + Trial + Cancelada-com-acesso`}
+            sub={`Pagantes + Trial + Cancel-com-acesso`}
             emoji="✨"
+          />
+          <KpiCard
+            label="Renewal rate 30d"
+            value={fmtPct(data.renewal_rate_30d_pct)}
+            sub={`${data.renewals_30d} renovações vs ${data.churned_30d} cancel`}
+            tone={data.renewal_rate_30d_pct >= 80 ? "good" : data.renewal_rate_30d_pct >= 60 ? "brand" : "warn"}
+            emoji="🔄"
           />
           <KpiCard
             label="Churn 30d"
@@ -266,7 +291,60 @@ function FinanceiroContent({ data }: { data: FinanceiroData }) {
             tone={data.churn_30d_pct > 5 ? "warn" : "neutral"}
             emoji="📉"
           />
+          <KpiCard
+            label="Refund rate"
+            value={fmtPct(data.refund_rate_lifetime_pct)}
+            sub="Reembolsos histórico total"
+            tone={data.refund_rate_lifetime_pct > 5 ? "bad" : "neutral"}
+            emoji="↩️"
+          />
         </div>
+      </section>
+
+      {/* Alunas em risco — cards acionaveis */}
+      <section>
+        <div className="text-eyebrow text-spark-brand mb-3 inline-flex items-center gap-1.5">
+          <AlertTriangle size={11} strokeWidth={2.5} />
+          ✦ alunas em risco
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <RiskCard
+            label="Renovam em 7 dias"
+            count={data.risk_summary.renewal_7d}
+            sub="Ação: lembrete gentil"
+            tone="brand"
+            emoji="📅"
+          />
+          <RiskCard
+            label="Atraso 1-3 dias"
+            count={data.risk_summary.late_1_3d}
+            sub="Ação: Kiwify tenta cobrar de novo"
+            tone="warn"
+            emoji="⏰"
+          />
+          <RiskCard
+            label="Atraso 4-14 dias"
+            count={data.risk_summary.late_4_14d}
+            sub="Ação: WhatsApp direto — alto risco churn"
+            tone="bad"
+            emoji="🚨"
+          />
+          <RiskCard
+            label="Trial acaba em 3d"
+            count={data.risk_summary.trial_expiring_3d}
+            sub="Ação: oferecer checkout com desconto"
+            tone="brand"
+            emoji="🎁"
+          />
+        </div>
+        {data.risk_summary.mrr_at_risk_cents > 0 && (
+          <div className="mt-3 rounded-spark-2xl bg-warn/5 border border-warn/25 px-5 py-3.5 text-[13px] text-spark-ink-70 font-semibold inline-flex items-center gap-2">
+            <AlertTriangle size={14} className="text-warn shrink-0" />
+            <span>
+              <strong className="text-spark-ink">{fmtBRL(data.risk_summary.mrr_at_risk_cents)}</strong> de MRR em risco de churn (alunas em atraso).
+            </span>
+          </div>
+        )}
       </section>
 
       {/* KPIs Receita */}
@@ -303,42 +381,73 @@ function FinanceiroContent({ data }: { data: FinanceiroData }) {
         </div>
       </section>
 
-      {/* Projeção próximos 30 dias */}
+      {/* Projeção próximos 30 dias — com breakdown 7/14/30 */}
       <section>
         <div className="text-eyebrow text-spark-brand mb-3">✦ projeção 30 dias</div>
-        <div className="rounded-spark-2xl bg-brand-grad-soft border-2 border-spark-brand/30 shadow-rest p-5 lg:p-7 grid grid-cols-1 sm:grid-cols-3 gap-5">
-          <div>
-            <div className="text-eyebrow text-spark-brand-deep mb-1.5 inline-flex items-center gap-1.5">
-              <Calendar size={11} strokeWidth={2.5} />
-              renovações esperadas
+        <div className="rounded-spark-2xl bg-brand-grad-soft border-2 border-spark-brand/30 shadow-rest p-5 lg:p-7">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 pb-4 border-b border-spark-brand/20">
+            <div>
+              <div className="text-eyebrow text-spark-brand-deep mb-1.5 inline-flex items-center gap-1.5">
+                <Calendar size={11} strokeWidth={2.5} />
+                renovações esperadas
+              </div>
+              <div className="font-display lowercase tracking-tight leading-none text-spark-ink text-[40px]">
+                {data.upcoming_30d.count}
+              </div>
+              <div className="mt-1 text-[12px] text-spark-ink-50 font-extrabold uppercase tracking-wider">
+                alunas
+              </div>
             </div>
-            <div className="font-display lowercase tracking-tight leading-none text-spark-ink text-[40px]">
-              {data.upcoming_30d.count}
+            <div>
+              <div className="text-eyebrow text-spark-brand-deep mb-1.5">receita bruta</div>
+              <div className="font-display lowercase tracking-tight leading-none text-spark-ink text-[36px]">
+                {fmtBRL(data.upcoming_30d.projected_gross)}
+              </div>
+              <div className="mt-1 text-[12px] text-spark-ink-50 font-extrabold uppercase tracking-wider">
+                total cobrado
+              </div>
             </div>
-            <div className="mt-1 text-[12px] text-spark-ink-50 font-extrabold uppercase tracking-wider">
-              alunas
+            <div>
+              <div className="text-eyebrow text-spark-brand-deep mb-1.5">líquido após Kiwify</div>
+              <div className="font-display lowercase tracking-tight leading-none text-spark-brand-deep text-[36px]">
+                {fmtBRL(data.upcoming_30d.projected_net)}
+              </div>
+              <div className="mt-1 text-[12px] text-spark-ink-50 font-extrabold uppercase tracking-wider">
+                descontando taxa
+              </div>
             </div>
           </div>
-          <div>
-            <div className="text-eyebrow text-spark-brand-deep mb-1.5">receita bruta</div>
-            <div className="font-display lowercase tracking-tight leading-none text-spark-ink text-[36px]">
-              {fmtBRL(data.upcoming_30d.projected_gross)}
+          <div className="grid grid-cols-3 gap-3 mt-4 text-center">
+            <div>
+              <div className="font-display text-[24px] text-spark-brand-deep tabular-nums">
+                {data.upcoming_30d.d7}
+              </div>
+              <div className="text-[11px] font-extrabold uppercase tracking-wider text-spark-ink-50 mt-0.5">
+                próximos 7 dias
+              </div>
             </div>
-            <div className="mt-1 text-[12px] text-spark-ink-50 font-extrabold uppercase tracking-wider">
-              total cobrado das alunas
+            <div>
+              <div className="font-display text-[24px] text-spark-brand-deep tabular-nums">
+                {data.upcoming_30d.d14}
+              </div>
+              <div className="text-[11px] font-extrabold uppercase tracking-wider text-spark-ink-50 mt-0.5">
+                8 a 14 dias
+              </div>
             </div>
-          </div>
-          <div>
-            <div className="text-eyebrow text-spark-brand-deep mb-1.5">líquido após Kiwify</div>
-            <div className="font-display lowercase tracking-tight leading-none text-spark-brand-deep text-[36px]">
-              {fmtBRL(data.upcoming_30d.projected_net)}
-            </div>
-            <div className="mt-1 text-[12px] text-spark-ink-50 font-extrabold uppercase tracking-wider">
-              descontando taxa da plataforma
+            <div>
+              <div className="font-display text-[24px] text-spark-brand-deep tabular-nums">
+                {data.upcoming_30d.d30}
+              </div>
+              <div className="text-[11px] font-extrabold uppercase tracking-wider text-spark-ink-50 mt-0.5">
+                15 a 30 dias
+              </div>
             </div>
           </div>
         </div>
       </section>
+
+      {/* Segments Tabs — 5 listas de alunas por categoria */}
+      <SegmentsTabs />
 
       {/* Gráfico mensal */}
       <section>
@@ -508,6 +617,55 @@ function KpiCard({
           {sub}
         </div>
       )}
+    </div>
+  );
+}
+
+function RiskCard({
+  label,
+  count,
+  sub,
+  tone,
+  emoji,
+}: {
+  label: string;
+  count: number;
+  sub: string;
+  tone: "brand" | "warn" | "bad";
+  emoji: string;
+}) {
+  const bg =
+    tone === "bad"
+      ? "bg-bad/5 border-bad/25"
+      : tone === "warn"
+        ? "bg-warn/5 border-warn/25"
+        : "bg-brand-grad-soft border-spark-brand/25";
+  const valueColor =
+    tone === "bad"
+      ? "text-bad"
+      : tone === "warn"
+        ? "text-warn"
+        : "text-spark-brand-deep";
+  return (
+    <div className={cn("rounded-spark-2xl border p-4 lg:p-5 shadow-rest", bg)}>
+      <div className="flex items-center justify-between">
+        <div className="text-[20px] leading-none">{emoji}</div>
+        <div
+          className={cn(
+            "font-display tabular-nums leading-none",
+            valueColor,
+          )}
+          style={{ fontSize: "clamp(1.5rem, 2.4vw, 2rem)" }}
+        >
+          {count}
+        </div>
+      </div>
+      <div className="text-[11px] font-extrabold uppercase tracking-wider text-spark-ink-50 mt-3">
+        {label}
+      </div>
+      <div className="text-[10.5px] text-spark-ink-70 mt-1 leading-snug font-semibold">
+        {sub}
+      </div>
     </div>
   );
 }

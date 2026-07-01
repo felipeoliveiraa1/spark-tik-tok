@@ -305,6 +305,35 @@ export async function GET() {
     accessProfileIds.size + (statusBreakdown.canceled ?? 0);
   const churn30Pct = baseForChurn > 0 ? (churned30 / baseForChurn) * 100 : 0;
 
+  // ----- Renewals 30d + renewal rate -----
+  // renewals_30d = count de subscription_renewed nos ultimos 30 dias (unico por email)
+  // renewal_rate = renewals / (renewals + churned) — quanto da base ta se mantendo
+  const renewedEmails30 = new Set<string>();
+  for (const e of paidEvents) {
+    if (e.event_type !== "subscription_renewed") continue;
+    if (!e.customer_email) continue;
+    if (new Date(e.processed_at) >= since30) renewedEmails30.add(e.customer_email);
+  }
+  const renewals30 = renewedEmails30.size;
+  const renewalRate30Pct =
+    renewals30 + churned30 > 0
+      ? (renewals30 / (renewals30 + churned30)) * 100
+      : 0;
+
+  // ----- Refund rate lifetime -----
+  const refundedTotal = statusBreakdown.refunded ?? 0;
+  const totalEverPaid =
+    profiles.filter(
+      (p) =>
+        p.plan_status === "active" ||
+        p.plan_status === "late" ||
+        p.plan_status === "canceled" ||
+        p.plan_status === "refunded" ||
+        p.plan_status === "chargeback",
+    ).length;
+  const refundRatePct =
+    totalEverPaid > 0 ? (refundedTotal / totalEverPaid) * 100 : 0;
+
   // ----- New customers 30d -----
   let newCustomers30 = 0;
   for (const e of paidEvents) {
@@ -322,37 +351,85 @@ export async function GET() {
     order_id: e.order_id,
   }));
 
-  // ----- Projecao proximos 30d -----
+  // ----- Projecao proximos 30d — segmentada em buckets 7/14/30 -----
   // Pra cada profile ativo com next_payment dentro de 30d, soma o ultimo
-  // ticket dela (do recentPayments) como projecao.
-  const within30 = new Date();
-  within30.setUTCDate(within30.getUTCDate() + 30);
-  let upcomingCount = 0;
-  let upcomingGross = 0;
-  let upcomingNet = 0;
+  // ticket dela (do recentPayments) como projecao. Segmenta por janela
+  // (0-7d, 8-14d, 15-30d) — Yara consegue ver quem tá pra renovar YA.
+  const nowDate = new Date();
+  const in7d = new Date(nowDate.getTime() + 7 * 86400000);
+  const in14d = new Date(nowDate.getTime() + 14 * 86400000);
+  const in30d = new Date(nowDate.getTime() + 30 * 86400000);
+  const upcomingBuckets = {
+    d7: 0,
+    d14: 0,
+    d30: 0,
+    total: 0,
+    projected_gross: 0,
+    projected_net: 0,
+  };
   for (const p of profiles) {
     if (!payingStatuses.has(p.plan_status ?? "")) continue;
     if (!p.plan_next_payment) continue;
     const next = new Date(p.plan_next_payment);
-    if (next > within30) continue;
-    if (next < new Date()) continue; // ja venceu, nao projeta
+    if (next > in30d) continue;
+    if (next < nowDate) continue; // ja venceu, entra em late nao em upcoming
     const lastPaid = recentPayments.get(p.email);
-    if (lastPaid) {
-      upcomingCount += 1;
-      upcomingGross += lastPaid.gross;
-      upcomingNet += lastPaid.net;
-    } else {
-      // Sem historico recente — usa avgTicket como fallback
-      upcomingCount += 1;
-      upcomingGross += avgTicketGrossCents;
-      // ~87% sobra apos taxa Kiwify (~13% media — varia por meio de pagamento)
-      upcomingNet += Math.round(avgTicketGrossCents * 0.87);
+    const gross = lastPaid?.gross ?? avgTicketGrossCents;
+    const net = lastPaid?.net ?? Math.round(avgTicketGrossCents * 0.87);
+    upcomingBuckets.total += 1;
+    upcomingBuckets.projected_gross += gross;
+    upcomingBuckets.projected_net += net;
+    if (next <= in7d) upcomingBuckets.d7 += 1;
+    else if (next <= in14d) upcomingBuckets.d14 += 1;
+    else upcomingBuckets.d30 += 1;
+  }
+
+  // ----- Risk summary — alunas em risco de churn ----- (buckets acionaveis)
+  const in3d = new Date(nowDate.getTime() + 3 * 86400000);
+  const lateSince1d = new Date(nowDate.getTime() - 1 * 86400000);
+  const lateSince3d = new Date(nowDate.getTime() - 3 * 86400000);
+  const lateSince4d = new Date(nowDate.getTime() - 4 * 86400000);
+  const lateSince14d = new Date(nowDate.getTime() - 14 * 86400000);
+  const risk = {
+    renewal_7d: 0, // ja considerado em upcomingBuckets.d7
+    late_1_3d: 0, // plan_status=late OU next_payment 1-3d atras
+    late_4_14d: 0, // 4-14d atras (alto risco churn)
+    trial_expiring_3d: 0,
+    mrr_at_risk_cents: 0,
+  };
+  risk.renewal_7d = upcomingBuckets.d7;
+  for (const p of profiles) {
+    // Late 1-3 dias (dunning window Kiwify — bastante recuperavel)
+    if (p.plan_next_payment) {
+      const next = new Date(p.plan_next_payment);
+      if (next < nowDate && next >= lateSince3d) {
+        risk.late_1_3d += 1;
+        const lastPaid = recentPayments.get(p.email);
+        risk.mrr_at_risk_cents += lastPaid?.gross ?? avgTicketGrossCents;
+      } else if (next < lateSince4d && next >= lateSince14d) {
+        risk.late_4_14d += 1;
+        const lastPaid = recentPayments.get(p.email);
+        risk.mrr_at_risk_cents += lastPaid?.gross ?? avgTicketGrossCents;
+      }
+    }
+    // Trial expirando 3d
+    if (
+      p.plan_status === "trial" &&
+      p.plan_active === true &&
+      p.plan_expires_at
+    ) {
+      const exp = new Date(p.plan_expires_at);
+      if (exp >= nowDate && exp <= in3d) {
+        risk.trial_expiring_3d += 1;
+      }
     }
   }
+  void lateSince1d; // reservado pra bucket futuro "just missed"
 
   return NextResponse.json({
     currency: "BRL",
     units: "cents",
+    generated_at: new Date().toISOString(),
     mrr: { gross: mrrGross, net: mrrNet },
     arr: { gross: mrrGross * 12, net: mrrNet * 12 },
     active_customers: accessProfileIds.size,
@@ -361,6 +438,9 @@ export async function GET() {
     new_customers_30d: newCustomers30,
     churned_30d: churned30,
     churn_30d_pct: churn30Pct,
+    renewals_30d: renewals30,
+    renewal_rate_30d_pct: renewalRate30Pct,
+    refund_rate_lifetime_pct: refundRatePct,
     avg_ticket: avgTicketGrossCents,
     revenue: {
       last_30d: last30Revenue,
@@ -371,9 +451,19 @@ export async function GET() {
     status_breakdown: statusBreakdown,
     recent_transactions: recentTransactions,
     upcoming_30d: {
-      count: upcomingCount,
-      projected_gross: upcomingGross,
-      projected_net: upcomingNet,
+      count: upcomingBuckets.total,
+      d7: upcomingBuckets.d7,
+      d14: upcomingBuckets.d14,
+      d30: upcomingBuckets.d30,
+      projected_gross: upcomingBuckets.projected_gross,
+      projected_net: upcomingBuckets.projected_net,
+    },
+    risk_summary: {
+      renewal_7d: risk.renewal_7d,
+      late_1_3d: risk.late_1_3d,
+      late_4_14d: risk.late_4_14d,
+      trial_expiring_3d: risk.trial_expiring_3d,
+      mrr_at_risk_cents: risk.mrr_at_risk_cents,
     },
   });
 }
