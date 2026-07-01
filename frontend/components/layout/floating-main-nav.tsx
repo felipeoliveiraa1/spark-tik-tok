@@ -76,10 +76,10 @@ const ITEMS: Item[] = [
   { id: "produtos", labelKey: "products", href: "/produtos", Icon: Package },
   { id: "scripts", labelKey: "scripts", href: "/scripts", Icon: PenLine },
   { id: "rotina", labelKey: "routine", href: "/rotina/hoje", Icon: Activity },
-  { id: "educacao", labelKey: "education", href: "/educacao", Icon: GraduationCap },
+  { id: "educacao", labelKey: "education", href: "/educacao", Icon: GraduationCap, adminOnly: true },
   { id: "jornadas", labelKey: "jornadas", href: "/jornadas", Icon: Gamepad2, adminOnly: true },
   { id: "ranking", labelKey: "ranking", href: "/ranking", Icon: Trophy },
-  { id: "news", labelKey: "news", href: "/news", Icon: Newspaper },
+  { id: "news", labelKey: "news", href: "/news", Icon: Newspaper, adminOnly: true },
   { id: "conta", labelKey: "account", href: "/conta", Icon: User },
 ];
 
