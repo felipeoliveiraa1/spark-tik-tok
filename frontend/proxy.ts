@@ -26,12 +26,17 @@ const PUBLIC_ROUTES = new Set(["/login", "/landing"]);
 // /formulario eh pagina publica de captacao de leads (bio do TikTok).
 // /grupo eh redirecionador publico round-robin pros grupos WhatsApp
 // (divulgado em redes sociais durante lancamento).
+// /desafio eh redirect publico pro video YouTube do Desafio (divulgado em
+// bio Insta/TikTok + grupos WhatsApp). SEM /desafio aqui, aluna nao-logada
+// que clica no link cai em /landing (pagina de venda) e compra sem ver o
+// video — bug real que aconteceu em prod.
 const ALWAYS_PUBLIC = new Set([
   "/forgot-password",
   "/reset-password",
   "/formulario",
   "/formulario/obrigada",
   "/grupo",
+  "/desafio",
 ]);
 const ONBOARDING_ROUTES = new Set(["/welcome"]);
 
