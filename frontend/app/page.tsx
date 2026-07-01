@@ -1075,7 +1075,6 @@ function HomeBody({ desktop = false }: { desktop?: boolean }) {
       <ActionsSection desktop={desktop} />
       <RotinaSection streak={data.streak} liveNow={liveNow} desktop={desktop} />
       <CatalogoSection products={data.products} desktop={desktop} />
-      <NewsSection news={data.news} desktop={desktop} />
       <FinalCtaSection desktop={desktop} />
 
       {/* Tour guiado — auto-abre na primeira visita e pode re-abrir pelo botão */}
