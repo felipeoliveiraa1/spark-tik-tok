@@ -110,12 +110,13 @@ export function FloatingMainNav({ active }: Props) {
   const [isAdmin, setIsAdmin] = React.useState(false);
 
   // Fetch role uma vez pra filtrar entradas adminOnly (ex: Jornadas em beta).
+  // /api/me retorna { profile: { ..., role } } — role vem aninhada em profile.
   // Falha silenciosa = user default nao-admin.
   React.useEffect(() => {
     void fetch("/api/me", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => {
-        if (j?.role === "admin") setIsAdmin(true);
+        if (j?.profile?.role === "admin") setIsAdmin(true);
       })
       .catch(() => {});
   }, []);
