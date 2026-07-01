@@ -30,6 +30,8 @@ const PUBLIC_ROUTES = new Set(["/login", "/landing"]);
 // bio Insta/TikTok + grupos WhatsApp). SEM /desafio aqui, aluna nao-logada
 // que clica no link cai em /landing (pagina de venda) e compra sem ver o
 // video — bug real que aconteceu em prod.
+// /participar eh redirect publico pro checkout Kiwify (divulgado em posts,
+// grupos, bio, etc). Sem essa entrada, aluna caia em /landing.
 const ALWAYS_PUBLIC = new Set([
   "/forgot-password",
   "/reset-password",
@@ -37,6 +39,7 @@ const ALWAYS_PUBLIC = new Set([
   "/formulario/obrigada",
   "/grupo",
   "/desafio",
+  "/participar",
 ]);
 const ONBOARDING_ROUTES = new Set(["/welcome"]);
 
@@ -233,11 +236,11 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // /desafio e /grupo sao route handlers de redirect publico (video YouTube
-  // e round-robin grupo WhatsApp respectivamente). Excluidos do matcher pra
-  // NAO caírem no chute "aluna nao-logada -> /landing" (pagina de venda) —
-  // esse bug ja fez pessoal comprar sem ver o video.
+  // /desafio, /grupo, /participar sao route handlers de redirect publico
+  // (video YouTube, round-robin grupo WhatsApp, checkout Kiwify).
+  // Excluidos do matcher pra NAO cairem no chute "aluna nao-logada ->
+  // /landing" — esse bug ja fez pessoal comprar sem ver o video.
   matcher: [
-    "/((?!api/|_next/|icons/|manifest.webmanifest|apple-icon|icon|favicon|desafio|grupo|.*\\.(?:svg|png|jpg|jpeg|webp|gif|ico)).*)",
+    "/((?!api/|_next/|icons/|manifest.webmanifest|apple-icon|icon|favicon|desafio|grupo|participar|.*\\.(?:svg|png|jpg|jpeg|webp|gif|ico)).*)",
   ],
 };
