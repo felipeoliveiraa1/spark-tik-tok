@@ -6,7 +6,6 @@ import {
   ArrowRight,
   ArrowUpRight,
   Flame,
-  MessageCircle,
   Package,
   Pen,
   Plus,
@@ -454,135 +453,6 @@ function StatsSection({
                   ))}
                 </div>
               ))}
-            </div>
-          </div>
-        </SectionReveal>
-      </div>
-    </section>
-  );
-}
-
-// =================================================================
-// COMUNIDADE — Banner "Em breve" com countdown
-// =================================================================
-
-// Data de abertura do grupo (BRT). Para reabrir o link, basta:
-// 1. Voltar o componente CommunitySection pro <a href={COMMUNITY_WHATSAPP_URL}>
-// 2. Ou setar COMMUNITY_OPEN_AT pra uma data passada (countdown some sozinho)
-const COMMUNITY_OPEN_AT = new Date("2026-07-01T00:00:00-03:00");
-
-function useCountdown(target: Date) {
-  const [now, setNow] = React.useState(() => Date.now());
-  React.useEffect(() => {
-    const id = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(id);
-  }, []);
-  const diff = Math.max(0, target.getTime() - now);
-  const totalSec = Math.floor(diff / 1000);
-  const days = Math.floor(totalSec / 86400);
-  const hours = Math.floor((totalSec % 86400) / 3600);
-  const minutes = Math.floor((totalSec % 3600) / 60);
-  const seconds = totalSec % 60;
-  return { days, hours, minutes, seconds, isOpen: diff === 0 };
-}
-
-function CommunitySection({ desktop }: { desktop: boolean }) {
-  const { days, hours, minutes, seconds } = useCountdown(COMMUNITY_OPEN_AT);
-  const pad = (n: number) => String(n).padStart(2, "0");
-
-  return (
-    <section
-      className={`relative overflow-hidden ${desktop ? "py-20 px-12" : "py-12 px-5"}`}
-    >
-      <div className={desktop ? "max-w-[1200px] mx-auto" : ""}>
-        <SectionReveal>
-          <div
-            className="relative rounded-spark-3xl overflow-hidden shadow-hero cursor-not-allowed select-none"
-            aria-disabled="true"
-            style={{
-              background:
-                "linear-gradient(135deg, oklch(0.58 0.16 145) 0%, oklch(0.42 0.14 155) 100%)",
-            }}
-          >
-            <SparkleField count={12} seed={555} color="rgba(255,255,255,0.55)" className="opacity-40" />
-            <div
-              aria-hidden
-              className="absolute -top-32 -right-32 w-[420px] h-[420px] rounded-full opacity-25"
-              style={{
-                background:
-                  "radial-gradient(circle, rgba(255,255,255,0.35) 0%, transparent 70%)",
-              }}
-            />
-            <div
-              aria-hidden
-              className="absolute -bottom-20 -left-10 w-[300px] h-[300px] rounded-full opacity-20"
-              style={{
-                background:
-                  "radial-gradient(circle, rgba(255,255,255,0.25) 0%, transparent 70%)",
-              }}
-            />
-
-            <div
-              className={`relative ${
-                desktop
-                  ? "p-12 grid grid-cols-[1fr_auto] items-center gap-10"
-                  : "p-7 flex flex-col gap-6"
-              } text-white`}
-            >
-              <div className="min-w-0">
-                <div className="text-eyebrow text-white/85 mb-3 flex items-center gap-2">
-                  <MessageCircle size={11} strokeWidth={2.5} />
-                  🔒 em breve · comunidade no whatsapp
-                </div>
-                <h2
-                  className="font-display lowercase leading-[0.9] tracking-tight"
-                  style={{ fontSize: desktop ? "clamp(2.25rem, 4vw, 3.5rem)" : "clamp(1.75rem, 7vw, 2.5rem)" }}
-                >
-                  abre dia<br />
-                  <span className="tabular-nums">01/07</span>
-                </h2>
-                <p className="mt-5 text-[14.5px] lg:text-[16px] text-white/90 leading-snug font-semibold max-w-[44ch]">
-                  Tô preparando uma comunidade exclusiva pra dividir resultado,
-                  trocar com as outras criadoras e ver o que tá funcionando agora.
-                  Salva a data 💕
-                </p>
-              </div>
-
-              {/* Countdown — 4 boxes DD : HH : MM : SS */}
-              <div className={desktop ? "shrink-0" : ""}>
-                <div
-                  role="timer"
-                  aria-live="off"
-                  aria-label={`Faltam ${days} dias, ${hours} horas, ${minutes} minutos e ${seconds} segundos`}
-                  className={`grid grid-cols-4 gap-2 ${
-                    desktop ? "min-w-[360px]" : "w-full"
-                  }`}
-                >
-                  {[
-                    { v: days, l: "dias" },
-                    { v: hours, l: "horas" },
-                    { v: minutes, l: "min" },
-                    { v: seconds, l: "seg" },
-                  ].map(({ v, l }) => (
-                    <div
-                      key={l}
-                      className="rounded-spark-xl bg-white/15 backdrop-blur border border-white/25 px-2 py-3 text-center"
-                    >
-                      <div
-                        className="font-display tabular-nums leading-none"
-                        style={{
-                          fontSize: desktop ? "2.5rem" : "1.85rem",
-                        }}
-                      >
-                        {pad(v)}
-                      </div>
-                      <div className="mt-1 text-[10px] font-extrabold uppercase tracking-widest text-white/80">
-                        {l}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
             </div>
           </div>
         </SectionReveal>
@@ -1202,7 +1072,6 @@ function HomeBody({ desktop = false }: { desktop?: boolean }) {
         onReopenTour={reopenTour}
       />
       <StatsSection data={data} desktop={desktop} />
-      <CommunitySection desktop={desktop} />
       <ActionsSection desktop={desktop} />
       <RotinaSection streak={data.streak} liveNow={liveNow} desktop={desktop} />
       <CatalogoSection products={data.products} desktop={desktop} />

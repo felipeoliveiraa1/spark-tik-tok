@@ -10,7 +10,19 @@ import { ModuleCard } from "@/components/journey/ModuleCard";
 import { ProofFinalCard } from "@/components/journey/ProofFinalCard";
 import { JourneyImmersiveBG } from "@/components/journey/JourneyImmersiveBG";
 import { JourneyLoadingScreen } from "@/components/journey/JourneyLoadingScreen";
+import { GroupBanner } from "@/components/journey/GroupBanner";
 import type { CharacterStage } from "@/lib/journey/character-stage";
+
+// Jornadas que ja tem link de grupo WhatsApp ativo. Adicionar slug aqui
+// tambem exige adicionar URL em frontend/app/jornadas/[slug]/grupo/route.ts.
+const JOURNEYS_WITH_GROUP = new Set(["jornada-1-bebe"]);
+
+function journeyShortLabel(slug: string): string {
+  if (slug === "jornada-1-bebe") return "Jornada 1";
+  if (slug === "jornada-2-adolescente") return "Jornada 2";
+  if (slug === "jornada-3-adulta") return "Jornada 3";
+  return "Jornada";
+}
 
 type Lesson = {
   id: string;
@@ -148,6 +160,15 @@ export default function JornadaDetailPage() {
             {journey.subtitle}
           </p>
         )}
+
+        {/* Banner do grupo WhatsApp — ativo em J1, "Em breve" em J2/J3 */}
+        <div className="mb-4">
+          <GroupBanner
+            journeySlug={params.slug as string}
+            journeyLabel={journeyShortLabel(params.slug as string)}
+            hasLink={JOURNEYS_WITH_GROUP.has(params.slug as string)}
+          />
+        </div>
 
         <div className="flex flex-col gap-3">
           {modules.map((m, idx) => (
