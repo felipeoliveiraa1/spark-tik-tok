@@ -224,29 +224,32 @@ export async function GET(
     const moduleRow = moduleId ? moduleById.get(moduleId) ?? null : null;
 
     let locked = false;
-    if (!moduleId) {
-      // Legacy: aula N+1 trava ate N completar (regra global)
-      const prevCompleted =
-        globalIdx === 0
-          ? true
-          : completedMap.get(filteredLessons[globalIdx - 1]?.id as string)?.completed ?? false;
-      locked = !completed && !prevCompleted;
-    } else {
-      // Scoped: gate inter-modulo + time-based + sequencial dentro do modulo
-      const moduleOrderIdx = orderedModuleIds.indexOf(moduleId);
-      const prevModuleId = moduleOrderIdx > 0 ? orderedModuleIds[moduleOrderIdx - 1] : null;
-      const prevModuleDone = prevModuleId ? (moduleAllComplete.get(prevModuleId) ?? true) : true;
-      const timeLocked = moduleTimeLocked.get(moduleId)?.locked ?? false;
-      if (!prevModuleDone || timeLocked) {
-        locked = !completed;
-      } else {
-        const inModule = lessonsByModule.get(moduleId) ?? [];
-        const inModuleIdx = inModule.findIndex((x) => x.id === l.id);
-        const prevInModuleCompleted =
-          inModuleIdx <= 0
+    // Admin bypassa TODOS os gates (preview livre pra Yara/user)
+    if (!isAdmin) {
+      if (!moduleId) {
+        // Legacy: aula N+1 trava ate N completar (regra global)
+        const prevCompleted =
+          globalIdx === 0
             ? true
-            : completedMap.get(inModule[inModuleIdx - 1]?.id as string)?.completed ?? false;
-        locked = !completed && !prevInModuleCompleted;
+            : completedMap.get(filteredLessons[globalIdx - 1]?.id as string)?.completed ?? false;
+        locked = !completed && !prevCompleted;
+      } else {
+        // Scoped: gate inter-modulo + time-based + sequencial dentro do modulo
+        const moduleOrderIdx = orderedModuleIds.indexOf(moduleId);
+        const prevModuleId = moduleOrderIdx > 0 ? orderedModuleIds[moduleOrderIdx - 1] : null;
+        const prevModuleDone = prevModuleId ? (moduleAllComplete.get(prevModuleId) ?? true) : true;
+        const timeLocked = moduleTimeLocked.get(moduleId)?.locked ?? false;
+        if (!prevModuleDone || timeLocked) {
+          locked = !completed;
+        } else {
+          const inModule = lessonsByModule.get(moduleId) ?? [];
+          const inModuleIdx = inModule.findIndex((x) => x.id === l.id);
+          const prevInModuleCompleted =
+            inModuleIdx <= 0
+              ? true
+              : completedMap.get(inModule[inModuleIdx - 1]?.id as string)?.completed ?? false;
+          locked = !completed && !prevInModuleCompleted;
+        }
       }
     }
 
@@ -280,9 +283,10 @@ export async function GET(
       pct_complete:
         mlessons.length === 0 ? 0 : Math.round((completedInModule / mlessons.length) * 100),
       all_complete: moduleAllComplete.get(m.id as string) ?? false,
-      locked: !prevModuleDone || timeLocked,
-      time_locked: timeLocked,
-      unlocks_at: timeLock?.unlocksAt ?? null,
+      // Admin ve tudo desbloqueado (preview)
+      locked: isAdmin ? false : (!prevModuleDone || timeLocked),
+      time_locked: isAdmin ? false : timeLocked,
+      unlocks_at: isAdmin ? null : (timeLock?.unlocksAt ?? null),
     };
   });
 

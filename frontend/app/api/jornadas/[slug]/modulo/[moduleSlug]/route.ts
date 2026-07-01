@@ -194,18 +194,21 @@ export async function GET(
     }
   }
 
-  const moduleLocked = !prevModuleAllComplete || timeLocked;
+  // Admin bypassa gates (preview livre)
+  const moduleLocked = isAdmin ? false : (!prevModuleAllComplete || timeLocked);
 
   // 6) Enriquece lessons com completed + locked scoped
   const lessonsWithState = moduleLessons.map((l, idx) => {
     const completed = completedSet.has(l.id as string);
     let locked = false;
-    if (moduleLocked) {
-      locked = !completed;
-    } else if (idx > 0) {
-      const prevId = moduleLessons[idx - 1]?.id as string;
-      const prevDone = completedSet.has(prevId);
-      locked = !completed && !prevDone;
+    if (!isAdmin) {
+      if (moduleLocked) {
+        locked = !completed;
+      } else if (idx > 0) {
+        const prevId = moduleLessons[idx - 1]?.id as string;
+        const prevDone = completedSet.has(prevId);
+        locked = !completed && !prevDone;
+      }
     }
     return {
       ...l,
@@ -233,8 +236,8 @@ export async function GET(
           : Math.round((completedInModule / moduleLessons.length) * 100),
       all_complete: allComplete,
       locked: moduleLocked,
-      time_locked: timeLocked,
-      unlocks_at: unlocksAtIso,
+      time_locked: isAdmin ? false : timeLocked,
+      unlocks_at: isAdmin ? null : unlocksAtIso,
     },
     lessons: lessonsWithState,
     prev_module: prevModule

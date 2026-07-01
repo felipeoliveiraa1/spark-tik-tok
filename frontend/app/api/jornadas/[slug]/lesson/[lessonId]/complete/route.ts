@@ -45,6 +45,15 @@ export async function POST(
   const { slug, lessonId } = await ctx.params;
   const supabase = getServiceClient();
 
+  // Admin bypassa TODOS os gates (preview). Yara/user podem marcar
+  // qualquer aula concluida em qualquer ordem pra testar/preview.
+  const { data: profile } = await auth
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+  const isAdmin = profile?.role === "admin";
+
   // 1) Resolve jornada + valida aula pertence a ela
   const { data: lesson, error: lErr } = await supabase
     .from("journey_lessons")
@@ -69,11 +78,13 @@ export async function POST(
     return json({ ok: true, already_completed: true });
   }
 
-  // 3) Valida ordem:
+  // 3) Valida ordem — admin skipa TUDO.
   //    - Sem module_id (legacy): aula N+1 trava ate N completar (regra global da jornada)
   //    - Com module_id: prev_in_module deve estar completed + modulo anterior all_complete
   const lessonModuleId = (lesson as { module_id: string | null }).module_id;
-  if (!lessonModuleId) {
+  if (isAdmin) {
+    // pula todos os checks — admin marca em qualquer ordem
+  } else if (!lessonModuleId) {
     // Legacy global
     const { data: priorLessons } = await supabase
       .from("journey_lessons")
