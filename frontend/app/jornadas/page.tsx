@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Sparkles, PlayCircle, ChevronRight } from "lucide-react";
+import { Sparkles, PlayCircle, ChevronRight, ArrowLeft } from "lucide-react";
 import { NotificationFeed } from "@/components/journey/NotificationFeed";
 import { JourneyImmersiveBG } from "@/components/journey/JourneyImmersiveBG";
 import { JourneyLoadingScreen } from "@/components/journey/JourneyLoadingScreen";
@@ -297,15 +297,24 @@ function StickyHeader({
   return (
     <header className="sticky top-0 z-40 bg-white/75 backdrop-blur-md border-b border-white/40">
       <div className="flex items-center justify-between gap-2 px-4 h-14 max-w-[520px] mx-auto">
-        <div className="flex flex-col min-w-0">
-          <h1 className="font-display text-[15px] text-spark-ink truncate">
-            Jornadas
-          </h1>
-          {isAdmin && (
-            <span className="text-[9px] font-extrabold uppercase tracking-wide text-orange-600">
-              ⚡ Preview admin
-            </span>
-          )}
+        <div className="flex items-center gap-2 min-w-0">
+          <Link
+            href="/"
+            aria-label="Voltar pra home"
+            className="shrink-0 w-11 h-11 -ml-2 flex items-center justify-center text-spark-ink-70 hover:text-spark-ink active:scale-95 transition-transform"
+          >
+            <ArrowLeft size={20} strokeWidth={2.5} />
+          </Link>
+          <div className="flex flex-col min-w-0">
+            <h1 className="font-display text-[15px] text-spark-ink truncate">
+              Jornadas
+            </h1>
+            {isAdmin && (
+              <span className="text-[9px] font-extrabold uppercase tracking-wide text-orange-600">
+                ⚡ Preview admin
+              </span>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {xpTotal !== null && xpTotal !== undefined && stage && (
