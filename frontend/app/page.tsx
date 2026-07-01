@@ -462,6 +462,95 @@ function StatsSection({
 }
 
 // =================================================================
+// GRUPO JORNADA 1 — banner CTA pra iniciante entrar no WhatsApp
+// =================================================================
+
+function GroupJornada1Section({ desktop }: { desktop: boolean }) {
+  return (
+    <section
+      className={`relative ${desktop ? "py-8 px-12" : "py-6 px-5"}`}
+    >
+      <div className={desktop ? "max-w-[1200px] mx-auto" : ""}>
+        <SectionReveal>
+          <a
+            href="/jornadas/jornada-1-bebe/grupo"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group relative block rounded-spark-3xl overflow-hidden hover-lift shadow-hero"
+            style={{
+              background:
+                "linear-gradient(135deg, oklch(0.68 0.18 145) 0%, oklch(0.55 0.18 155) 100%)",
+            }}
+          >
+            <SparkleField
+              count={10}
+              seed={888}
+              color="rgba(255,255,255,0.6)"
+              className="opacity-50"
+            />
+            <div
+              aria-hidden
+              className="absolute -top-24 -right-24 w-[340px] h-[340px] rounded-full opacity-30"
+              style={{
+                background:
+                  "radial-gradient(circle, rgba(255,255,255,0.4) 0%, transparent 70%)",
+              }}
+            />
+
+            <div
+              className={`relative ${
+                desktop
+                  ? "p-10 grid grid-cols-[1fr_auto] items-center gap-8"
+                  : "p-6 flex flex-col gap-5"
+              } text-white`}
+            >
+              <div className="min-w-0">
+                <div className="text-eyebrow text-white/85 mb-2 inline-flex items-center gap-2">
+                  💬 grupo iniciantes · jornada 1
+                </div>
+                <h2
+                  className="font-display lowercase leading-[0.95] tracking-tight"
+                  style={{
+                    fontSize: desktop
+                      ? "clamp(1.75rem, 3vw, 2.5rem)"
+                      : "clamp(1.4rem, 6vw, 2rem)",
+                  }}
+                >
+                  entra no grupo<br />
+                  <span className="text-white/90">da turma 💕</span>
+                </h2>
+                <p className="mt-3 text-[14px] lg:text-[15px] text-white/90 leading-snug font-semibold max-w-[46ch]">
+                  Comunidade oficial da Jornada 1. Aqui a gente divide
+                  resultado, tira dúvida e se motiva pra continuar.
+                </p>
+              </div>
+
+              <div className={desktop ? "shrink-0" : ""}>
+                <div
+                  className={`inline-flex items-center gap-3 px-6 py-4 rounded-full bg-white text-[#0d6b3d] font-extrabold shadow-lift transition-all duration-300 ease-premium group-hover:-translate-y-1 ${
+                    desktop
+                      ? "text-[14px]"
+                      : "text-[13.5px] w-full justify-center"
+                  }`}
+                >
+                  <span className="text-[20px] leading-none">💬</span>
+                  Entrar no grupo
+                  <ArrowUpRight
+                    size={15}
+                    strokeWidth={2.5}
+                    className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                  />
+                </div>
+              </div>
+            </div>
+          </a>
+        </SectionReveal>
+      </div>
+    </section>
+  );
+}
+
+// =================================================================
 // AÇÕES — Cards magazine grandes com hover-lift
 // =================================================================
 
@@ -1072,6 +1161,7 @@ function HomeBody({ desktop = false }: { desktop?: boolean }) {
         onReopenTour={reopenTour}
       />
       <StatsSection data={data} desktop={desktop} />
+      <GroupJornada1Section desktop={desktop} />
       <ActionsSection desktop={desktop} />
       <RotinaSection streak={data.streak} liveNow={liveNow} desktop={desktop} />
       <CatalogoSection products={data.products} desktop={desktop} />
