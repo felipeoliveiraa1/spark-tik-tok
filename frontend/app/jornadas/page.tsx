@@ -220,55 +220,54 @@ export default function JornadasPage() {
           ))}
         </div>
 
-        {/* Stats inline (oculta se aluna ainda nao fez nada) */}
+        {/* Conquistas — sheet branco com stats + grid de distintivos */}
         {stats &&
           (stats.lessons_completed_count > 0 ||
             stats.proofs_approved_count > 0 ||
             stats.badges.length > 0) && (
-            <div className="px-4 mt-6 flex items-center justify-center gap-4 text-[13px] font-bold text-spark-ink-70 flex-wrap">
-              <span className="inline-flex items-center gap-1.5">
-                📚 {stats.lessons_completed_count} aulas
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                🎯 {stats.proofs_approved_count} provas
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                🏆 {stats.badges.length} badges
-              </span>
-            </div>
-          )}
-
-        {/* Badges scroll horizontal — so se houver */}
-        {stats && stats.badges.length > 0 && (
-          <div className="mt-6">
-            <div className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-spark-brand-deep mb-2 px-4">
-              Suas conquistas ({stats.badges.length})
-            </div>
-            <div
-              className="flex gap-2 overflow-x-auto pb-2 px-4 snap-x snap-mandatory"
-              style={{ scrollbarWidth: "none" }}
-            >
-              {stats.badges.map((b) => (
-                <div
-                  key={b.slug}
-                  className="snap-start shrink-0 max-w-[160px] px-3 py-1.5 rounded-full bg-spark-surface border border-spark-hairline text-[11.5px] font-extrabold inline-flex items-center gap-1.5"
-                  title={b.description ?? undefined}
-                >
-                  {b.icon_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={b.icon_url}
-                      alt=""
-                      className="w-4 h-4 shrink-0"
-                      style={{ imageRendering: "pixelated" }}
-                    />
-                  ) : (
-                    <span>✨</span>
-                  )}
-                  <span className="truncate">{b.title}</span>
+            <div className="mt-6 mx-4">
+              <div className="rounded-spark-2xl bg-white/95 backdrop-blur-md shadow-lift border border-white/50 p-5 md:p-6">
+                <div className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-spark-brand-deep">
+                  ✦ minhas conquistas
                 </div>
-              ))}
-            </div>
+
+                {/* Stats inline (topo do sheet) */}
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  <StatPill
+                    emoji="📚"
+                    value={stats.lessons_completed_count}
+                    label="aulas"
+                  />
+                  <StatPill
+                    emoji="🎯"
+                    value={stats.proofs_approved_count}
+                    label={
+                      stats.proofs_approved_count === 1 ? "prova" : "provas"
+                    }
+                  />
+                  <StatPill
+                    emoji="🏆"
+                    value={stats.badges.length}
+                    label={stats.badges.length === 1 ? "selo" : "selos"}
+                  />
+                </div>
+
+                {/* Grid de distintivos */}
+                {stats.badges.length > 0 && (
+                  <div className="mt-5 grid grid-cols-3 md:grid-cols-4 gap-3">
+                    {stats.badges.map((b) => (
+                      <BadgeChip key={b.slug} badge={b} />
+                    ))}
+                  </div>
+                )}
+
+                {stats.badges.length === 0 && (
+                  <p className="mt-4 text-[12.5px] text-spark-ink-50 leading-snug">
+                    Complete aulas, poste comentários e envie a prova pra
+                    desbloquear seus primeiros selos 💕
+                  </p>
+                )}
+              </div>
           </div>
         )}
       </main>
@@ -331,5 +330,141 @@ function StickyHeader({
         </div>
       </div>
     </header>
+  );
+}
+
+// =================================================================
+// CONQUISTAS — StatPill + BadgeChip
+// =================================================================
+
+// Emoji por slug — visual proprio pra cada selo (fallback ✨).
+const BADGE_EMOJI: Record<string, string> = {
+  iniciante: "🌱",
+  criadora: "🎨",
+  consistente: "💪",
+  afiliada: "🤝",
+  vendedora: "💰",
+  "elite-tts": "⭐️",
+  "primeira-aula": "📖",
+  "primeira-jornada": "🎯",
+  trilogia: "👑",
+  "primeira-venda": "🎉",
+  "vendedora-100": "💯",
+  "vendedora-1000": "🏆",
+  comentarista: "💬",
+  popular: "❤️",
+  madrugadora: "🌅",
+  coruja: "🌙",
+  maratonista: "🏃‍♀️",
+  "streak-7-dias": "🔥",
+  adolescente: "👧",
+  adulta: "🙋‍♀️",
+  pioneira: "🚀",
+};
+
+const RARITY_STYLES: Record<
+  string,
+  { bg: string; border: string; label: string; labelColor: string }
+> = {
+  common: {
+    bg: "linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)",
+    border: "#d1d5db",
+    label: "Comum",
+    labelColor: "#6b7280",
+  },
+  rare: {
+    bg: "linear-gradient(135deg, #dbeafe 0%, #93c5fd 100%)",
+    border: "#3b82f6",
+    label: "Raro",
+    labelColor: "#1e40af",
+  },
+  epic: {
+    bg: "linear-gradient(135deg, #ede9fe 0%, #c4b5fd 100%)",
+    border: "#8b5cf6",
+    label: "Épico",
+    labelColor: "#5b21b6",
+  },
+  legendary: {
+    bg: "linear-gradient(135deg, #fef3c7 0%, #fbbf24 50%, #f59e0b 100%)",
+    border: "#d97706",
+    label: "Lendário",
+    labelColor: "#92400e",
+  },
+};
+
+function StatPill({
+  emoji,
+  value,
+  label,
+}: {
+  emoji: string;
+  value: number;
+  label: string;
+}) {
+  return (
+    <div className="rounded-spark-xl bg-spark-surface-sunken/70 border border-spark-hairline px-3 py-2.5 text-center">
+      <div className="text-[20px] leading-none mb-1">{emoji}</div>
+      <div className="font-display text-[22px] leading-none text-spark-ink tabular-nums">
+        {value}
+      </div>
+      <div className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-spark-ink-50 mt-1">
+        {label}
+      </div>
+    </div>
+  );
+}
+
+function BadgeChip({
+  badge,
+}: {
+  badge: {
+    slug: string;
+    title: string;
+    description: string | null;
+    icon_url: string | null;
+    rarity: string;
+  };
+}) {
+  const emoji = BADGE_EMOJI[badge.slug] ?? "✨";
+  const style = RARITY_STYLES[badge.rarity] ?? RARITY_STYLES.common;
+
+  return (
+    <div
+      className="rounded-spark-xl border-2 p-2.5 text-center shadow-rest transition-transform hover:scale-105 active:scale-95"
+      style={{
+        background: style.bg,
+        borderColor: style.border,
+      }}
+      title={badge.description ?? undefined}
+    >
+      <div
+        className="mx-auto mb-1 w-12 h-12 rounded-full bg-white/60 backdrop-blur-sm border border-white/50 flex items-center justify-center text-[26px] shadow-lift"
+        aria-hidden
+      >
+        {badge.icon_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={badge.icon_url}
+            alt=""
+            className="w-8 h-8"
+            style={{ imageRendering: "pixelated" }}
+          />
+        ) : (
+          emoji
+        )}
+      </div>
+      <div
+        className="text-[11px] font-extrabold leading-tight line-clamp-2"
+        style={{ color: style.labelColor }}
+      >
+        {badge.title}
+      </div>
+      <div
+        className="text-[8.5px] font-extrabold uppercase tracking-[0.15em] mt-0.5 opacity-75"
+        style={{ color: style.labelColor }}
+      >
+        {style.label}
+      </div>
+    </div>
   );
 }
