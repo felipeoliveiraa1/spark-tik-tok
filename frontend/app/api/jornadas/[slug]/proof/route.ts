@@ -54,6 +54,22 @@ export async function POST(
   const { data: { user } } = await auth.auth.getUser();
   if (!user) return json({ error: "unauthorized" }, { status: 401 });
 
+  // TEMPORARIO: prova disponivel so pra admin (Yara vai calibrar meta/OCR
+  // antes de liberar pras alunas). Aluna comum recebe 503 com mensagem
+  // "em breve". Pra reabrir: remove esse bloco.
+  const { data: profile } = await auth
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+  const isAdmin = profile?.role === "admin";
+  if (!isAdmin) {
+    return json(
+      { error: "prova em breve — aguarde liberacao" },
+      { status: 503 },
+    );
+  }
+
   const { slug } = await ctx.params;
   const supabase = getServiceClient();
 

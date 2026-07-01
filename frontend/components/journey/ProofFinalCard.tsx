@@ -4,7 +4,13 @@ import Link from "next/link";
 import { Trophy, Camera, Lock, CheckCircle2, Clock, AlertCircle, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/cn";
 
-type ProofStatus = "locked" | "pending" | "approved" | "rejected" | "ready";
+type ProofStatus =
+  | "locked"
+  | "pending"
+  | "approved"
+  | "rejected"
+  | "ready"
+  | "coming_soon";
 
 /**
  * Card "Prova final" no hub da jornada — mostrado APOS os ModuleCards.
@@ -28,6 +34,14 @@ export function ProofFinalCard({
   totalModules: number;
 }) {
   const cfg = {
+    coming_soon: {
+      title: "Em breve · Prova final",
+      subtitle:
+        "A prova vai abrir em breve. Enquanto isso, aproveita as aulas 💕",
+      Icon: Lock,
+      bg: "linear-gradient(135deg, oklch(0.62 0.08 280) 0%, oklch(0.45 0.08 280) 100%)",
+      cta: null as null | { label: string; href: string; Icon: typeof Camera },
+    },
     locked: {
       title: "Prova final bloqueada",
       subtitle: `Termine os ${totalModules} módulos pra desbloquear.`,

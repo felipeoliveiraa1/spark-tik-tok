@@ -15,6 +15,30 @@ export default function ProvaJornadaPage() {
   const [result, setResult] = React.useState<UploadResult | null>(null);
   const [showXp, setShowXp] = React.useState<number | null>(null);
   const [awardedBadges, setAwardedBadges] = React.useState<AwardedBadge[]>([]);
+  const [gateChecked, setGateChecked] = React.useState(false);
+
+  // TEMPORARIO: prova em breve — so admin passa. Aluna comum redireciona
+  // pro hub da jornada. Pra reabrir: remove esse useEffect + o gate no
+  // API POST /api/jornadas/[slug]/proof.
+  React.useEffect(() => {
+    let cancelled = false;
+    void fetch("/api/me", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        if (cancelled) return;
+        if (j?.profile?.role !== "admin") {
+          router.replace(`/jornadas/${params.slug}`);
+        } else {
+          setGateChecked(true);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) router.replace(`/jornadas/${params.slug}`);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [params.slug, router]);
 
   const handleResult = (r: UploadResult) => {
     setResult(r);
@@ -29,6 +53,11 @@ export default function ProvaJornadaPage() {
       setShowXp(50);
     }
   };
+
+  // Enquanto gate nao verificou (ou redirect em progresso), nada visivel.
+  if (!gateChecked) {
+    return <div className="min-h-dvh bg-spark-bg" aria-hidden />;
+  }
 
   return (
     <div className="min-h-dvh hero-radial pb-20">

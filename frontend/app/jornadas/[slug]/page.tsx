@@ -67,6 +67,7 @@ type ApiResp = {
   lessons: Lesson[];
   progress: { xp_total: number; status: string } | null;
   proof: { status: string } | null;
+  me?: { is_admin: boolean };
   stats: {
     total_lessons: number;
     completed_lessons: number;
@@ -124,7 +125,15 @@ export default function JornadaDetailPage() {
   );
 
   // Status da prova final
-  const proofStatus: "locked" | "pending" | "approved" | "rejected" | "ready" =
+  // TEMPORARIO: prova em "coming_soon" pras alunas — Yara (admin) ainda
+  // vai ajustar meta/OCR/copy. Admin ve o estado real pra testar o fluxo.
+  // Pra reabrir pras alunas: remove essa camada e volta pro calculo normal.
+  const realProofStatus:
+    | "locked"
+    | "pending"
+    | "approved"
+    | "rejected"
+    | "ready" =
     proof?.status === "approved" || proof?.status === "auto_approved"
       ? "approved"
       : proof?.status === "pending"
@@ -134,6 +143,13 @@ export default function JornadaDetailPage() {
           : stats.all_modules_complete
             ? "ready"
             : "locked";
+  const proofStatus:
+    | "locked"
+    | "pending"
+    | "approved"
+    | "rejected"
+    | "ready"
+    | "coming_soon" = data.me?.is_admin ? realProofStatus : "coming_soon";
 
   return (
     <div className="min-h-dvh pb-12 relative">

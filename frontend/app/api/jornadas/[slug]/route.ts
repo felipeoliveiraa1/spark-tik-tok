@@ -298,6 +298,7 @@ export async function GET(
     lessons: lessonsWithState,
     progress: progressRes.data ?? null,
     proof: proofRes.data ?? null,
+    me: { is_admin: isAdmin },
     stats: {
       total_lessons: totalLessons,
       completed_lessons: completedLessons,
