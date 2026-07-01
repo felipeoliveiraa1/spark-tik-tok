@@ -228,7 +228,11 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
+  // /desafio e /grupo sao route handlers de redirect publico (video YouTube
+  // e round-robin grupo WhatsApp respectivamente). Excluidos do matcher pra
+  // NAO caírem no chute "aluna nao-logada -> /landing" (pagina de venda) —
+  // esse bug ja fez pessoal comprar sem ver o video.
   matcher: [
-    "/((?!api/|_next/|icons/|manifest.webmanifest|apple-icon|icon|favicon|.*\\.(?:svg|png|jpg|jpeg|webp|gif|ico)).*)",
+    "/((?!api/|_next/|icons/|manifest.webmanifest|apple-icon|icon|favicon|desafio|grupo|.*\\.(?:svg|png|jpg|jpeg|webp|gif|ico)).*)",
   ],
 };
