@@ -72,7 +72,7 @@ type Item = {
 
 const ITEMS: Item[] = [
   { id: "home", labelKey: "home", href: "/", Icon: Home },
-  { id: "jornadas", labelKey: "jornadas", href: "/jornadas", Icon: Gamepad2, adminOnly: true },
+  { id: "jornadas", labelKey: "jornadas", href: "/jornadas", Icon: Gamepad2 },
   { id: "chat", labelKey: "chat", href: "/agentes", Icon: Sparkles },
   { id: "produtos", labelKey: "products", href: "/produtos", Icon: Package },
   { id: "scripts", labelKey: "scripts", href: "/scripts", Icon: PenLine },
