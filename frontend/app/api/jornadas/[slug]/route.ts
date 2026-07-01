@@ -59,6 +59,36 @@ export async function GET(
     return json({ error: "forbidden" }, { status: 403 });
   }
 
+  // Gate sequencial server-side: aluna comum precisa ter jornada anterior
+  // (por order_index) completed pra acessar. Mesma logica do enrichedJourneys
+  // no hub /jornadas, replicada server-side pra evitar bypass via URL direta.
+  // Admin ignora (preview).
+  if (!isAdmin && journey.order_index > 100) {
+    const { data: prevJourney } = await supabase
+      .from("journeys")
+      .select("id")
+      .eq("is_published", true)
+      .eq("is_admin_only", false)
+      .lt("order_index", journey.order_index)
+      .order("order_index", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (prevJourney?.id) {
+      const { data: prevProgress } = await supabase
+        .from("journey_progress")
+        .select("status")
+        .eq("user_id", user.id)
+        .eq("journey_id", prevJourney.id)
+        .maybeSingle();
+      if (prevProgress?.status !== "completed") {
+        return json(
+          { error: "complete previous journey first" },
+          { status: 403 },
+        );
+      }
+    }
+  }
+
   // Modulos publicados da jornada (pode ser vazio em jornadas legacy)
   const { data: modulesRaw, error: mErr } = await supabase
     .from("journey_modules")

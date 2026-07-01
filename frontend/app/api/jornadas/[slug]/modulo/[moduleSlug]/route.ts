@@ -66,6 +66,34 @@ export async function GET(
     return json({ error: "forbidden" }, { status: 403 });
   }
 
+  // Gate sequencial: aluna precisa ter jornada anterior completed (mesmo
+  // padrao do /api/jornadas/[slug]). Admin bypass.
+  if (!isAdmin && journey.order_index > 100) {
+    const { data: prevJourney } = await supabase
+      .from("journeys")
+      .select("id")
+      .eq("is_published", true)
+      .eq("is_admin_only", false)
+      .lt("order_index", journey.order_index)
+      .order("order_index", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (prevJourney?.id) {
+      const { data: prevProgress } = await supabase
+        .from("journey_progress")
+        .select("status")
+        .eq("user_id", user.id)
+        .eq("journey_id", prevJourney.id)
+        .maybeSingle();
+      if (prevProgress?.status !== "completed") {
+        return json(
+          { error: "complete previous journey first" },
+          { status: 403 },
+        );
+      }
+    }
+  }
+
   // 2) Modulo + todos os modulos da jornada (pra calcular prev/next + gate)
   const { data: allModules, error: mErr } = await supabase
     .from("journey_modules")
