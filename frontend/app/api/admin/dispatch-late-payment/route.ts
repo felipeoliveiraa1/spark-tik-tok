@@ -46,6 +46,7 @@ type LateProfile = {
   plan_status: string | null;
   plan_next_payment: string | null;
   plan_renewed_at: string | null;
+  plan_active: boolean | null;
 };
 
 function firstName(fullName: string | null | undefined): string {
@@ -77,11 +78,21 @@ export async function POST(_req: Request) {
 
     const svc = getServiceClient();
 
-    // 1) Busca todas as alunas com plan_status = 'late' + email valido
+    // 1) Busca alunas atrasadas — MESMA definicao do /admin/financeiro > "late":
+    //    plan_status IN (active, late) + plan_active=true
+    //    + plan_next_payment vencido (< now)
+    //    + plan_next_payment nos ultimos 14d (evita cobrar quem venceu ha meses e ja abandonou)
+    // Kiwify demora pra flipar status pra "late" — muitas ficam "active" com next_payment vencido.
+    const nowIso = new Date().toISOString();
+    const days14Ago = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+
     const { data: rawProfiles, error: qErr } = await svc
       .from("profiles")
-      .select("id, email, name, plan_status, plan_next_payment, plan_renewed_at")
-      .eq("plan_status", "late")
+      .select("id, email, name, plan_status, plan_next_payment, plan_renewed_at, plan_active")
+      .in("plan_status", ["active", "late"])
+      .eq("plan_active", true)
+      .lt("plan_next_payment", nowIso)
+      .gte("plan_next_payment", days14Ago)
       .not("email", "is", null);
 
     if (qErr) {
