@@ -202,6 +202,9 @@ export default function AdminFinanceiroPage() {
               MRR, ARR, churn, ticket médio, evolução mensal e projeção dos próximos 30 dias.
               Tudo derivado dos webhooks pagos do Kiwify + status das alunas.
             </p>
+            <div className="mt-5">
+              <DispatchLateButton />
+            </div>
           </SectionReveal>
         </div>
       </section>
@@ -218,6 +221,74 @@ export default function AdminFinanceiroPage() {
         <FinanceiroContent data={data} />
       ) : null}
     </div>
+  );
+}
+
+// =================================================================
+// DISPATCH LATE EMAIL BUTTON
+// =================================================================
+
+function DispatchLateButton() {
+  const [busy, setBusy] = React.useState(false);
+
+  const handleClick = async () => {
+    const ok = window.confirm(
+      "Vai disparar email pra TODAS que estão com pagamento atrasado. Confirmar?",
+    );
+    if (!ok) return;
+    setBusy(true);
+    try {
+      const res = await fetch("/api/admin/dispatch-late-payment", {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!res.ok) {
+        window.alert("Erro: " + res.status);
+        return;
+      }
+      const j = (await res.json().catch(() => ({}))) as {
+        total?: number;
+        sent?: number;
+        skipped_already_sent?: number;
+        errors?: unknown[];
+      };
+      const total = j.total ?? 0;
+      const sent = j.sent ?? 0;
+      const already = j.skipped_already_sent ?? 0;
+      const errCount = Array.isArray(j.errors) ? j.errors.length : 0;
+      window.alert(
+        `Atrasadas: ${total} · Enviados: ${sent} · Já enviados hoje: ${already} · Erros: ${errCount}`,
+      );
+    } catch (err) {
+      window.alert("Erro: " + (err instanceof Error ? err.message : "rede"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={busy}
+      className={cn(
+        "inline-flex items-center gap-2 px-5 py-3 rounded-full font-extrabold text-[13.5px]",
+        "bg-spark-brand text-white shadow-rest",
+        "hover:shadow-lift hover:-translate-y-0.5",
+        "transition-all duration-300 ease-premium",
+        "disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-rest",
+      )}
+      style={{ backgroundColor: "#db2777" }}
+    >
+      {busy ? (
+        <>
+          <Loader2 size={16} strokeWidth={2.5} className="animate-spin" />
+          Disparando...
+        </>
+      ) : (
+        <>📧 Disparar email pras atrasadas</>
+      )}
+    </button>
   );
 }
 
