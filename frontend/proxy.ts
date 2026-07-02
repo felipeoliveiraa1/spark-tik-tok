@@ -32,6 +32,8 @@ const PUBLIC_ROUTES = new Set(["/login", "/landing"]);
 // video — bug real que aconteceu em prod.
 // /participar eh redirect publico pro checkout Kiwify (divulgado em posts,
 // grupos, bio, etc). Sem essa entrada, aluna caia em /landing.
+// /obrigado-kiwify eh a thank-you page pos-checkout (Kiwify redirect URL).
+// Aluna acabou de pagar mas ainda nao tem sessao (email chega em ate 2min).
 const ALWAYS_PUBLIC = new Set([
   "/forgot-password",
   "/reset-password",
@@ -40,6 +42,7 @@ const ALWAYS_PUBLIC = new Set([
   "/grupo",
   "/desafio",
   "/participar",
+  "/obrigado-kiwify",
 ]);
 const ONBOARDING_ROUTES = new Set(["/welcome"]);
 
@@ -236,11 +239,11 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // /desafio, /grupo, /participar sao route handlers de redirect publico
-  // (video YouTube, round-robin grupo WhatsApp, checkout Kiwify).
-  // Excluidos do matcher pra NAO cairem no chute "aluna nao-logada ->
-  // /landing" — esse bug ja fez pessoal comprar sem ver o video.
+  // /desafio, /grupo, /participar, /obrigado-kiwify sao rotas publicas
+  // (redirects externos + thank-you page pos-checkout). Excluidos do
+  // matcher pra NAO cairem no chute "aluna nao-logada -> /landing" —
+  // esse bug ja fez pessoal comprar sem ver o video.
   matcher: [
-    "/((?!api/|_next/|icons/|manifest.webmanifest|apple-icon|icon|favicon|desafio|grupo|participar|.*\\.(?:svg|png|jpg|jpeg|webp|gif|ico)).*)",
+    "/((?!api/|_next/|icons/|manifest.webmanifest|apple-icon|icon|favicon|desafio|grupo|participar|obrigado-kiwify|.*\\.(?:svg|png|jpg|jpeg|webp|gif|ico)).*)",
   ],
 };
