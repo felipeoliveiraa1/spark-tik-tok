@@ -84,7 +84,7 @@ type KindStat = {
 type Profile = {
   id: string;
   email: string | null;
-  first_name: string | null;
+  name: string | null;
   created_at: string | null;
   plan_next_payment: string | null;
   plan_status: string | null;
@@ -152,7 +152,7 @@ function todayKey(): string {
 // ─────────────────────────────────────────────────────────────────
 
 const PROFILE_COLS =
-  "id, email, first_name, created_at, plan_next_payment, plan_status, plan_canceled_at";
+  "id, email, name, created_at, plan_next_payment, plan_status, plan_canceled_at";
 
 /**
  * Filtra da lista de candidatos os que ja receberam email desse kind
@@ -488,7 +488,8 @@ async function stepWinback(
 // ─────────────────────────────────────────────────────────────────
 
 function firstNameOf(p: Profile): string {
-  return (p.first_name?.trim() || (p.email ? p.email.split("@")[0] : "aluna")) as string;
+  const first = (p.name ?? "").trim().split(/\s+/)[0];
+  return first || (p.email ? p.email.split("@")[0] : "aluna");
 }
 
 function daysFromNow(iso: string | null): number {

@@ -42,11 +42,16 @@ function todayBrtDateStr(): string {
 type LateProfile = {
   id: string;
   email: string | null;
-  first_name: string | null;
+  name: string | null;
   plan_status: string | null;
   plan_next_payment: string | null;
   plan_renewed_at: string | null;
 };
+
+function firstName(fullName: string | null | undefined): string {
+  const first = (fullName ?? "").trim().split(/\s+/)[0];
+  return first || "amiga";
+}
 
 export async function POST(_req: Request) {
   try {
@@ -75,7 +80,7 @@ export async function POST(_req: Request) {
     // 1) Busca todas as alunas com plan_status = 'late' + email valido
     const { data: rawProfiles, error: qErr } = await svc
       .from("profiles")
-      .select("id, email, first_name, plan_status, plan_next_payment, plan_renewed_at")
+      .select("id, email, name, plan_status, plan_next_payment, plan_renewed_at")
       .eq("plan_status", "late")
       .not("email", "is", null);
 
@@ -143,7 +148,7 @@ export async function POST(_req: Request) {
       // 2c) Monta email
       const updateUrl = "https://www.metodotts.app/conta";
       const built = buildPagamentoAtrasadoEmail({
-        firstName: profile.first_name ?? "amiga",
+        firstName: firstName(profile.name),
         updateUrl,
         daysLate,
       });
