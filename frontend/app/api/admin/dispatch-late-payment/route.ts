@@ -49,21 +49,42 @@ type LateProfile = {
 };
 
 export async function POST(_req: Request) {
-  const guard = await requireAdmin();
-  if (!guard.ok) return guard.response;
+  try {
+    const guard = await requireAdmin();
+    if (!guard.ok) return guard.response;
 
-  const svc = getServiceClient();
+    // Env vars obrigatorias — se faltarem, devolve mensagem clara em vez de 500 opaco.
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+    const resendKey = process.env.RESEND_API_KEY ?? "";
+    if (!url || !key) {
+      return NextResponse.json(
+        { error: "env_missing", detail: `SUPABASE_URL=${!!url} SERVICE_ROLE=${!!key}` },
+        { status: 500 },
+      );
+    }
+    if (!resendKey) {
+      return NextResponse.json(
+        { error: "resend_key_missing", detail: "RESEND_API_KEY nao configurada na Vercel" },
+        { status: 500 },
+      );
+    }
 
-  // 1) Busca todas as alunas com plan_status = 'late' + email valido
-  const { data: rawProfiles, error: qErr } = await svc
-    .from("profiles")
-    .select("id, email, first_name, plan_status, plan_next_payment, plan_renewed_at")
-    .eq("plan_status", "late")
-    .not("email", "is", null);
+    const svc = getServiceClient();
 
-  if (qErr) {
-    return NextResponse.json({ error: qErr.message }, { status: 500 });
-  }
+    // 1) Busca todas as alunas com plan_status = 'late' + email valido
+    const { data: rawProfiles, error: qErr } = await svc
+      .from("profiles")
+      .select("id, email, first_name, plan_status, plan_next_payment, plan_renewed_at")
+      .eq("plan_status", "late")
+      .not("email", "is", null);
+
+    if (qErr) {
+      return NextResponse.json(
+        { error: "profiles_query_failed", detail: qErr.message },
+        { status: 500 },
+      );
+    }
 
   const profiles: LateProfile[] = ((rawProfiles as LateProfile[] | null) ?? []).filter(
     (p) => typeof p.email === "string" && p.email.trim().length > 0,
@@ -176,10 +197,19 @@ export async function POST(_req: Request) {
     await sleep(SEND_DELAY_MS);
   }
 
-  return NextResponse.json({
-    total,
-    sent,
-    skipped_already_sent: skippedAlreadySent,
-    errors,
-  });
+    return NextResponse.json({
+      total,
+      sent,
+      skipped_already_sent: skippedAlreadySent,
+      errors,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "unknown";
+    const stack = err instanceof Error ? err.stack : undefined;
+    console.error("[dispatch-late-payment] FATAL", { message, stack });
+    return NextResponse.json(
+      { error: "fatal", detail: message },
+      { status: 500 },
+    );
+  }
 }

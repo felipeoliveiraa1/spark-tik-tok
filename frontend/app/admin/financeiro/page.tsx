@@ -243,7 +243,14 @@ function DispatchLateButton() {
         credentials: "include",
       });
       if (!res.ok) {
-        window.alert("Erro: " + res.status);
+        const body = await res.json().catch(() => ({}));
+        const detail =
+          typeof body?.detail === "string"
+            ? body.detail
+            : typeof body?.error === "string"
+              ? body.error
+              : "sem detalhe";
+        window.alert(`Erro ${res.status}: ${detail}`);
         return;
       }
       const j = (await res.json().catch(() => ({}))) as {
