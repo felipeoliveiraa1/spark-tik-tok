@@ -20,7 +20,14 @@ export const dynamic = "force-dynamic";
  * Response: { rows: Row[], total: number, page: number, pageSize: number }
  */
 
-const SECTIONS = ["renewals-upcoming", "canceled", "refunded", "late", "trial"] as const;
+const SECTIONS = [
+  "renewals-upcoming",
+  "canceled",
+  "refunded",
+  "late",
+  "trial",
+  "old-not-renewed",
+] as const;
 type Section = (typeof SECTIONS)[number];
 
 function isSection(s: string): s is Section {
@@ -124,6 +131,30 @@ export async function GET(
         .gte("plan_expires_at", nowIso)
         .order("plan_expires_at", { ascending: true });
       break;
+    case "old-not-renewed": {
+      // Antigas nao renovadas: created_at ANTES de hoje 00:00 BRT +
+      // plan_next_payment vencido (nao pagou renovacao). Bom pra
+      // identificar carteira antiga que precisa ser cobrada.
+      const brtOffsetMs = 3 * 60 * 60 * 1000;
+      const brtNow = new Date(now.getTime() - brtOffsetMs);
+      const brtTodayStart = new Date(
+        Date.UTC(
+          brtNow.getUTCFullYear(),
+          brtNow.getUTCMonth(),
+          brtNow.getUTCDate(),
+        ),
+      );
+      const startOfTodayUtcIso = new Date(
+        brtTodayStart.getTime() + brtOffsetMs,
+      ).toISOString();
+      query = query
+        .lt("created_at", startOfTodayUtcIso)
+        .in("plan_status", ["active", "late"])
+        .eq("plan_active", true)
+        .lt("plan_next_payment", nowIso)
+        .order("plan_next_payment", { ascending: true });
+      break;
+    }
   }
 
   if (search) {

@@ -1,12 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { Search, Loader2, Calendar, XCircle, AlertTriangle, RotateCcw, Timer } from "lucide-react";
+import { Search, Loader2, Calendar, XCircle, AlertTriangle, RotateCcw, Timer, History } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 const SECTIONS = [
   { key: "renewals-upcoming", label: "Renovações 30d", Icon: Calendar, tone: "brand" },
   { key: "late", label: "Atrasadas", Icon: AlertTriangle, tone: "warn" },
+  { key: "old-not-renewed", label: "Antigas não renovaram", Icon: History, tone: "warn" },
   { key: "canceled", label: "Canceladas 90d", Icon: XCircle, tone: "neutral" },
   { key: "refunded", label: "Reembolsadas", Icon: RotateCcw, tone: "bad" },
   { key: "trial", label: "Trial expirando", Icon: Timer, tone: "brand" },
@@ -179,7 +180,7 @@ export function SegmentsTabs() {
                           ? "Cancelou em"
                           : active === "refunded"
                             ? "Reembolso"
-                            : active === "late"
+                            : active === "late" || active === "old-not-renewed"
                               ? "Deveria ter renovado"
                               : "Trial acaba"}
                     </th>
@@ -215,7 +216,7 @@ export function SegmentsTabs() {
                         )}
                         {active === "canceled" && fmtDate(r.plan_canceled_at)}
                         {active === "refunded" && fmtDate(r.plan_canceled_at)}
-                        {active === "late" && (
+                        {(active === "late" || active === "old-not-renewed") && (
                           <span className="text-warn font-extrabold">
                             {r.days_until_renewal !== null
                               ? `${Math.abs(r.days_until_renewal)}d atrás`

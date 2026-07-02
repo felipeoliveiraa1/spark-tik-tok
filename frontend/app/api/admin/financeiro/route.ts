@@ -78,6 +78,7 @@ type ProfileRow = {
   plan_canceled_at: string | null;
   plan_expires_at: string | null;
   role: string | null;
+  created_at: string;
 };
 
 /**
@@ -143,7 +144,7 @@ export async function GET() {
   const { data: rawProfiles, error: profErr } = await svc
     .from("profiles")
     .select(
-      "id, email, name, plan_active, plan_status, plan_next_payment, plan_renewed_at, plan_canceled_at, plan_expires_at, role",
+      "id, email, name, plan_active, plan_status, plan_next_payment, plan_renewed_at, plan_canceled_at, plan_expires_at, role, created_at",
     )
     .or("role.is.null,role.neq.admin");
 
@@ -341,6 +342,32 @@ export async function GET() {
     if (new Date(e.processed_at) >= since30) newCustomers30 += 1;
   }
 
+  // ----- Novas HOJE + ONTEM (BRT) -----
+  // startOfToday BRT = today 00:00 BRT = today 03:00 UTC
+  const nowU = new Date();
+  const brtOffsetMs = 3 * 60 * 60 * 1000; // BRT = UTC-3
+  // Data BRT calc: (now - offset) truncar pra 00:00
+  const brtNow = new Date(nowU.getTime() - brtOffsetMs);
+  const brtTodayStart = new Date(
+    Date.UTC(brtNow.getUTCFullYear(), brtNow.getUTCMonth(), brtNow.getUTCDate()),
+  );
+  // Converte pra UTC pra comparar com created_at (que ta em UTC)
+  const startOfTodayUtc = new Date(brtTodayStart.getTime() + brtOffsetMs);
+  const startOfYesterdayUtc = new Date(startOfTodayUtc.getTime() - 24 * 60 * 60 * 1000);
+
+  // Conta profiles criados hoje e ontem (BRT)
+  let newToday = 0;
+  let newYesterday = 0;
+  for (const p of profiles) {
+    if (!p.created_at) continue;
+    const created = new Date(p.created_at);
+    if (created >= startOfTodayUtc) {
+      newToday += 1;
+    } else if (created >= startOfYesterdayUtc && created < startOfTodayUtc) {
+      newYesterday += 1;
+    }
+  }
+
   // ----- Recent transactions (20 mais recentes) -----
   const recentTransactions: Transaction[] = paidEvents.slice(0, 20).map((e) => ({
     created_at: e.processed_at,
@@ -436,6 +463,8 @@ export async function GET() {
     paying_customers: payingEmails.size,
     trial_customers: trialCustomers,
     new_customers_30d: newCustomers30,
+    new_today: newToday,
+    new_yesterday: newYesterday,
     churned_30d: churned30,
     churn_30d_pct: churn30Pct,
     renewals_30d: renewals30,

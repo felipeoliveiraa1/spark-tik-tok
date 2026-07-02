@@ -48,6 +48,8 @@ type FinanceiroData = {
   paying_customers: number;
   trial_customers: number;
   new_customers_30d: number;
+  new_today: number;
+  new_yesterday: number;
   churned_30d: number;
   churn_30d_pct: number;
   renewals_30d: number;
@@ -263,6 +265,39 @@ function FinanceiroContent({ data }: { data: FinanceiroData }) {
             sub={`Acesso temporário · não geram MRR ainda`}
             tone="warn"
             emoji="🎁"
+          />
+        </div>
+      </section>
+
+      {/* Movimento do dia — quem entrou hoje/ontem */}
+      <section>
+        <div className="text-eyebrow text-spark-brand mb-3">✦ movimento do dia</div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <KpiCard
+            label="Novas hoje"
+            value={String(data.new_today)}
+            sub="Signups desde 00:00 BRT"
+            tone="brand"
+            emoji="🌟"
+          />
+          <KpiCard
+            label="Novas ontem"
+            value={String(data.new_yesterday)}
+            sub="Signups de ontem BRT"
+            emoji="📅"
+          />
+          <KpiCard
+            label="Novas 30d"
+            value={String(data.new_customers_30d)}
+            sub="Total do mês corrente + anterior"
+            emoji="📊"
+          />
+          <KpiCard
+            label="Renovações 30d"
+            value={String(data.renewals_30d)}
+            sub="subscription_renewed nos últimos 30d"
+            tone="good"
+            emoji="🔄"
           />
         </div>
       </section>
