@@ -12,7 +12,6 @@ import {
   Sparkles,
   Search,
   HelpCircle,
-  ArrowUpRight,
 } from "lucide-react";
 import { HeroBlob } from "@/components/atoms/hero-blob";
 import { SparkleField } from "@/components/atoms/sparkle-field";
@@ -201,17 +200,8 @@ export default function ObrigadoKiwifyPage() {
                 title="Ainda tô com problema"
                 body={
                   <>
-                    Nos chama no Instagram{" "}
-                    <a
-                      href="https://instagram.com/metodotts"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-spark-brand-deep underline underline-offset-2 font-semibold inline-flex items-center gap-1"
-                    >
-                      @metodotts
-                      <ArrowUpRight size={12} strokeWidth={2.5} />
-                    </a>{" "}
-                    e a gente resolve rapidinho 💕
+                    Responde qualquer email do Método TTS que a gente
+                    resolve rapidinho por lá 💕
                   </>
                 }
               />
