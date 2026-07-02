@@ -12,6 +12,9 @@ import { JourneyCard } from "@/components/journey/JourneyCard";
 import type { CharacterStage } from "@/lib/journey/character-stage";
 import { CHARACTER_STAGES } from "@/lib/journey/character-stage";
 import { useJourneyStats } from "@/lib/journey/useJourneyStats";
+import { TutorialOverlay } from "@/components/molecules/tutorial-overlay";
+import { HelpMenu } from "@/components/molecules/help-menu";
+import type { TutorialStep } from "@/lib/tutorial";
 
 type JourneyApiItem = {
   id: string;
@@ -47,7 +50,83 @@ type ApiResp = {
 
 const LEVEL_UP_KEY = "tts:lastSeenStage";
 
+function buildJornadasSteps(): TutorialStep[] {
+  return [
+    {
+      id: "welcome",
+      title: "bem-vinda às jornadas 💕",
+      description:
+        "Aqui mora a evolução do seu personagem: 3 fases que você desbloqueia postando, comentando e vendendo. Em 40s te mostro como funciona.",
+    },
+    {
+      id: "header",
+      target: "jornadas-header",
+      title: "seu progresso no topo",
+      description:
+        "O emoji mostra a fase atual do seu personagem — bebê, adolescente ou adulta. Do lado, o total de XP que você já acumulou. Sobe conforme você completa aulas e envia provas.",
+      padding: 6,
+      radius: 24,
+    },
+    {
+      id: "journeys-stack",
+      target: "jornadas-cards",
+      title: "3 jornadas, 1 por vez",
+      description:
+        "Jornada 1 (bebê) abre pra todo mundo. As próximas ficam com cadeado até você provar que aplicou — só destrava quando comprova venda. Faz na ordem, sem pular.",
+      padding: 10,
+      radius: 28,
+    },
+    {
+      id: "continue",
+      target: "jornadas-continue",
+      title: "continua de onde parou",
+      description:
+        "Se você já começou uma jornada, esse botão rosa aparece no topo com o % concluído. Um toque e volta direto pra próxima aula.",
+      padding: 8,
+      radius: 24,
+    },
+    {
+      id: "conquistas",
+      target: "jornadas-conquistas",
+      title: "seus selos e stats",
+      description:
+        "Cada aula assistida, cada prova aprovada, cada meta vira selo aqui. Iniciante, Criadora, Consistente, Afiliada, Vendedora, ELITE TTS — colecionáveis que marcam sua evolução.",
+      padding: 10,
+      radius: 28,
+    },
+    {
+      id: "done",
+      title: "pronto, agora é jornada 🚀",
+      description:
+        "Recomendo abrir a Jornada 1 e começar pela primeira aula. Pra refazer esse tour, clica no ✨ Tour no canto da tela.",
+    },
+  ];
+}
+
 export default function JornadasPage() {
+  const [tourOpen, setTourOpen] = React.useState(false);
+  const reopenTour = React.useCallback(() => setTourOpen(true), []);
+  const steps = React.useMemo(() => buildJornadasSteps(), []);
+
+  return (
+    <>
+      <JornadasPageContent onReopenTour={reopenTour} />
+      <TutorialOverlay
+        steps={steps}
+        storageKey="jornadas"
+        autoStart={!tourOpen}
+        open={tourOpen || undefined}
+        onClose={() => setTourOpen(false)}
+      />
+    </>
+  );
+}
+
+function JornadasPageContent({
+  onReopenTour,
+}: {
+  onReopenTour: () => void;
+}) {
   const [data, setData] = React.useState<ApiResp | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [errored, setErrored] = React.useState(false);
@@ -175,6 +254,7 @@ export default function JornadasPage() {
         xpTotal={stats?.xp_total ?? null}
         stage={data.me.character_stage}
         isAdmin={data.me.is_admin}
+        onReopenTour={onReopenTour}
       />
 
       <main className="max-w-[520px] mx-auto">
@@ -182,6 +262,7 @@ export default function JornadasPage() {
         {currentJourney && (
           <Link
             href={`/jornadas/${currentJourney.slug}`}
+            data-tutorial-id="jornadas-continue"
             className="mx-4 mt-3 flex items-center gap-3 h-[72px] px-4 rounded-spark-xl bg-spark-brand border border-spark-brand-deep shadow-lift-brand active:scale-[0.98] transition-transform"
           >
             <PlayCircle
@@ -207,7 +288,7 @@ export default function JornadasPage() {
         )}
 
         {/* Stack vertical de cards full-bleed */}
-        <div className="px-4 mt-4 flex flex-col gap-4">
+        <div data-tutorial-id="jornadas-cards" className="px-4 mt-4 flex flex-col gap-4">
           {enrichedJourneys.map((j, idx) => (
             <JourneyCard
               key={j.id}
@@ -225,7 +306,7 @@ export default function JornadasPage() {
           (stats.lessons_completed_count > 0 ||
             stats.proofs_approved_count > 0 ||
             stats.badges.length > 0) && (
-            <div className="mt-6 mx-4">
+            <div data-tutorial-id="jornadas-conquistas" className="mt-6 mx-4">
               <div className="rounded-spark-2xl bg-white/95 backdrop-blur-md shadow-lift border border-white/50 p-5 md:p-6">
                 <div className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-spark-brand-deep">
                   ✦ minhas conquistas
@@ -288,10 +369,12 @@ function StickyHeader({
   xpTotal,
   stage,
   isAdmin,
+  onReopenTour,
 }: {
   xpTotal?: number | null;
   stage?: CharacterStage;
   isAdmin?: boolean;
+  onReopenTour?: () => void;
 } = {}) {
   return (
     <header className="sticky top-0 z-40 bg-white/75 backdrop-blur-md border-b border-white/40">
@@ -315,7 +398,7 @@ function StickyHeader({
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div data-tutorial-id="jornadas-header" className="flex items-center gap-2 shrink-0">
           {xpTotal !== null && xpTotal !== undefined && stage && (
             <div
               className="inline-flex items-center gap-1.5 px-3 h-9 rounded-full bg-spark-surface border border-spark-hairline text-[12px] font-extrabold text-spark-ink shadow-rest"
@@ -327,6 +410,7 @@ function StickyHeader({
             </div>
           )}
           <NotificationFeed />
+          {onReopenTour && <HelpMenu onReopenTour={onReopenTour} />}
         </div>
       </div>
     </header>
