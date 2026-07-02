@@ -296,11 +296,19 @@ async function handleOrderApproved({
 
   const { data: existingProfile } = await supabase
     .from("profiles")
-    .select("id, email, name")
+    .select("id, email, name, plan_active, plan_status")
     .eq("email", email)
     .maybeSingle();
 
   if (existingProfile) {
+    // Se aluna ja estava ativa → e uma RENOVACAO, nao reativacao.
+    // Kiwify manda order_approved + subscription_renewed no mesmo evento;
+    // aqui pulamos o email pra nao duplicar com o "Renovamos seu plano"
+    // que sai no handleSubscriptionRenewed. So atualizamos as datas.
+    const wasActive =
+      existingProfile.plan_active === true &&
+      existingProfile.plan_status === "active";
+
     // Reativa plano da aluna existente.
     const reactivatePatch: Record<string, unknown> = {
       plan_active: true,
@@ -331,7 +339,19 @@ async function handleOrderApproved({
     const loginUrl = `${siteUrl()}/login`;
     const forgotUrl = `${siteUrl()}/forgot-password`;
 
-    // Email + WhatsApp em paralelo (best-effort)
+    // Se ja estava ativa (renovacao normal): NAO envia email nem WhatsApp.
+    // subscription_renewed cuida da comunicacao.
+    if (wasActive) {
+      return {
+        ok: true,
+        status: "renewal_no_email",
+        profile_id: existingProfile.id,
+        email_sent: false,
+        whatsapp_sent: false,
+      };
+    }
+
+    // Reativacao real (estava canceled/late/inactive): email + WhatsApp em paralelo (best-effort)
     const [emailResult, waResult] = await Promise.all([
       sendEmail({
         to: email,
