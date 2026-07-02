@@ -88,11 +88,15 @@ export function HelpMenu({ onReopenTour, className }: Props) {
           aria-label="Ajuda"
           aria-expanded={open}
           className={cn(
-            "group inline-flex items-center justify-center w-10 h-10 rounded-full glass border border-spark-hairline text-spark-ink-70 hover:text-spark-brand-deep hover:bg-spark-brand-soft hover:-translate-y-0.5 transition-all duration-300 ease-premium shadow-rest",
-            open && "text-spark-brand-deep bg-spark-brand-soft -translate-y-0.5",
+            "group inline-flex items-center justify-center w-12 h-12 rounded-full border-2 border-white/30 text-white hover:-translate-y-0.5 transition-all duration-300 ease-premium shadow-lift-brand",
+            open && "-translate-y-0.5",
           )}
+          style={{
+            backgroundColor: "#db2777",
+            backgroundImage: "linear-gradient(135deg,#ec4899,#db2777)",
+          }}
         >
-          <HelpCircle size={16} strokeWidth={2.4} />
+          <HelpCircle size={22} strokeWidth={2.6} />
         </button>
 
         {/* Popover */}
