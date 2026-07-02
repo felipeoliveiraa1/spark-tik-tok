@@ -15,11 +15,36 @@ import { SInput } from "@/components/atoms/s-input";
 import { SButton } from "@/components/atoms/s-button";
 import { forgotPasswordAction } from "@/lib/auth";
 
+const COOLDOWN_MS = 120_000; // 120s — bate com cooldown server-side
+const COOLDOWN_KEY = "tts:lastPwdResetAt";
+
 function ForgotPasswordForm() {
   const t = useTranslations("auth.forgot");
   const [error, setError] = React.useState<string | null>(null);
   const [pending, setPending] = React.useState(false);
   const [sent, setSent] = React.useState(false);
+  const [remainingSec, setRemainingSec] = React.useState(0);
+
+  // Se ja pediu reset ha menos de 120s (server-side tem mesmo cooldown),
+  // ja mostra tela de sucesso — evita novo submit desnecessario.
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    const last = window.sessionStorage.getItem(COOLDOWN_KEY);
+    if (!last) return;
+    const elapsed = Date.now() - Number(last);
+    if (elapsed < COOLDOWN_MS) {
+      setSent(true);
+      setRemainingSec(Math.ceil((COOLDOWN_MS - elapsed) / 1000));
+    }
+  }, []);
+
+  React.useEffect(() => {
+    if (remainingSec <= 0) return;
+    const id = window.setInterval(() => {
+      setRemainingSec((s) => Math.max(0, s - 1));
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [remainingSec]);
 
   async function onSubmit(formData: FormData) {
     setError(null);
@@ -30,6 +55,10 @@ function ForgotPasswordForm() {
       setError(result.error);
       return;
     }
+    if (typeof window !== "undefined") {
+      window.sessionStorage.setItem(COOLDOWN_KEY, String(Date.now()));
+    }
+    setRemainingSec(Math.ceil(COOLDOWN_MS / 1000));
     setSent(true);
   }
 
@@ -45,6 +74,15 @@ function ForgotPasswordForm() {
         <p className="mt-2 text-[13.5px] text-spark-ink-70 leading-relaxed">
           {t("successBody")}
         </p>
+        {remainingSec > 0 && (
+          <p className="mt-3 text-[12.5px] text-spark-ink-50 leading-snug">
+            Já disparamos o email. Pra pedir outro, aguarda{" "}
+            <strong className="text-spark-ink-70 tabular-nums">
+              {remainingSec}s
+            </strong>
+            . Confere sua caixa (e o spam) enquanto isso 💕
+          </p>
+        )}
         <div className="mt-5">
           <Link href="/login" className="block">
             <SButton variant="ghost" size="md" full Icon={ArrowLeft}>

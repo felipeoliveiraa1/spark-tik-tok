@@ -132,6 +132,11 @@ export async function logoutAction() {
  * custom). O link de recovery redireciona pra /reset-password onde a aluna
  * define a senha nova. Sempre retorna ok mesmo se o email não existe (anti
  * enumeration).
+ *
+ * Cooldown de 120s por email: se a aluna clicar "esqueci senha" varias
+ * vezes seguidas (aconteceu com uma aluna que disparou 5 emails em 3min),
+ * apenas o primeiro dispara — os demais retornam { ok: true } silencioso
+ * pra preservar anti-enumeration.
  */
 export async function forgotPasswordAction(
   formData: FormData,
@@ -143,11 +148,55 @@ export async function forgotPasswordAction(
 
   const supabase = await getSupabaseServer();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://metodotts.app";
-  // Não checamos se o user existe — Supabase só envia se existir (anti
-  // enumeration). Sempre retornamos { ok: true } pra não vazar info.
-  await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${siteUrl}/reset-password`,
-  });
+
+  // Cooldown 120s — busca ultimo envio no profile (service role via env
+  // do server) e ignora silenciosamente se muito recente. Anti-enumeration
+  // preservado: NAO vazamos "email nao encontrado" em nenhum path.
+  const { createClient } = await import("@supabase/supabase-js");
+  const svcUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+  const svcKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+  if (svcUrl && svcKey) {
+    const svc = createClient(svcUrl, svcKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    const { data: profile } = await svc
+      .from("profiles")
+      .select("id, last_password_reset_at")
+      .eq("email", email)
+      .maybeSingle();
+
+    if (profile?.last_password_reset_at) {
+      const elapsedMs =
+        Date.now() - new Date(profile.last_password_reset_at).getTime();
+      if (elapsedMs < 120_000) {
+        // Silencioso — anti-enumeration + evita spam
+        return { ok: true };
+      }
+    }
+
+    // Dispara email + atualiza timestamp SOMENTE se profile existe.
+    // Se profile eh null (email nunca cadastrado), pula update e chama
+    // resetPasswordForEmail — Supabase NAO envia (anti-enum nativo).
+    await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${siteUrl}/reset-password`,
+    });
+
+    if (profile?.id) {
+      await svc
+        .from("profiles")
+        .update({ last_password_reset_at: new Date().toISOString() })
+        .eq("id", profile.id);
+    }
+  } else {
+    // Fallback (env vars faltando) — dispara sem cooldown pra nao quebrar
+    console.warn(
+      "[forgotPassword] service role env faltando — cooldown desabilitado",
+    );
+    await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${siteUrl}/reset-password`,
+    });
+  }
+
   return { ok: true };
 }
 
